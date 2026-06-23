@@ -1,0 +1,578 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>2026 OATLY FUTSAL CHAMPIONSHIP</title>
+<link rel="stylesheet" as="style" crossorigin href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<style>
+  @font-face {
+    font-family: 'WildGag';
+    src: url('wildgag.woff2') format('woff2'), url('wildgag.ttf') format('truetype');
+    font-weight: 700; font-display: swap;
+  }
+  :root {
+    --paper: #e8e8e6;      /* 흑백 — 라이트 그레이 배경 */
+    --card: #ffffff;
+    --ink: #141414;
+    --ink2: #44443f;
+    --muted: #8a8a86;
+    --line: #141414;
+    --accent: #141414;     /* 모노톤 */
+    --win: #141414;
+    --radius: 14px;
+    --hard: 4px 4px 0 var(--ink);
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; background: var(--paper); color: var(--ink);
+    font-family: "Pretendard", "Pretendard Variable", -apple-system, BlinkMacSystemFont, "Apple SD Gothic Neo", "Malgun Gothic", sans-serif;
+    line-height: 1.5; -webkit-font-smoothing: antialiased;
+  }
+  .wrap { max-width: 540px; margin: 0 auto; padding: 18px 16px 70px; }
+
+  /* 포스터 히어로 */
+  .poster-wrap { text-align: center; margin: 6px 0 20px; }
+  .poster {
+    width: 100%; max-width: 380px; display: block; margin: 0 auto;
+    border: 3px solid var(--ink); border-radius: 6px; box-shadow: 7px 7px 0 var(--ink);
+    transform: rotate(-1.4deg);
+  }
+
+  /* 탭 */
+  .tabs { display: flex; gap: 0; border: 3px solid var(--ink); border-radius: 12px; overflow: hidden; box-shadow: var(--hard); margin-bottom: 20px; background: var(--card); position: sticky; top: 0; z-index: 50; }
+  .tab {
+    flex: 1; padding: 13px 8px; border: none; background: var(--card); cursor: pointer;
+    font-family: 'WildGag', 'Pretendard', sans-serif; font-size: 17px; font-weight: 800; color: var(--ink); letter-spacing: 0;
+    transition: background .12s;
+  }
+  .tab + .tab { border-left: 3px solid var(--ink); }
+  .tab.active { background: var(--ink); color: var(--card); }
+
+  .card {
+    background: var(--card); border: 3px solid var(--ink); border-radius: var(--radius);
+    box-shadow: var(--hard); padding: 16px 15px; margin-bottom: 18px;
+  }
+  .card.tilt { transform: rotate(-0.6deg); }
+  .card h2 {
+    margin: 0 0 4px; font-family: 'WildGag', 'Pretendard', sans-serif; font-size: 21px; font-weight: 800; letter-spacing: 0;
+    display: inline-block; background: var(--ink); color: var(--card); padding: 4px 12px; border-radius: 7px; transform: rotate(-1deg);
+  }
+  .lead { font-size: 13px; color: var(--ink2); margin: 12px 2px 14px; font-weight: 500; }
+  .dash { border: none; border-top: 2.5px dashed var(--ink); opacity: .35; margin: 14px 0; }
+
+  /* 일정표 */
+  .sched { display: flex; flex-direction: column; gap: 7px; }
+  .row {
+    display: grid; grid-template-columns: 54px 1fr auto; align-items: center; gap: 10px;
+    border: 2.5px solid var(--ink); border-radius: 10px; padding: 9px 11px; background: #fff;
+  }
+  .row .t { font-weight: 800; font-size: 14px; }
+  .row .c { font-size: 13.5px; font-weight: 600; line-height: 1.35; }
+  .row .d { font-size: 11px; font-weight: 700; color: var(--muted); white-space: nowrap; }
+  .row.match { box-shadow: 3px 3px 0 var(--ink); }
+  .row.match .no { display: inline-block; background: var(--ink); color: #fff; font-size: 10px; font-weight: 800; border-radius: 5px; padding: 1px 6px; margin-right: 6px; }
+  .row.cer { background: #ececec; }
+  .row.evt { background: #fff; border-style: dashed; }
+  .row.ko  { background: #f0f0f0; }
+  .row.fin { background: var(--ink); color: #fff; box-shadow: 4px 4px 0 #8a8a86; }
+  .row.fin .d, .row.fin .c { color: #fff; }
+  .row.fin .crown { color: #fff; }
+  .row.award { background: #e6e6e6; }
+  .row.dim .t, .row.dim .c { color: var(--ink2); }
+  .row .ic { font-size: 14px; margin-right: 4px; }
+  .legend-mini { font-size: 11px; color: var(--ink2); margin-top: 12px; font-weight: 600; text-align: center; line-height: 1.7; }
+
+  /* 참가 팀 */
+  .teams-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 11px; }
+  .team-box { border: 2.5px solid var(--ink); border-radius: 11px; background: #fff; padding: 12px 8px; text-align: center; box-shadow: 3px 3px 0 var(--ink); }
+  .team-box .logo { height: 40px; display: flex; align-items: center; justify-content: center; margin-bottom: 8px; }
+  .team-box .logo img { max-height: 40px; max-width: 90%; object-fit: contain; }
+  .team-box .slot { font-size: 10px; font-weight: 800; color: #fff; background: var(--ink); border-radius: 5px; padding: 1px 7px; }
+  .team-box .nm { font-size: 12.5px; font-weight: 700; margin-top: 5px; line-height: 1.3; }
+
+  /* 순위표 */
+  table.lg { width: 100%; border-collapse: collapse; font-size: 13px; }
+  table.lg th, table.lg td { padding: 8px 2px; text-align: center; }
+  table.lg thead th { font-size: 11px; font-weight: 800; border-bottom: 3px solid var(--ink); }
+  table.lg td.team { text-align: left; font-weight: 700; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 152px; }
+  table.lg td.team .slot-tag { display: inline-block; background: var(--ink); color: #fff; font-size: 10px; font-weight: 800; border-radius: 4px; padding: 0 5px; margin-right: 3px; }
+  table.lg tbody tr { border-bottom: 1.5px solid var(--ink); }
+  table.lg tbody tr:last-child { border-bottom: none; }
+  table.lg .rk { font-weight: 800; width: 24px; }
+  table.lg tr.top1 .rk { color: var(--accent); }
+  .pts { font-weight: 800; }
+  .gd.pos { color: var(--win); } .gd.neg { color: var(--accent); }
+  .legend { font-size: 11px; color: var(--ink2); margin-top: 10px; text-align: center; font-weight: 600; }
+
+  .match-row { display: flex; align-items: center; gap: 8px; padding: 11px 0; border-bottom: 2px dashed rgba(20,18,16,.25); }
+  .match-row:last-child { border-bottom: none; }
+  .match-row .lbl { font-size: 10px; font-weight: 800; background: var(--ink); color: #fff; border-radius: 5px; padding: 2px 6px; flex-shrink: 0; }
+  .match-row .tnm { flex: 1; font-size: 13px; font-weight: 700; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .match-row .tnm.away { text-align: right; }
+  .match-row .tlogo, table.lg td.team .tlogo { height: 15px; width: auto; vertical-align: -3px; margin: 0 5px; opacity: .9; }
+  .match-row .tlogo.we, table.lg td.team .tlogo.we { height: 9px; margin: 0 4px; vertical-align: 1px; }
+  table.lg td.team .tlogo { height: 12px; margin: 0 4px 0 0; }
+  table.lg td.team .tlogo.we { height: 7px; margin: 0 3px 0 0; vertical-align: 1px; }
+  table.lg td.team .tlogo.circ { height: 18px; margin: 0 3px 0 0; vertical-align: -5px; }
+
+  /* 경기 표시 공통 — 로고 위, 이름 아래 (양측 로고영역 높이 고정 → 이름 Y값 동일) */
+  .event-match { display: flex; align-items: flex-start; gap: 10px; padding: 13px 0; border-bottom: 2px dashed rgba(20,18,16,.18); }
+  .event-match:last-child { border-bottom: none; }
+  .event-match.lg { padding: 12px 0; }
+  .event-match.lg .logo-zone { height: 36px; }
+  .event-match.lg .logo-zone img { height: 20px; }
+  .event-match.lg .logo-zone img.we { height: 10px; }
+  .event-match.lg .logo-zone img.sand { height: 16px; }
+  .event-match.lg .logo-zone img.circ { height: 30px; }
+  .event-match .logo-zone.cafes img.circ { height: 15px; }
+  .lz-break { flex-basis: 100%; width: 100%; height: 0; }
+  .extra-block { padding: 13px 0; border-bottom: 2px dashed rgba(20,18,16,.18); }
+  .extra-block:last-child { border-bottom: none; padding-bottom: 0; }
+  .extra-block:first-child { padding-top: 4px; }
+  .event-match .ev-side { flex: 1; min-width: 0; display: flex; flex-direction: column; align-items: center; }
+  .event-match .logo-zone { height: 44px; display: flex; flex-wrap: wrap; align-items: center; align-content: center; justify-content: center; gap: 5px 8px; max-width: 160px; }
+  .event-match .logo-zone img { height: 24px; max-width: 96px; object-fit: contain; opacity: .9; }
+  .event-match .logo-zone img.we { height: 14px; }
+  .event-match .logo-zone.cafes { max-width: 170px; gap: 5px 7px; }
+  .event-match .logo-zone.cafes img { height: 13px; max-width: 50px; }
+  .event-match .logo-zone.cafes img.top { height: 15px; max-width: 56px; }
+  .event-match .logo-zone.cafes img.we.top { height: 11px; max-width: 72px; }
+  .event-match .logo-zone img.scf-big { height: 34px; max-width: 86px; }
+  .event-match .logo-zone .ko-tbd { font-size: 22px; font-weight: 800; color: var(--muted); }
+  .event-match .ev-name { margin-top: 7px; font-size: 12px; font-weight: 800; color: var(--ink); text-align: center; line-height: 1.3; }
+  .event-match .res-col { align-self: center; min-width: 54px; text-align: center; }
+  .event-match .res-col .m-no { font-size: 10px; font-weight: 800; color: var(--muted); margin-bottom: 3px; }
+  .event-match .res { font-size: 17px; font-weight: 800; text-align: center; }
+  .event-match .res .na { font-size: 12px; color: var(--muted); font-weight: 600; }
+  .match-row .res { font-size: 17px; font-weight: 800; min-width: 58px; text-align: center; }
+  .match-row .res .na { font-size: 12px; color: var(--muted); font-weight: 600; }
+  .blk-label { font-size: 13px; font-weight: 800; margin-bottom: 5px; }
+
+  input { width: 100%; padding: 9px 10px; border: 2.5px solid var(--ink); border-radius: 9px; font-size: 13px; font-family: inherit; background: #fff; color: var(--ink); font-weight: 600; }
+  input:focus { outline: none; box-shadow: 2px 2px 0 var(--accent); }
+  .names { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 14px; }
+  .sc { width: 44px; text-align: center; font-size: 16px; font-weight: 800; padding: 7px 2px; }
+  .scbox { display: flex; align-items: center; gap: 5px; flex-shrink: 0; }
+  .vs { font-weight: 800; }
+  .btn { width: 100%; padding: 14px; border: 3px solid var(--ink); border-radius: 12px; background: var(--accent); color: #fff; font-size: 16px; font-weight: 800; cursor: pointer; font-family: inherit; box-shadow: var(--hard); letter-spacing: -0.2px; }
+  .btn:active { transform: translate(2px,2px); box-shadow: 2px 2px 0 var(--ink); }
+
+  .admin-bar { text-align: center; margin-top: 24px; }
+  .admin-link { background: none; border: none; color: var(--muted); font-size: 12px; cursor: pointer; padding: 6px 10px; font-family: inherit; font-weight: 600; }
+  .admin-link.on { color: var(--accent); font-weight: 800; }
+  .demo-note { background: #fff; border: 2.5px dashed var(--accent); color: var(--accent); font-size: 12px; padding: 9px 12px; border-radius: 10px; text-align: center; margin-bottom: 14px; font-weight: 700; }
+  .toast { position: fixed; left: 50%; bottom: 26px; transform: translateX(-50%) translateY(20px); background: var(--ink); color: #fff; padding: 13px 22px; border-radius: 30px; font-size: 14px; font-weight: 700; box-shadow: var(--hard); opacity: 0; pointer-events: none; transition: all .25s; z-index: 100; }
+  .toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+  .empty { text-align: center; padding: 36px 20px; color: var(--muted); font-weight: 700; }
+  .hidden { display: none !important; }
+
+  /* 모바일: 카페 연합 로고 더 축소 (겹침 방지) */
+  @media (max-width: 480px) {
+    .event-match .logo-zone.cafes { max-width: 150px; gap: 5px 6px; }
+    .event-match .logo-zone.cafes img { height: 12px; max-width: 42px; }
+    .event-match .logo-zone.cafes img.top { height: 13px; max-width: 48px; }
+    .event-match .logo-zone.cafes img.we.top { height: 10px; max-width: 60px; }
+    .event-match .logo-zone.cafes img.circ { height: 13px; }
+  }
+
+  /* 룰 */
+  .rules { margin: 8px 0 0; padding: 0; list-style: none; counter-reset: r; }
+  .rules li { position: relative; padding: 9px 0 9px 34px; border-bottom: 1.5px dashed rgba(20,18,16,.2); font-size: 13.5px; font-weight: 600; line-height: 1.5; }
+  .rules li:last-child { border-bottom: none; }
+  .rules li b { font-weight: 800; }
+  .rules li::before { counter-increment: r; content: counter(r); position: absolute; left: 0; top: 9px; width: 22px; height: 22px; background: var(--ink); color: #fff; border-radius: 6px; font-size: 11px; font-weight: 800; display: flex; align-items: center; justify-content: center; font-family: 'WildGag', sans-serif; }
+
+  /* 참가 카페 footer */
+  .cafe-foot { text-align: center; padding: 8px 8px 4px; }
+  .cafe-foot-t { font-size: 11px; font-weight: 800; letter-spacing: 1.5px; color: var(--ink2); margin-bottom: 16px; }
+  .cafe-foot-logos { display: flex; flex-wrap: nowrap; justify-content: center; align-items: center; gap: 13px; }
+  .cafe-foot-logos img { height: 21px; max-width: 84px; object-fit: contain; opacity: .85; flex: 0 1 auto; }
+  .cafe-foot-logos img.badge { height: 40px; }
+  .cafe-foot-logos img.tall { height: 38px; max-width: 100px; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="poster-wrap">
+    <img class="poster" src="poster.png" alt="2026 OATLY FUTSAL CHAMPIONSHIP">
+  </div>
+
+  <div id="tabsAnchor"></div>
+  <div class="tabs">
+    <button class="tab active" id="tb-sched" onclick="switchTab('sched')">일정</button>
+    <button class="tab" id="tb-match" onclick="switchTab('match')">경기</button>
+    <button class="tab" id="tb-rules" onclick="switchTab('rules')">규칙</button>
+  </div>
+
+  <!-- ===== 전체 일정 ===== -->
+  <div id="tab-sched">
+    <div class="card tilt">
+      <h2>전체 일정</h2>
+      <div class="sched">
+        <div class="row dim"><span class="t">16:00</span><span class="c">설치 + 참가자 체크인 동시 진행</span><span class="d">45분</span></div>
+        <div class="row cer"><span class="t">16:45</span><span class="c">개회식 (인사말 + 규칙 안내)</span><span class="d">10분</span></div>
+        <div class="row match"><span class="t">16:55</span><span class="c"><span class="no">1경기</span>조별리그 · A vs B</span><span class="d">10분</span></div>
+        <div class="row match"><span class="t">17:07</span><span class="c"><span class="no">2경기</span>조별리그 · C vs D</span><span class="d">10분</span></div>
+        <div class="row match"><span class="t">17:19</span><span class="c"><span class="no">3경기</span>조별리그 · A vs C</span><span class="d">10분</span></div>
+        <div class="row match"><span class="t">17:31</span><span class="c"><span class="no">4경기</span>조별리그 · B vs D</span><span class="d">10분</span></div>
+        <div class="row match"><span class="t">17:43</span><span class="c"><span class="no">5경기</span>조별리그 · B vs C</span><span class="d">10분</span></div>
+        <div class="row match"><span class="t">17:55</span><span class="c"><span class="no">6경기</span>조별리그 · A vs D</span><span class="d">10분</span></div>
+        <div class="row evt"><span class="t">18:07</span><span class="c">이벤트 경기</span><span class="d">15분</span></div>
+        <div class="row ko"><span class="t">18:24</span><span class="c">3·4위전</span><span class="d">15분</span></div>
+        <div class="row fin"><span class="t">18:41</span><span class="c">결승전</span><span class="d">15분</span></div>
+        <div class="row award"><span class="t">18:58</span><span class="c">시상식</span><span class="d">10분</span></div>
+        <div class="row dim"><span class="t">19:08</span><span class="c">정리 + 퇴장</span><span class="d">45분</span></div>
+        <div class="row dim"><span class="t">20:00</span><span class="c">퇴장 완료</span><span class="d">—</span></div>
+      </div>
+    </div>
+
+    <div class="cafe-foot">
+      <div class="cafe-foot-t">PARTICIPATING CAFÉS · 참가 카페</div>
+      <div class="cafe-foot-logos">
+        <img src="team_acr.png" alt="ACR">
+        <img src="team_felt.png" alt="펠트">
+        <img class="badge" src="team_bonanza.png" alt="보난자">
+        <img src="team_wecoffee.png" alt="위커피">
+        <img class="tall" src="team_sandstone.png" alt="샌드스톤">
+      </div>
+    </div>
+  </div>
+
+  <!-- ===== 경기 ===== -->
+  <div id="tab-match" class="hidden">
+    <div class="demo-note" id="demoNote" style="display:none">⚠️ 데모 모드 — 점수가 이 브라우저에만 저장돼요.</div>
+    <div id="content"><div class="empty">불러오는 중...</div></div>
+  </div>
+
+  <!-- ===== 운영 · 룰 ===== -->
+  <div id="tab-rules" class="hidden">
+    <div class="card tilt">
+      <h2>경기 운영</h2>
+      <ol class="rules">
+        <li>경기는 <b>5:5 기본</b> (여성 최소 1명 포함)</li>
+        <li>경기 결과로 승패 결정</li>
+        <li>조별 경기 <b>10분</b> · 토너먼트 경기 <b>15분</b></li>
+        <li>조별 결과로 <b>1·2위 → 결승</b>, <b>3·4위 → 3·4위전</b></li>
+        <li>조별 경기 후 <b>이벤트 매치</b> 진행 (팀 연합 vs 싸커피)</li>
+      </ol>
+    </div>
+    <div class="card">
+      <h2>전체 규칙</h2>
+      <ol class="rules">
+        <li>팀 공격 시 <b>여성 팀원에게 1회 패스 또는 터치 필수</b></li>
+        <li>키퍼는 <b>지정된 사람만</b> 가능</li>
+        <li>교체는 미리 심판에게 전달 후, <b>골라인 아웃 시</b> 교체</li>
+        <li>그 외 경기 규칙은 풋살 규칙을 따름 (키퍼 터치 횟수 제외)</li>
+      </ol>
+    </div>
+    <div class="card">
+      <h2>부상 방지 규칙</h2>
+      <ol class="rules">
+        <li>인프론트(발등) 슛 자제</li>
+        <li>슛은 가능한 한 띄우지 않고 <b>깔아서</b></li>
+        <li><b>상대를 향한 태클 금지</b></li>
+        <li>상대에게 위협이 될 정도로 격하게 하는 플레이어는 <b>경고</b></li>
+        <li>경고 누적(2회) 시 <b>3분 퇴장</b></li>
+        <li>경기가 과열되면 <b>1분 브레이크</b></li>
+      </ol>
+    </div>
+  </div>
+
+  <div class="admin-bar">
+    <button class="admin-link" id="adminBtn" onclick="toggleAdmin()">🔧 관리자 모드</button>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+const SUPABASE_URL = "https://fjgxhguogsuypcdzcieg.supabase.co";
+const SUPABASE_ANON_KEY = "sb_publishable_K7TsALmaFyb2pPOZO-2i2w_UeirVr8l";
+const ADMIN_PASSWORD = "soccoffee1234";
+const LEAGUE_ID = "ottly_scf_2026";
+const LEAGUE_STORE = "socoffee_league_v1";
+
+// 참가 카페 (A~D 슬롯 배정은 미정 — 관리자 모드에서 팀 이름 입력)
+const CAFES = [
+  { logo: 'team_acr.png',      name: 'ACR' },
+  { logo: 'team_felt.png',     name: '펠트' },
+  { logo: 'team_bonanza.png',  name: '보난자' },
+  { logo: 'team_wecoffee.png', name: '위커피 & 샌드스톤' },
+];
+
+const USE_DB = SUPABASE_URL && SUPABASE_ANON_KEY;
+let sb = null;
+try {
+  if (USE_DB && typeof supabase !== 'undefined') sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+} catch (e) { console.warn('supabase init 실패', e); }
+if (!sb) document.getElementById('demoNote').style.display = 'block';
+
+let leagueState = null;
+
+function defaultLeague() {
+  return {
+    teams: { A: '알레그리아', B: '펠트', C: '보난자', D: '연합' },
+    matches: [
+      { no: '1경기', h: 'A', a: 'B', hs: null, as: null },
+      { no: '2경기', h: 'C', a: 'D', hs: null, as: null },
+      { no: '3경기', h: 'A', a: 'C', hs: null, as: null },
+      { no: '4경기', h: 'B', a: 'D', hs: null, as: null },
+      { no: '5경기', h: 'B', a: 'C', hs: null, as: null },
+      { no: '6경기', h: 'A', a: 'D', hs: null, as: null },
+    ],
+    extras: [
+      { key: 'event', label: '⚽ 이벤트 경기', h: '카페 연합', a: '싸커피', hs: null, as: null },
+      { key: 'third', label: '🥉 3·4위전',     h: '', a: '', hs: null, as: null },
+      { key: 'final', label: '👑 결승전',       h: '', a: '', hs: null, as: null },
+    ],
+  };
+}
+
+async function fetchLeague() {
+  if (USE_DB && sb) {
+    try {
+      const { data, error } = await sb.from('event_league').select('data').eq('id', LEAGUE_ID).maybeSingle();
+      if (error) { console.warn('league fetch', error); return null; }
+      return data ? data.data : null;
+    } catch (e) { console.warn('league fetch 예외', e); return null; }
+  }
+  try { return JSON.parse(localStorage.getItem(LEAGUE_STORE)); } catch (e) { return null; }
+}
+async function saveLeague(state) {
+  if (USE_DB) {
+    const { error } = await sb.from('event_league').upsert({ id: LEAGUE_ID, data: state, updated_at: new Date().toISOString() });
+    if (error) { toast('저장 오류: ' + error.message); return false; }
+    return true;
+  }
+  localStorage.setItem(LEAGUE_STORE, JSON.stringify(state));
+  return true;
+}
+
+// 저장된 데이터에 no/순서가 없을 수 있어 기본값과 병합
+function normalize(state) {
+  const d = defaultLeague();
+  if (!state) return d;
+  const t = state.teams || {};
+  state.teams = {};
+  Object.keys(d.teams).forEach(k => { state.teams[k] = (t[k] && String(t[k]).trim()) ? t[k] : d.teams[k]; });
+  if (!Array.isArray(state.matches) || state.matches.length === 0) state.matches = d.matches;
+  else state.matches.forEach((m, i) => { if (!m.no && d.matches[i]) m.no = d.matches[i].no; });
+  if (!Array.isArray(state.extras) || state.extras.length === 0) state.extras = d.extras;
+  return state;
+}
+
+function computeStandings(state) {
+  const t = {};
+  Object.keys(state.teams).forEach(k => t[k] = { k, name: state.teams[k] || (k + '팀'), P: 0, W: 0, D: 0, L: 0, GF: 0, GA: 0, Pts: 0 });
+  state.matches.forEach(m => {
+    if (m.hs == null || m.as == null) return;
+    const H = t[m.h], A = t[m.a]; if (!H || !A) return;
+    H.P++; A.P++; H.GF += m.hs; H.GA += m.as; A.GF += m.as; A.GA += m.hs;
+    if (m.hs > m.as) { H.W++; A.L++; H.Pts += 3; }
+    else if (m.hs < m.as) { A.W++; H.L++; A.Pts += 3; }
+    else { H.D++; A.D++; H.Pts++; A.Pts++; }
+  });
+  return Object.values(t).sort((x, y) =>
+    y.Pts - x.Pts || (y.GF - y.GA) - (x.GF - x.GA) || y.GF - x.GF || x.k.localeCompare(y.k));
+}
+
+const ADMIN_KEY = 'soccoffee_champ_admin';
+function isAdmin() { return sessionStorage.getItem(ADMIN_KEY) === '1'; }
+function updateAdminBtn() {
+  const b = document.getElementById('adminBtn');
+  b.textContent = isAdmin() ? '🔓 관리자 모드 ON (해제)' : '🔧 관리자 모드';
+  b.classList.toggle('on', isAdmin());
+}
+function toggleAdmin() {
+  if (isAdmin()) { sessionStorage.removeItem(ADMIN_KEY); updateAdminBtn(); renderMatch(); toast('관리자 모드 해제'); return; }
+  const pw = prompt('관리자 비밀번호를 입력하세요');
+  if (pw === null) return;
+  if (pw === ADMIN_PASSWORD) { sessionStorage.setItem(ADMIN_KEY, '1'); updateAdminBtn(); switchTab('match'); toast('관리자 모드 ON 🔧'); }
+  else toast('비밀번호가 올바르지 않아요');
+}
+
+function esc(s) { return String(s).replace(/[&<>"']/g, c => ({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;' }[c])); }
+function gdStr(gd) { return (gd > 0 ? '+' : '') + gd; }
+// 팀 이름으로 카페 로고 자동 매칭 (경기 탭용 — 보난자는 가로형, 연합은 위커피+샌드스톤 함께)
+function logosFor(name) {
+  const n = (name || '').toLowerCase();
+  if (n.includes('알레그리아') || n.includes('acr')) return ['team_acr.png'];
+  if (n.includes('펠트') || n.includes('felt')) return ['team_felt.png'];
+  if (n.includes('보난자') || n.includes('bonanza')) return ['team_bonanza.png'];
+  if (n.includes('싸커피') || n.includes('soccoffee') || n.includes('scf')) return ['scf_logo_oatly.png'];
+  if (n.includes('위커피') || n.includes('wecoffee') || n.includes('샌드스톤') || n.includes('sandstone') || n.includes('연합')) return ['team_wecoffee.png', 'team_sandstone_text.png'];
+  return [];
+}
+// 이벤트 매치: 카페 연합 = 전체 로고 2줄, 싸커피 = 큰 SCF 로고
+const ALL_CAFE_LOGOS = ['team_wecoffee.png', 'team_sandstone_text.png', 'team_acr.png', 'team_felt.png', 'team_bonanza.png'];
+function eventMatchView(x) {
+  const done = x.hs != null && x.as != null;
+  return `<div class="event-match">
+    <div class="ev-side">
+      <div class="logo-zone cafes">${ALL_CAFE_LOGOS.map((l, i) => `${i === 2 ? '<span class="lz-break"></span>' : ''}<img class="${l.includes('wecoffee') ? 'we' : ''}${l.includes('bonanza') ? 'circ' : ''}${i < 2 ? ' top' : ''}" src="${l}" alt="">`).join('')}</div>
+      <div class="ev-name">${esc(x.h || '카페 연합')}</div>
+    </div>
+    <div class="res-col"><div class="res">${done ? `${x.hs} : ${x.as}` : '<span class="na">- : -</span>'}</div></div>
+    <div class="ev-side">
+      <div class="logo-zone"><img class="scf-big" src="scf_logo_oatly.png" alt="싸커피"></div>
+      <div class="ev-name">${esc(x.a || '싸커피')}</div>
+    </div>
+  </div>`;
+}
+// 토너먼트/리그 공통: 로고 위 / 네이밍 아래
+function koSide(nm, win) {
+  return `<div class="ev-side">
+      <div class="logo-zone">${logoImg(nm) || '<span class="ko-tbd">?</span>'}</div>
+      <div class="ev-name">${esc(nm || '미정')}${win ? ' ✓' : ''}</div>
+    </div>`;
+}
+function koMatchView(x) {
+  const done = x.hs != null && x.as != null;
+  return `<div class="event-match lg">
+    ${koSide(x.h)}
+    <div class="res-col"><div class="res">${done ? `${x.hs} : ${x.as}` : '<span class="na">- : -</span>'}</div></div>
+    ${koSide(x.a)}
+  </div>`;
+}
+function logoImg(name) {
+  return logosFor(name).map(l => {
+    let cls = 'tlogo';
+    if (l.includes('wecoffee')) cls += ' we';
+    else if (l.includes('sandstone')) cls += ' sand';
+    else if (l.includes('bonanza')) cls += ' circ';
+    return `<img class="${cls}" src="${l}" alt="">`;
+  }).join('');
+}
+function toast(msg) { const t = document.getElementById('toast'); t.textContent = msg; t.classList.add('show'); clearTimeout(t._t); t._t = setTimeout(() => t.classList.remove('show'), 2400); }
+
+function switchTab(tab) {
+  document.getElementById('tb-sched').classList.toggle('active', tab === 'sched');
+  document.getElementById('tb-match').classList.toggle('active', tab === 'match');
+  document.getElementById('tb-rules').classList.toggle('active', tab === 'rules');
+  document.getElementById('tab-sched').classList.toggle('hidden', tab !== 'sched');
+  document.getElementById('tab-match').classList.toggle('hidden', tab !== 'match');
+  document.getElementById('tab-rules').classList.toggle('hidden', tab !== 'rules');
+  // 탭이 화면 상단에 붙고 콘텐츠는 처음부터 보이도록 앵커 위치로 스크롤
+  const scrollToTabs = () => {
+    const a = document.getElementById('tabsAnchor');
+    if (a) window.scrollTo(0, a.getBoundingClientRect().top + window.scrollY);
+  };
+  if (tab === 'match') renderMatch().then(() => requestAnimationFrame(scrollToTabs));
+  else requestAnimationFrame(scrollToTabs);
+}
+
+function matchView(no, hn, an, hs, as) {
+  const done = hs != null && as != null, hw = done && hs > as, aw = done && as > hs;
+  return `<div class="event-match lg">
+    ${koSide(hn, hw)}
+    <div class="res-col">${no ? `<div class="m-no">${esc(no)}</div>` : ''}<div class="res">${done ? `${hs} : ${as}` : '<span class="na">- : -</span>'}</div></div>
+    ${koSide(an, aw)}
+  </div>`;
+}
+function matchEdit(m, id, hn, an) {
+  return `<div class="match-row">
+    ${m.no ? `<span class="lbl">${esc(m.no)}</span>` : ''}
+    <span class="tnm" title="${esc(hn)}">${esc(hn)}</span>
+    <div class="scbox">
+      <input class="sc" id="${id}-h" type="number" min="0" inputmode="numeric" value="${m.hs == null ? '' : m.hs}">
+      <span class="vs">:</span>
+      <input class="sc" id="${id}-a" type="number" min="0" inputmode="numeric" value="${m.as == null ? '' : m.as}">
+    </div>
+    <span class="tnm away" title="${esc(an)}">${esc(an)}</span>
+  </div>`;
+}
+function extraEdit(x, id) {
+  return `<div style="padding:11px 0;border-bottom:2px dashed rgba(20,18,16,.25)">
+    <div class="blk-label">${x.label}</div>
+    <div class="match-row" style="padding:0;border:none">
+      <input id="${id}-hn" value="${esc(x.h)}" placeholder="팀1 (공란 가능)" maxlength="24">
+      <div class="scbox">
+        <input class="sc" id="${id}-hs" type="number" min="0" inputmode="numeric" value="${x.hs == null ? '' : x.hs}">
+        <span class="vs">:</span>
+        <input class="sc" id="${id}-as" type="number" min="0" inputmode="numeric" value="${x.as == null ? '' : x.as}">
+      </div>
+      <input id="${id}-an" value="${esc(x.a)}" placeholder="팀2 (공란 가능)" maxlength="24" style="text-align:right">
+    </div>
+  </div>`;
+}
+
+async function renderMatch() {
+  const el = document.getElementById('content');
+  el.innerHTML = `<div class="empty">불러오는 중...</div>`;
+  try {
+  leagueState = normalize(await fetchLeague());
+  const admin = isAdmin();
+  const st = computeStandings(leagueState);
+
+  // 순위표
+  let body = `<div class="card">
+    <h2>리그 순위</h2>
+    <table class="lg">
+      <thead><tr><th class="rk">#</th><th style="text-align:left">팀</th><th>경기</th><th>승</th><th>무</th><th>패</th><th>득실</th><th>승점</th></tr></thead>
+      <tbody>
+        ${st.map((r, i) => { const gd = r.GF - r.GA; return `<tr class="${i === 0 && r.P > 0 ? 'top1' : ''}">
+          <td class="rk">${i === 0 && r.P > 0 ? '👑' : i + 1}</td>
+          <td class="team" title="${esc(r.name)}">${logoImg(r.name)}${esc(r.name)}</td>
+          <td>${r.P}</td><td>${r.W}</td><td>${r.D}</td><td>${r.L}</td>
+          <td class="gd ${gd > 0 ? 'pos' : gd < 0 ? 'neg' : ''}">${gdStr(gd)}</td><td class="pts">${r.Pts}</td>
+        </tr>`; }).join('')}
+      </tbody>
+    </table>
+    <div class="legend">순위 기준: 승점 → 골득실 → 다득점</div>
+  </div>`;
+
+  if (admin) {
+    body += `<div class="card">
+      <h2>🔧 팀 이름</h2>
+      <div class="names">${Object.keys(leagueState.teams).map(k => `<input id="team-${k}" value="${esc(leagueState.teams[k])}" placeholder="${k}팀" maxlength="24">`).join('')}</div>
+      <h2>리그 점수</h2>
+      <p class="lead">빈칸은 미진행으로 처리돼요.</p>
+      ${leagueState.matches.map((m, i) => matchEdit(m, 'm' + i, leagueState.teams[m.h], leagueState.teams[m.a])).join('')}
+    </div>
+    <div class="card">
+      <h2>토너먼트 · 이벤트</h2>
+      <p class="lead">팀과 점수를 직접 입력하세요. (공란 가능)</p>
+      ${leagueState.extras.map((x, i) => extraEdit(x, 'x' + i)).join('')}
+    </div>
+    <button class="btn" onclick="saveForm()">💾 저장하기</button>`;
+  } else {
+    body += `<div class="card">
+      <h2>리그 경기 결과</h2>
+      ${leagueState.matches.map(m => matchView(m.no, leagueState.teams[m.h], leagueState.teams[m.a], m.hs, m.as)).join('')}
+    </div>
+    <div class="card">
+      <h2>토너먼트 · 이벤트</h2>
+      ${leagueState.extras.map(x => `<div class="extra-block"><div class="blk-label">${x.label}</div>${x.key === 'event' ? eventMatchView(x) : (x.key === 'third' || x.key === 'final') ? koMatchView(x) : matchView('', x.h || '미정', x.a || '미정', x.hs, x.as)}</div>`).join('')}
+    </div>`;
+  }
+  el.innerHTML = body;
+  } catch (e) {
+    el.innerHTML = `<div class="card"><div class="empty">결과를 불러오지 못했어요.<br><span style="font-size:12px">${esc(e.message || e)}</span></div></div>`;
+  }
+}
+
+function scoreVal(id) { const v = document.getElementById(id).value.trim(); if (v === '') return null; const n = parseInt(v, 10); return isNaN(n) || n < 0 ? null : n; }
+async function saveForm() {
+  if (!isAdmin()) return toast('관리자만 저장할 수 있어요');
+  const s = JSON.parse(JSON.stringify(leagueState));
+  Object.keys(s.teams).forEach(k => { const v = document.getElementById('team-' + k).value.trim(); s.teams[k] = v || (k + '팀'); });
+  s.matches.forEach((m, i) => { m.hs = scoreVal('m' + i + '-h'); m.as = scoreVal('m' + i + '-a'); });
+  s.extras.forEach((x, i) => { x.h = document.getElementById('x' + i + '-hn').value.trim(); x.a = document.getElementById('x' + i + '-an').value.trim(); x.hs = scoreVal('x' + i + '-hs'); x.as = scoreVal('x' + i + '-as'); });
+  if (!(await saveLeague(s))) return;
+  leagueState = s; await renderMatch(); toast('저장했어요 ✅');
+}
+
+if (USE_DB && sb) {
+  try {
+    sb.channel('champ-league').on('postgres_changes', { event: '*', schema: 'public', table: 'event_league' }, () => {
+      if (!document.getElementById('tab-match').classList.contains('hidden')) renderMatch();
+    }).subscribe();
+  } catch (e) { console.warn('realtime 구독 실패', e); }
+}
+
+updateAdminBtn();
+</script>
+</body>
+</html>

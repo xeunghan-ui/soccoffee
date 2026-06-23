@@ -987,6 +987,11 @@ function renderMatches(){
     const wLabel=winner==='black'?'🖤 블랙 승':winner==='white'?'🤍 화이트 승':'🤝 무승부';
     const wClass=winner==='black'?'winner-black':winner==='white'?'winner-white':'winner-draw';
     const potmHtml=m.potm?`<div class="match-card-potm">⭐ POTM · ${m.potm}</div>`:'';
+    const hasRoster=(m.blackTeam&&m.blackTeam.length)||(m.whiteTeam&&m.whiteTeam.length);
+    const rosterHtml=hasRoster?`<div class="match-roster">
+      <div class="roster-col black"><div class="roster-label">🖤 블랙</div><div class="roster-names">${(m.blackTeam||[]).join(', ')||'—'}</div></div>
+      <div class="roster-col white"><div class="roster-label">🤍 화이트</div><div class="roster-names">${(m.whiteTeam||[]).join(', ')||'—'}</div></div>
+    </div>`:'';
     return `<div class="match-card">
       <div class="match-card-header">
         <div class="match-card-date">${m.date.slice(5).replace('-','/')}</div>
@@ -999,6 +1004,7 @@ function renderMatches(){
         <button class="match-del-btn" onclick="deleteMatch('${m.id}')" title="삭제">✕</button>
       </div>
       ${potmHtml}
+      ${rosterHtml}
     </div>`;
   }).join('');
 
@@ -1057,6 +1063,7 @@ function renderMatches(){
         <label>POTM</label>
         <select id="mPotm"><option value="">— 선택 안 함 —</option>${potmOpts}</select>
       </div>
+      ${teams&&teams.teamA?`<div style="font-size:11px;color:#38a169;background:#f0fff4;border:1px solid #9ae6b4;border-radius:6px;padding:6px 10px;margin-bottom:8px;">✅ 팀 배분 적용됨 — 블랙 ${teams.teamA.length}명 / 화이트 ${teams.teamB.length}명</div>`:`<div style="font-size:11px;color:#c05621;background:#fffaf0;border:1px solid #fbd38d;border-radius:6px;padding:6px 10px;margin-bottom:8px;">⚠️ 팀 배분 탭에서 먼저 팀을 구성해주세요</div>`}
       <button onclick="addMatch()" style="width:100%;padding:9px;background:#1a7f4b;color:#fff;border:none;border-radius:8px;font-size:13px;font-weight:700;cursor:pointer;font-family:inherit;">기록 저장</button>
     </div>
     <div class="match-history">
@@ -1071,7 +1078,9 @@ function addMatch(){
   const wScore=parseInt(document.getElementById('mWhite').value)||0;
   const potm=document.getElementById('mPotm').value||null;
   if(!date){ alert('날짜를 입력해주세요'); return; }
-  matches.push({ id: Date.now().toString(), date, blackScore:bScore, whiteScore:wScore, potm });
+  const blackTeam=teams&&teams.teamA?teams.teamA.map(p=>p.name):[];
+  const whiteTeam=teams&&teams.teamB?teams.teamB.map(p=>p.name):[];
+  matches.push({ id: Date.now().toString(), date, blackScore:bScore, whiteScore:wScore, potm, blackTeam, whiteTeam });
   save();
   renderMatches();
 }

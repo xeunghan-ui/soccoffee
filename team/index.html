@@ -39,6 +39,45 @@ body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; b
 .tab-btn .tab-label { font-size: 10px; }
 .tab-badge-info { display: none; }
 .rk-tab-btn { padding:7px 16px;border-radius:20px;font-size:12px;font-weight:700;cursor:pointer;border:1.5px solid #e2e8f0;background:#f9fafb;color:#718096;transition:all 0.15s; }
+.match-stat-bar { display:flex;gap:8px;margin-bottom:14px; }
+.match-stat { flex:1;border-radius:10px;padding:10px 8px;text-align:center; }
+.match-stat.black { background:#1a202c;color:#fff; }
+.match-stat.white { background:#f7fafc;color:#1a202c;border:1.5px solid #e2e8f0; }
+.match-stat.draw  { background:#f0fdf4;color:#2d7a4f;border:1.5px solid #c6f6d5; }
+.match-stat .ms-num { font-size:22px;font-weight:800;line-height:1; }
+.match-stat .ms-lbl { font-size:10px;margin-top:3px;opacity:0.75; }
+.match-stat .ms-rate{ font-size:11px;font-weight:700;margin-top:2px; }
+.match-form { background:#f7fafc;border-radius:10px;padding:12px;margin-bottom:14px;border:1.5px solid #e2e8f0; }
+.match-form h3 { font-size:12px;font-weight:800;color:#4a5568;margin-bottom:10px; }
+.match-score-row { display:flex;align-items:center;gap:8px;margin-bottom:10px; }
+.score-team { flex:1;text-align:center; }
+.score-team label { display:block;font-size:10px;font-weight:700;margin-bottom:4px; }
+.score-team.black label { color:#1a202c; }
+.score-team.white label { color:#718096; }
+.score-input { width:100%;text-align:center;font-size:22px;font-weight:800;border:1.5px solid #e2e8f0;border-radius:8px;padding:6px 0;outline:none; }
+.score-vs { font-size:14px;font-weight:800;color:#cbd5e0;padding:0 4px; }
+.match-row { display:flex;gap:8px;margin-bottom:8px;align-items:center; }
+.match-row label { font-size:11px;font-weight:700;color:#718096;width:60px;flex-shrink:0; }
+.match-row select,.match-row input[type=date] { flex:1;font-size:12px;padding:5px 8px;border:1.5px solid #e2e8f0;border-radius:7px;outline:none;font-family:inherit; }
+.match-history { margin-top:4px; }
+.match-history h3 { font-size:12px;font-weight:800;color:#4a5568;margin-bottom:8px; }
+.match-card { border-radius:10px;border:1.5px solid #e2e8f0;margin-bottom:8px;overflow:hidden; }
+.match-card-header { display:flex;align-items:center;padding:8px 12px;gap:8px;background:#fff; }
+.match-card-date { font-size:10px;color:#94a3b8;font-weight:600;width:60px; }
+.match-card-score { flex:1;display:flex;align-items:center;justify-content:center;gap:6px;font-size:16px;font-weight:800; }
+.match-card-score .bk { color:#1a202c; }
+.match-card-score .wt { color:#94a3b8; }
+.match-card-score .vs { font-size:10px;color:#cbd5e0; }
+.match-card-winner { font-size:10px;font-weight:700;padding:2px 8px;border-radius:8px; }
+.winner-black { background:#1a202c;color:#fff; }
+.winner-white { background:#e2e8f0;color:#4a5568; }
+.winner-draw  { background:#c6f6d5;color:#2d7a4f; }
+.match-card-potm { font-size:10px;color:#d69e2e;font-weight:700;padding:4px 12px;background:#fffbeb;border-top:1px solid #fef3c7; }
+.match-del-btn { background:none;border:none;color:#fc8181;font-size:13px;cursor:pointer;padding:2px 4px;margin-left:4px; }
+.win-bar-wrap { display:flex;height:6px;border-radius:4px;overflow:hidden;margin:6px 0 2px; }
+.win-bar-black { background:#1a202c;transition:width 0.3s; }
+.win-bar-draw  { background:#68d391;transition:width 0.3s; }
+.win-bar-white { background:#cbd5e0;transition:width 0.3s; }
 .rk-tab-btn.rk-active { background:#1a7f4b;color:#fff;border-color:#1a7f4b; }
 
 .main { max-width: 980px; margin: 0 auto; padding: 14px 14px 0; }
@@ -315,6 +354,7 @@ body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; b
   <button class="tab-btn" id="tbtn-ranking" onclick="switchTab('ranking')"><span class="tab-icon">🏆</span><span class="tab-label">랭킹</span></button>
   <button class="tab-btn" id="tbtn-supplies" onclick="switchTab('supplies')"><span class="tab-icon">🛒</span><span class="tab-label">물품</span></button>
   <button class="tab-btn" id="tbtn-fee" onclick="switchTab('fee')"><span class="tab-icon">💰</span><span class="tab-label">회비</span></button>
+  <button class="tab-btn" id="tbtn-matches" onclick="switchTab('matches')"><span class="tab-icon">⚽</span><span class="tab-label">매치</span></button>
 </div>
 
 <div class="main">
@@ -585,6 +625,10 @@ body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; b
   <div id="feeContent"></div>
 </div>
 
+<div id="tab-matches" style="display:none;padding:14px">
+  <div id="matchesContent"></div>
+</div>
+
 <!-- ══════════════ TAB: 팀 배분 ══════════════ -->
 <div id="tab-teams" style="display:none">
   <div class="algo-note">
@@ -675,7 +719,7 @@ function effStr(p){ return STRENGTH[p.tier]*(p.attendance/100); }
 function attColor(a){ return a>=75?{cls:'att-high',bar:'#059669'}:a>=50?{cls:'att-mid',bar:'#d97706'}:{cls:'att-low',bar:'#dc2626'}; }
 
 /* ─ State ─ */
-let players=[], teams=null, sessions=[], teamHistory=[], supplies=[];
+let players=[], teams=null, sessions=[], teamHistory=[], supplies=[], matches=[];
 let appReady=false;
 let activeTab='players';
 let sel={gender:null,tier:null}, selType_val=null;
@@ -701,6 +745,7 @@ function load(){
     const at=localStorage.getItem('sc5_tab');    if(at) activeTab=at;
     const th=localStorage.getItem('sc5_teamHistory'); if(th) teamHistory=JSON.parse(th);
     const sp=localStorage.getItem('sc5_supplies'); if(sp) supplies=JSON.parse(sp);
+    const mx=localStorage.getItem('sc5_matches'); if(mx) matches=JSON.parse(mx);
   }catch(e){}
 }
 function save(){
@@ -712,6 +757,7 @@ function save(){
   localStorage.setItem('sc5_tab',    activeTab);
   localStorage.setItem('sc5_teamHistory',JSON.stringify(teamHistory));
   localStorage.setItem('sc5_supplies',JSON.stringify(supplies));
+  localStorage.setItem('sc5_matches',JSON.stringify(matches));
   markDirty();
 }
 
@@ -861,7 +907,7 @@ function showToast(msg){
 }
 
 /* ─ Tab ─ */
-const ALL_TABS=['players','attendance','teams','tier','monthly','ranking','supplies','fee'];
+const ALL_TABS=['players','attendance','teams','tier','monthly','ranking','supplies','fee','matches'];
 function switchTab(tab){
   activeTab=tab;
   localStorage.setItem('sc5_tab',activeTab);
@@ -879,6 +925,132 @@ function switchTab(tab){
   if(tab==='ranking'){ renderRanking(); }
   if(tab==='supplies'){ renderSupplies(); }
   if(tab==='fee'){ renderFee(); }
+  if(tab==='matches'){ renderMatches(); }
+}
+
+
+/* ─ Matches Tab ─ */
+function renderMatches(){
+  const el=document.getElementById('matchesContent');
+  if(!el) return;
+  const total=matches.length;
+  const bWins=matches.filter(m=>m.blackScore>m.whiteScore).length;
+  const wWins=matches.filter(m=>m.whiteScore>m.blackScore).length;
+  const draws=matches.filter(m=>m.blackScore===m.whiteScore).length;
+  const bRate=total?Math.round(bWins/total*100):0;
+  const wRate=total?Math.round(wWins/total*100):0;
+  const dRate=total?Math.round(draws/total*100):0;
+
+  // POTM 선수 옵션
+  const activePlayers=players.filter(p=>p.status==='active').sort((a,b)=>a.name.localeCompare(b.name,'ko'));
+  const potmOpts=activePlayers.map(p=>`<option value="${p.name}">${p.name}</option>`).join('');
+
+  // POTM 통계
+  const potmMap={};
+  matches.forEach(m=>{ if(m.potm){ potmMap[m.potm]=(potmMap[m.potm]||0)+1; }});
+  const topPotm=Object.entries(potmMap).sort((a,b)=>b[1]-a[1]).slice(0,3);
+
+  // 매치 이력
+  const sorted=[...matches].sort((a,b)=>b.date.localeCompare(a.date));
+  const histHtml=sorted.map(m=>{
+    const winner=m.blackScore>m.whiteScore?'black':m.whiteScore>m.blackScore?'white':'draw';
+    const wLabel=winner==='black'?'🖤 블랙 승':winner==='white'?'🤍 화이트 승':'🤝 무승부';
+    const wClass=winner==='black'?'winner-black':winner==='white'?'winner-white':'winner-draw';
+    const potmHtml=m.potm?`<div class="match-card-potm">⭐ POTM · ${m.potm}</div>`:'';
+    return `<div class="match-card">
+      <div class="match-card-header">
+        <div class="match-card-date">${m.date.slice(5).replace('-','/')}</div>
+        <div class="match-card-score">
+          <span class="bk">${m.blackScore}</span>
+          <span class="vs">vs</span>
+          <span class="wt">${m.whiteScore}</span>
+        </div>
+        <div class="match-card-winner ${wClass}">${wLabel}</div>
+        <button class="match-del-btn" onclick="deleteMatch('${m.id}')" title="삭제">✕</button>
+      </div>
+      ${potmHtml}
+    </div>`;
+  }).join('');
+
+  const potmRankHtml=topPotm.length?`<div style="margin-bottom:14px;">
+    <div style="font-size:11px;font-weight:800;color:#4a5568;margin-bottom:6px;">⭐ POTM 랭킹</div>
+    ${topPotm.map((e,i)=>`<div style="display:flex;align-items:center;gap:6px;margin-bottom:4px;font-size:12px;">
+      <span style="font-size:14px">${['🥇','🥈','🥉'][i]}</span>
+      <span style="font-weight:700;">${e[0]}</span>
+      <span style="color:#94a3b8">${e[1]}회</span>
+    </div>`).join('')}
+  </div>`:'';
+
+  el.innerHTML=`
+    <div class="match-stat-bar">
+      <div class="match-stat black">
+        <div class="ms-num">${bWins}</div>
+        <div class="ms-lbl">🖤 블랙 승</div>
+        <div class="ms-rate">${bRate}%</div>
+      </div>
+      <div class="match-stat draw">
+        <div class="ms-num">${draws}</div>
+        <div class="ms-lbl">무승부</div>
+        <div class="ms-rate">${dRate}%</div>
+      </div>
+      <div class="match-stat white">
+        <div class="ms-num">${wWins}</div>
+        <div class="ms-lbl">🤍 화이트 승</div>
+        <div class="ms-rate">${wRate}%</div>
+      </div>
+    </div>
+    ${total>0?`<div class="win-bar-wrap">
+      <div class="win-bar-black" style="width:${bRate}%"></div>
+      <div class="win-bar-draw"  style="width:${dRate}%"></div>
+      <div class="win-bar-white" style="width:${wRate}%"></div>
+    </div>
+    <div style="font-size:9px;color:#94a3b8;text-align:center;margin-bottom:12px;">${total}경기</div>`:''}
+    ${potmRankHtml}
+    <div class="match-form">
+      <h3>➕ 매치 기록</h3>
+      <div class="match-row">
+        <label>날짜</label>
+        <input type="date" id="mDate" value="${new Date().toISOString().slice(0,10)}">
+      </div>
+      <div class="match-score-row">
+        <div class="score-team black">
+          <label>🖤 블랙</label>
+          <input class="score-input" type="number" id="mBlack" min="0" max="99" value="0">
+        </div>
+        <div class="score-vs">vs</div>
+        <div class="score-team white">
+          <label>🤍 화이트</label>
+          <input class="score-input" type="number" id="mWhite" min="0" max="99" value="0">
+        </div>
+      </div>
+      <div class="match-row">
+        <label>POTM</label>
+        <select id="mPotm"><option value="">— 선택 안 함 —</option>${potmOpts}</select>
+      </div>
+      <button onclick="addMatch()" style="width:100%;padding:9px;background:#1a7f4b;color:#fff;border:none;border-radius:8px;font-size:13px;font-weight:700;cursor:pointer;font-family:inherit;">기록 저장</button>
+    </div>
+    <div class="match-history">
+      <h3>📋 매치 이력</h3>
+      ${histHtml||'<div style="text-align:center;color:#94a3b8;font-size:12px;padding:20px 0;">아직 기록된 매치가 없어요</div>'}
+    </div>`;
+}
+
+function addMatch(){
+  const date=document.getElementById('mDate').value;
+  const bScore=parseInt(document.getElementById('mBlack').value)||0;
+  const wScore=parseInt(document.getElementById('mWhite').value)||0;
+  const potm=document.getElementById('mPotm').value||null;
+  if(!date){ alert('날짜를 입력해주세요'); return; }
+  matches.push({ id: Date.now().toString(), date, blackScore:bScore, whiteScore:wScore, potm });
+  save();
+  renderMatches();
+}
+
+function deleteMatch(id){
+  if(!confirm('이 매치 기록을 삭제할까요?')) return;
+  matches=matches.filter(m=>m.id!==id);
+  save();
+  renderMatches();
 }
 
 /* ─ Fee Tab ─ */

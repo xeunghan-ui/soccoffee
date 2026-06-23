@@ -77,6 +77,20 @@ body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; b
 .winner-draw  { background:#c6f6d5;color:#2d7a4f; }
 .match-card-potm { font-size:10px;color:#d69e2e;font-weight:700;padding:4px 12px;background:#fffbeb;border-top:1px solid #fef3c7; }
 .match-del-btn { background:none;border:none;color:#fc8181;font-size:13px;cursor:pointer;padding:2px 4px;margin-left:4px; }
+.match-roster{display:flex;gap:8px;padding:6px 10px;background:#f8fafc;border-top:1px solid #e2e8f0;font-size:11px;}
+.roster-col{flex:1;}
+.roster-label{font-weight:800;margin-bottom:3px;color:#4a5568;}
+.roster-names{color:#718096;line-height:1.6;}
+.match-game-row{display:flex;align-items:center;gap:6px;padding:7px 10px;font-size:13px;border-top:1px solid #f0f0f0;}
+.mg-label{font-size:10px;font-weight:800;color:#718096;width:36px;}
+.match-game-section{background:#f8fafc;border:1px solid #e2e8f0;border-radius:8px;margin-bottom:8px;overflow:hidden;}
+.match-game-title{font-size:11px;font-weight:800;color:#4a5568;padding:6px 10px;background:#edf2f7;border-bottom:1px solid #e2e8f0;}
+.player-ab-chip{display:inline-flex;align-items:center;gap:3px;background:#f1f5f9;border:1px solid #e2e8f0;border-radius:20px;padding:2px 8px;font-size:11px;margin:2px;cursor:pointer;transition:all .15s;}
+.player-ab-chip.is-a{background:#e2e8f0;border-color:#cbd5e0;font-weight:700;}
+.player-ab-chip.is-b{background:#fed7e2;border-color:#feb2c0;font-weight:700;}
+.ab-badge{font-size:9px;font-weight:900;padding:1px 4px;border-radius:10px;}
+.is-a .ab-badge{background:#4a5568;color:#fff;}
+.is-b .ab-badge{background:#e53e3e;color:#fff;}
 .win-bar-wrap { display:flex;height:6px;border-radius:4px;overflow:hidden;margin:6px 0 2px; }
 .win-bar-black { background:#1a202c;transition:width 0.3s; }
 .win-bar-draw  { background:#68d391;transition:width 0.3s; }
@@ -728,6 +742,8 @@ function attColor(a){ return a>=75?{cls:'att-high',bar:'#059669'}:a>=50?{cls:'at
 
 /* ─ State ─ */
 let players=[], teams=null, sessions=[], teamHistory=[], supplies=[], matches=[];
+let matchRoster={blackA:[],blackB:[],whiteA:[],whiteB:[]};
+let matchRosterInited=false;
 let appReady=false;
 let activeTab='players';
 let sel={gender:null,tier:null}, selType_val=null;
@@ -955,57 +971,142 @@ function switchTab(tab){
   if(tab==='ranking'){ renderRanking(); }
   if(tab==='supplies'){ renderSupplies(); }
   if(tab==='fee'){ renderFee(); }
-  if(tab==='matches'){ renderMatches(); }
+  if(tab==='matches'){
+    if(!matchRosterInited){
+      // 이번 로스터 직접 지정
+      setMatchRoster(
+        ['임한','박광우','홍순인','박원주','심소른','김균원','손다희','박지원'],
+        ['신동헌','도민환','한재욱','조지훈','이희성','김재유','허은혜','정은용'],
+        ['김우경','김두은','조은애','한승재','최승호','마상현','이일웅','안재영'],
+        ['김유솔','조수경','박승한','정희범','박우성','이민국','원재식','브루노','장세영']
+      );
+    }
+    renderMatches();
+  }
 }
 
 
 /* ─ Matches Tab ─ */
+function splitHalf(arr){
+  const mid=Math.ceil(arr.length/2);
+  return [arr.slice(0,mid), arr.slice(mid)];
+}
+function initMatchRoster(src){
+  if(!src||!src.teamA) return;
+  const [bA,bB]=splitHalf(src.teamA.map(p=>p.name));
+  const [wA,wB]=splitHalf(src.teamB.map(p=>p.name));
+  matchRoster={blackA:bA,blackB:bB,whiteA:wA,whiteB:wB};
+  matchRosterInited=true;
+}
+function setMatchRoster(bA,bB,wA,wB){
+  matchRoster={blackA:bA,blackB:bB,whiteA:wA,whiteB:wB};
+  matchRosterInited=true;
+}
+function toggleAB(color,name){
+  const a=matchRoster[color+'A'], b=matchRoster[color+'B'];
+  if(a.includes(name)){
+    matchRoster[color+'A']=a.filter(n=>n!==name);
+    matchRoster[color+'B']=[...b,name];
+  } else {
+    matchRoster[color+'B']=b.filter(n=>n!==name);
+    matchRoster[color+'A']=[...a,name];
+  }
+  renderMatches();
+}
+function resetMatchRoster(){
+  matchRosterInited=false;
+  renderMatches();
+}
+function matchGameResult(bScore,wScore){
+  if(bScore>wScore) return {label:'🖤 블랙 승',cls:'winner-black'};
+  if(wScore>bScore) return {label:'🤍 화이트 승',cls:'winner-white'};
+  return {label:'🤝 무승부',cls:'winner-draw'};
+}
 function renderMatches(){
   const el=document.getElementById('matchesContent');
   if(!el) return;
-  const total=matches.length;
-  const bWins=matches.filter(m=>m.blackScore>m.whiteScore).length;
-  const wWins=matches.filter(m=>m.whiteScore>m.blackScore).length;
-  const draws=matches.filter(m=>m.blackScore===m.whiteScore).length;
-  const bRate=total?Math.round(bWins/total*100):0;
-  const wRate=total?Math.round(wWins/total*100):0;
-  const dRate=total?Math.round(draws/total*100):0;
 
-  // POTM 선수 옵션
+  // 통계: 경기별(A/B) 각각 집계
+  let bWins=0,wWins=0,draws=0,totalGames=0;
+  matches.forEach(m=>{
+    if(m.gameA){
+      totalGames+=2;
+      if(m.gameA.blackScore>m.gameA.whiteScore) bWins++; else if(m.gameA.whiteScore>m.gameA.blackScore) wWins++; else draws++;
+      if(m.gameB.blackScore>m.gameB.whiteScore) bWins++; else if(m.gameB.whiteScore>m.gameB.blackScore) wWins++; else draws++;
+    } else {
+      totalGames++;
+      if(m.blackScore>m.whiteScore) bWins++; else if(m.whiteScore>m.blackScore) wWins++; else draws++;
+    }
+  });
+  const bRate=totalGames?Math.round(bWins/totalGames*100):0;
+  const wRate=totalGames?Math.round(wWins/totalGames*100):0;
+  const dRate=totalGames?Math.round(draws/totalGames*100):0;
+
+  // POTM
   const activePlayers=players.filter(p=>p.status==='active').sort((a,b)=>a.name.localeCompare(b.name,'ko'));
   const potmOpts=activePlayers.map(p=>`<option value="${p.name}">${p.name}</option>`).join('');
-
-  // POTM 통계
   const potmMap={};
   matches.forEach(m=>{ if(m.potm){ potmMap[m.potm]=(potmMap[m.potm]||0)+1; }});
   const topPotm=Object.entries(potmMap).sort((a,b)=>b[1]-a[1]).slice(0,3);
 
+  // 팀 배분 소스
+  const src=teams||(teamHistory.length?teamHistory[0]:null);
+  if(!matchRosterInited&&src&&src.teamA){ initMatchRoster(src); }
+  const {blackA:bA,blackB:bB,whiteA:wA,whiteB:wB}=matchRoster;
+  const allBlack=src&&src.teamA?src.teamA.map(p=>p.name):[...bA,...bB];
+  const allWhite=src&&src.teamB?src.teamB.map(p=>p.name):[...wA,...wB];
+
   // 매치 이력
   const sorted=[...matches].sort((a,b)=>b.date.localeCompare(a.date));
   const histHtml=sorted.map(m=>{
-    const winner=m.blackScore>m.whiteScore?'black':m.whiteScore>m.blackScore?'white':'draw';
-    const wLabel=winner==='black'?'🖤 블랙 승':winner==='white'?'🤍 화이트 승':'🤝 무승부';
-    const wClass=winner==='black'?'winner-black':winner==='white'?'winner-white':'winner-draw';
     const potmHtml=m.potm?`<div class="match-card-potm">⭐ POTM · ${m.potm}</div>`:'';
-    const hasRoster=(m.blackTeam&&m.blackTeam.length)||(m.whiteTeam&&m.whiteTeam.length);
-    const rosterHtml=hasRoster?`<div class="match-roster">
-      <div class="roster-col black"><div class="roster-label">🖤 블랙</div><div class="roster-names">${(m.blackTeam||[]).join(', ')||'—'}</div></div>
-      <div class="roster-col white"><div class="roster-label">🤍 화이트</div><div class="roster-names">${(m.whiteTeam||[]).join(', ')||'—'}</div></div>
-    </div>`:'';
-    return `<div class="match-card">
-      <div class="match-card-header">
-        <div class="match-card-date">${m.date.slice(5).replace('-','/')}</div>
-        <div class="match-card-score">
-          <span class="bk">${m.blackScore}</span>
-          <span class="vs">vs</span>
-          <span class="wt">${m.whiteScore}</span>
+    if(m.gameA){
+      // 새 포맷
+      const rA=matchGameResult(m.gameA.blackScore,m.gameA.whiteScore);
+      const rB=matchGameResult(m.gameB.blackScore,m.gameB.whiteScore);
+      const roA=(m.blackTeamA&&m.blackTeamA.length)?`<div class="match-roster">
+        <div class="roster-col black"><div class="roster-label">🖤 블랙A</div><div class="roster-names">${m.blackTeamA.join(', ')||'—'}</div></div>
+        <div class="roster-col white"><div class="roster-label">🤍 화이트A</div><div class="roster-names">${(m.whiteTeamA||[]).join(', ')||'—'}</div></div>
+      </div>`:'';
+      const roB=(m.blackTeamB&&m.blackTeamB.length)?`<div class="match-roster">
+        <div class="roster-col black"><div class="roster-label">🖤 블랙B</div><div class="roster-names">${m.blackTeamB.join(', ')||'—'}</div></div>
+        <div class="roster-col white"><div class="roster-label">🤍 화이트B</div><div class="roster-names">${(m.whiteTeamB||[]).join(', ')||'—'}</div></div>
+      </div>`:'';
+      return `<div class="match-card">
+        <div class="match-card-header">
+          <div class="match-card-date">${m.date.slice(5).replace('-','/')}</div>
+          <div style="flex:1"></div>
+          <button class="match-del-btn" onclick="deleteMatch('${m.id}')" title="삭제">✕</button>
         </div>
-        <div class="match-card-winner ${wClass}">${wLabel}</div>
-        <button class="match-del-btn" onclick="deleteMatch('${m.id}')" title="삭제">✕</button>
-      </div>
-      ${potmHtml}
-      ${rosterHtml}
-    </div>`;
+        <div class="match-game-row">
+          <span class="mg-label">A경기</span>
+          <span class="bk">${m.gameA.blackScore}</span><span class="vs">vs</span><span class="wt">${m.gameA.whiteScore}</span>
+          <span class="match-card-winner ${rA.cls}" style="font-size:10px;padding:2px 6px">${rA.label}</span>
+        </div>
+        ${roA}
+        <div class="match-game-row">
+          <span class="mg-label">B경기</span>
+          <span class="bk">${m.gameB.blackScore}</span><span class="vs">vs</span><span class="wt">${m.gameB.whiteScore}</span>
+          <span class="match-card-winner ${rB.cls}" style="font-size:10px;padding:2px 6px">${rB.label}</span>
+        </div>
+        ${roB}
+        ${potmHtml}
+      </div>`;
+    } else {
+      // 구 포맷 호환
+      const winner=m.blackScore>m.whiteScore?'black':m.whiteScore>m.blackScore?'white':'draw';
+      const wLabel=winner==='black'?'🖤 블랙 승':winner==='white'?'🤍 화이트 승':'🤝 무승부';
+      const wClass=winner==='black'?'winner-black':winner==='white'?'winner-white':'winner-draw';
+      return `<div class="match-card">
+        <div class="match-card-header">
+          <div class="match-card-date">${m.date.slice(5).replace('-','/')}</div>
+          <div class="match-card-score"><span class="bk">${m.blackScore}</span><span class="vs">vs</span><span class="wt">${m.whiteScore}</span></div>
+          <div class="match-card-winner ${wClass}">${wLabel}</div>
+          <button class="match-del-btn" onclick="deleteMatch('${m.id}')" title="삭제">✕</button>
+        </div>
+        ${potmHtml}
+      </div>`;
+    }
   }).join('');
 
   const potmRankHtml=topPotm.length?`<div style="margin-bottom:14px;">
@@ -1017,53 +1118,53 @@ function renderMatches(){
     </div>`).join('')}
   </div>`:'';
 
+  const teamStatusHtml=(()=>{
+    if(src&&src.teamA) return `<div style="font-size:11px;color:#38a169;background:#f0fff4;border:1px solid #9ae6b4;border-radius:6px;padding:6px 10px;margin-bottom:8px;">✅ ${teams?'현재':'최근 저장 ('+src.date+')'} 팀 배분 적용 — 블랙 ${src.teamA.length}명 / 화이트 ${src.teamB.length}명</div>`;
+    return `<div style="font-size:11px;color:#c05621;background:#fffaf0;border:1px solid #fbd38d;border-radius:6px;padding:6px 10px;margin-bottom:8px;">⚠️ 팀 배분 탭에서 먼저 팀을 구성해주세요</div>`;
+  })();
+
   el.innerHTML=`
     <div class="match-stat-bar">
-      <div class="match-stat black">
-        <div class="ms-num">${bWins}</div>
-        <div class="ms-lbl">🖤 블랙 승</div>
-        <div class="ms-rate">${bRate}%</div>
-      </div>
-      <div class="match-stat draw">
-        <div class="ms-num">${draws}</div>
-        <div class="ms-lbl">무승부</div>
-        <div class="ms-rate">${dRate}%</div>
-      </div>
-      <div class="match-stat white">
-        <div class="ms-num">${wWins}</div>
-        <div class="ms-lbl">🤍 화이트 승</div>
-        <div class="ms-rate">${wRate}%</div>
-      </div>
+      <div class="match-stat black"><div class="ms-num">${bWins}</div><div class="ms-lbl">🖤 블랙 승</div><div class="ms-rate">${bRate}%</div></div>
+      <div class="match-stat draw"><div class="ms-num">${draws}</div><div class="ms-lbl">무승부</div><div class="ms-rate">${dRate}%</div></div>
+      <div class="match-stat white"><div class="ms-num">${wWins}</div><div class="ms-lbl">🤍 화이트 승</div><div class="ms-rate">${wRate}%</div></div>
     </div>
-    ${total>0?`<div class="win-bar-wrap">
+    ${totalGames>0?`<div class="win-bar-wrap">
       <div class="win-bar-black" style="width:${bRate}%"></div>
       <div class="win-bar-draw"  style="width:${dRate}%"></div>
       <div class="win-bar-white" style="width:${wRate}%"></div>
     </div>
-    <div style="font-size:9px;color:#94a3b8;text-align:center;margin-bottom:12px;">${total}경기</div>`:''}
+    <div style="font-size:9px;color:#94a3b8;text-align:center;margin-bottom:12px;">${totalGames}경기 (${matches.length}회차)</div>`:''}
     ${potmRankHtml}
     <div class="match-form">
       <h3>➕ 매치 기록</h3>
-      <div class="match-row">
-        <label>날짜</label>
-        <input type="date" id="mDate" value="${new Date().toISOString().slice(0,10)}">
+      <div class="match-row"><label>날짜</label><input type="date" id="mDate" value="${new Date().toISOString().slice(0,10)}"></div>
+      <div class="match-game-section">
+        <div class="match-game-title">🖤 블랙팀 A/B 배정 <button onclick="resetMatchRoster()" style="float:right;background:none;border:none;font-size:10px;color:#94a3b8;cursor:pointer;">↺ 초기화</button></div>
+        <div style="padding:6px 8px;">${allBlack.map(n=>`<span class="player-ab-chip ${bA.includes(n)?'is-a':'is-b'}" onclick="toggleAB('black','${n}')"><span class="ab-badge">${bA.includes(n)?'A':'B'}</span>${n}</span>`).join('')}</div>
       </div>
-      <div class="match-score-row">
-        <div class="score-team black">
-          <label>🖤 블랙</label>
-          <input class="score-input" type="number" id="mBlack" min="0" max="99" value="0">
+      <div class="match-game-section">
+        <div class="match-game-title">🤍 화이트팀 A/B 배정</div>
+        <div style="padding:6px 8px;">${allWhite.map(n=>`<span class="player-ab-chip ${wA.includes(n)?'is-a':'is-b'}" onclick="toggleAB('white','${n}')"><span class="ab-badge">${wA.includes(n)?'A':'B'}</span>${n}</span>`).join('')}</div>
+      </div>
+      <div class="match-game-section">
+        <div class="match-game-title">A경기 <span class="mg-roster-preview">(블랙A ${bA.length}명 vs 화이트A ${wA.length}명)</span></div>
+        <div class="match-score-row">
+          <div class="score-team black"><label>🖤 블랙A</label><input class="score-input" type="number" id="mBlackA" min="0" max="99" value="0"></div>
+          <div class="score-vs">vs</div>
+          <div class="score-team white"><label>🤍 화이트A</label><input class="score-input" type="number" id="mWhiteA" min="0" max="99" value="0"></div>
         </div>
-        <div class="score-vs">vs</div>
-        <div class="score-team white">
-          <label>🤍 화이트</label>
-          <input class="score-input" type="number" id="mWhite" min="0" max="99" value="0">
+      </div>
+      <div class="match-game-section">
+        <div class="match-game-title">B경기 <span class="mg-roster-preview">(블랙B ${bB.length}명 vs 화이트B ${wB.length}명)</span></div>
+        <div class="match-score-row">
+          <div class="score-team black"><label>🖤 블랙B</label><input class="score-input" type="number" id="mBlackB" min="0" max="99" value="0"></div>
+          <div class="score-vs">vs</div>
+          <div class="score-team white"><label>🤍 화이트B</label><input class="score-input" type="number" id="mWhiteB" min="0" max="99" value="0"></div>
         </div>
       </div>
-      <div class="match-row">
-        <label>POTM</label>
-        <select id="mPotm"><option value="">— 선택 안 함 —</option>${potmOpts}</select>
-      </div>
-      ${teams&&teams.teamA?`<div style="font-size:11px;color:#38a169;background:#f0fff4;border:1px solid #9ae6b4;border-radius:6px;padding:6px 10px;margin-bottom:8px;">✅ 팀 배분 적용됨 — 블랙 ${teams.teamA.length}명 / 화이트 ${teams.teamB.length}명</div>`:`<div style="font-size:11px;color:#c05621;background:#fffaf0;border:1px solid #fbd38d;border-radius:6px;padding:6px 10px;margin-bottom:8px;">⚠️ 팀 배분 탭에서 먼저 팀을 구성해주세요</div>`}
+      <div class="match-row"><label>POTM</label><select id="mPotm"><option value="">— 선택 안 함 —</option>${potmOpts}</select></div>
+      ${teamStatusHtml}
       <button onclick="addMatch()" style="width:100%;padding:9px;background:#1a7f4b;color:#fff;border:none;border-radius:8px;font-size:13px;font-weight:700;cursor:pointer;font-family:inherit;">기록 저장</button>
     </div>
     <div class="match-history">
@@ -1074,13 +1175,12 @@ function renderMatches(){
 
 function addMatch(){
   const date=document.getElementById('mDate').value;
-  const bScore=parseInt(document.getElementById('mBlack').value)||0;
-  const wScore=parseInt(document.getElementById('mWhite').value)||0;
-  const potm=document.getElementById('mPotm').value||null;
   if(!date){ alert('날짜를 입력해주세요'); return; }
-  const blackTeam=teams&&teams.teamA?teams.teamA.map(p=>p.name):[];
-  const whiteTeam=teams&&teams.teamB?teams.teamB.map(p=>p.name):[];
-  matches.push({ id: Date.now().toString(), date, blackScore:bScore, whiteScore:wScore, potm, blackTeam, whiteTeam });
+  const gameA={ blackScore:parseInt(document.getElementById('mBlackA').value)||0, whiteScore:parseInt(document.getElementById('mWhiteA').value)||0 };
+  const gameB={ blackScore:parseInt(document.getElementById('mBlackB').value)||0, whiteScore:parseInt(document.getElementById('mWhiteB').value)||0 };
+  const potm=document.getElementById('mPotm').value||null;
+  const {blackA:bA,blackB:bB,whiteA:wA,whiteB:wB}=matchRoster;
+  matches.push({ id:Date.now().toString(), date, gameA, gameB, potm, blackTeamA:[...bA], blackTeamB:[...bB], whiteTeamA:[...wA], whiteTeamB:[...wB] });
   save();
   renderMatches();
 }

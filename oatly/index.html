@@ -296,10 +296,10 @@ const LEAGUE_STORE = "socoffee_league_v1";
 
 // 참가 카페 (A~D 슬롯 배정은 미정 — 관리자 모드에서 팀 이름 입력)
 const CAFES = [
-  { logo: 'team_acr.png',      name: 'ACR' },
-  { logo: 'team_felt.png',     name: '펠트' },
-  { logo: 'team_bonanza.png',  name: '보난자' },
-  { logo: 'team_wecoffee.png', name: '위커피 & 샌드스톤' },
+  { logo: '../team_acr.png',      name: 'ACR' },
+  { logo: '../team_felt.png',     name: '펠트' },
+  { logo: '../team_bonanza.png',  name: '보난자' },
+  { logo: '../team_wecoffee.png', name: '위커피 & 샌드스톤' },
 ];
 
 const USE_DB = SUPABASE_URL && SUPABASE_ANON_KEY;
@@ -398,15 +398,15 @@ function gdStr(gd) { return (gd > 0 ? '+' : '') + gd; }
 // 팀 이름으로 카페 로고 자동 매칭 (경기 탭용 — 보난자는 가로형, 연합은 위커피+샌드스톤 함께)
 function logosFor(name) {
   const n = (name || '').toLowerCase();
-  if (n.includes('알레그리아') || n.includes('acr')) return ['team_acr.png'];
-  if (n.includes('펠트') || n.includes('felt')) return ['team_felt.png'];
-  if (n.includes('보난자') || n.includes('bonanza')) return ['team_bonanza.png'];
-  if (n.includes('싸커피') || n.includes('soccoffee') || n.includes('scf')) return ['scf_logo_oatly.png'];
-  if (n.includes('위커피') || n.includes('wecoffee') || n.includes('샌드스톤') || n.includes('sandstone') || n.includes('연합')) return ['team_wecoffee.png', 'team_sandstone_text.png'];
+  if (n.includes('알레그리아') || n.includes('acr')) return ['../team_acr.png'];
+  if (n.includes('펠트') || n.includes('felt')) return ['../team_felt.png'];
+  if (n.includes('보난자') || n.includes('bonanza')) return ['../team_bonanza.png'];
+  if (n.includes('싸커피') || n.includes('soccoffee') || n.includes('scf')) return ['../scf_logo_oatly.png'];
+  if (n.includes('위커피') || n.includes('wecoffee') || n.includes('샌드스톤') || n.includes('sandstone') || n.includes('연합')) return ['../team_wecoffee.png', '../team_sandstone_text.png'];
   return [];
 }
 // 이벤트 매치: 카페 연합 = 전체 로고 2줄, 싸커피 = 큰 SCF 로고
-const ALL_CAFE_LOGOS = ['team_wecoffee.png', 'team_sandstone_text.png', 'team_acr.png', 'team_felt.png', 'team_bonanza.png'];
+const ALL_CAFE_LOGOS = ['../team_wecoffee.png', '../team_sandstone_text.png', '../team_acr.png', '../team_felt.png', '../team_bonanza.png'];
 function eventMatchView(x) {
   const done = x.hs != null && x.as != null;
   return `<div class="event-match">

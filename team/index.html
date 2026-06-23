@@ -30,7 +30,10 @@ body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; b
 .header-sub { color: rgba(255,255,255,0.65); font-size: 10px; margin-top: 1px; }
 
 /* TAB NAV */
-.tab-nav { background: #fff; border-bottom: 2px solid #e2e8f0; position: sticky; top: 50px; z-index: 100; box-shadow: 0 2px 4px rgba(0,0,0,0.04); overflow-x: auto; overflow-y: hidden; -webkit-overflow-scrolling: touch; scrollbar-width: none; display: flex; align-items: stretch; }
+.cat-nav { background: #1a202c; position: sticky; top: 50px; z-index: 101; display: flex; align-items: stretch; }
+.cat-btn { flex: 1; padding: 8px 0; font-size: 11px; font-weight: 800; color: rgba(255,255,255,0.5); background: none; border: none; border-bottom: 3px solid transparent; cursor: pointer; font-family: inherit; letter-spacing: 0.5px; transition: all 0.15s; }
+.cat-btn.active { color: #fff; border-bottom-color: #68d391; }
+.tab-nav { background: #fff; border-bottom: 2px solid #e2e8f0; position: sticky; top: 82px; z-index: 100; box-shadow: 0 2px 4px rgba(0,0,0,0.04); overflow-x: auto; overflow-y: hidden; -webkit-overflow-scrolling: touch; scrollbar-width: none; display: flex; align-items: stretch; }
 .tab-nav::-webkit-scrollbar { display: none; }
 .tab-btn { flex: 0 0 auto; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px; padding: 8px 14px; font-size: 11px; font-weight: 700; color: #94a3b8; background: none; border: none; border-bottom: 3px solid transparent; cursor: pointer; white-space: nowrap; font-family: inherit; transition: all 0.15s; min-width: 60px; }
 .tab-btn:hover { color: #1a7f4b; background: #f0fdf4; }
@@ -345,6 +348,11 @@ body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; b
 </div>
 <input type="file" id="importFileInput" accept=".json" style="display:none" onchange="importData(event)"/>
 
+<div class="cat-nav" id="catNav">
+  <button class="cat-btn active" id="cbtn-선수" onclick="switchCat('선수')">👤 선수</button>
+  <button class="cat-btn" id="cbtn-경기" onclick="switchCat('경기')">⚽ 경기</button>
+  <button class="cat-btn" id="cbtn-운영" onclick="switchCat('운영')">⚙️ 운영</button>
+</div>
 <div class="tab-nav" id="tabNav">
   <button class="tab-btn" id="tbtn-players" onclick="switchTab('players')"><span class="tab-icon">👥</span><span class="tab-label">선수 명단</span></button>
   <button class="tab-btn" id="tbtn-attendance" onclick="switchTab('attendance')"><span class="tab-icon">📋</span><span class="tab-label">출석부</span></button>
@@ -908,6 +916,28 @@ function showToast(msg){
 
 /* ─ Tab ─ */
 const ALL_TABS=['players','attendance','teams','tier','monthly','ranking','supplies','fee','matches'];
+const TAB_GROUPS={
+  '선수':['players','tier','ranking'],
+  '경기':['attendance','teams','monthly','matches'],
+  '운영':['supplies','fee']
+};
+let activeCategory='선수';
+
+function switchCat(cat){
+  activeCategory=cat;
+  // 카테고리 버튼 active
+  document.querySelectorAll('.cat-btn').forEach(b=>b.classList.remove('active'));
+  const cb=document.getElementById('cbtn-'+cat);
+  if(cb) cb.classList.add('active');
+  // 해당 카테고리 탭만 표시
+  ALL_TABS.forEach(t=>{
+    const btn=document.getElementById('tbtn-'+t);
+    if(btn) btn.style.display=TAB_GROUPS[cat]&&TAB_GROUPS[cat].includes(t)?'':'none';
+  });
+  // 첫 번째 탭으로 이동
+  const first=TAB_GROUPS[cat]&&TAB_GROUPS[cat][0];
+  if(first) switchTab(first);
+}
 function switchTab(tab){
   activeTab=tab;
   localStorage.setItem('sc5_tab',activeTab);
@@ -4410,6 +4440,9 @@ updateYearFilter();
 renderAttYearChips();
 
 // Switch to saved tab
+// 활성 탭에 맞는 카테고리 복원
+Object.entries(TAB_GROUPS).forEach(([cat,tabs])=>{ if(tabs.includes(activeTab)) activeCategory=cat; });
+switchCat(activeCategory);
 switchTab(activeTab);
 
 // 백업 라벨 초기화 + 앱 준비 완료

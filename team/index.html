@@ -2516,6 +2516,8 @@ function openSettingsPopup(id,btn,e){
       <div class="psp-divider"></div>
       <div class="psp-item" onclick="showEngNameEdit(${id})">🔤 영문명 설정 ▶</div>
       <div class="psp-divider"></div>
+      <div class="psp-item" onclick="showJerseyEdit(${id})">🔢 등번호 변경 (현재 ${p.jersey!=null?p.jersey:'-'}) ▶</div>
+      <div class="psp-divider"></div>
       <div class="psp-item" onclick="showDormantMonths(${id})">📅 휴면 월 관리${dormBadge} ▶</div>
       <div class="psp-divider"></div>
       <div class="psp-item" onclick="showDormantReasons(${id})">💤 휴면 상태로 전환 ▶</div>
@@ -2533,6 +2535,8 @@ function openSettingsPopup(id,btn,e){
       <div class="psp-divider"></div>
       <div class="psp-item" onclick="showEngNameEdit(${id})">🔤 영문명 설정 ▶</div>
       <div class="psp-divider"></div>
+      <div class="psp-item" onclick="showJerseyEdit(${id})">🔢 등번호 변경 (현재 ${p.jersey!=null?p.jersey:'-'}) ▶</div>
+      <div class="psp-divider"></div>
       <div class="psp-item psp-success" onclick="applyStatus(${id},'active')">✅ 복귀</div>
       <div class="psp-divider"></div>
       <div class="psp-item" onclick="showDormantMonths(${id})">📅 휴면 월 관리${dormBadge} ▶</div>
@@ -2547,6 +2551,8 @@ function openSettingsPopup(id,btn,e){
   } else if(st==='friends'){
     html=`<div class="psp-header">⚙️ 선수 관리</div>
       <div class="psp-item" onclick="showEngNameEdit(${id})">🔤 영문명 설정 ▶</div>
+      <div class="psp-divider"></div>
+      <div class="psp-item" onclick="showJerseyEdit(${id})">🔢 등번호 변경 (현재 ${p.jersey!=null?p.jersey:'-'}) ▶</div>
       <div class="psp-divider"></div>
       <div class="psp-item psp-success" onclick="applyStatus(${id},'active')">✅ 멤버로 복귀</div>
       <div class="psp-divider"></div>
@@ -2586,6 +2592,31 @@ function saveEngName(id){
   applyFilters();
   closSettingsPopup();
   showToast('✅ 영문명 저장됨');
+}
+function showJerseyEdit(id){
+  const p=players.find(x=>x.id===id);
+  if(!p)return;
+  const popup=document.getElementById('playerSettingsPopup');
+  popup.innerHTML=`
+    <div class="psp-header">🔢 등번호 변경 — ${p.name}</div>
+    <div style="padding:8px 10px 10px;display:flex;gap:6px;align-items:center">
+      <input id="jerseyInput" type="number" min="0" max="999" value="${p.jersey!=null?p.jersey:''}" placeholder="없음"
+        style="flex:1;font-size:13px;padding:5px 8px;border:1.5px solid #e2e8f0;border-radius:6px;outline:none;font-family:inherit"
+        onkeydown="if(event.key==='Enter')saveJersey(${id})"/>
+      <button onclick="saveJersey(${id})" style="padding:5px 10px;background:#0e1f0e;color:#fff;border:none;border-radius:6px;font-size:12px;font-weight:700;cursor:pointer">저장</button>
+    </div>`;
+  popup.onclick=ev=>ev.stopPropagation();
+  setTimeout(()=>document.getElementById('jerseyInput')?.focus(),50);
+}
+function saveJersey(id){
+  const p=players.find(x=>x.id===id);
+  if(!p)return;
+  const v=(document.getElementById('jerseyInput')||{}).value;
+  p.jersey=(v===''||v==null)?null:parseInt(v,10);
+  save();
+  applyFilters();
+  closSettingsPopup();
+  showToast('✅ 등번호 저장됨');
 }
 function showDormantMonths(id){
   const p=players.find(x=>x.id===id);

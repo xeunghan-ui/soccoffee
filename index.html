@@ -1725,7 +1725,7 @@ function fullSquadBlock(members) {
   if (!list.length) return '';
   const row = m => `<div class="sq-row">
       <span class="no">${m.jersey!=null?String(m.jersey).padStart(2,'0'):'—'}</span>
-      <span class="kr">${esc(m.name)}${m.cap?'<span class="sq-cap">C</span>':''}</span>
+      <span class="kr">${esc(m.name)}</span>
       <span class="en">${esc(m.eng||'')}</span>
     </div>`;
   const half = Math.ceil(list.length/2);

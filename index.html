@@ -1948,7 +1948,11 @@ async function renderAtt() {
       return `<div class="att-grp-h">${label} <span>참석 ${gy} / ${gm.length}명</span></div>${gm.map(rosterRow).join('')}`;
     }).join('');
   } else {
-    listHtml = sortedM.map(rosterRow).join('');
+    listHtml = [['yes','참석'],['maybe','미정'],['no','불참'],['none','미응답']].map(([key,label])=>{
+      const gm = sortedM.filter(m=>(map[m.id]||'none')===key);
+      if (!gm.length) return '';
+      return `<div class="att-grp-h">${label} <span>${gm.length}명</span></div>${gm.map(rosterRow).join('')}`;
+    }).join('');
   }
 
   html += `

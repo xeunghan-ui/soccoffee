@@ -3,7 +3,18 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>2026 OATLY FUTSAL CHAMPIONSHIP</title>
+<title>2026 오틀리 풋살 챔피언십</title>
+<meta property="og:type" content="website">
+<meta property="og:title" content="2026 오틀리 풋살 챔피언십">
+<meta property="og:description" content="오틀리 × 싸커피 · 일정 · 경기 · 규칙">
+<meta property="og:url" content="https://xeunghan-ui.github.io/soccoffee/oatly/">
+<meta property="og:image" content="https://xeunghan-ui.github.io/soccoffee/poster.png">
+<meta property="og:image:width" content="800">
+<meta property="og:image:height" content="1130">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="2026 오틀리 풋살 챔피언십">
+<meta name="twitter:description" content="오틀리 × 싸커피 · 일정 · 경기 · 규칙">
+<meta name="twitter:image" content="https://xeunghan-ui.github.io/soccoffee/poster.png">
 <link rel="stylesheet" as="style" crossorigin href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <style>
@@ -233,7 +244,7 @@
       <div class="cafe-foot-logos">
         <img src="../team_acr.png" alt="ACR">
         <img src="../team_felt.png" alt="펠트">
-        <img class="badge" src="../team_bonanza.png" alt="보난자">
+        <img class="badge" src="../team_bonanza.png" alt="보난자 커피">
         <img src="../team_wecoffee.png" alt="위커피">
         <img class="tall" src="../team_sandstone.png" alt="샌드스톤">
       </div>
@@ -298,7 +309,7 @@ const LEAGUE_STORE = "socoffee_league_v1";
 const CAFES = [
   { logo: '../team_acr.png',      name: 'ACR' },
   { logo: '../team_felt.png',     name: '펠트' },
-  { logo: '../team_bonanza.png',  name: '보난자' },
+  { logo: '../team_bonanza.png',  name: '보난자 커피' },
   { logo: '../team_wecoffee.png', name: '위커피 & 샌드스톤' },
 ];
 
@@ -313,7 +324,7 @@ let leagueState = null;
 
 function defaultLeague() {
   return {
-    teams: { A: '알레그리아', B: '펠트', C: '보난자', D: '연합' },
+    teams: { A: '알레그리아', B: '펠트', C: '보난자 커피', D: '연합' },
     matches: [
       { no: '1경기', h: 'A', a: 'B', hs: null, as: null },
       { no: '2경기', h: 'C', a: 'D', hs: null, as: null },

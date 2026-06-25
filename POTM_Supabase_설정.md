@@ -7,15 +7,20 @@
 
 Supabase 대시보드 → 좌측 **SQL Editor** → 아래를 붙여넣고 **Run**.
 
+> ⚠️ 투표가 **두 부문(이달의 선수 / 가장 성장한 선수)**으로 늘어, 표에 `category`가 추가됐어요.
+> 예전에 potm_votes를 만든 적이 있으면 아래 `drop` 한 줄이 지우고 새로 만듭니다(아직 투표 시작 전이라 안전).
+
 ```sql
--- 이달의 선수 투표 테이블
+-- 이달의 선수 / 가장 성장한 선수 투표 테이블 (부문별 1인 1표)
+drop table if exists public.potm_votes;
 create table if not exists public.potm_votes (
   id           bigint generated always as identity primary key,
-  month        text        not null,   -- 예: '2026-06'
-  voter_id     int         not null,   -- 투표한 사람(명단 id)
-  candidate_id int         not null,   -- 뽑힌 사람(명단 id)
+  month        text        not null,                 -- 예: '2026-07'
+  category     text        not null default 'mvp',    -- 'mvp' | 'growth'
+  voter_id     int         not null,                  -- 투표한 사람(명단 id)
+  candidate_id int         not null,                  -- 뽑힌 사람(명단 id)
   created_at   timestamptz not null default now(),
-  unique (month, voter_id)             -- ★ 1인 1표(엄격) 보장
+  unique (month, category, voter_id)                  -- ★ 부문별 1인 1표 보장
 );
 
 -- RLS 활성화

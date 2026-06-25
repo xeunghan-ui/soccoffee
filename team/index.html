@@ -18,6 +18,7 @@
 <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;700&display=swap" rel="stylesheet">
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.5.0/dist/chart.umd.js" integrity="sha384-iU8HYtnGQ8Cy4zl7gbNMOhsDTTKX02BTXptVP/vqAWIaTfM7isw76iyZCsjL2eVi" crossorigin="anonymous"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <style>
 :root { color-scheme: light; }
 * { box-sizing: border-box; margin: 0; padding: 0; }
@@ -355,6 +356,7 @@ body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; b
     <div class="header-sub">SOCCOFFEE FC · 선수 관리 · 경기 기록</div>
   </div>
   <div style="margin-left:auto;display:flex;align-items:center;gap:6px">
+    <span id="cloudLabel" style="font-size:10px;color:rgba(255,255,255,0.65);white-space:nowrap"></span>
     <span id="autoBackupLabel" style="font-size:10px;color:rgba(255,255,255,0.5);white-space:nowrap"></span>
     <button onclick="triggerImport()" style="font-size:11px;padding:5px 12px;border-radius:8px;border:1px solid rgba(255,255,255,0.4);background:rgba(255,255,255,0.15);color:#fff;cursor:pointer;font-weight:700;white-space:nowrap">⬆ 가져오기</button>
     <button onclick="exportData(true)" style="font-size:11px;padding:5px 12px;border-radius:8px;border:1px solid rgba(255,255,255,0.4);background:rgba(255,255,255,0.15);color:#fff;cursor:pointer;font-weight:700;white-space:nowrap">⬇ 저장</button>
@@ -373,7 +375,6 @@ body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; b
   <button class="tab-btn" id="tbtn-teams" onclick="switchTab('teams')"><span class="tab-icon">⚡</span><span class="tab-label">팀 배분</span></button>
   <button class="tab-btn" id="tbtn-tier" onclick="switchTab('tier')"><span class="tab-icon">🎖</span><span class="tab-label">티어</span></button>
   <button class="tab-btn" id="tbtn-monthly" onclick="switchTab('monthly')"><span class="tab-icon">📅</span><span class="tab-label">월별 현황</span></button>
-  <button class="tab-btn" id="tbtn-ranking" onclick="switchTab('ranking')"><span class="tab-icon">🏆</span><span class="tab-label">랭킹</span></button>
   <button class="tab-btn" id="tbtn-supplies" onclick="switchTab('supplies')"><span class="tab-icon">🛒</span><span class="tab-label">물품</span></button>
   <button class="tab-btn" id="tbtn-fee" onclick="switchTab('fee')"><span class="tab-icon">💰</span><span class="tab-label">회비</span></button>
   <button class="tab-btn" id="tbtn-matches" onclick="switchTab('matches')"><span class="tab-icon">⚽</span><span class="tab-label">매치</span></button>
@@ -624,17 +625,11 @@ body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; b
 </div>
 
 <!-- ══════════════ TAB: 랭킹 ══════════════ -->
-<div id="tab-ranking" style="display:none;padding:14px 0">
-  <!-- 연도 칩 -->
-  <div id="rkYearChips" style="display:flex;gap:4px;flex-wrap:wrap;padding:0 14px;margin-bottom:12px"></div>
-  <!-- 서브탭 -->
-  <div style="display:flex;gap:8px;padding:0 14px;margin-bottom:16px">
-    <button id="rkTab-att" class="rk-tab-btn rk-active" onclick="switchRkTab('att')">📊 출석율</button>
-    <button id="rkTab-lma" class="rk-tab-btn" onclick="switchRkTab('lma')">⚡ 당일 불참</button>
-    <button id="rkTab-dorm" class="rk-tab-btn" onclick="switchRkTab('dorm')">💤 휴면율</button>
-    <button id="rkTab-model" class="rk-tab-btn" onclick="switchRkTab('model')">🌟 모범생</button>
+<div id="tab-ranking" style="display:none;padding:28px 16px">
+  <div style="text-align:center;color:#718096;font-size:13px;line-height:1.8">
+    랭킹은 <b style="color:#1a202c">싸커피 사이트</b>로 옮겼어요.<br>
+    출석은 이 팀빌더에서 계속 기록하면<br>사이트 랭킹에 자동으로 반영됩니다.
   </div>
-  <div id="rkBody" style="padding:0 14px"></div>
 </div>
 
 <!-- ══════════════ TAB: 물품 ══════════════ -->
@@ -783,6 +778,7 @@ function save(){
   localStorage.setItem('sc5_supplies',JSON.stringify(supplies));
   localStorage.setItem('sc5_matches',JSON.stringify(matches));
   markDirty();
+  cloudSavePush();
 }
 
 /* ─ Export ─ */
@@ -845,6 +841,59 @@ function markDirty(){
   if(!appReady) return;
   const cnt=(parseInt(localStorage.getItem('sc5_dirtyCount')||'0'))+1;
   localStorage.setItem('sc5_dirtyCount',String(cnt));
+}
+
+/* ─ 클라우드 저장(Supabase) ─ 팀빌더 전체 상태를 club_settings(id='teambuilder')에 미러링.
+   어느 기기서든 같은 데이터, export/import 불필요. 로컬은 캐시/폴백. */
+const TB_SUPA_URL = "https://fjgxhguogsuypcdzcieg.supabase.co";
+const TB_SUPA_KEY = "sb_publishable_K7TsALmaFyb2pPOZO-2i2w_UeirVr8l";
+let tbSb = null;
+try { if (window.supabase) tbSb = window.supabase.createClient(TB_SUPA_URL, TB_SUPA_KEY); } catch(e){}
+function setCloudLabel(t){ const el=document.getElementById('cloudLabel'); if(el) el.textContent=t; }
+function tbCloudState(){ return { players, teams, sessions, teamHistory, supplies, matches }; }
+let _tbCloudTimer=null;
+function cloudSavePush(){
+  if(!tbSb || !appReady) return;
+  clearTimeout(_tbCloudTimer);
+  setCloudLabel('저장 중…');
+  _tbCloudTimer=setTimeout(async ()=>{
+    try{
+      const { error } = await tbSb.from('club_settings').upsert({ id:'teambuilder', data: tbCloudState(), updated_at:new Date().toISOString() });
+      setCloudLabel(error ? '클라우드 저장 실패' : '☁ 동기화됨');
+    }catch(e){ setCloudLabel('클라우드 저장 실패'); }
+  }, 1500);
+}
+async function cloudInit(){
+  if(!tbSb){ setCloudLabel('로컬 모드'); return; }
+  setCloudLabel('☁ 불러오는 중…');
+  try{
+    const { data:row, error } = await tbSb.from('club_settings').select('data').eq('id','teambuilder').maybeSingle();
+    if(error){ setCloudLabel('클라우드 연결 실패'); return; }
+    const d = row && row.data;
+    if(d && Array.isArray(d.players) && d.players.length){
+      players = d.players;
+      if(d.teams!==undefined) teams = d.teams;
+      if(Array.isArray(d.sessions)) sessions = d.sessions;
+      if(Array.isArray(d.teamHistory)) teamHistory = d.teamHistory;
+      if(Array.isArray(d.supplies)) supplies = d.supplies;
+      if(Array.isArray(d.matches)) matches = d.matches;
+      players.forEach(p=>{ if(p.status===undefined)p.status=p.dormant?'dormant':'active'; if(p.inBalance===undefined)p.inBalance=(p.status||'active')!=='former'; if(p.engName===undefined)p.engName=''; });
+      try{ recalcAttendance(); }catch(e){}
+      try{
+        localStorage.setItem('sc5_players',JSON.stringify(players));
+        localStorage.setItem('sc5_teams',JSON.stringify(teams));
+        localStorage.setItem('sc5_sessions',JSON.stringify(sessions));
+        localStorage.setItem('sc5_teamHistory',JSON.stringify(teamHistory));
+        localStorage.setItem('sc5_supplies',JSON.stringify(supplies));
+        localStorage.setItem('sc5_matches',JSON.stringify(matches));
+      }catch(e){}
+      renderAll();
+      setCloudLabel('☁ 동기화됨');
+    } else {
+      // 클라우드에 아직 없음 → 지금 로컬 데이터를 올림(최초 1회)
+      cloudSavePush();
+    }
+  }catch(e){ setCloudLabel('클라우드 연결 실패'); }
 }
 
 function triggerImport(){
@@ -4558,6 +4607,7 @@ switchTab(activeTab);
 appReady=true;
 updateBackupLabel();
 setInterval(updateBackupLabel, 60000);
+cloudInit();   // 클라우드에서 불러와 동기화(있으면 클라우드 우선)
 </script>
 </body>
 </html>

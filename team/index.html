@@ -960,25 +960,24 @@ async function importFromSite(){
 
 // ─ 6/17·6/24 출석 일괄 입력 (구글시트 기록 기준, 이름 매칭) ─
 async function importJune1724(){
-  if(!confirm('6/17, 6/24 세션을 출석 기록대로 입력할까요?\n(이미 같은 날짜 세션이 있으면 건너뜁니다 · 6/17 30명, 6/24 35명)')) return;
+  if(!confirm('6/17, 6/24 세션을 출석 기록대로 (다시) 입력할까요?\n기존 6/17·6/24 세션이 있으면 덮어씁니다.')) return;
   const data=[
     {date:'2026-06-17', names:['박승한','홍순인','손다희','정희범','원재식','장세영','김우경','최승호','박지원','신동헌','임한','이민국','박원주','한승재','도민환','조수경','안재영','브루노','박우성','조은애','조수연','한재욱','정은용','박광우','이일웅','허은혜','심소른','김균원','조지훈','이희성']},
     {date:'2026-06-24', names:['박승한','홍순인','손다희','정희범','원재식','장세영','김우경','최승호','마상현','박지원','신동헌','임한','이민국','박원주','김두은','표승철','한승재','도민환','조수경','안재영','브루노','박우성','조은애','조수연','한재욱','정은용','박광우','이일웅','허은혜','심소른','김균원','조지훈','이희성','김유솔','김재유']}
   ];
   const nameId={}; players.forEach(p=>{ nameId[p.name]=p.id; });
-  const existing=new Set(sessions.map(s=>s.date));
-  let added=0; const unmatched=new Set();
+  const dates=new Set(data.map(d=>d.date));
+  sessions = sessions.filter(s=>!dates.has(s.date));   // 기존 6/17·6/24 제거 후 새로 입력
+  const lines=[]; const unmatched=new Set();
   data.forEach(d=>{
-    if(existing.has(d.date)) return;
     const attendees=[]; d.names.forEach(nm=>{ const id=nameId[nm]; if(id!=null) attendees.push(id); else unmatched.add(nm); });
     sessions.unshift({ id:Date.now()+Math.floor(Math.random()*100000), date:d.date, type:'정기', notes:'', guests:0, extraNames:[], attendees, lastMinuteAbsentIds:[] });
-    existing.add(d.date); added++;
+    lines.push(`${d.date} → ${attendees.length}명 입력`);
   });
   sessions.sort((a,b)=>b.date.localeCompare(a.date));
   recalcAttendance(); save(); renderAll();
-  let msg=`6/17·6/24 세션 ${added}개 입력 완료.`;
-  if(!added) msg='이미 6/17·6/24 세션이 있어 입력하지 않았어요.';
-  if(unmatched.size) msg+=`\n\n빌더 명단에 없어 제외된 이름: ${[...unmatched].join(', ')}`;
+  let msg='입력 완료\n'+lines.join('\n')+`\n(빌더 선수 ${players.length}명 기준)`;
+  if(unmatched.size) msg+=`\n\n⚠ 빌더 명단에 없어 제외된 이름: ${[...unmatched].join(', ')}`;
   alert(msg);
 }
 

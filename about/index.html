@@ -16,7 +16,6 @@
 <link rel="stylesheet" as="style" crossorigin href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css">
 <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Anton&display=swap" rel="stylesheet">
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <style>
   :root{
     --green:#15281b; --green-2:#1e3526; --sand:#ddd6b6; --cream:#ece6d2; --muted:#95a083; --line:#33492f;
@@ -137,19 +136,6 @@
   </section>
 
   <section>
-    <div class="eyebrow">By the numbers</div>
-    <h2>한눈에 보는 싸커피</h2>
-    <div class="stats">
-      <div class="stat"><div class="n" id="statMembers">—</div><div class="l">활동 멤버</div></div>
-      <div class="stat"><div class="n">2팀</div><div class="l">WHITE · BLACK</div></div>
-      <div class="stat"><div class="n">수 21–23시</div><div class="l">정기 모임</div></div>
-      <div class="stat"><div class="n">월 3만원</div><div class="l">멤버 회비</div></div>
-    </div>
-  </section>
-
-  <div class="halfline"><span></span></div>
-
-  <section>
     <div class="eyebrow">7월 경기일정</div>
     <div class="matchday-h">MATCH DAY</div>
     <div class="fixtures">
@@ -221,30 +207,5 @@
   <div class="c"><a href="https://instagram.com/soccoffee__" target="_blank" rel="noopener" style="color:var(--sand);text-decoration:none">@soccoffee__</a> · SOCCOFFEE FC · EST. 2024 · JUST KICK IT</div>
 </footer>
 
-<script>
-// 활동 멤버 수 — Supabase(club_settings) 에서 실시간 (없으면 표시 생략/근사)
-const SB_URL="https://fjgxhguogsuypcdzcieg.supabase.co";
-const SB_KEY="sb_publishable_K7TsALmaFyb2pPOZO-2i2w_UeirVr8l";
-(async()=>{
-  try{
-    const sb = supabase.createClient(SB_URL, SB_KEY);
-    // 팀빌더 명단(활동 선수) 우선, 없으면 사이트 명단
-    let players=null;
-    const tb = await sb.from('club_settings').select('data').eq('id','teambuilder').maybeSingle();
-    if(tb.data && Array.isArray(tb.data.data?.players)) players=tb.data.data.players;
-    if(!players){
-      const cur = await sb.from('club_settings').select('data').eq('id','current').maybeSingle();
-      if(cur.data && Array.isArray(cur.data.data?.roster)) players=cur.data.data.roster;
-    }
-    let n=39;
-    if(players){
-      n = players.filter(p=>{const s=p.status||'active'; return s!=='former' && s!=='friends';}).length;
-    }
-    document.getElementById('statMembers').textContent = n+'명';
-  }catch(e){
-    document.getElementById('statMembers').textContent = '39명';
-  }
-})();
-</script>
 </body>
 </html>

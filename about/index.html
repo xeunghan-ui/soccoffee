@@ -172,16 +172,10 @@
 <div class="wrap">
 
   <section id="match">
-    <div class="eyebrow">7월 경기일정</div>
+    <div class="eyebrow" id="matchMonth">경기 일정</div>
     <div class="sec-h">MATCH DAY</div>
-    <div class="fixtures">
-      <div class="fx"><span class="wk">WEEK 1</span><span class="loc">상암풋살장</span><span class="when"><span class="d">07.01<span class="wd">WED</span></span><span class="t">21:00–23:00</span></span></div>
-      <div class="fx"><span class="wk">WEEK 2</span><span class="loc">상암풋살장</span><span class="when"><span class="d">07.08<span class="wd">WED</span></span><span class="t">21:00–23:00</span></span></div>
-      <div class="fx"><span class="wk">WEEK 3</span><span class="loc">상암풋살장</span><span class="when"><span class="d">07.15<span class="wd">WED</span></span><span class="t">21:00–23:00</span></span></div>
-      <div class="fx"><span class="wk">WEEK 4</span><span class="loc">상암풋살장</span><span class="when"><span class="d">07.22<span class="wd">WED</span></span><span class="t">21:00–23:00</span></span></div>
-      <div class="fx"><span class="wk">WEEK 5</span><span class="loc">상암풋살장</span><span class="when"><span class="d">07.29<span class="wd">WED</span></span><span class="t">21:00–23:00</span></span></div>
-    </div>
-    <p class="muted" style="font-size:12px;margin-top:10px">매주 수요일 · 예약 상황에 따라 변동될 수 있어요.</p>
+    <div class="fixtures" id="fixtures"><p class="muted" style="font-size:13px">불러오는 중…</p></div>
+    <p class="muted" style="font-size:12px;margin-top:10px">예약 상황에 따라 변동될 수 있어요.</p>
   </section>
 
   <div class="halfline"><span></span></div>
@@ -247,6 +241,42 @@
   <img src="../scf_logo.png" alt="싸커피 SCF">
   <div class="c"><a href="https://instagram.com/soccoffee__" target="_blank" rel="noopener" style="color:var(--sand);text-decoration:none">@soccoffee__</a> · SOCCOFFEE FC · EST. 2024 · JUST KICK IT</div>
 </footer>
+
+<script>
+// 경기 일정 — 사이트 세션(club_settings id='current' .sessions) 연동
+(function(){
+  var SB_URL="https://fjgxhguogsuypcdzcieg.supabase.co";
+  var SB_KEY="sb_publishable_K7TsALmaFyb2pPOZO-2i2w_UeirVr8l";
+  var ENG=['SUN','MON','TUE','WED','THU','FRI','SAT'];
+  var box=document.getElementById('fixtures');
+  function esc(s){return (s||'').replace(/[<>&]/g,function(c){return c==='<'?'&lt;':c==='>'?'&gt;':'&amp;';});}
+  function pad(n){return String(n).padStart(2,'0');}
+  function todayStr(){var d=new Date();return d.getFullYear()+'-'+pad(d.getMonth()+1)+'-'+pad(d.getDate());}
+  (async function(){
+    try{
+      var sb=supabase.createClient(SB_URL,SB_KEY);
+      var r=await sb.from('club_settings').select('data').eq('id','current').maybeSingle();
+      var sessions=(r && r.data && r.data.data && r.data.data.sessions) || [];
+      var t=todayStr();
+      sessions=sessions.filter(function(s){return (s.date||'')>=t;})
+        .sort(function(a,b){return ((a.date||'')+(a.time||'')).localeCompare((b.date||'')+(b.time||''));});
+      if(!sessions.length){ box.innerHTML='<p class="muted" style="font-size:13px">예정된 경기가 아직 없어요.</p>'; return; }
+      var m=parseInt((sessions[0].date||'').split('-')[1],10);
+      if(m) document.getElementById('matchMonth').textContent=m+'월 경기일정';
+      box.innerHTML=sessions.map(function(s,i){
+        var p=(s.date||'').split('-');
+        var md = p.length===3 ? p[1]+'.'+p[2] : (s.date||'');
+        var wd = s.date ? ENG[new Date(s.date+'T00:00').getDay()] : '';
+        var place=esc(s.place||'상암풋살장');
+        var time=esc(s.time||'');
+        return '<div class="fx"><span class="wk">WEEK '+(i+1)+'</span><span class="loc">'+place+'</span>'
+          +'<span class="when"><span class="d">'+md+(wd?'<span class="wd">'+wd+'</span>':'')+'</span>'
+          +(time?'<span class="t">'+time+'</span>':'')+'</span></div>';
+      }).join('');
+    }catch(e){ box.innerHTML='<p class="muted" style="font-size:13px">일정을 불러오지 못했어요.</p>'; }
+  })();
+})();
+</script>
 
 <script>
 // 선수 명단 — 팀사이트(팀빌더) 클라우드 연동: club_settings id='teambuilder'

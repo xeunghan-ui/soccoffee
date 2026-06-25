@@ -568,6 +568,19 @@
     background: #1e3526; color: #ece6d2; font-weight: 800; font-size: 13px; cursor: pointer; font-family: inherit; white-space: nowrap; }
   .ops-subtab.on { background: #ddd6b6; color: #14281b; border-color: #ddd6b6; }
 
+  /* 모바일 운영진 화면 최적화 */
+  @media (max-width: 460px){
+    #opsContent .row { flex-direction: column; gap: 0; }
+    .ops-subtabs { gap: 5px; }
+    .ops-subtab { padding: 8px 10px; font-size: 12px; }
+    #opsContent .dues-row { gap: 6px; }
+    #opsContent .dues-row .nm { flex: 1 1 100%; }
+    #opsContent .dues-row .btn.sm { padding: 6px 11px; font-size: 12px; }
+    #opsContent .dues-badge { font-size: 11px; padding: 3px 9px; }
+    .vote-cat { font-size: 13px; padding: 10px 6px; }
+    .rk-tab { padding: 8px 11px; font-size: 12px; }
+  }
+
   /* 참석 팀별 그룹 헤더 */
   .att-grp-h { display: flex; justify-content: space-between; align-items: center;
     font-weight: 900; color: #ece6d2; font-size: 13px; letter-spacing: 1px; text-transform: uppercase;
@@ -740,7 +753,6 @@
 
   <div class="admin-bar">
     <span class="me-label" id="meLabel"></span>
-    <button class="admin-link" id="adminBtn" onclick="toggleAdmin()">관리자 모드</button>
     <button class="admin-link" onclick="logout()">로그아웃</button>
   </div>
 </div>
@@ -836,34 +848,19 @@ async function removeRiderByIndex(rideId, index, target) {
   return true;
 }
 
-/* ---------- 관리자 모드 ---------- */
-const ADMIN_KEY = 'socoffee_admin';
-function isAdmin() { return sessionStorage.getItem(ADMIN_KEY) === '1'; }
+/* ---------- 운영진 권한 (로그인한 사람이 운영진 명단에 있으면 자동) ---------- */
+const ADMIN_NAMES = ['홍순인','박승한','원재식','최승호','정희범'];
+function isAdmin() {
+  const p = PLAYERS.find(x => x.id === getMe());
+  return !!(p && ADMIN_NAMES.includes(p.name));
+}
 function updateAdminBtn() {
-  const b = document.getElementById('adminBtn');
-  b.textContent = isAdmin() ? '운영진 모드 ON (해제하기)' : '운영진 모드';
-  b.classList.toggle('on', isAdmin());
   const opsTab = document.getElementById('opsTab');
   if (opsTab) opsTab.classList.toggle('hidden', !isAdmin());
   const ml = document.getElementById('meLabel');
-  if (ml) ml.textContent = (typeof meName === 'function' && getMe()) ? `${meName()} 님` : '';
-  // 운영진 해제 시 운영진 탭에 있었다면 공지로 이동
-  if (!isAdmin() && !document.getElementById('tab-ops').classList.contains('hidden')) switchTab('home');
-}
-function toggleAdmin() {
-  if (isAdmin()) {
-    sessionStorage.removeItem(ADMIN_KEY);
-    updateAdminBtn(); render(); refreshPotmIfOpen(); toast('관리자 모드를 해제했어요');
-    return;
-  }
-  const pw = prompt('관리자 비밀번호를 입력하세요');
-  if (pw === null) return;
-  if (pw === ADMIN_PASSWORD) {
-    sessionStorage.setItem(ADMIN_KEY, '1');
-    updateAdminBtn(); render(); refreshPotmIfOpen(); toast('관리자 모드 ON — 모든 카풀 삭제 가능');
-  } else {
-    toast('비밀번호가 올바르지 않아요');
-  }
+  if (ml) ml.textContent = (typeof meName === 'function' && getMe()) ? `${meName()} 님${isAdmin() ? ' · 운영진' : ''}` : '';
+  const tabOps = document.getElementById('tab-ops');
+  if (!isAdmin() && tabOps && !tabOps.classList.contains('hidden')) switchTab('home');
 }
 
 // 좌석을 다시 확인하고 탑승자를 추가 (초과 예약 방지)
@@ -2411,8 +2408,9 @@ async function initApp() {
   try { const s = await fetchSettings(); teamSplitOn = s.teamSplit !== false; } catch (e) {}
   // 로컬 미리보기: 첫 활동 회원으로 자동 로그인
   if (IS_LOCAL && getMe() == null) {
-    const first = activeMembers(potmMonth())[0];
-    if (first) setMe(first.id);
+    const ms = activeMembers(potmMonth());
+    const def = ms.find(m => ADMIN_NAMES.includes(m.name)) || ms[0];
+    if (def) setMe(def.id);
   }
   const loggedIn = (IS_LOCAL || localStorage.getItem(GATE_KEY) === '1') && getMe() != null;
   if (loggedIn) { showGate(false); }

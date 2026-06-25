@@ -630,6 +630,7 @@
 
   /* 팀 현황 — WHITE | BLACK 2칼럼 스쿼드 시트 */
   .squad-wrap { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+  .sq-two { display: grid; grid-template-columns: 1fr 1fr; gap: 0 14px; }
   .squad { border-radius: var(--radius); padding: 14px 11px 12px; min-width: 0; }
   .squad.white { background: #ddd6b6; color: #14281b; }
   .squad.black { background: #0f1f15; color: #ddd6b6; border: 1px solid #33492f; }
@@ -1722,13 +1723,16 @@ function noticeDateLabel(iso) {
 function fullSquadBlock(members) {
   const list = [...members].sort(byJersey);
   if (!list.length) return '';
-  return `<div class="squad white">
-    <div class="sq-title">전체 팀원 <span class="sq-n">${list.length}명</span></div>
-    ${list.map(m => `<div class="sq-row">
+  const row = m => `<div class="sq-row">
       <span class="no">${m.jersey!=null?String(m.jersey).padStart(2,'0'):'—'}</span>
       <span class="kr">${esc(m.name)}${m.cap?'<span class="sq-cap">C</span>':''}</span>
       <span class="en">${esc(m.eng||'')}</span>
-    </div>`).join('')}
+    </div>`;
+  const half = Math.ceil(list.length/2);
+  const col = arr => `<div>${arr.map(row).join('')}</div>`;
+  return `<div class="squad white">
+    <div class="sq-title">전체 팀원 <span class="sq-n">${list.length}명</span></div>
+    <div class="sq-two">${col(list.slice(0,half))}${col(list.slice(half))}</div>
   </div>`;
 }
 

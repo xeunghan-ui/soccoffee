@@ -35,6 +35,14 @@
   p{color:var(--cream); opacity:.92;}
   .muted{color:var(--muted);}
 
+  /* 앵커 네비 */
+  html{scroll-behavior:smooth;}
+  section[id]{scroll-margin-top:52px;}
+  .anchnav{position:sticky; top:0; z-index:20; display:flex; gap:4px; justify-content:center; flex-wrap:nowrap; overflow-x:auto; background:#0a140d; border-bottom:1px solid var(--line); padding:9px 8px;}
+  .anchnav::-webkit-scrollbar{display:none;}
+  .anchnav a{font-size:12px; font-weight:900; letter-spacing:1px; color:var(--cream); opacity:.72; text-decoration:none; padding:6px 13px; border-radius:999px; white-space:nowrap;}
+  .anchnav a:hover{opacity:1; background:var(--green-2);}
+
   /* 히어로 — 저지 핀스트라이프 + 크레스트 */
   .hero{
     position:relative; text-align:center; padding:66px 18px 58px; overflow:hidden;
@@ -153,9 +161,17 @@
   <span><span class="lab">Squad</span>WHITE vs BLACK</span>
 </div>
 
+<nav class="anchnav">
+  <a href="#match">일정</a>
+  <a href="#kits">키트</a>
+  <a href="#roster">선수</a>
+  <a href="#cafes">카페</a>
+  <a href="#moments">갤러리</a>
+</nav>
+
 <div class="wrap">
 
-  <section>
+  <section id="match">
     <div class="eyebrow">7월 경기일정</div>
     <div class="sec-h">MATCH DAY</div>
     <div class="fixtures">
@@ -170,7 +186,7 @@
 
   <div class="halfline"><span></span></div>
 
-  <section>
+  <section id="kits">
     <div class="eyebrow">두 팀, 한 클럽</div>
     <div class="sec-h">OUR KITS</div>
     <div class="kits">
@@ -182,7 +198,7 @@
 
   <div class="halfline"><span></span></div>
 
-  <section>
+  <section id="roster">
     <div class="eyebrow">선수 명단</div>
     <div class="sec-h">SQUAD</div>
     <div class="squad" id="squad"><p class="muted" style="font-size:13px">불러오는 중…</p></div>
@@ -190,7 +206,7 @@
 
   <div class="halfline"><span></span></div>
 
-  <section>
+  <section id="cafes">
     <div class="eyebrow">멤버들의 카페 &amp; 바</div>
     <div class="sec-h">CAFES</div>
     <div class="cafes">
@@ -205,7 +221,7 @@
 
   <div class="halfline"><span></span></div>
 
-  <section>
+  <section id="moments">
     <div class="eyebrow">함께한 순간들</div>
     <div class="sec-h">MOMENTS</div>
     <div class="gallery">

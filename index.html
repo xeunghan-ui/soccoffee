@@ -3,2434 +3,314 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>싸커피</title>
-<meta name="description" content="싸커피 — 카페 풋살 리그">
+<title>싸커피 — 소개</title>
+<meta name="description" content="싸커피(SOCCOFFEE FC) — 축구와 커피를 좋아하는 사람들이 모인 풋살 클럽. 매주 수요일 21시 상암.">
 <meta property="og:type" content="website">
-<meta property="og:title" content="싸커피">
-<meta property="og:description" content="싸커피 — 카페 풋살 리그">
+<meta property="og:title" content="싸커피 — SOCCOFFEE FC">
+<meta property="og:description" content="축구와 커피를 좋아하는 사람들이 모여 만든 풋살 클럽. EST. 2024 · 매주 수요일 21시 상암. WHITE vs BLACK.">
 <meta property="og:url" content="https://xeunghan-ui.github.io/soccoffee/">
 <meta property="og:image" content="https://xeunghan-ui.github.io/soccoffee/cover-soccoffee.jpg">
 <meta property="og:image:width" content="1200">
 <meta property="og:image:height" content="750">
 <meta name="twitter:card" content="summary_large_image">
-<meta name="twitter:title" content="싸커피">
-<meta name="twitter:description" content="싸커피 — 카페 풋살 리그">
-<meta name="twitter:image" content="https://xeunghan-ui.github.io/soccoffee/cover-soccoffee.jpg">
 <link rel="stylesheet" as="style" crossorigin href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css">
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Anton&display=swap" rel="stylesheet">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <style>
-  :root {
-    --bg: #15281b;
-    --card: #1e3526;
-    --coffee: #ece6d2;
-    --coffee-2: #d6cfb4;
-    --accent: #ddd6b6;
-    --accent-soft: #26402f;
-    --green: #ddd6b6;
-    --green-soft: #26402f;
-    --red: #ddd6b6;
-    --text: #ece6d2;
-    --muted: #95a083;
-    --line: #33492f;
-    --radius: 14px;
-    --shadow: none;
+  :root{
+    --green:#15281b; --green-2:#1e3526; --sand:#ddd6b6; --cream:#ece6d2; --muted:#95a083; --line:#33492f;
+    --disp:"Anton","Pretendard",sans-serif;
   }
-  * { box-sizing: border-box; }
-  body {
-    margin: 0;
-    font-family: "Pretendard", "Pretendard Variable", -apple-system, BlinkMacSystemFont, "Apple SD Gothic Neo", "Malgun Gothic", sans-serif;
-    background: var(--bg);
-    color: var(--text);
-    line-height: 1.55;
-    -webkit-font-smoothing: antialiased;
+  *{box-sizing:border-box;}
+  body{
+    margin:0; font-family:"Pretendard","Pretendard Variable",-apple-system,BlinkMacSystemFont,"Apple SD Gothic Neo","Malgun Gothic",sans-serif;
+    color:var(--cream); background:var(--green); line-height:1.65; -webkit-font-smoothing:antialiased;
   }
-  .wrap { max-width: 560px; margin: 0 auto; padding: 0 16px 80px; }
+  a{color:inherit;}
+  .wrap{max-width:760px; margin:0 auto; padding:0 18px;}
+  section{padding:46px 0;}
+  .eyebrow{font-size:12px; font-weight:900; letter-spacing:3px; text-transform:uppercase; color:var(--sand); opacity:.85;}
+  h2{font-size:24px; font-weight:900; letter-spacing:-0.5px; margin:6px 0 18px; color:#f3eed9;}
+  p{color:var(--cream); opacity:.92;}
+  .muted{color:var(--muted);}
 
-  header { text-align: center; padding: 26px 16px 18px; }
-  .brand-logo { width: 156px; max-width: 56%; height: auto; display: block; margin: 0 auto 10px; }
-  .logo {
-    display: inline-flex; align-items: center; gap: 8px;
-    font-size: 19px; font-weight: 800; color: var(--coffee); letter-spacing: -0.5px;
+  /* 앵커 네비 */
+  html{scroll-behavior:smooth;}
+  section[id]{scroll-margin-top:52px;}
+  .anchnav{position:sticky; top:0; z-index:20; display:flex; gap:4px; justify-content:center; flex-wrap:nowrap; overflow-x:auto; background:#0a140d; border-bottom:1px solid var(--line); padding:9px 8px;}
+  .anchnav::-webkit-scrollbar{display:none;}
+  .anchnav a{font-size:12px; font-weight:900; letter-spacing:1px; color:var(--cream); opacity:.72; text-decoration:none; padding:6px 13px; border-radius:999px; white-space:nowrap;}
+  .anchnav a:hover{opacity:1; background:var(--green-2);}
+
+  /* 히어로 — 저지 핀스트라이프 + 크레스트 */
+  .hero{
+    position:relative; text-align:center; padding:66px 18px 58px; overflow:hidden;
+    background:linear-gradient(rgba(9,17,12,.82),rgba(7,14,10,.96)), url('scf_bg.png') center/cover no-repeat;
+    border-bottom:2px solid var(--sand);
   }
-  .logo .cup { font-size: 26px; }
-  .tagline { margin: 6px 0 0; color: var(--muted); font-size: 14px; }
+  .hero img{width:92px; height:auto; margin-bottom:18px; filter:drop-shadow(0 6px 16px rgba(0,0,0,.45));}
+  .hero .kicker{font-size:11px; font-weight:900; letter-spacing:5px; text-transform:uppercase; color:var(--sand); opacity:.8;}
+  .hero .bigname{font-family:var(--disp); font-weight:400; font-size:clamp(48px,15vw,86px); line-height:.9; letter-spacing:1px; color:var(--sand); text-transform:uppercase; margin:10px 0 0;}
+  .hero .name2{font-size:13px; font-weight:900; letter-spacing:5px; text-transform:uppercase; color:var(--sand); margin-top:12px;}
+  .hero .tag{font-size:14px; color:var(--cream); opacity:.85; margin-top:14px;}
+  .hero .cta{margin-top:22px; display:flex; gap:8px; justify-content:center; flex-wrap:wrap;}
+  .hero .cta a{display:inline-flex; align-items:center; gap:7px; padding:12px 22px; border-radius:999px; font-weight:900; font-size:13px; letter-spacing:.3px; text-decoration:none;}
+  .hero .btn-member{background:var(--sand); color:var(--green);}
+  .hero .btn-insta{background:var(--green-2); color:var(--sand); border:1px solid var(--line);}
+  .hero .btn-insta svg{width:16px; height:16px;}
 
-  .tabs {
-    display: flex; gap: 6px; background: #efe6d9;
-    padding: 5px; border-radius: 14px; margin: 18px 0 20px;
+  /* 매치데이 픽스처 바 */
+  .matchbar{
+    background:var(--sand); color:var(--green); display:flex; flex-wrap:wrap; justify-content:center; gap:8px 22px;
+    padding:13px 18px; font-weight:900; font-size:13px; letter-spacing:.3px; text-align:center;
   }
-  .tab {
-    flex: 1; text-align: center; padding: 11px 8px; border: none;
-    background: transparent; border-radius: 10px; font-size: 15px;
-    font-weight: 700; color: var(--muted); cursor: pointer; transition: all .15s;
-  }
-  .tab.active { background: var(--card); color: var(--coffee); box-shadow: var(--shadow); }
+  .matchbar .lab{font-size:10px; letter-spacing:2px; text-transform:uppercase; opacity:.6; margin-right:6px;}
 
-  .card {
-    background: var(--card); border-radius: var(--radius);
-    box-shadow: var(--shadow); padding: 20px; margin-bottom: 16px;
-  }
-  .card h2 { margin: 0 0 4px; font-size: 18px; color: var(--coffee); }
-  .card .sub { margin: 0 0 18px; color: var(--muted); font-size: 13px; }
+  /* 하프라인 디바이더 */
+  .halfline{display:flex; align-items:center; gap:0; margin:0 auto; max-width:760px; padding:0 18px;}
+  .halfline::before,.halfline::after{content:""; flex:1; height:1px; background:var(--line);}
+  .halfline span{width:12px; height:12px; border:1px solid var(--line); border-radius:50%; flex-shrink:0;}
 
-  label { display: block; font-size: 13px; font-weight: 700; margin: 0 0 6px; color: var(--coffee-2); }
-  .field { margin-bottom: 16px; }
-  input, select, textarea {
-    width: 100%; padding: 12px 13px; border: 1.5px solid var(--line);
-    border-radius: 11px; font-size: 15px; font-family: inherit;
-    background: #fdfbf8; color: var(--text); transition: border .15s;
-  }
-  input:focus, select:focus, textarea:focus { outline: none; border-color: var(--accent); }
-  .hint { font-size: 12px; color: var(--muted); margin-top: 5px; }
-  .row { display: flex; gap: 12px; }
-  .row .field { flex: 1; }
+  /* 스탯 — 스코어보드 */
+  .stats{display:grid; grid-template-columns:repeat(4,1fr); gap:10px;}
+  .stat{background:var(--green-2); border:1px solid var(--line); border-top:3px solid var(--sand); border-radius:12px; padding:18px 8px; text-align:center;}
+  .stat .n{font-size:30px; font-weight:400; color:var(--sand); font-family:var(--disp); letter-spacing:.5px;}
+  .stat .l{font-size:11px; color:var(--muted); font-weight:700; margin-top:4px;}
+  @media(max-width:480px){ .stats{grid-template-columns:repeat(2,1fr);} }
 
-  .btn {
-    width: 100%; padding: 14px; border: none; border-radius: 12px;
-    background: var(--coffee); color: #fff; font-size: 16px; font-weight: 800;
-    cursor: pointer; transition: background .15s; font-family: inherit;
-  }
-  .btn:hover { background: #3a2719; }
-  .btn:active { transform: translateY(1px); }
-  .btn.accent { background: var(--accent); }
-  .btn.accent:hover { background: #ad7320; }
-  .btn.ghost { background: transparent; color: var(--muted); font-weight: 700; padding: 10px; }
-  .btn.sm { width: auto; padding: 7px 14px; font-size: 13px; border-radius: 9px; }
-  .btn:disabled { background: #cdbfae; cursor: not-allowed; }
+  /* 키트 (WHITE · BLACK) */
+  .kits{display:grid; grid-template-columns:1fr 1fr; gap:12px;}
+  .kit{position:relative; border:1px solid var(--line); border-radius:14px; padding:20px 16px; overflow:hidden; text-align:center;}
+  .kit.white{background:#ece6d2; color:#15281b;
+    background-image:repeating-linear-gradient(90deg, transparent 0 13px, rgba(21,40,27,.16) 13px 15px);}
+  .kit.black{background:#171f1a; color:#ece6d2;
+    background-image:repeating-linear-gradient(90deg, transparent 0 13px, rgba(221,214,182,.12) 13px 15px);}
+  .kit .num{font-size:50px; font-weight:400; line-height:1; font-family:var(--disp);}
+  .kit .nm{font-size:13px; font-weight:900; letter-spacing:3px; margin-top:8px; text-transform:uppercase;}
 
-  .section-title { font-family: 'WildGag', inherit; font-size: 18px; font-weight: 800; color: var(--coffee); margin: 4px 4px 12px;
-    display: flex; justify-content: space-between; align-items: center; }
-  .refresh { background: none; border: none; color: var(--accent); font-size: 13px; font-weight: 700;
-    cursor: pointer; padding: 4px 8px; }
-  #rideList { display: grid; grid-template-columns: 1fr; gap: 10px; align-items: start; }
-  #rideList .empty { grid-column: 1 / -1; }
-  @media (min-width: 768px) { #rideList { grid-template-columns: repeat(2, 1fr); } }
-  .ride {
-    background: var(--card); border-radius: 13px; box-shadow: var(--shadow);
-    padding: 13px 15px; margin-bottom: 0; border: 1.5px solid transparent; min-width: 0;
-  }
-  .ride.full { opacity: .72; }
-  .ride-top { display: flex; justify-content: space-between; align-items: center; gap: 12px; }
-  .driver { font-size: 15px; font-weight: 800; color: var(--coffee); display: flex; align-items: center; gap: 6px; min-width: 0; word-break: keep-all; }
-  .driver .ico { width: 25px; height: 25px; border-radius: 50%; background: var(--accent-soft);
-    display: inline-flex; align-items: center; justify-content: center; font-size: 14px; }
-  .seats-badge {
-    flex-shrink: 0; padding: 4px 10px; border-radius: 20px; font-size: 12px; font-weight: 800;
-    background: var(--green-soft); color: var(--green); white-space: nowrap;
-  }
-  .seats-badge.full { background: #f4e0dc; color: var(--red); }
-  .seats-badge.done { background: #ece5db; color: var(--muted); }
-  .ride-meta { margin: 8px 0 0; display: grid; gap: 3px; }
-  .meta-line { font-size: 13px; color: var(--text); line-height: 1.5; word-break: keep-all; overflow-wrap: anywhere; }
-  .meta-line .sep { color: var(--muted); margin: 0 2px; }
-  .meta-line .dest-part { white-space: nowrap; }
-  .meta-place {
-    display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical;
-    overflow: hidden; min-height: 2.9em;
-  }
+  /* 경기 일정 (MATCH DAY) */
+  .sec-h{font-family:var(--disp); font-weight:400; font-size:clamp(40px,13vw,66px); line-height:.9; letter-spacing:1px; color:#f3eed9; text-transform:uppercase; margin:6px 0 16px;}
+  .fixtures{background:#ece6d2; border-radius:16px; overflow:hidden; border:1px solid var(--line);}
+  .fx{display:grid; grid-template-columns:92px 1fr auto; align-items:center; gap:12px; padding:15px 18px; color:#15281b;}
+  .fx:nth-child(even){background:#1e3526; color:#ece6d2;}
+  .fx .wk{font-family:var(--disp); font-size:21px; letter-spacing:1px;}
+  .fx .loc{font-weight:900; font-size:15px;}
+  .fx .when{text-align:right; font-family:var(--disp); letter-spacing:.5px; line-height:1.12;}
+  .fx .when .d{font-size:19px;}
+  .fx .when .wd{font-size:11px; opacity:.6; margin-left:6px; letter-spacing:1px;}
+  .fx .when .t{font-size:12px; opacity:.75; display:block;}
 
-  .riders { margin: 10px 0 0; padding-top: 10px; border-top: 1px dashed var(--line); }
-  .riders-toggle {
-    width: 100%; display: flex; justify-content: space-between; align-items: center;
-    background: none; border: none; padding: 0; cursor: pointer; font-family: inherit;
-    font-size: 12px; font-weight: 800; color: var(--muted); letter-spacing: .3px;
-  }
-  .riders-toggle .chev { transition: transform .18s; font-size: 13px; }
-  .riders-toggle .chev.open { transform: rotate(180deg); }
-  .riders-body { display: none; margin-top: 9px; }
-  .riders-body.open { display: block; }
-  .rider-chip {
-    display: inline-flex; align-items: center; gap: 6px; background: var(--accent-soft);
-    color: var(--coffee); padding: 4px 10px; border-radius: 20px; font-size: 12px;
-    font-weight: 600; margin: 0 5px 5px 0;
-  }
-  .rider-chip .treat { color: var(--accent); font-weight: 700; }
-  .chip-x {
-    margin-left: 1px; border: none; background: rgba(75,52,36,.12); color: var(--coffee);
-    width: 16px; height: 16px; border-radius: 50%; font-size: 9px; line-height: 1;
-    padding: 0; cursor: pointer; flex-shrink: 0;
-  }
-  .chip-x:hover { background: var(--red); color: #fff; }
-  .chip-x:disabled { opacity: .35; cursor: not-allowed; }
-  .apply-note { font-size: 12px; color: var(--muted); margin: 0 0 10px; line-height: 1.45; }
-  .apply-note b { color: var(--coffee-2); }
-  .empty-riders { font-size: 12px; color: var(--muted); }
-  .ride-actions { margin-top: 11px; display: flex; gap: 8px; align-items: center; }
-  .ride.past { opacity: .72; }
-  .past-hint { font-size: 12px; color: var(--muted); }
+  /* 선수 명단 (SQUAD) */
+  .squad{display:grid; grid-template-columns:repeat(auto-fill,minmax(150px,1fr)); gap:8px;}
+  .pl{display:flex; align-items:center; gap:11px; background:var(--green-2); border:1px solid var(--line); border-radius:12px; padding:11px 14px;}
+  .pl .no{font-family:var(--disp); font-size:23px; color:var(--sand); min-width:34px; text-align:center; line-height:1;}
+  .pl .nm{font-size:14px; font-weight:800; color:var(--cream); white-space:nowrap; overflow:hidden; text-overflow:ellipsis;}
+  .pl.dorm{opacity:.42;}
+  .squad-grouplab{grid-column:1/-1; font-size:11px; font-weight:900; letter-spacing:2px; text-transform:uppercase; color:var(--muted); margin:8px 0 2px;}
 
-  .past-toggle {
-    width: 100%; display: flex; justify-content: space-between; align-items: center;
-    background: none; border: none; cursor: pointer; font-family: inherit;
-    padding: 18px 2px 6px; font-size: 14px; font-weight: 800; color: var(--coffee-2);
-  }
-  .past-toggle .chev { transition: transform .18s; }
-  .past-toggle .chev.open { transform: rotate(180deg); }
-  #pastCount { color: var(--muted); font-weight: 700; font-size: 12px; }
-  .past-list { display: none; }
-  .past-list.open { display: grid; grid-template-columns: 1fr; gap: 10px; }
-  @media (min-width: 768px) { .past-list.open { grid-template-columns: repeat(2, 1fr); } }
+  /* 회원 카페 (CAFES) */
+  .cafes{display:grid; grid-template-columns:1fr 1fr; gap:8px;}
+  @media(max-width:480px){ .cafes{grid-template-columns:1fr;} }
+  .cafe{display:flex; align-items:center; justify-content:space-between; gap:12px; background:var(--green-2); border:1px solid var(--line); border-radius:14px; padding:13px 16px; text-decoration:none; color:inherit;}
+  a.cafe:hover{border-color:var(--sand);}
+  .cafe .info{display:flex; flex-direction:column; gap:2px; min-width:0;}
+  .cafe .nm{font-size:15px; font-weight:800; color:var(--cream);}
+  .cafe .addr{font-size:12px; color:var(--muted);}
+  .cafe .go{flex-shrink:0; font-size:11px; font-weight:800; color:var(--green); background:var(--sand); border-radius:999px; padding:6px 12px; white-space:nowrap;}
+  @media(max-width:420px){ .fx{grid-template-columns:70px 1fr auto; padding:13px 13px; gap:8px;} .fx .wk{font-size:18px;} .fx .loc{font-size:13px;} }
 
-  .apply-panel { margin-top: 14px; padding: 16px; background: #fbf6ee; border-radius: 12px; display: none; }
-  .apply-panel.open { display: block; }
-  .manage-panel { margin-top: 12px; padding: 12px 14px; background: #faf3ec; border-radius: 12px;
-    display: none; align-items: center; justify-content: space-between; gap: 10px; }
-  .manage-panel.open { display: flex; }
-  .manage-label { font-size: 12px; color: var(--muted); }
+  /* 활동 정보 카드 */
+  .info{display:grid; gap:10px;}
+  .info-row{display:flex; gap:13px; align-items:flex-start; background:var(--green-2); border:1px solid var(--line); border-radius:14px; padding:15px 16px;}
+  .info-row .k{font-size:13px; font-weight:800; color:var(--sand); min-width:78px; flex-shrink:0;}
+  .info-row .v{font-size:14px; color:var(--cream);}
 
-  .admin-bar { text-align: center; margin-top: 28px; }
-  .admin-link {
-    background: none; border: none; color: var(--muted); font-size: 12px;
-    cursor: pointer; padding: 6px 10px; border-radius: 8px; font-family: inherit;
-  }
-  .admin-link:hover { color: var(--coffee-2); }
-  .admin-link.on { color: var(--red); font-weight: 700; }
-  .treat-chips { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 6px; }
-  .treat-opt {
-    padding: 8px 13px; border: 1.5px solid var(--line); border-radius: 20px; background: #fff;
-    font-size: 13px; cursor: pointer; font-weight: 600; color: var(--coffee-2); transition: all .12s;
-  }
-  .treat-opt.selected { background: var(--accent); border-color: var(--accent); color: #fff; }
+  /* 갤러리 — 원본 비율 유지(메이슨리) */
+  .gallery{column-count:2; column-gap:10px;}
+  .gallery img{width:100%; height:auto; border-radius:14px; border:1px solid var(--line); display:block; margin:0 0 10px; break-inside:avoid;}
+  @media(max-width:480px){ .gallery{column-count:1;} }
 
-  .empty { text-align: center; padding: 48px 20px; color: var(--muted); }
-  .empty .big { font-size: 40px; margin-bottom: 10px; }
+  /* 가입 */
+  .join{background:var(--sand); color:var(--green); border-radius:18px; padding:30px 22px; text-align:center;}
+  .join h2{color:var(--green);}
+  .join p{color:#2d3a2c; opacity:1;}
+  .btn{display:inline-block; margin-top:14px; padding:13px 26px; border-radius:12px; background:var(--green); color:var(--sand); font-weight:800; text-decoration:none; font-size:15px;}
+  .btn.ghost{background:transparent; color:var(--green); border:1.5px solid var(--green); margin-left:8px;}
 
-  .toast {
-    position: fixed; left: 50%; bottom: 28px; transform: translateX(-50%) translateY(20px);
-    background: var(--coffee); color: #fff; padding: 13px 22px; border-radius: 30px;
-    font-size: 14px; font-weight: 600; box-shadow: 0 6px 20px rgba(0,0,0,.2);
-    opacity: 0; pointer-events: none; transition: all .25s; z-index: 100;
-  }
-  .toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+  footer{text-align:center; padding:34px 18px 44px; border-top:1px solid var(--line);}
+  footer img{width:58px; opacity:.85;}
+  footer .c{font-size:11px; color:var(--muted); margin-top:10px;}
 
-  .closed-note {
-    background: var(--accent-soft); color: var(--coffee-2); font-size: 12px;
-    padding: 9px 14px; border-radius: 10px; text-align: center; margin-bottom: 12px;
-  }
-  .demo-note {
-    background: #fbecdf; color: #9c5a1f; font-size: 12px;
-    padding: 9px 14px; border-radius: 10px; text-align: center; margin-bottom: 18px;
-  }
-  .hidden { display: none !important; }
-
-  /* Password gate */
-  .gate {
-    position: fixed; inset: 0; background: var(--bg); z-index: 200;
-    display: flex; align-items: center; justify-content: center; padding: 24px;
-  }
-  .gate-box {
-    background: var(--card); border-radius: var(--radius); box-shadow: var(--shadow);
-    padding: 32px 26px; width: 100%; max-width: 360px; text-align: center;
-  }
-  .gate-box .cup { font-size: 44px; }
-  .gate-box h1 { font-size: 20px; color: var(--coffee); margin: 10px 0 4px; }
-  .gate-box p { color: var(--muted); font-size: 13px; margin: 0 0 20px; }
-  .gate-box input { text-align: center; font-size: 16px; letter-spacing: 1px; padding-right: 44px; }
-  .pw-wrap { position: relative; }
-  .pw-toggle {
-    position: absolute; right: 6px; top: 50%; transform: translateY(-50%);
-    background: none; border: none; cursor: pointer; font-size: 18px;
-    padding: 6px 8px; opacity: .55; line-height: 1;
-  }
-  .pw-toggle:hover { opacity: 1; }
-  .pw-toggle.on { opacity: 1; }
-  .gate-err { color: var(--red); font-size: 13px; font-weight: 600; margin: 10px 0 0; min-height: 18px; }
-
-  /* ===== POTM 이달의 선수 투표 ===== */
-  .potm-hero {
-    background: linear-gradient(135deg, #4b3424, #6f4e37);
-    color: #fff; border-radius: var(--radius); padding: 22px 20px; text-align: center; margin-bottom: 16px;
-    box-shadow: var(--shadow);
-  }
-  .potm-hero .trophy { font-size: 38px; line-height: 1; }
-  .potm-hero h2 { margin: 8px 0 2px; font-size: 20px; color: #fff; }
-  .potm-hero .month { font-size: 13px; color: var(--accent-soft); font-weight: 700; }
-  .potm-hero .turnout { margin-top: 12px; font-size: 12px; color: #f3e3c8; }
-  .potm-hero .turnout b { color: #fff; font-size: 14px; }
-
-  .voter-bar {
-    display: flex; align-items: center; justify-content: space-between; gap: 10px;
-    background: #fbf6ee; border: 1.5px solid var(--line); border-radius: 12px; padding: 11px 14px; margin-bottom: 14px;
-  }
-  .voter-bar .who { font-size: 13px; color: var(--coffee-2); min-width: 0; }
-  .voter-bar .who b { color: var(--coffee); }
-
-  .potm-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 9px; }
-  @media (min-width: 480px) { .potm-grid { grid-template-columns: repeat(3, 1fr); } }
-  .cand {
-    border: 1.5px solid var(--line); background: var(--card); border-radius: 13px;
-    padding: 13px 8px; text-align: center; cursor: pointer; transition: all .12s; user-select: none;
-  }
-  .cand:hover { border-color: var(--accent); }
-  .cand.sel { border-color: var(--accent); background: var(--accent-soft); box-shadow: var(--shadow); }
-  .cand .av {
-    width: 42px; height: 42px; margin: 0 auto 7px; border-radius: 50%; background: var(--accent-soft);
-    display: flex; align-items: center; justify-content: center; font-size: 17px; font-weight: 800; color: var(--coffee);
-  }
-  .cand.sel .av { background: var(--accent); color: #fff; }
-  .cand .nm { font-size: 14px; font-weight: 700; color: var(--coffee); }
-  .cand .tr { font-size: 11px; color: var(--muted); margin-top: 2px; }
-
-  .vote-cta { position: sticky; bottom: 12px; margin-top: 16px; }
-  .potm-note { font-size: 12px; color: var(--muted); text-align: center; margin: 12px 4px 0; line-height: 1.5; }
-
-  /* 결과 */
-  .res-row { display: flex; align-items: center; gap: 10px; margin-bottom: 10px; }
-  .res-rank { width: 24px; text-align: center; font-size: 15px; font-weight: 800; color: var(--muted); flex-shrink: 0; }
-  .res-rank.top { color: var(--accent); }
-  .res-main { flex: 1; min-width: 0; }
-  .res-name { font-size: 14px; font-weight: 700; color: var(--coffee); display: flex; justify-content: space-between; }
-  .res-name .cnt { color: var(--accent); font-weight: 800; }
-  .res-bar { height: 8px; background: #efe6d9; border-radius: 5px; overflow: hidden; margin-top: 4px; }
-  .res-bar > div { height: 100%; background: linear-gradient(90deg, var(--accent), #ad7320); border-radius: 5px; transition: width .4s; }
-  .res-locked { text-align: center; padding: 30px 18px; color: var(--muted); }
-  .res-locked .big { font-size: 34px; margin-bottom: 8px; }
-
-  /* ===== 탭바 가로 스크롤 (탭이 늘어나도 안 깨지게) ===== */
-  .tabs { overflow-x: auto; -webkit-overflow-scrolling: touch; scrollbar-width: none; }
-  .tabs::-webkit-scrollbar { display: none; }
-  .tab { flex: 0 0 auto; white-space: nowrap; padding: 11px 14px; }
-  .tab.ops { color: var(--red); }
-  .tab.ops.active { color: var(--red); }
-
-  /* ===== 공지 / 홈 ===== */
-  .session-card {
-    background: linear-gradient(135deg, #2f7a4f, #245f3e); color: #fff;
-    border-radius: var(--radius); padding: 20px; margin-bottom: 16px; box-shadow: var(--shadow);
-  }
-  .session-card .lbl { font-size: 12px; font-weight: 700; color: #cdeBD8; color: #d6efe0; letter-spacing: .4px; }
-  .session-card .when { font-size: 22px; font-weight: 800; margin: 4px 0 2px; }
-  .session-card .where { font-size: 14px; color: #e6f4ec; }
-  .session-card .att-mini { margin-top: 12px; display: flex; gap: 14px; font-size: 13px; color: #eafbf1; }
-  .session-card .att-mini b { font-size: 16px; color: #fff; }
-  .session-card.none { background: #ece5db; color: var(--muted); }
-  .session-card.none .when { color: var(--coffee-2); }
-
-  .notice {
-    background: var(--card); border-radius: 13px; box-shadow: var(--shadow);
-    padding: 14px 16px; margin-bottom: 10px; border-left: 4px solid var(--line);
-  }
-  .notice.pinned { border-left-color: var(--accent); background: #fffaf1; }
-  .notice .n-top { display: flex; justify-content: space-between; align-items: baseline; gap: 8px; }
-  .notice .n-title { font-size: 15px; font-weight: 800; color: var(--coffee); word-break: keep-all; }
-  .notice .n-date { font-size: 11px; color: var(--muted); flex-shrink: 0; }
-  .notice .n-body { font-size: 14px; color: var(--text); margin-top: 6px; white-space: pre-wrap; word-break: break-word; }
-  .notice .pin-tag { font-size: 10px; background: var(--accent); color: #fff; border-radius: 5px; padding: 1px 5px; margin-right: 5px; vertical-align: middle; }
-  .notice .n-actions { margin-top: 10px; display: flex; gap: 8px; }
-
-  .link-row { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin: 4px 0 8px; }
-  .link-btn {
-    display: flex; flex-direction: column; align-items: center; gap: 4px; text-decoration: none;
-    background: var(--card); border: 1.5px solid var(--line); border-radius: 13px;
-    padding: 16px 10px; color: var(--coffee); font-weight: 800; font-size: 14px; box-shadow: var(--shadow);
-    transition: border .12s;
-  }
-  .link-btn:hover { border-color: var(--accent); }
-  .link-btn .ico { font-size: 24px; }
-  .link-btn .sub { font-size: 11px; color: var(--muted); font-weight: 600; }
-
-  /* ===== 참석 ===== */
-  .att-seg { display: flex; gap: 8px; margin: 4px 0 2px; }
-  .att-seg button {
-    flex: 1; padding: 13px 8px; border: 1.5px solid var(--line); background: #fff; border-radius: 12px;
-    font-size: 15px; font-weight: 800; color: var(--coffee-2); cursor: pointer; font-family: inherit; transition: all .12s;
-  }
-  .att-seg button.yes.on { background: var(--green); border-color: var(--green); color: #fff; }
-  .att-seg button.no.on { background: var(--red); border-color: var(--red); color: #fff; }
-  .att-seg button.maybe.on { background: var(--accent); border-color: var(--accent); color: #fff; }
-  .att-counts { display: flex; gap: 10px; margin: 14px 0 4px; }
-  .att-cnt { flex: 1; text-align: center; background: #fbf6ee; border-radius: 12px; padding: 12px 6px; }
-  .att-cnt .num { font-size: 22px; font-weight: 800; }
-  .att-cnt .cap { font-size: 12px; color: var(--muted); font-weight: 700; }
-  .att-cnt.yes .num { color: var(--green); }
-  .att-cnt.no .num { color: var(--red); }
-  .att-cnt.maybe .num { color: var(--accent); }
-  .att-list { margin-top: 8px; }
-  .att-row { display: flex; align-items: center; gap: 8px; padding: 8px 4px; border-bottom: 1px solid var(--line); font-size: 14px; }
-  .att-row:last-child { border-bottom: none; }
-  .att-row .js { width: 30px; color: var(--muted); font-weight: 700; font-size: 12px; text-align: center; flex-shrink: 0; }
-  .att-row .nm { flex: 1; color: var(--coffee); font-weight: 600; }
-  .att-row .st { font-size: 12px; font-weight: 800; padding: 3px 9px; border-radius: 20px; }
-  .att-row .st.yes { background: var(--green-soft); color: var(--green); }
-  .att-row .st.no { background: #f4e0dc; color: var(--red); }
-  .att-row .st.maybe { background: var(--accent-soft); color: #9c5a1f; }
-  .att-row .st.none { background: #efe6d9; color: var(--muted); }
-
-  /* ===== 회비 ===== */
-  .dues-summary { display: flex; gap: 10px; margin-bottom: 14px; }
-  .dues-stat { flex: 1; text-align: center; background: #fbf6ee; border: 1.5px solid var(--line); border-radius: 12px; padding: 13px 6px; }
-  .dues-stat .num { font-size: 20px; font-weight: 800; color: var(--coffee); }
-  .dues-stat .cap { font-size: 11px; color: var(--muted); font-weight: 700; margin-top: 2px; }
-  .dues-stat.paid .num { color: var(--green); }
-  .dues-stat.unpaid .num { color: var(--red); }
-  .dues-progress { height: 9px; background: #efe6d9; border-radius: 6px; overflow: hidden; margin-bottom: 16px; }
-  .dues-progress > div { height: 100%; background: linear-gradient(90deg, var(--green), #245f3e); transition: width .4s; }
-  .dues-row { display: flex; align-items: center; gap: 8px; padding: 9px 4px; border-bottom: 1px solid var(--line); }
-  .dues-row:last-child { border-bottom: none; }
-  .dues-row.me { background: #fffaf1; border-radius: 8px; }
-  .dues-row .nm { flex: 1; font-size: 14px; font-weight: 600; color: var(--coffee); }
-  .dues-row .amt { font-size: 12px; color: var(--muted); }
-  .dues-badge { font-size: 12px; font-weight: 800; padding: 4px 11px; border-radius: 20px; border: none; cursor: default; font-family: inherit; }
-  .dues-badge.paid { background: var(--green-soft); color: var(--green); }
-  .dues-badge.unpaid { background: #f4e0dc; color: var(--red); }
-  .dues-badge.toggle { cursor: pointer; }
-  .dues-badge.toggle:hover { filter: brightness(.96); }
-
-  /* ===== 운영진 ===== */
-  .ops-note { background: #f4e0dc; color: #8a2f22; font-size: 12px; padding: 9px 14px; border-radius: 10px; text-align: center; margin-bottom: 14px; font-weight: 600; }
-  .ops-sec { margin-bottom: 10px; }
-  .ops-sec > summary {
-    cursor: pointer; list-style: none; padding: 14px 16px; background: var(--card); border-radius: 13px;
-    box-shadow: var(--shadow); font-size: 15px; font-weight: 800; color: var(--coffee);
-    display: flex; justify-content: space-between; align-items: center;
-  }
-  .ops-sec > summary::-webkit-details-marker { display: none; }
-  .ops-sec[open] > summary { border-radius: 13px 13px 0 0; }
-  .ops-sec .ops-body { background: var(--card); border-radius: 0 0 13px 13px; box-shadow: var(--shadow); padding: 4px 16px 16px; margin-top: -2px; }
-  .ops-sec .cnt-tag { font-size: 12px; color: var(--muted); font-weight: 700; }
-
-  /* =====================================================================
-     딥 그린 테마 — 배경 #15281B(올리브그린), 글씨/포인트 크림·샌드(#DDD6B6)
-     밝은 샌드 블록을 포커스로 / 상태는 채움(샌드) vs 외곽선
-     ===================================================================== */
-  body {
-    background:
-      linear-gradient(rgba(12,24,16,0.74), rgba(12,24,16,0.86)),
-      url("scf_bg.png") center center / cover fixed no-repeat;
-    background-color: #15281b;
-    color: #ece6d2;
-  }
-  .wrap { max-width: 600px; }
-  header { padding: 28px 16px 6px; }
-  .brand-logo { width: 132px; }
-
-  /* 하단 로고 */
-  .site-footer { text-align: center; padding: 34px 0 14px; }
-  .footer-logo { width: 70px; height: auto; opacity: .9; }
-
-  /* 폰트는 전부 Pretendard (타이틀은 squad 규칙의 굵은 weight 사용) */
-  .logo { letter-spacing: -0.6px; font-weight: 900; color: #ece6d2; }
-  .tagline { letter-spacing: .2px; color: #95a083; }
-
-  /* 입력 — 밝은 크림 위 그린 텍스트 */
-  input, select, textarea { background: #ece6d2; color: #14281b; border: 1.5px solid #c4b894; }
-  input::placeholder, textarea::placeholder { color: #8a8468; }
-  label { color: #d6cfb4; }
-  .hint, .empty, .empty-riders, .apply-note, .past-hint { color: #95a083; }
-
-  /* 탭 */
-  .tabs { background: #102016; border-radius: 12px; gap: 4px;
-    position: sticky; top: 8px; z-index: 50; box-shadow: 0 8px 20px rgba(0,0,0,.32); }
-  .tabs::before { content: ''; position: absolute; left: -16px; right: -16px; top: -12px; bottom: -10px;
-    background: #15281b; z-index: -1; }
-  .tab { font-weight: 800; letter-spacing: -0.2px; color: #8c9a7c; border-radius: 9px; }
-  .tab.active { background: #ddd6b6; color: #14281b; box-shadow: none; }
-  .tab.ops { color: #6f8068; }
-  .tab.ops.active { background: #ddd6b6; color: #14281b; }
-
-  /* 카드 — 떠 있는 그린 패널 */
-  .card { background: var(--card); border: 1px solid var(--line); box-shadow: none; border-radius: var(--radius); }
-  .card h2 { color: #f1ecd8; font-weight: 800; letter-spacing: -0.3px; }
-  .card .sub { color: #95a083; }
-
-  /* 섹션 제목 — 상단 샌드 룰 */
-  .section-title { font-family: inherit; color: #ece6d2; font-weight: 900;
-    letter-spacing: -0.3px; border-top: 2.5px solid #ddd6b6; padding-top: 12px;
-    text-transform: uppercase; font-size: 15px; }
-  .refresh { color: #ddd6b6; font-weight: 800; }
-
-  /* 버튼 — 샌드 채움 + 그린 텍스트 */
-  .btn { background: #ddd6b6; color: #14281b; border-radius: 10px; letter-spacing: -0.2px; }
-  .btn:hover { background: #cfc7a2; }
-  .btn.accent { background: #ddd6b6; color: #14281b; }
-  .btn.accent:hover { background: #cfc7a2; }
-  .btn.ghost { color: #ece6d2; border: 1px solid #4a6450; background: transparent; }
-  .btn:disabled { background: #4a6450; color: #97a085; }
-
-  /* 히어로(다음 세션 / MVP / 회비) = 밝은 샌드 포커스 블록 */
-  .potm-hero, .session-card { background: #ddd6b6 !important; color: #14281b; box-shadow: none; border-radius: var(--radius); }
-  .potm-hero h2, .session-card .when { color: #14281b; }
-  .session-card .lbl { color: #5e6e4d; text-transform: uppercase; letter-spacing: 1px; }
-  .session-card .when { letter-spacing: -0.5px; }
-  .session-card .where, .session-card .att-mini { color: #3a4a32; }
-  .session-card .att-mini a { color: #14281b !important; }
-  .session-card .att-mini b, .potm-hero .turnout b { color: #14281b; }
-  .potm-hero .month { color: #5e6e4d; }
-  .potm-hero .turnout { color: #3a4a32; }
-  .session-card.none { background: #1e3526 !important; color: #ece6d2; }
-  .session-card.none .when { color: #ece6d2; }
-  .potm-hero .trophy { display: none; }
-
-  /* 막대 그래프 */
-  .res-bar, .dues-progress { background: #2a3d30; }
-  .res-bar > div, .dues-progress > div { background: #ddd6b6; }
-  .res-rank, .res-name, .res-name .cnt { color: #ece6d2; }
-  .res-rank.top { color: #ddd6b6; }
-
-  /* 상태 배지 — 채움(긍정=샌드) / 외곽선(부정) / 짙은패널(중립) */
-  .seats-badge { background: #ddd6b6; color: #14281b; }
-  .seats-badge.full { background: transparent; color: #97a085; border: 1px solid #4a6450; }
-  .seats-badge.done { background: #2a3d30; color: #97a085; }
-
-  .att-seg button { border-radius: 10px; background: #1e3526; border-color: #3a523f; color: #ece6d2; }
-  .att-seg button.yes.on { background: #ddd6b6; border-color: #ddd6b6; color: #14281b; }
-  .att-seg button.no.on { background: transparent; border-color: #ddd6b6; color: #ece6d2; }
-  .att-seg button.maybe.on { background: #8c9a72; border-color: #8c9a72; color: #14281b; }
-  .att-cnt { background: #1e3526; }
-  .att-cnt .cap { color: #95a083; }
-  .att-cnt.yes .num, .att-cnt.no .num, .att-cnt.maybe .num { color: #ece6d2; }
-  .att-row { border-color: #2a3d30; }
-  .att-row .nm { color: #ece6d2; }
-  .att-row .js { color: #8c9a7c; }
-  .att-row .st.yes { background: #ddd6b6; color: #14281b; }
-  .att-row .st.no { background: transparent; color: #97a085; border: 1px solid #4a6450; }
-  .att-row .st.maybe { background: #3a4a32; color: #d6cfb4; }
-  .att-row .st.none { background: #2a3d30; color: #7a8a6c; }
-
-  /* 회비 */
-  .dues-stat { background: #1e3526; }
-  .dues-stat .num, .dues-stat.paid .num, .dues-stat.unpaid .num { color: #ece6d2; }
-  .dues-stat .cap { color: #95a083; }
-  .dues-row { border-color: #2a3d30; }
-  .dues-row .nm { color: #ece6d2; }
-  .dues-row .amt { color: #95a083; }
-  .dues-badge.paid { background: #ddd6b6; color: #14281b; }
-  .dues-badge.unpaid { background: transparent; color: #97a085; border: 1px solid #4a6450; }
-  .dues-row.me { background: #24402e; }
-
-  /* 공지 */
-  .notice { background: #1e3526; border-left-color: #3a523f; }
-  .notice .n-title { color: #f1ecd8; }
-  .notice .n-body { color: #d6cfb4; }
-  .notice .n-date { color: #8c9a7c; }
-  .notice.pinned { background: #24402e; border-left-color: #ddd6b6; }
-  .notice .pin-tag { background: #ddd6b6; color: #14281b; }
-
-  /* 바로가기 / 칩 / 폼 패널 / 기타 */
-  .link-btn { background: #1e3526; color: #ece6d2; }
-  .link-btn .sub { color: #95a083; }
-  .link-btn:hover { border-color: #ddd6b6; }
-  .ops-note { background: #24402e; color: #ece6d2; }
-  .apply-panel { background: #18301f; }
-  .manage-panel { background: #18301f; }
-  .manage-label { color: #95a083; }
-  .gate {
-    background:
-      linear-gradient(rgba(12,24,16,0.78), rgba(12,24,16,0.9)),
-      url("scf_bg.png") center center / cover fixed no-repeat;
-    background-color: #15281b;
-  }
-  .gate-box { background: #1e3526; border: 1px solid #33492f; box-shadow: none; }
-  .gate-box h1 { color: #f1ecd8; }
-  .gate-box p { color: #95a083; }
-  .pw-toggle { display: none; }
-  .gate-box input { padding-right: 13px; }
-  .demo-note { background: #24402e; color: #d6cfb4; }
-  .closed-note { background: #24402e; color: #b9c2a4; }
-  .admin-link { color: #8c9a7c; }
-  .admin-link.on { color: #ddd6b6; }
-  .admin-bar { display: flex; gap: 8px; justify-content: center; align-items: center; flex-wrap: wrap; }
-  .me-label { font-size: 12px; color: #95a083; font-weight: 700; }
-  .driver, .meta-line, .riders-toggle, .past-toggle { color: #ece6d2; }
-  .cand { background: #1e3526; border-color: #33492f; }
-  .cand .nm { color: #ece6d2; }
-  .cand .tr { color: #95a083; }
-  .cand:hover { border-color: #ddd6b6; }
-  .cand.sel { background: #ddd6b6; border-color: #ddd6b6; box-shadow: none; }
-  .cand.sel .nm { color: #14281b; }
-  .cand.sel .tr { color: #3a4a32; }
-  .cand .av { background: #2a3d30; color: #ece6d2; }
-  .cand.sel .av { background: #14281b; color: #ddd6b6; }
-  input:focus, select:focus, textarea:focus { border-color: #14281b; }
-  .rider-chip { background: #2a3d30; color: #ece6d2; }
-  .rider-chip .treat { color: #ddd6b6; }
-  .treat-opt { background: #1e3526; color: #d6cfb4; border-color: #3a523f; }
-  .treat-opt.selected { background: #ddd6b6; border-color: #ddd6b6; color: #14281b; }
-  .voter-bar { background: #1e3526; border-color: #33492f; }
-  .voter-bar .who, .voter-bar .who b { color: #ece6d2; }
-  .toast { background: #ddd6b6; color: #14281b; border-radius: 8px; }
-
-  /* 세션 캐러셀(좌우 슬라이드) + 도트/카운터 */
-  .sess-carousel { display: flex; gap: 10px; overflow-x: auto; scroll-snap-type: x mandatory;
-    -webkit-overflow-scrolling: touch; scrollbar-width: none; margin-bottom: 10px; }
-  .sess-carousel::-webkit-scrollbar { display: none; }
-  .sess-carousel .session-card { flex: 0 0 100%; scroll-snap-align: center; margin-bottom: 0; }
-  .sess-dots { display: flex; align-items: center; justify-content: center; gap: 10px; margin-bottom: 16px; }
-  .sess-dots #sessDots { display: inline-flex; gap: 6px; align-items: center; }
-  .sess-count { font-size: 12px; font-weight: 800; color: #b9c2a4; }
-  .sdot { width: 7px; height: 7px; border-radius: 50%; background: #4a6450; transition: all .2s; }
-  .sdot.on { background: #ddd6b6; width: 20px; border-radius: 4px; }
-
-  /* 운영진 내부 서브탭 */
-  .ops-subtabs { display: flex; gap: 6px; margin-bottom: 12px; overflow-x: auto; scrollbar-width: none; }
-  .ops-subtabs::-webkit-scrollbar { display: none; }
-  .ops-subtab { flex: 1 0 auto; padding: 9px 14px; border-radius: 9px; border: 1px solid var(--line);
-    background: #1e3526; color: #ece6d2; font-weight: 800; font-size: 13px; cursor: pointer; font-family: inherit; white-space: nowrap; }
-  .ops-subtab.on { background: #ddd6b6; color: #14281b; border-color: #ddd6b6; }
-
-  /* 모바일 운영진 화면 최적화 */
-  @media (max-width: 460px){
-    #opsContent .row { flex-direction: column; gap: 0; }
-    .ops-subtabs { gap: 5px; }
-    .ops-subtab { padding: 8px 10px; font-size: 12px; }
-    #opsContent .dues-row { gap: 6px; }
-    #opsContent .dues-row .nm { flex: 1 1 100%; }
-    #opsContent .dues-row .btn.sm { padding: 6px 11px; font-size: 12px; }
-    #opsContent .dues-badge { font-size: 11px; padding: 3px 9px; }
-    .vote-cat { font-size: 13px; padding: 10px 6px; }
-    .rk-tab { padding: 8px 11px; font-size: 12px; }
-  }
-
-  /* 참석 팀별 그룹 헤더 */
-  .att-grp-h { display: flex; justify-content: space-between; align-items: center;
-    font-weight: 900; color: #ece6d2; font-size: 13px; letter-spacing: 1px; text-transform: uppercase;
-    margin: 14px 0 4px; padding-top: 9px; border-top: 1px solid var(--line); }
-  .att-grp-h:first-child { border-top: none; padding-top: 0; margin-top: 0; }
-  .att-grp-h span { font-size: 12px; font-weight: 700; color: #95a083; letter-spacing: 0; text-transform: none; }
-
-  /* 랭킹 */
-  .rk-tabs { display: flex; gap: 6px; margin-bottom: 12px; overflow-x: auto; scrollbar-width: none; }
-  .rk-tabs::-webkit-scrollbar { display: none; }
-  .rk-tab { flex: 1 0 auto; padding: 9px 13px; border-radius: 9px; border: 1px solid var(--line);
-    background: #1e3526; color: #ece6d2; font-weight: 800; font-size: 13px; cursor: pointer; font-family: inherit; white-space: nowrap; }
-  .rk-tab.on { background: #ddd6b6; color: #14281b; border-color: #ddd6b6; }
-  .rk-years { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 12px; }
-  .rk-year { padding: 5px 11px; border-radius: 20px; border: 1px solid var(--line); background: transparent;
-    color: #95a083; font-size: 12px; font-weight: 700; cursor: pointer; font-family: inherit; }
-  .rk-year.on { background: #ddd6b6; color: #14281b; border-color: #ddd6b6; }
-  .rk-note { font-size: 12px; color: #95a083; margin-bottom: 12px; }
-  .rk-podium { display: grid; gap: 8px; margin-bottom: 16px; }
-  .rk-card { background: #1e3526; border: 1px solid var(--line); border-top: 3px solid #ddd6b6; border-radius: 13px; padding: 13px 10px; text-align: center; }
-  .rk-card .rkrank { font-size: 18px; font-weight: 900; }
-  .rk-card .rknm { font-size: 13px; font-weight: 800; color: #ece6d2; margin: 3px 0; }
-  .rk-card .rkval { font-size: 19px; font-weight: 900; color: #ddd6b6; }
-  .rk-card .rksub { font-size: 10px; color: #95a083; margin-top: 2px; }
-  .rk-row { display: flex; align-items: center; gap: 10px; padding: 9px 12px; background: #1e3526;
-    border: 1px solid var(--line); border-radius: 10px; margin-bottom: 6px; }
-  .rk-row .rkr { font-size: 12px; font-weight: 800; color: #95a083; min-width: 30px; text-align: center; }
-  .rk-row .rkn { flex: 1; font-size: 14px; font-weight: 700; color: #ece6d2; min-width: 0; }
-  .rk-row .rkbar { flex: 1.4; height: 6px; background: #2a3d30; border-radius: 4px; overflow: hidden; }
-  .rk-row .rkbar > div { height: 100%; background: #ddd6b6; }
-  .rk-row .rkv { text-align: right; min-width: 56px; }
-  .rk-row .rkv b { font-size: 14px; font-weight: 800; color: #ddd6b6; display: block; }
-  .rk-row .rkv span { font-size: 10px; color: #95a083; }
-
-  /* 투표 부문 탭 */
-  .vote-cats { display: flex; gap: 8px; margin-bottom: 14px; }
-  .vote-cat { flex: 1; padding: 11px 8px; border-radius: 10px; border: 1px solid var(--line);
-    background: #1e3526; color: #ece6d2; font-weight: 800; font-size: 14px; cursor: pointer; font-family: inherit; }
-  .vote-cat.on { background: #ddd6b6; color: #14281b; border-color: #ddd6b6; }
-
-  /* 세션 선택 칩 / 운영 행 */
-  .sess-tabs { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 12px; }
-  .sess-chip { padding: 8px 13px; border-radius: 20px; border: 1px solid var(--line); background: #1e3526; color: #ece6d2; font-weight: 700; font-size: 13px; cursor: pointer; font-family: inherit; }
-  .sess-chip.on { background: #ddd6b6; color: #14281b; border-color: #ddd6b6; }
-  .ops-row { display: flex; justify-content: space-between; align-items: center; gap: 10px; padding: 11px 0; border-top: 1px solid var(--line); font-size: 14px; }
-  .ops-row:first-child { border-top: none; }
-
-  /* 팀 현황 — WHITE | BLACK 2칼럼 스쿼드 시트 */
-  .squad-wrap { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
-  .sq-two { display: grid; grid-template-columns: 1fr 1fr; gap: 0 14px; }
-  .squad { border-radius: var(--radius); padding: 14px 11px 12px; min-width: 0; }
-  .squad.white { background: #ddd6b6; color: #14281b; }
-  .squad.black { background: #0f1f15; color: #ddd6b6; border: 1px solid #33492f; }
-  .squad .sq-title { font-size: 23px; font-weight: 900; text-align: center; letter-spacing: 2px;
-    text-transform: uppercase; margin: 2px 0 11px; display: flex; justify-content: center; align-items: center; gap: 7px; }
-  .squad .sq-n { font-family: 'Pretendard', sans-serif; font-size: 11px; font-weight: 800; letter-spacing: 0; opacity: .78;
-    padding: 1px 7px; border-radius: 20px; }
-  .squad.white .sq-n { background: rgba(20,40,27,.12); }
-  .squad.black .sq-n { background: rgba(221,214,182,.16); }
-  .sq-row { display: flex; align-items: baseline; gap: 7px; padding: 4px 1px; }
-  .sq-row + .sq-row { border-top: 1px solid rgba(20,40,27,.10); }
-  .squad.black .sq-row + .sq-row { border-top-color: rgba(221,214,182,.14); }
-  .sq-row { padding: 5px 1px; }
-  .sq-row .no { width: 28px; flex-shrink: 0; font-weight: 900; font-size: 17px; font-variant-numeric: tabular-nums; letter-spacing: -0.5px; }
-  .sq-row .kr { flex-shrink: 0; font-weight: 800; font-size: 15px; }
-  .sq-row .en { flex: 1; min-width: 0; text-align: right; font-size: 11.5px; letter-spacing: .2px; opacity: .7; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-  .sq-cap { font-size: 9px; font-weight: 900; border-radius: 3px; padding: 0 4px; margin-left: 4px; vertical-align: middle; }
-  .squad.white .sq-cap { background: #14281b; color: #ddd6b6; }
-  .squad.black .sq-cap { background: #ddd6b6; color: #14281b; }
-
+  /* SUPPORTED BY */
+  .support{text-align:center; padding:34px 18px 6px;}
+  .support .lab{display:block; font-size:11px; font-weight:900; letter-spacing:4px; color:var(--muted); text-transform:uppercase; margin-bottom:14px;}
+  .support img{display:inline-block; width:84px; height:auto; filter:brightness(0) invert(1); opacity:.92;}
 </style>
 </head>
 <body>
-<div class="gate" id="gate">
-  <div class="gate-box">
-    <img class="brand-logo" src="scf_logo.png" alt="싸커피 SCF" style="width:150px;margin-bottom:14px">
-    <p>이름을 고르고 <b>등번호</b>를 입력해 로그인하세요.</p>
-    <div class="field" style="text-align:left;margin-bottom:10px">
-      <select id="gateName"><option value="">— 이름 선택 —</option></select>
-    </div>
-    <input id="gateJersey" type="number" inputmode="numeric" placeholder="내 등번호" autocomplete="off"
-           onkeydown="if(event.key==='Enter')gateLogin()">
-    <div class="gate-err" id="gate-err"></div>
-    <button class="btn" onclick="gateLogin()" style="margin-top:10px">로그인</button>
+
+<div class="hero">
+  <img src="img/scf_logo_preview.png" alt="싸커피 SCF">
+  <div class="kicker">EST. 2024 · SEOUL</div>
+  <div class="bigname">SOCCOFFEE</div>
+  <div class="name2">싸커피 · FUTSAL CLUB</div>
+  <div class="tag">성별 상관없이, 축구와 커피를 좋아하는 사람들</div>
+  <div class="cta">
+    <a class="btn-member" href="member.html">멤버 로그인 →</a>
+    <a class="btn-insta" href="https://instagram.com/soccoffee__" target="_blank" rel="noopener"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="2" width="20" height="20" rx="5.5"/><circle cx="12" cy="12" r="4.2"/><circle cx="17.4" cy="6.6" r="1.1" fill="currentColor" stroke="none"/></svg>@soccoffee__</a>
   </div>
 </div>
+
+<div class="matchbar">
+  <span><span class="lab">Matchday</span>매주 수요일 21:00</span>
+  <span><span class="lab">Ground</span>상암 풋살장</span>
+  <span><span class="lab">Squad</span>WHITE vs BLACK</span>
+</div>
+
+<nav class="anchnav">
+  <a href="#match">일정</a>
+  <a href="#kits">키트</a>
+  <a href="#roster">선수</a>
+  <a href="#cafes">카페</a>
+  <a href="#moments">갤러리</a>
+</nav>
 
 <div class="wrap">
-  <header>
-    <img class="brand-logo" src="scf_logo.png" alt="싸커피 SCF">
-  </header>
 
-  <div class="demo-note hidden" id="demoNote">데모 모드 — 데이터가 이 브라우저에만 저장돼요. (Supabase 키를 넣으면 실제 공유됩니다)</div>
+  <section id="match">
+    <div class="eyebrow" id="matchMonth">경기 일정</div>
+    <div class="sec-h">MATCH DAY</div>
+    <div class="fixtures" id="fixtures"><p class="muted" style="font-size:13px">불러오는 중…</p></div>
+    <p class="muted" style="font-size:12px;margin-top:10px">예약 상황에 따라 변동될 수 있어요.</p>
+  </section>
 
-  <div class="tabs">
-    <button class="tab active" data-tab="home" onclick="switchTab('home')">공지</button>
-    <button class="tab" data-tab="att" onclick="switchTab('att')">참석</button>
-    <button class="tab" data-tab="dues" onclick="switchTab('dues')">회비</button>
-    <button class="tab" data-tab="list" onclick="switchTab('list')">카풀</button>
-    <button class="tab" data-tab="potm" onclick="switchTab('potm')">투표</button>
-    <button class="tab" data-tab="rank" onclick="switchTab('rank')">랭킹</button>
-    <button class="tab ops hidden" id="opsTab" data-tab="ops" onclick="switchTab('ops')">운영진</button>
-  </div>
+  <div class="halfline"><span></span></div>
 
-  <div id="tab-home" class="hidden"><div id="homeContent"></div></div>
-  <div id="tab-att" class="hidden"><div id="attContent"></div></div>
-  <div id="tab-dues" class="hidden"><div id="duesContent"></div></div>
-  <div id="tab-ops" class="hidden"><div id="opsContent"></div></div>
-  <div id="tab-rank" class="hidden"><div id="rankContent"></div></div>
-
-  <div id="tab-list" class="hidden">
-    <button class="btn" id="createToggle" onclick="toggleCreate()" style="margin-bottom:14px">+ 카풀 등록하기</button>
-    <div id="createPanel" class="hidden">
-      <div class="card">
-        <h2>차주 카풀 등록</h2>
-        <p class="sub">출발 정보와 태울 수 있는 인원을 입력해 주세요.</p>
-        <div class="field">
-          <label>이름 / 닉네임</label>
-          <input id="f-driver" placeholder="예: 승한" maxlength="20">
-        </div>
-        <div class="field">
-          <label>출발 장소</label>
-          <input id="f-place" placeholder="예: 강남역 2번 출구" maxlength="40">
-        </div>
-        <div class="row">
-          <div class="field">
-            <label>출발 날짜</label>
-            <input id="f-date" type="date">
-          </div>
-          <div class="field">
-            <label>출발 시간</label>
-            <input id="f-time" type="time">
-          </div>
-        </div>
-        <div class="field">
-          <label>가능 인원 (탑승 가능 좌석)</label>
-          <select id="f-seats">
-            <option value="1">1명</option><option value="2">2명</option>
-            <option value="3" selected>3명</option><option value="4">4명</option>
-            <option value="5">5명</option><option value="6">6명</option>
-          </select>
-        </div>
-        <div class="field">
-          <label>도착지</label>
-          <select id="f-dest-sel" onchange="onDestChange()">
-            <option value="상암 풋살장" selected>상암 풋살장</option>
-            <option value="__custom__">직접 입력</option>
-          </select>
-          <input id="f-dest" class="hidden" placeholder="도착지를 입력하세요" maxlength="50" style="margin-top:8px">
-        </div>
-        <button class="btn" id="createBtn" onclick="createRide()">카풀 등록하기</button>
-        <button class="btn ghost" onclick="toggleCreate(true)" style="margin-top:8px">닫기</button>
-      </div>
+  <section id="kits">
+    <div class="eyebrow">두 팀, 한 클럽</div>
+    <div class="sec-h">OUR KITS</div>
+    <div class="kits">
+      <div class="kit white"><div class="num">01</div><div class="nm">White</div></div>
+      <div class="kit black"><div class="num">02</div><div class="nm">Black</div></div>
     </div>
+    <p class="muted" style="font-size:13px;margin-top:12px">매달 WHITE · BLACK 두 팀으로 나눠 리그처럼 맞붙어요.</p>
+  </section>
 
-    <div class="section-title">모집 중인 카풀 <button class="refresh" onclick="render()">새로고침</button></div>
-    <div id="rideList"></div>
+  <div class="halfline"><span></span></div>
 
-    <div id="pastSection" class="hidden">
-      <button class="past-toggle" onclick="togglePast()">
-        <span>지난 카풀 <span id="pastCount"></span></span>
-        <span class="chev" id="pastChev">▾</span>
-      </button>
-      <div id="pastList" class="past-list"></div>
+  <section id="roster">
+    <div class="eyebrow" id="squadLabel">선수 명단</div>
+    <div class="sec-h">SQUAD</div>
+    <div class="squad" id="squad"><p class="muted" style="font-size:13px">불러오는 중…</p></div>
+  </section>
+
+  <div class="halfline"><span></span></div>
+
+  <section id="cafes">
+    <div class="eyebrow">멤버들의 카페 &amp; 바</div>
+    <div class="sec-h">CAFES</div>
+    <div class="cafes">
+      <a class="cafe" href="https://naver.me/FRLN7StS" target="_blank" rel="noopener"><span class="info"><span class="nm">도덕과 규범</span><span class="addr">서울 마포구 독막로19길 32 1층</span></span></a>
+      <a class="cafe" href="https://naver.me/5pwsUpxO" target="_blank" rel="noopener"><span class="info"><span class="nm">로잉 커피</span><span class="addr">서울 마포구 동교로 34 2층 전부</span></span></a>
+      <a class="cafe" href="https://naver.me/59U03tAw" target="_blank" rel="noopener"><span class="info"><span class="nm">로잉 커피바</span><span class="addr">서울 마포구 망원로4길 23 1층</span></span></a>
+      <a class="cafe" href="https://naver.me/GDQaQcRd" target="_blank" rel="noopener"><span class="info"><span class="nm">토니 카페</span><span class="addr">서울 용산구 백범로79길 26 1층 102호</span></span></a>
+      <a class="cafe" href="https://naver.me/5EUZwRQr" target="_blank" rel="noopener"><span class="info"><span class="nm">카쩨</span><span class="addr">서울 서대문구 이화여대2길 26 1층 102, 103호</span></span></a>
+      <a class="cafe" href="https://naver.me/x2jDHprB" target="_blank" rel="noopener"><span class="info"><span class="nm">뱅가드 레코드바</span><span class="addr">서울 마포구 만리재로 19 1층 3호</span></span></a>
     </div>
-  </div>
+  </section>
 
-  <div id="tab-potm" class="hidden">
-    <div id="potmContent"></div>
-  </div>
+  <div class="halfline"><span></span></div>
 
-  <div class="admin-bar">
-    <span class="me-label" id="meLabel"></span>
-    <button class="admin-link" onclick="logout()">로그아웃</button>
-  </div>
+  <section id="moments">
+    <div class="eyebrow">함께한 순간들</div>
+    <div class="sec-h">MOMENTS</div>
+    <div class="gallery">
+      <img src="img/gal-ssau-1.jpg" alt="싸커피 활동 1" loading="lazy">
+      <img src="img/gal-ssau-2.jpg" alt="싸커피 활동 2" loading="lazy">
+      <img src="img/gal-ssau-3.jpg" alt="싸커피 활동 3" loading="lazy">
+      <img src="img/gal-ssau-4.jpg" alt="싸커피 활동 4" loading="lazy">
+      <img src="img/gal-ssau-5.jpg" alt="싸커피 활동 5" loading="lazy">
+      <img src="img/gal-ssau-6.jpg" alt="싸커피 활동 6" loading="lazy">
+      <img src="img/gal-ssau-7.jpg" alt="싸커피 활동 7" loading="lazy">
+    </div>
+  </section>
+
+
 </div>
 
-<div class="toast" id="toast"></div>
+<div class="support">
+  <span class="lab">Supported by</span>
+  <img src="Oatly_logo.svg" alt="Oatly">
+</div>
+
+<footer>
+  <img src="scf_logo.png" alt="싸커피 SCF">
+  <div class="c"><a href="https://instagram.com/soccoffee__" target="_blank" rel="noopener" style="color:var(--sand);text-decoration:none">@soccoffee__</a> · SOCCOFFEE FC · EST. 2024 · JUST KICK IT</div>
+</footer>
 
 <script>
-/* ============================================================
-    설정 — 여기에 Supabase 정보를 넣으세요 (안내서 참고)
-   비워두면 데모 모드(localStorage)로 작동합니다.
-   ============================================================ */
-const SUPABASE_URL = "https://fjgxhguogsuypcdzcieg.supabase.co";
-const SUPABASE_ANON_KEY = "sb_publishable_K7TsALmaFyb2pPOZO-2i2w_UeirVr8l";
-
-const PAGE_PASSWORD = "soccoffee";  // 입장 비밀번호 (바꾸려면 여기만 수정)
-const ADMIN_PASSWORD = "soccoffee1234";  // 관리자 비밀번호 (모든 카풀 삭제 권한)
-/* ============================================================ */
-
-const TREATS = ['커피 한 잔', '음료수', '과일', '간식', '직접 입력'];
-const USE_DB = SUPABASE_URL && SUPABASE_ANON_KEY;
-const STORE = 'socoffee_carpool_v1';
-let sb = null;
-
-if (USE_DB) {
-  sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
-} else {
-  document.getElementById('demoNote').classList.remove('hidden');
-}
-
-/* ---------- 데이터 계층 (DB 또는 로컬) ---------- */
-async function fetchRides() {
-  if (USE_DB) {
-    const { data, error } = await sb.from('rides').select('*').order('created_at', { ascending: false });
-    if (error) { toast('불러오기 오류: ' + error.message); return []; }
-    return data.map(r => ({
-      id: r.id, driver: r.driver, place: r.place, date: r.ride_date,
-      time: r.ride_time, seats: r.seats, dest: r.dest, riders: r.riders || []
-    }));
-  }
-  try { return JSON.parse(localStorage.getItem(STORE)) || []; } catch (e) { return []; }
-}
-
-async function insertRide(r) {
-  if (USE_DB) {
-    const { data, error } = await sb.from('rides').insert({
-      driver: r.driver, place: r.place, ride_date: r.date, ride_time: r.time,
-      seats: r.seats, dest: r.dest, riders: []
-    }).select('id').single();
-    if (error) { toast('등록 오류: ' + error.message); return null; }
-    return data.id;
-  }
-  const local = await fetchRides();
-  const id = Date.now();
-  local.unshift({ ...r, id, riders: [] });
-  localStorage.setItem(STORE, JSON.stringify(local));
-  return id;
-}
-
-/* ---------- 내가 만든 카풀 (이 브라우저 기준) ---------- */
-const MINE_KEY = 'socoffee_my_rides';
-function getMyRides() { try { return JSON.parse(localStorage.getItem(MINE_KEY)) || []; } catch (e) { return []; } }
-function addMyRide(id) { const a = getMyRides(); a.push(id); localStorage.setItem(MINE_KEY, JSON.stringify(a)); }
-function isMine(id) { return getMyRides().map(String).includes(String(id)); }
-
-/* ---------- 내가 신청한 좌석 (이 브라우저 기준) + 취소 규칙 ---------- */
-const APPS_KEY = 'socoffee_my_apps';
-function getMyApps() { try { return JSON.parse(localStorage.getItem(APPS_KEY)) || []; } catch (e) { return []; } }
-function addMyApp(rid) { const a = getMyApps(); a.push(rid); localStorage.setItem(APPS_KEY, JSON.stringify(a)); }
-function removeMyApp(rid) { localStorage.setItem(APPS_KEY, JSON.stringify(getMyApps().filter(x => x !== rid))); }
-function isMyApp(rid) { return getMyApps().includes(rid); }
-function departureMs(r) { return new Date(r.date + 'T' + (r.time || '00:00')).getTime(); }
-function cancelable(r) { return Date.now() < departureMs(r) - 30 * 60 * 1000; }  // 출발 30분 전까지
-
-// rid가 있으면 rid로, 없으면 순서(index)로 탑승자 제거
-function dropRider(riders, index, target) {
-  if (target && target.rid) return riders.filter(x => x.rid !== target.rid);
-  return riders.filter((_, i) => i !== index);
-}
-async function removeRiderByIndex(rideId, index, target) {
-  if (USE_DB) {
-    const { data, error } = await sb.from('rides').select('riders').eq('id', rideId).single();
-    if (error) { toast('오류: ' + error.message); return false; }
-    const riders = dropRider(data.riders || [], index, target);
-    const { error: e2 } = await sb.from('rides').update({ riders }).eq('id', rideId);
-    if (e2) { toast('처리 오류: ' + e2.message); return false; }
-    return true;
-  }
-  const local = await fetchRides();
-  const r = local.find(x => x.id === rideId);
-  if (!r) return false;
-  r.riders = dropRider(r.riders, index, target);
-  localStorage.setItem(STORE, JSON.stringify(local));
-  return true;
-}
-
-/* ---------- 운영진 권한 (로그인한 사람이 운영진 명단에 있으면 자동) ---------- */
-const ADMIN_NAMES = ['홍순인','박승한','원재식','최승호','정희범'];
-function isAdmin() {
-  const p = PLAYERS.find(x => x.id === getMe());
-  return !!(p && ADMIN_NAMES.includes(p.name));
-}
-function updateAdminBtn() {
-  const opsTab = document.getElementById('opsTab');
-  if (opsTab) opsTab.classList.toggle('hidden', !isAdmin());
-  const ml = document.getElementById('meLabel');
-  if (ml) ml.textContent = (typeof meName === 'function' && getMe()) ? `${meName()} 님${isAdmin() ? ' · 운영진' : ''}` : '';
-  const tabOps = document.getElementById('tab-ops');
-  if (!isAdmin() && tabOps && !tabOps.classList.contains('hidden')) switchTab('home');
-}
-
-// 좌석을 다시 확인하고 탑승자를 추가 (초과 예약 방지)
-async function addRider(id, rider) {
-  if (USE_DB) {
-    const { data, error } = await sb.from('rides').select('seats, riders').eq('id', id).single();
-    if (error) { toast('오류: ' + error.message); return false; }
-    const riders = data.riders || [];
-    if (riders.length >= data.seats) return 'full';
-    riders.push(rider);
-    const { error: e2 } = await sb.from('rides').update({ riders }).eq('id', id);
-    if (e2) { toast('신청 오류: ' + e2.message); return false; }
-    return true;
-  }
-  const local = await fetchRides();
-  const r = local.find(x => x.id === id);
-  if (!r) return false;
-  if (r.riders.length >= r.seats) return 'full';
-  r.riders.push(rider);
-  localStorage.setItem(STORE, JSON.stringify(local));
-  return true;
-}
-
-async function deleteRide(id) {
-  if (USE_DB) {
-    const { error } = await sb.from('rides').delete().eq('id', id);
-    if (error) { toast('삭제 오류: ' + error.message); return false; }
-    return true;
-  }
-  const local = (await fetchRides()).filter(r => r.id !== id);
-  localStorage.setItem(STORE, JSON.stringify(local));
-  return true;
-}
-
-/* ---------- UI ---------- */
-const ALL_TABS = ['home','att','dues','list','potm','rank','ops'];
-function switchTab(tab) {
-  document.querySelectorAll('.tab').forEach(t => t.classList.toggle('active', t.dataset.tab === tab));
-  ALL_TABS.forEach(t => {
-    const el = document.getElementById('tab-' + t);
-    if (el) el.classList.toggle('hidden', t !== tab);
-  });
-  if (location.hash.slice(1) !== tab) { try { history.replaceState(null, '', '#' + tab); } catch(e){ location.hash = tab; } }
-  if (tab === 'home') renderHome();
-  if (tab === 'att')  renderAtt();
-  if (tab === 'dues') renderDues();
-  if (tab === 'list') render();
-  if (tab === 'potm') renderPotm();
-  if (tab === 'rank') renderRank();
-  if (tab === 'ops')  renderOps();
-}
-
-// 카풀 등록 패널 펼치기/접기 (등록 탭을 카풀 탭으로 통합)
-function toggleCreate(forceClose) {
-  const panel = document.getElementById('createPanel');
-  const btn = document.getElementById('createToggle');
-  if (!panel) return;
-  const open = forceClose ? false : panel.classList.contains('hidden');
-  panel.classList.toggle('hidden', !open);
-  if (btn) btn.textContent = open ? '닫기' : '+ 카풀 등록하기';
-  if (open) { setDefaults(); const f = document.getElementById('f-driver'); if (f) { if (!f.value) f.value = meName(); f.focus(); } }
-}
-
-function toast(msg) {
-  const t = document.getElementById('toast');
-  t.textContent = msg; t.classList.add('show');
-  clearTimeout(t._t); t._t = setTimeout(() => t.classList.remove('show'), 2400);
-}
-
-function val(id) { return document.getElementById(id).value.trim(); }
-
-function onDestChange() {
-  const custom = document.getElementById('f-dest');
-  custom.classList.toggle('hidden', document.getElementById('f-dest-sel').value !== '__custom__');
-  if (document.getElementById('f-dest-sel').value === '__custom__') custom.focus();
-}
-
-// 기본값: 다음 수요일(오늘이 수요일이면 오늘), 오후 8시
-function setDefaults() {
-  const now = new Date();
-  let diff = (3 - now.getDay() + 7) % 7;            // 3 = 수요일
-  if (diff === 0 && now.getHours() >= 21) diff = 7;  // 오늘 수요일이고 밤이면 다음 주
-  const wed = new Date(now); wed.setDate(now.getDate() + diff);
-  const yyyy = wed.getFullYear(), mm = String(wed.getMonth() + 1).padStart(2, '0'), dd = String(wed.getDate()).padStart(2, '0');
-  const dateEl = document.getElementById('f-date'), timeEl = document.getElementById('f-time');
-  if (!dateEl.value) dateEl.value = `${yyyy}-${mm}-${dd}`;
-  if (!timeEl.value) timeEl.value = '20:00';
-}
-setDefaults();
-
-async function createRide() {
-  const driver = val('f-driver'), place = val('f-place'),
-        date = val('f-date'), time = val('f-time'),
-        seats = parseInt(val('f-seats'));
-  const destSel = document.getElementById('f-dest-sel').value;
-  const dest = destSel === '__custom__' ? val('f-dest') : destSel;
-  if (!driver) return toast('이름을 입력해 주세요');
-  if (!place)  return toast('출발 장소를 입력해 주세요');
-  if (!date || !time) return toast('출발 날짜와 시간을 입력해 주세요');
-
-  const btn = document.getElementById('createBtn');
-  btn.disabled = true; btn.textContent = '등록 중...';
-  const newId = await insertRide({ driver, place, date, time, seats, dest });
-  btn.disabled = false; btn.textContent = '카풀 등록하기';
-  if (!newId) return;
-  addMyRide(newId);
-
-  ['f-driver','f-place','f-dest'].forEach(id => document.getElementById(id).value = '');
-  document.getElementById('f-seats').value = '3';
-  document.getElementById('f-dest-sel').value = '상암 풋살장';
-  onDestChange();
-  setDefaults();
-  await render();
-  toggleCreate(true);
-  toast('카풀이 등록됐어요');
-}
-
-function fmtDate(d, t) {
-  if (!d) return '';
-  const dt = new Date(d + 'T' + (t || '00:00'));
-  const days = ['일','월','화','수','목','금','토'];
-  const m = dt.getMonth() + 1, day = dt.getDate(), wd = days[dt.getDay()];
-  let hh = dt.getHours(), mm = String(dt.getMinutes()).padStart(2, '0');
-  const ampm = hh < 12 ? '오전' : '오후';
-  let h12 = hh % 12; if (h12 === 0) h12 = 12;
-  return `${m}/${day}(${wd}) ${ampm} ${h12}:${mm}`;
-}
-
-function rideCard(r, past) {
-  const taken = r.riders.length, left = r.seats - taken, full = left <= 0;
-  const owner = isMine(r.id) || isAdmin();
-  const ridersHtml = taken === 0
-    ? `<div class="empty-riders">${past ? '신청자가 없었어요.' : '아직 신청자가 없어요. 첫 탑승자가 되어보세요!'}</div>`
-    : r.riders.map((rd, i) => {
-        if (past) return `<span class="rider-chip">${esc(rd.name)}${rd.treat ? ` · <span class="treat">${esc(rd.treat)}</span>` : ''}</span>`;
-        const own = !!(rd.rid && isMyApp(rd.rid));
-        const canShow = own || isAdmin();
-        const canX = isAdmin() || (own && cancelable(r));
-        const x = canShow ? `<button class="chip-x" onclick="cancelSeat('${r.id}',${i},${own})" title="${canX ? (isAdmin() && !own ? '탑승자 빼기' : '탑승 취소') : '출발 30분 전이라 취소 불가'}" ${canX ? '' : 'disabled'}>✕</button>` : '';
-        return `<span class="rider-chip">${esc(rd.name)}${rd.treat ? ` · <span class="treat">${esc(rd.treat)}</span>` : ''}${x}</span>`;
+// 경기 일정 — 사이트 세션(club_settings id='current' .sessions) 연동
+(function(){
+  var SB_URL="https://fjgxhguogsuypcdzcieg.supabase.co";
+  var SB_KEY="sb_publishable_K7TsALmaFyb2pPOZO-2i2w_UeirVr8l";
+  var ENG=['SUN','MON','TUE','WED','THU','FRI','SAT'];
+  var box=document.getElementById('fixtures');
+  function esc(s){return (s||'').replace(/[<>&]/g,function(c){return c==='<'?'&lt;':c==='>'?'&gt;':'&amp;';});}
+  function pad(n){return String(n).padStart(2,'0');}
+  function todayStr(){var d=new Date();return d.getFullYear()+'-'+pad(d.getMonth()+1)+'-'+pad(d.getDate());}
+  (async function(){
+    try{
+      var sb=supabase.createClient(SB_URL,SB_KEY);
+      var r=await sb.from('club_settings').select('data').eq('id','current').maybeSingle();
+      var sessions=(r && r.data && r.data.data && r.data.data.sessions) || [];
+      var t=todayStr();
+      sessions=sessions.filter(function(s){return (s.date||'')>=t;})
+        .sort(function(a,b){return ((a.date||'')+(a.time||'')).localeCompare((b.date||'')+(b.time||''));});
+      if(!sessions.length){ box.innerHTML='<p class="muted" style="font-size:13px">예정된 경기가 아직 없어요.</p>'; return; }
+      var m=parseInt((sessions[0].date||'').split('-')[1],10);
+      if(m) document.getElementById('matchMonth').textContent=m+'월 경기일정';
+      box.innerHTML=sessions.map(function(s,i){
+        var p=(s.date||'').split('-');
+        var md = p.length===3 ? p[1]+'.'+p[2] : (s.date||'');
+        var wd = s.date ? ENG[new Date(s.date+'T00:00').getDay()] : '';
+        var place=esc(s.place||'상암풋살장');
+        var time=esc(s.time||'');
+        return '<div class="fx"><span class="wk">WEEK '+(i+1)+'</span><span class="loc">'+place+'</span>'
+          +'<span class="when"><span class="d">'+md+(wd?'<span class="wd">'+wd+'</span>':'')+'</span>'
+          +(time?'<span class="t">'+time+'</span>':'')+'</span></div>';
       }).join('');
-
-  const actions = past
-    ? `${owner ? `<button class="btn accent sm" onclick="repostRide('${r.id}')">다시 올리기</button>` : `<span class="past-hint">지난 카풀이에요</span>`}
-       ${owner ? `<button class="btn ghost sm" onclick="toggleManage('${r.id}')" title="관리"></button>` : ''}`
-    : `${full ? `<button class="btn sm" disabled>좌석 마감</button>`
-              : `<button class="btn accent sm" onclick="toggleApply('${r.id}')">탑승 신청</button>`}
-       ${owner ? `<button class="btn ghost sm" onclick="toggleManage('${r.id}')" title="관리"></button>` : ''}`;
-
-  return `
-    <div class="ride ${(full && !past) ? 'full' : ''} ${past ? 'past' : ''}">
-      <div class="ride-top">
-        <div class="driver"><span class="ico"></span>${esc(r.driver)} 님</div>
-        <div class="seats-badge ${past ? 'done' : (full ? 'full' : '')}">${past ? '종료' : (full ? '마감' : `잔여 ${left}석`)}</div>
-      </div>
-      <div class="ride-meta">
-        <div class="meta-line meta-place">${esc(r.place)}${r.dest ? ` <span class="dest-part"><span class="sep">→</span> ${esc(r.dest)}</span>` : ''}</div>
-        <div class="meta-line">${fmtDate(r.date, r.time)} <span class="sep">·</span> ${taken}/${r.seats}명</div>
-      </div>
-      <div class="riders">
-        <button class="riders-toggle" onclick="toggleRiders('${r.id}')">
-          <span>탑승자 ${taken}명</span><span class="chev" id="chev-${r.id}">▾</span>
-        </button>
-        <div class="riders-body" id="riders-${r.id}">${ridersHtml}</div>
-      </div>
-      <div class="ride-actions">${actions}</div>
-      ${owner ? `<div class="manage-panel" id="manage-${r.id}">
-        <span class="manage-label">${isMine(r.id) ? '내가 등록한 카풀이에요' : '관리자 권한으로 삭제'}</span>
-        <button class="btn ghost sm" onclick="removeRide('${r.id}')" style="color:var(--red)">삭제하기</button>
-      </div>` : ''}
-      ${past ? '' : `<div class="apply-panel" id="apply-${r.id}">
-        <p class="apply-note" style="margin-bottom:10px"><b>${esc(meName())}</b> 님으로 신청해요.</p>
-        <div class="field">
-          <label>답례 <span style="color:var(--muted);font-weight:400">(선택 — 안 골라도 신청 가능)</span></label>
-          <div class="treat-chips" id="tc-${r.id}">
-            ${TREATS.map(t => `<span class="treat-opt" onclick="pickTreat('${r.id}', this, '${t}')">${t}</span>`).join('')}
-          </div>
-          <input class="hidden" id="tcustom-${r.id}" placeholder="직접 입력 (예: 아이스아메리카노 살게요)" maxlength="30" style="margin-top:8px">
-        </div>
-        <p class="apply-note">신청 후 <b>출발 30분 전까지</b> 직접 취소할 수 있어요. (탑승자 목록에서 내 이름 옆 ✕)</p>
-        <button class="btn accent sm" onclick="applyRide('${r.id}')">신청 완료</button>
-      </div>`}
-    </div>`;
-}
-
-async function render() {
-  const list = document.getElementById('rideList');
-  const pastSection = document.getElementById('pastSection');
-  const pastList = document.getElementById('pastList');
-  list.innerHTML = `<div class="empty">불러오는 중...</div>`;
-  const rides = await fetchRides();
-  const now = Date.now();
-  const active = rides.filter(r => departureMs(r) >= now);
-  const past = rides.filter(r => departureMs(r) < now).sort((a, b) => departureMs(b) - departureMs(a));
-
-  list.innerHTML = active.length === 0
-    ? `<div class="empty"><div class="big"></div><div>진행 중인 카풀이 없어요.<br>새 카풀을 등록해 보세요!</div></div>`
-    : active.map(r => rideCard(r, false)).join('');
-
-  if (past.length === 0) {
-    pastSection.classList.add('hidden');
-    pastList.innerHTML = '';
-  } else {
-    pastSection.classList.remove('hidden');
-    document.getElementById('pastCount').textContent = `${past.length}건`;
-    pastList.innerHTML = past.map(r => rideCard(r, true)).join('');
-  }
-}
-
-// 같은 요일·시간 그대로, 다음 주(미래)로 날짜만 이동
-function nextWeekDate(origDateStr) {
-  const d = new Date((origDateStr || '') + 'T00:00');
-  if (isNaN(d.getTime())) return origDateStr;
-  const today = new Date(); today.setHours(0, 0, 0, 0);
-  while (d <= today) d.setDate(d.getDate() + 7);
-  const y = d.getFullYear(), m = String(d.getMonth() + 1).padStart(2, '0'), dd = String(d.getDate()).padStart(2, '0');
-  return `${y}-${m}-${dd}`;
-}
-
-async function repostRide(id) {
-  const rides = await fetchRides();
-  const r = rides.find(x => String(x.id) === String(id));
-  if (!r) return;
-  const newDate = nextWeekDate(r.date);
-  const newId = await insertRide({ driver: r.driver, place: r.place, date: newDate, time: r.time, seats: r.seats, dest: r.dest });
-  if (!newId) return;
-  addMyRide(newId);
-  await render();
-  toast(`다시 올렸어요 — ${fmtDate(newDate, r.time)} `);
-}
-
-function togglePast() {
-  document.getElementById('pastList').classList.toggle('open');
-  document.getElementById('pastChev').classList.toggle('open');
-}
-
-function toggleApply(id) {
-  const p = document.getElementById('apply-' + id);
-  document.querySelectorAll('.apply-panel').forEach(el => { if (el !== p) el.classList.remove('open'); });
-  p.classList.toggle('open');
-}
-
-function toggleRiders(id) {
-  document.getElementById('riders-' + id).classList.toggle('open');
-  document.getElementById('chev-' + id).classList.toggle('open');
-}
-
-function toggleManage(id) {
-  const p = document.getElementById('manage-' + id);
-  document.querySelectorAll('.manage-panel').forEach(el => { if (el !== p) el.classList.remove('open'); });
-  p.classList.toggle('open');
-}
-
-const treatPick = {};
-function pickTreat(id, el, label) {
-  const box = document.getElementById('tc-' + id);
-  box.querySelectorAll('.treat-opt').forEach(o => o.classList.remove('selected'));
-  el.classList.add('selected');
-  const custom = document.getElementById('tcustom-' + id);
-  if (label === '직접 입력') { custom.classList.remove('hidden'); custom.focus(); treatPick[id] = '__custom__'; }
-  else { custom.classList.add('hidden'); treatPick[id] = label; }
-}
-
-async function applyRide(id) {
-  const name = meName();
-  if (!name) return toast('로그인이 필요해요');
-  let treat = treatPick[id] || '';
-  if (treat === '__custom__') treat = document.getElementById('tcustom-' + id).value.trim();
-
-  const rid = Date.now().toString(36) + Math.random().toString(36).slice(2, 6);
-  const res = await addRider(idCast(id), { name, treat, rid });
-  if (res === 'full') { await render(); return toast('아쉽게도 좌석이 마감됐어요'); }
-  if (!res) return;
-  addMyApp(rid);
-  delete treatPick[id];
-  await render();
-  toast('탑승 신청 완료! ');
-}
-
-async function cancelSeat(rideId, index, own) {
-  const admin = isAdmin();
-  const rides = await fetchRides();
-  const r = rides.find(x => String(x.id) === String(rideId));
-  if (!r) return;
-  if (!admin && !(own && cancelable(r))) return toast('출발 30분 전부터는 취소할 수 없어요');
-  const target = r.riders[index];
-  const msg = admin && !own ? `'${target ? target.name : ''}' 님을 탑승에서 뺄까요?` : '탑승을 취소할까요?';
-  if (!confirm(msg)) return;
-  const ok = await removeRiderByIndex(idCast(rideId), index, target);
-  if (!ok) return;
-  if (target && target.rid) removeMyApp(target.rid);
-  await render();
-  toast(admin && !own ? '탑승자를 뺐어요' : '탑승을 취소했어요');
-}
-
-async function removeRide(id) {
-  if (!confirm('이 카풀을 삭제할까요?')) return;
-  const ok = await deleteRide(idCast(id));
-  if (!ok) return;
-  await render();
-  toast('삭제했어요');
-}
-
-// DB는 숫자 id, 로컬은 숫자 id → 문자열로 넘어온 걸 복원
-function idCast(id) { return USE_DB ? Number(id) : Number(id); }
-
-function esc(s) {
-  return String(s).replace(/[&<>"']/g, c =>
-    ({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;' }[c]));
-}
-
-// 실시간 갱신 (DB 모드일 때, 다른 사람의 변경을 자동 반영)
-if (USE_DB) {
-  sb.channel('rides-changes')
-    .on('postgres_changes', { event: '*', schema: 'public', table: 'rides' }, () => render())
-    .subscribe();
-}
-
-/* ============================================================
-   이달의 선수 (POTM) 투표
-   - 명단 스냅샷: soccoffee-team-builder 기준 (명단 변경 시 ROSTER만 수정)
-   - 후보/투표자 = 해당 월 '활동 회원' (휴면·친구등급·미가입 제외)
-   - 규칙: 본인 이름 선택 → 1인 1표(엄격), 본인 투표 금지
-   - 결과: 본인이 투표한 뒤(또는 관리자)에만 열람
-   ============================================================ */
-const ROSTER_SEED = [
-  {id:1, name:'박승한', tier:1, status:'active', joinDate:'2024-09-04'},
-  {id:2, name:'홍순인', tier:1, status:'active', joinDate:'2024-09-04'},
-  {id:3, name:'손다희', tier:2, status:'active', joinDate:'2024-09-04'},
-  {id:4, name:'정희범', tier:4, status:'active', joinDate:'2024-09-04'},
-  {id:5, name:'김이연', tier:2, status:'active', joinDate:'2024-09-25', dormantMonths:["2026-06"]},
-  {id:6, name:'원재식', tier:3, status:'active', joinDate:'2024-09-04'},
-  {id:7, name:'장세영', tier:3, status:'active', joinDate:'2024-09-04'},
-  {id:8, name:'김우경', tier:2, status:'active', joinDate:'2024-09-04'},
-  {id:9, name:'최승호', tier:2, status:'active', joinDate:'2024-09-11'},
-  {id:10, name:'마상현', tier:3, status:'active', joinDate:'2024-09-11'},
-  {id:11, name:'박지원', tier:2, status:'active', joinDate:'2024-09-25'},
-  {id:12, name:'신동헌', tier:1, status:'active', joinDate:'2024-09-25'},
-  {id:13, name:'정민주', tier:2, status:'friends', joinDate:'2024-09-25', friendsSince:'2026-06', dormantMonths:["2025-11","2025-12","2026-02","2026-03","2026-04","2026-05"]},
-  {id:14, name:'임한', tier:2, status:'active', joinDate:'2024-10-24'},
-  {id:15, name:'이민국', tier:4, status:'active', joinDate:'2024-10-31'},
-  {id:16, name:'정하림', tier:1, status:'active', joinDate:'2024-12-05'},
-  {id:17, name:'박원주', tier:2, status:'active', joinDate:'2025-01-02'},
-  {id:18, name:'김두은', tier:1, status:'active', joinDate:'2025-04-02'},
-  {id:19, name:'표승철', tier:2, status:'active', joinDate:'2025-05-07'},
-  {id:20, name:'한승재', tier:2, status:'active', joinDate:'2025-06-04'},
-  {id:21, name:'도민환', tier:2, status:'active', joinDate:'2025-06-04', dormantMonths:["2026-05"]},
-  {id:22, name:'조수경', tier:1, status:'active', joinDate:'2025-08-06', dormantMonths:["2026-05"]},
-  {id:23, name:'안재영', tier:2, status:'active', joinDate:'2025-04-02', dormantMonths:["2026-05"]},
-  {id:24, name:'브루노', tier:2, status:'active', joinDate:'2025-08-06'},
-  {id:25, name:'박우성', tier:1, status:'active', joinDate:'2024-09-11', dormantMonths:["2026-05"]},
-  {id:26, name:'조은애', tier:3, status:'active', joinDate:'2025-09-03'},
-  {id:27, name:'함지상', tier:3, status:'dormant', joinDate:'2025-09-10', dormantMonths:["2025-12","2026-01","2026-02","2026-03","2026-04","2026-05","2026-06"]},
-  {id:28, name:'조수연', tier:2, status:'active', joinDate:'2025-10-01'},
-  {id:29, name:'한재욱', tier:2, status:'active', joinDate:'2025-10-01'},
-  {id:30, name:'정은용', tier:2, status:'active', joinDate:'2025-11-05'},
-  {id:31, name:'박광우', tier:2, status:'active', joinDate:'2025-03-12'},
-  {id:32, name:'이일웅', tier:1, status:'active', joinDate:'2024-10-16'},
-  {id:33, name:'허은혜', tier:3, status:'active', joinDate:'2026-03-04'},
-  {id:34, name:'심소른', tier:3, status:'active', joinDate:'2026-04-01'},
-  {id:35, name:'김균원', tier:3, status:'active', joinDate:'2024-10-16'},
-  {id:36, name:'조지훈', tier:3, status:'active', joinDate:'2026-04-01'},
-  {id:37, name:'이희성', tier:3, status:'active', joinDate:'2026-04-15'},
-  {id:38, name:'김유솔', tier:2, status:'active', joinDate:'2026-05-06'},
-  {id:39, name:'김재유', tier:3, status:'active', joinDate:'2026-05-06'},
-];
-
-/* 이번 달 팀 시트 (WHITE / BLACK) — 팀 편성이 바뀌면 여기만 수정 */
-const TEAM_SHEET_SEED = {
-  // WHITE
-  '장세영':{jersey:3,  eng:'JANG SAEYOUNG',        team:'WHITE'},
-  '한승재':{jersey:6,  eng:'HAN SEUNGJAE',         team:'WHITE'},
-  '최승호':{jersey:7,  eng:'CHOI SEUNGHO',         team:'WHITE'},
-  '박승한':{jersey:9,  eng:'PARK SEUNGHAN',        team:'WHITE'},
-  '조수경':{jersey:12, eng:'CHO SOOKYUNG',         team:'WHITE'},
-  '마상현':{jersey:13, eng:'MA SANGHYUN',          team:'WHITE'},
-  '김우경':{jersey:14, eng:'KIM WOOKYUNG',         team:'WHITE'},
-  '조수연':{jersey:15, eng:'CHO SOOYEON',          team:'WHITE', cap:true},
-  '정희범':{jersey:18, eng:'JEONG HEEBEOM',        team:'WHITE'},
-  '이일웅':{jersey:21, eng:'LEE ILWOONG',          team:'WHITE'},
-  '박우성':{jersey:26, eng:'PARK WOOSUNG',         team:'WHITE'},
-  '김두은':{jersey:32, eng:'KIM DOOEUN',           team:'WHITE'},
-  '이민국':{jersey:33, eng:'LEE MINKUK',           team:'WHITE'},
-  '김유솔':{jersey:55, eng:'KEEMYOU SOL',          team:'WHITE'},
-  '조은애':{jersey:89, eng:'CHO EUNAE',            team:'WHITE'},
-  '브루노':{jersey:93, eng:'DA CONCEICAO BRUNO',   team:'WHITE'},
-  '안재영':{jersey:22, eng:'AN JAEYOUNG',          team:'WHITE'},
-  '원재식':{jersey:99, eng:'WON JAESIK',           team:'WHITE'},
-  // BLACK
-  '박광우':{jersey:4,   eng:'PARK KWANGWOO',        team:'BLACK'},
-  '신동헌':{jersey:5,   eng:'SHIN DONGHUN',         team:'BLACK'},
-  '홍순인':{jersey:10,  eng:'HONG SUNIN',           team:'BLACK'},
-  '정은용':{jersey:11,  eng:'CHUNG EUNYONG',        team:'BLACK'},
-  '김균원':{jersey:16,  eng:'KIM KYUNWON',          team:'BLACK'},
-  '임한':  {jersey:17,  eng:'LIM HAN',              team:'BLACK', cap:true},
-  '심소른':{jersey:19,  eng:'SIM SORUN',            team:'BLACK'},
-  '정하림':{jersey:23,  eng:'JEONG HARIM',          team:'BLACK'},
-  '박원주':{jersey:25,  eng:'PARK WONJU',           team:'BLACK'},
-  '박지원':{jersey:29,  eng:'PARK JIWON',           team:'BLACK'},
-  '조지훈':{jersey:37,  eng:'JO JIHOON',            team:'BLACK'},
-  '김재유':{jersey:58,  eng:'KIM JAEYU',            team:'BLACK'},
-  '한재욱':{jersey:62,  eng:'HAN JAEWOOK',          team:'BLACK'},
-  '도민환':{jersey:76,  eng:'DO MINHWAN',           team:'BLACK'},
-  '이희성':{jersey:77,  eng:'LEE HEESUNG',          team:'BLACK'},
-  '손다희':{jersey:87,  eng:'SON DAHEE',            team:'BLACK'},
-  '허은혜':{jersey:88,  eng:'HEO EUNHYE',           team:'BLACK'},
-  '표승철':{jersey:328, eng:'PYO SEUNGCHUL',        team:'BLACK'},
-};
-
-/* ---------- 명단(players) — 운영진 탭에서 편집, Supabase(club_settings.roster)에 저장 ----------
-   ROSTER / TEAM_SHEET 는 players 배열에서 파생됩니다.
-   저장된 명단이 없으면 위 SEED로 시작하고, 운영진이 편집하면 그게 source of truth가 됩니다. */
-function seedPlayers() {
-  return ROSTER_SEED.map(r => {
-    const t = TEAM_SHEET_SEED[r.name] || {};
-    return { id:r.id, name:r.name, tier:r.tier, status:r.status||'active',
-      joinDate:r.joinDate||'', friendsSince:r.friendsSince||null,
-      dormantMonths:(r.dormantMonths||[]).slice(),
-      jersey:(t.jersey!=null?t.jersey:null), eng:t.eng||'', team:t.team||'기타', cap:!!t.cap };
-  });
-}
-let PLAYERS = seedPlayers();
-let ROSTER = [];
-let TEAM_SHEET = {};
-function applyPlayers(players) {
-  PLAYERS = players;
-  ROSTER = players.map(p => {
-    const o = { id:p.id, name:p.name, tier:p.tier, status:p.status||'active',
-      joinDate:p.joinDate||'', dormantMonths:(p.dormantMonths||[]).slice() };
-    if (p.friendsSince) o.friendsSince = p.friendsSince;
-    return o;
-  });
-  TEAM_SHEET = {};
-  players.forEach(p => {
-    if (p.team && p.team !== '기타')
-      TEAM_SHEET[p.name] = { jersey:p.jersey, eng:p.eng||'', team:p.team, cap:!!p.cap };
-  });
-}
-applyPlayers(PLAYERS);   // 초기엔 SEED 기준 (시작 시 Supabase 명단으로 덮어씀)
-
-async function fetchRoster() {
-  const s = await fetchSettings();
-  return Array.isArray(s.roster) && s.roster.length ? s.roster : null;
-}
-async function saveRoster(players) {
-  applyPlayers(players);
-  return await saveSettings({ roster: players });
-}
-
-const POTM_STORE = 'socoffee_potm_votes_v1'; // 데모 모드 저장소
-const POTM_VOTER_KEY = 'socoffee_potm_voter'; // 이 브라우저의 투표자 이름(편의용)
-
-function potmMonth() {
-  const d = new Date();
-  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
-}
-function potmMonthLabel(m) {
-  const [y, mo] = m.split('-');
-  return `${y}년 ${parseInt(mo)}월`;
-}
-// 회비 표시 월: 매월 25일부터는 다음 달 회비를 띄움
-function duesMonth() {
-  const d = new Date();
-  let y = d.getFullYear(), m = d.getMonth(); // 0-indexed
-  if (d.getDate() >= 25) { m += 1; if (m > 11) { m = 0; y += 1; } }
-  return `${y}-${String(m + 1).padStart(2, '0')}`;
-}
-
-// 이번 주 수요일 오후 9시 (투표 오픈 시각)
-function votingOpensAt() {
-  const d = new Date();
-  d.setDate(d.getDate() + (3 - d.getDay())); // 이번 주 수요일
-  d.setHours(21, 0, 0, 0);
-  return d;
-}
-// 투표 가능: 수요일 21시 ~ 토요일 말까지(일~수 낮은 잠금)
-function isVotingOpen() { return Date.now() >= votingOpensAt().getTime(); }
-function fmtOpenTime(d) {
-  const days = ['일', '월', '화', '수', '목', '금', '토'];
-  return `${d.getMonth() + 1}/${d.getDate()}(${days[d.getDay()]}) 오후 9시`;
-}
-
-// 해당 월 활동 회원 (team-builder 월별 현황과 동일 로직)
-// 휴면은 팀빌더에서 읽어 반영 (이름 기준). 팀빌더에 없으면 사이트 명단의 값 사용
-let TB_DORMANT = {};
-function dormantMonthsOf(p){
-  return (TB_DORMANT[p.name] !== undefined) ? TB_DORMANT[p.name] : (p.dormantMonths || []);
-}
-async function loadTbDormant(){
-  try {
-    const tb = await fetchTeamBuilder();
-    const m = {};
-    if (tb && Array.isArray(tb.players)) tb.players.forEach(p => { m[p.name] = p.dormantMonths || []; });
-    TB_DORMANT = m;
-  } catch(e) {}
-}
-
-function activeMembers(monthStr) {
-  const [yN, moN] = monthStr.split('-').map(Number);
-  const monthEnd = new Date(yN, moN, 0);
-  const relevant = ROSTER.filter(p => {
-    const st = p.status || 'active';
-    if (st === 'former') return false;
-    if (st === 'friends') return p.friendsSince && monthStr < p.friendsSince;
-    if (!p.joinDate) return false;
-    return new Date(p.joinDate) <= monthEnd;
-  });
-  const TEAM_ORDER = { 'WHITE': 0, 'BLACK': 1, '기타': 2 };
-  return relevant.filter(p => !dormantMonthsOf(p).includes(monthStr))
-                 .map(p => {
-                   const t = TEAM_SHEET[p.name] || { team: '기타' };
-                   return { ...p, jersey: t.jersey, eng: t.eng || '', team: t.team, cap: !!t.cap };
-                 })
-                 .sort((a, b) => (TEAM_ORDER[a.team] - TEAM_ORDER[b.team]) ||
-                                 ((a.jersey ?? 999) - (b.jersey ?? 999)) ||
-                                 a.name.localeCompare(b.name, 'ko'));
-}
-
-/* ---------- 투표 데이터 계층 (Supabase 또는 로컬) — 부문(category)별 ---------- */
-const VOTE_CATS = [
-  { key:'mvp',    label:'이달의 선수',     pick:'이달의 선수를 골라주세요',      sub:'가장 좋았던 한 명을 선택하세요. (본인 제외)' },
-  { key:'growth', label:'가장 성장한 선수', pick:'가장 성장한 선수를 골라주세요',  sub:'이번 달 가장 성장한 한 명을 선택하세요. (본인 제외)' },
-];
-let potmCat = 'mvp';        // 현재 보고 있는 부문
-
-async function fetchVotes(month, cat) {
-  if (USE_DB) {
-    const { data, error } = await sb.from('potm_votes').select('voter_id, candidate_id').eq('month', month).eq('category', cat);
-    if (error) { return []; }
-    return data;
-  }
-  try {
-    return (JSON.parse(localStorage.getItem(POTM_STORE)) || []).filter(v => v.month === month && (v.category||'mvp') === cat);
-  } catch (e) { return []; }
-}
-
-async function castVote(month, cat, voterId, candidateId) {
-  if (USE_DB) {
-    const { error } = await sb.from('potm_votes').insert({ month, category: cat, voter_id: voterId, candidate_id: candidateId });
-    if (error) {
-      if (error.code === '23505') return 'dup'; // unique 위반 = 이미 투표
-      toast('투표 오류: ' + error.message); return false;
-    }
-    return true;
-  }
-  const all = JSON.parse(localStorage.getItem(POTM_STORE) || '[]');
-  if (all.some(v => v.month === month && (v.category||'mvp') === cat && v.voter_id === voterId)) return 'dup';
-  all.push({ month, category: cat, voter_id: voterId, candidate_id: candidateId });
-  localStorage.setItem(POTM_STORE, JSON.stringify(all));
-  return true;
-}
-
-async function resetVotes(month, cat) {
-  if (USE_DB) {
-    const { error } = await sb.from('potm_votes').delete().eq('month', month).eq('category', cat);
-    if (error) { toast('초기화 오류: ' + error.message); return false; }
-    return true;
-  }
-  const all = (JSON.parse(localStorage.getItem(POTM_STORE) || '[]')).filter(v => !(v.month === month && (v.category||'mvp') === cat));
-  localStorage.setItem(POTM_STORE, JSON.stringify(all));
-  return true;
-}
-
-/* ---------- 투표 상태 & 렌더 ---------- */
-let potmVoterId = null;     // 로그인한 본인 (getMe)
-let potmPick = { mvp:null, growth:null };   // 부문별 선택 (한 번에 두 명)
-
-function refreshPotmIfOpen() {
-  if (!document.getElementById('tab-potm').classList.contains('hidden')) renderPotm();
-}
-
-async function renderPotm() {
-  const el = document.getElementById('potmContent');
-  const month = potmMonth();
-  const members = activeMembers(month);
-  potmVoterId = getMe();   // 로그인한 본인
-
-  el.innerHTML = `<div class="empty">불러오는 중...</div>`;
-  const [votesMvp, votesGrowth] = await Promise.all([fetchVotes(month,'mvp'), fetchVotes(month,'growth')]);
-  const total = members.length;
-
-  let body = `
-    <div class="potm-hero">
-      <h2>이달의 투표</h2>
-      <div class="month">${potmMonthLabel(month)} · 활동 회원 ${total}명</div>
-      <div class="turnout"><b>${votesMvp.length}</b>명 참여 · 매월 1일 새 투표</div>
-    </div>`;
-
-  if (total === 0) {
-    el.innerHTML = body + `<div class="card"><div class="empty">이번 달 활동 회원 정보가 없어요.</div></div>`;
-    return;
-  }
-
-  const voter = members.find(m => m.id === potmVoterId) || null;
-  const admin = isAdmin();
-  const bothResults = () =>
-    `<div class="card"><h2>이달의 선수 결과</h2>${resultsHtml(votesMvp, members)}</div>
-     <div class="card"><h2>가장 성장한 선수 결과</h2>${resultsHtml(votesGrowth, members)}</div>`;
-
-  // 1) 로그인 안 됐거나 이번 달 활동 회원이 아님
-  if (!voter) {
-    body += potmVoterId
-      ? `<div class="card"><h2>${esc(meName())} 님</h2><p class="sub">이번 달 활동 회원이 아니라 투표 대상이 아니에요.</p></div>`
-      : `<div class="card"><div class="empty">로그인이 필요해요.</div></div>`;
-    if (admin) body += bothResults();
-    el.innerHTML = body;
-    return;
-  }
-
-  // 투표자 바
-  body += `
-    <div class="voter-bar">
-      <span class="who">투표자: <b>${esc(voter.name)}</b> 님</span>
-    </div>`;
-
-  const myMvp = votesMvp.find(v => v.voter_id === voter.id);
-  const myGrowth = votesGrowth.find(v => v.voter_id === voter.id);
-
-  // 2) 두 부문 모두 투표함 → 결과
-  if (myMvp && myGrowth) {
-    const pm = members.find(m => m.id === myMvp.candidate_id);
-    const pg = members.find(m => m.id === myGrowth.candidate_id);
-    body += `<div class="card"><h2>투표 완료</h2>
-      <p class="sub">이달의 선수 <b>${pm?esc(pm.name):'-'}</b> · 가장 성장한 선수 <b>${pg?esc(pg.name):'-'}</b></p></div>`;
-    body += bothResults();
-    el.innerHTML = body;
-    return;
-  }
-
-  // 3) 투표 시간 잠금 (관리자는 예외)
-  if (!isVotingOpen() && !admin) {
-    body += `
-      <div class="card">
-        <div class="res-locked">
-          <div class="big"></div>
-          <div style="font-weight:700;color:var(--coffee-2);margin-bottom:4px">아직 투표 시간이 아니에요</div>
-          <div>투표는 <b style="color:var(--coffee)">${fmtOpenTime(votingOpensAt())}</b>부터 열려요.</div>
-        </div>
-      </div>`;
-    el.innerHTML = body;
-    return;
-  }
-
-  // 4) 두 부문 동시 선택 (본인 제외)
-  const candidates = members.filter(m => m.id !== voter.id);
-  body += `
-    <div class="card">
-      <h2>이달의 선수</h2>
-      <p class="sub">가장 좋았던 한 명 (본인 제외)</p>
-      ${candSelect(candidates, 'mvp')}
-    </div>
-    <div class="card">
-      <h2>가장 성장한 선수</h2>
-      <p class="sub">이번 달 가장 성장한 한 명 (본인 제외)</p>
-      ${candSelect(candidates, 'growth')}
-    </div>
-    <div class="vote-cta">
-      <button class="btn accent" id="potmVoteBtn" onclick="submitVote()" disabled>두 부문 투표하기</button>
-    </div>
-    <p class="potm-note">두 부문 모두 선택해야 제출돼요. 투표 후엔 변경할 수 없어요.</p>`;
-  if (admin) body += bothResults();
-  el.innerHTML = body;
-  syncVoteBtn();
-}
-
-const TEAM_BADGE = { 'WHITE': 'WHITE', 'BLACK': 'BLACK', '기타': '기타' };
-function voterOptions(members) {
-  return [...members].sort(byJersey)
-    .map(m => `<option value="${m.id}">${m.jersey != null ? m.jersey + ' · ' : ''}${esc(m.name)}</option>`).join('');
-}
-function byJersey(a, b) {
-  return (a.jersey ?? 9999) - (b.jersey ?? 9999) || a.name.localeCompare(b.name, 'ko');
-}
-// 후보를 드롭다운(스크롤 선택)으로
-function candSelect(candidates, cat) {
-  const sorted = [...candidates].sort(byJersey);
-  return `<select class="vote-sel" id="voteSel-${cat}" onchange="pickCandSel('${cat}', this.value)">
-    <option value="">— 이름 선택 —</option>
-    ${sorted.map(m => `<option value="${m.id}" ${potmPick[cat]===m.id?'selected':''}>${m.jersey!=null?m.jersey+' · ':''}${esc(m.name)}${m.cap?' (C)':''}</option>`).join('')}
-  </select>`;
-}
-function pickCandSel(cat, val) {
-  potmPick[cat] = val ? Number(val) : null;
-  syncVoteBtn();
-}
-
-function resultsHtml(votes, members) {
-  const tally = {};
-  votes.forEach(v => { tally[v.candidate_id] = (tally[v.candidate_id] || 0) + 1; });
-  const ranked = members.map(m => ({ ...m, c: tally[m.id] || 0 }))
-    .filter(m => m.c > 0)
-    .sort((a, b) => b.c - a.c || a.name.localeCompare(b.name, 'ko'));
-  if (ranked.length === 0) return `<div class="res-locked"><div class="big"></div>아직 집계된 표가 없어요.</div>`;
-  const max = ranked[0].c;
-  return `<div style="margin-top:16px">` + ranked.map((m, i) => `
-    <div class="res-row">
-      <div class="res-rank ${i === 0 ? 'top' : ''}">${i + 1}</div>
-      <div class="res-main">
-        <div class="res-name"><span>${m.jersey != null ? `<span style="color:var(--muted)">${m.jersey}</span> ` : ''}${esc(m.name)}</span><span class="cnt">${m.c}표</span></div>
-        <div class="res-bar"><div style="width:${Math.round(m.c / max * 100)}%"></div></div>
-      </div>
-    </div>`).join('') + `</div>`;
-}
-
-function adminPanel(cat, month, votes, members) {
-  return `
-    <div class="card" style="border:1.5px dashed var(--accent)">
-      <h2>운영진 — ${cat.label} 실시간 결과</h2>
-      <p class="sub">${potmMonthLabel(month)} · 총 ${votes.length}표</p>
-      ${resultsHtml(votes, members)}
-      <button class="btn ghost sm" style="color:var(--red);margin-top:14px" onclick="adminResetPotm()">이 부문 투표 초기화</button>
-    </div>`;
-}
-
-function syncVoteBtn() {
-  const btn = document.getElementById('potmVoteBtn');
-  if (btn) btn.disabled = !(potmPick.mvp && potmPick.growth);
-}
-async function submitVote() {
-  if (!potmVoterId) return;
-  if (!potmPick.mvp || !potmPick.growth) return toast('두 부문 모두 선택해 주세요');
-  if (!isVotingOpen() && !isAdmin()) { toast(`투표는 ${fmtOpenTime(votingOpensAt())}부터 가능해요`); return renderPotm(); }
-  const pm = ROSTER.find(m => m.id === potmPick.mvp), pg = ROSTER.find(m => m.id === potmPick.growth);
-  if (!confirm(`이달의 선수: ${pm?pm.name:''}\n가장 성장한 선수: ${pg?pg.name:''}\n\n제출할까요? 투표 후엔 변경할 수 없어요.`)) return;
-  const btn = document.getElementById('potmVoteBtn');
-  if (btn) { btn.disabled = true; btn.textContent = '투표 중...'; }
-  const m = potmMonth();
-  const r1 = await castVote(m, 'mvp', potmVoterId, potmPick.mvp);
-  const r2 = await castVote(m, 'growth', potmVoterId, potmPick.growth);
-  potmPick = { mvp:null, growth:null };
-  await renderPotm();
-  toast((r1 === 'dup' || r2 === 'dup') ? '이미 이번 달 투표를 하셨어요' : '투표 완료!');
-}
-async function adminResetPotm() {
-  if (!isAdmin()) return;
-  const cat = VOTE_CATS.find(c=>c.key===potmCat) || VOTE_CATS[0];
-  if (!confirm(`[${cat.label}] 이번 달 투표를 모두 초기화할까요? 되돌릴 수 없어요.`)) return;
-  const ok = await resetVotes(potmMonth(), potmCat);
-  if (!ok) return;
-  await renderPotm();
-  toast('이 부문 투표를 초기화했어요');
-}
-
-// 실시간 갱신 (DB 모드 + POTM 탭이 열려 있을 때)
-if (USE_DB) {
-  sb.channel('potm-changes')
-    .on('postgres_changes', { event: '*', schema: 'public', table: 'potm_votes' }, () => {
-      if (!document.getElementById('tab-potm').classList.contains('hidden')) renderPotm();
-    })
-    .subscribe();
-}
-
-/* ============================================================
-   공지 · 참석 · 회비 · 운영진
-   - 멤버: 보기 + 참여(참석/투표). 운영진: 작성/수정/마감
-   - 데이터: Supabase (notices / attendance / dues / club_settings)
-     데모 모드(키 없음)에선 localStorage로 동작
-   ============================================================ */
-
-/* 인별 월 회비(원) — 회비 장부 기준 기본값. 없으면 30000 */
-const DUES_DEFAULT = {
-  '박승한':10000,'홍순인':10000,'정희범':10000,'김이연':10000,'원재식':10000,'최승호':10000,'조은애':10000,
-};
-function dueAmount(name){ return DUES_DEFAULT[name] != null ? DUES_DEFAULT[name] : 30000; }
-function won(n){ return (n||0).toLocaleString('ko-KR') + '원'; }
-
-/* ---------- 공통: 다음 세션 날짜(다가오는 수요일) ---------- */
-const ATTENDANCE_START = '2026-07-01';   // 출석 체크 시작일 (이전엔 첫 세션을 이 날로 고정)
-function upcomingSessionDate() {
-  const d = new Date(); d.setHours(0,0,0,0);
-  let diff = (3 - d.getDay() + 7) % 7;               // 3 = 수요일
-  if (diff === 0 && new Date().getHours() >= 23) diff = 7;
-  d.setDate(d.getDate() + diff);
-  const y=d.getFullYear(), m=String(d.getMonth()+1).padStart(2,'0'), dd=String(d.getDate()).padStart(2,'0');
-  const ds = `${y}-${m}-${dd}`;
-  return ds < ATTENDANCE_START ? ATTENDANCE_START : ds;   // 시작일 전이면 7/1 세션으로
-}
-function fmtSessionDate(ds, time) {
-  if (!ds) return '';
-  const dt = new Date(ds + 'T' + (time||'20:00'));
-  const days=['일','월','화','수','목','금','토'];
-  let hh=dt.getHours(), mm=String(dt.getMinutes()).padStart(2,'0');
-  const ampm=hh<12?'오전':'오후'; let h12=hh%12; if(h12===0)h12=12;
-  return `${dt.getMonth()+1}월 ${dt.getDate()}일 (${days[dt.getDay()]}) ${ampm} ${h12}:${mm}`;
-}
-
-/* ---------- 클럽 설정(이번 세션 등) — jsonb 단일 행 ---------- */
-const SETTINGS_STORE = 'socoffee_settings_v1';
-let _settingsCache = null;
-async function fetchSettings() {
-  if (_settingsCache) return _settingsCache;
-  let data = {};
-  if (USE_DB) {
-    const { data: row } = await sb.from('club_settings').select('data').eq('id','current').maybeSingle();
-    data = (row && row.data) || {};
-  } else {
-    try { data = JSON.parse(localStorage.getItem(SETTINGS_STORE)) || {}; } catch(e) { data = {}; }
-  }
-  _settingsCache = data; return data;
-}
-async function saveSettings(patch) {
-  const cur = await fetchSettings();
-  const next = { ...cur, ...patch };
-  _settingsCache = next;
-  if (USE_DB) {
-    const { error } = await sb.from('club_settings').upsert({ id:'current', data: next, updated_at: new Date().toISOString() });
-    if (error) { toast('설정 저장 오류: ' + error.message); return false; }
-  } else {
-    localStorage.setItem(SETTINGS_STORE, JSON.stringify(next));
-  }
-  return true;
-}
-/* ---------- 세션(여러 개) — club_settings.sessions 배열에 저장 ---------- */
-function todayStr() {
-  const d = new Date();
-  return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
-}
-async function getSessions() {
-  const s = await fetchSettings();
-  const list = Array.isArray(s.sessions) ? s.sessions.slice() : [];
-  return list.sort((a,b)=> ((a.date||'')+(a.time||'')).localeCompare((b.date||'')+(b.time||'')));
-}
-// 다가오는(오늘 이후) 세션. 등록된 게 없으면 자동 세션 1개.
-async function upcomingSessions() {
-  const t = todayStr();
-  let list = (await getSessions()).filter(s => (s.date||'') >= t);
-  if (!list.length) {
-    const d = upcomingSessionDate();
-    list = [{ id:'auto-'+d, date:d, time:'20:00', place:'상암 풋살장', label:'', auto:true }];
-  }
-  return list;
-}
-async function nearestSession() { return (await upcomingSessions())[0]; }
-async function currentSession() { return nearestSession(); }   // 하위호환
-function sessChipLabel(s) {
-  const [y,m,dd] = (s.date||'').split('-');
-  const days=['일','월','화','수','목','금','토'];
-  const wd = s.date ? days[new Date(s.date+'T00:00').getDay()] : '';
-  const base = `${parseInt(m)}/${parseInt(dd)}(${wd})`;
-  return s.label ? `${base} ${s.label}` : base;
-}
-
-/* ============================================================
-   공지
-   ============================================================ */
-const NOTICE_STORE = 'socoffee_notices_v1';
-async function fetchNotices() {
-  if (USE_DB) {
-    const { data, error } = await sb.from('notices').select('*').order('pinned',{ascending:false}).order('created_at',{ascending:false});
-    if (error) { return []; }   // 테이블 생성 전이면 조용히 빈 목록
-    return data;
-  }
-  let a=[]; try { a = JSON.parse(localStorage.getItem(NOTICE_STORE)) || []; } catch(e){}
-  return a.sort((x,y)=> (y.pinned?1:0)-(x.pinned?1:0) || (y.created_at||'').localeCompare(x.created_at||''));
-}
-async function addNotice(n) {
-  if (USE_DB) {
-    const { error } = await sb.from('notices').insert({ title:n.title, body:n.body, pinned:!!n.pinned });
-    if (error) { toast('등록 오류: ' + error.message); return false; }
-    return true;
-  }
-  const a = await fetchNotices();
-  a.unshift({ id:Date.now(), title:n.title, body:n.body, pinned:!!n.pinned, created_at:new Date().toISOString() });
-  localStorage.setItem(NOTICE_STORE, JSON.stringify(a)); return true;
-}
-async function deleteNotice(id) {
-  if (USE_DB) { const { error } = await sb.from('notices').delete().eq('id', id); if (error){toast('삭제 오류: '+error.message);return false;} return true; }
-  localStorage.setItem(NOTICE_STORE, JSON.stringify((await fetchNotices()).filter(n=>String(n.id)!==String(id)))); return true;
-}
-async function togglePinNotice(id, pinned) {
-  if (USE_DB) { const { error } = await sb.from('notices').update({ pinned }).eq('id', id); if (error){toast('오류: '+error.message);return false;} return true; }
-  const a = await fetchNotices(); const n = a.find(x=>String(x.id)===String(id)); if(n) n.pinned=pinned;
-  localStorage.setItem(NOTICE_STORE, JSON.stringify(a)); return true;
-}
-function noticeDateLabel(iso) {
-  const d = new Date(iso); if (isNaN(d)) return '';
-  return `${d.getMonth()+1}/${d.getDate()}`;
-}
-
-// 팀 구분 안 하는 달 — 전체 팀원 단일 리스트
-function fullSquadBlock(members) {
-  const list = [...members].sort(byJersey);
-  if (!list.length) return '';
-  const row = m => `<div class="sq-row">
-      <span class="no">${m.jersey!=null?String(m.jersey).padStart(2,'0'):'—'}</span>
-      <span class="kr">${esc(m.name)}</span>
-      <span class="en">${esc(m.eng||'')}</span>
-    </div>`;
-  const half = Math.ceil(list.length/2);
-  const col = arr => `<div>${arr.map(row).join('')}</div>`;
-  return `<div class="squad white">
-    <div class="sq-title">전체 팀원 <span class="sq-n">${list.length}명</span></div>
-    <div class="sq-two">${col(list.slice(0,half))}${col(list.slice(half))}</div>
-  </div>`;
-}
-
-// 세션 캐러셀 — 스크롤 위치에 따라 도트/카운터 갱신
-function updateSessDots() {
-  const c = document.getElementById('sessCarousel'); if (!c) return;
-  const i = Math.round(c.scrollLeft / c.clientWidth);
-  document.querySelectorAll('#sessDots .sdot').forEach((d,idx)=> d.classList.toggle('on', idx===i));
-  const cnt = document.getElementById('sessCount');
-  if (cnt) cnt.textContent = `${i+1} / ${c.children.length}`;
-}
-
-// 팀 현황 — WHITE/BLACK 스쿼드 시트(등번호·한글·영문·주장)
-function squadBlock(members, team) {
-  const list = members.filter(m => m.team === team).sort(byJersey);
-  if (!list.length) return '';
-  return `<div class="squad ${team.toLowerCase()}">
-    <div class="sq-title">${team} <span class="sq-n">${list.length}명</span></div>
-    ${list.map(m => `<div class="sq-row">
-      <span class="no">${m.jersey != null ? String(m.jersey).padStart(2,'0') : '—'}</span>
-      <span class="kr">${esc(m.name)}${m.cap ? '<span class="sq-cap">C</span>' : ''}</span>
-      <span class="en">${esc(m.eng || '')}</span>
-    </div>`).join('')}
-  </div>`;
-}
-
-async function renderHome() {
-  const el = document.getElementById('homeContent');
-  el.innerHTML = `<div class="empty">불러오는 중...</div>`;
-  const [sessions, notices] = await Promise.all([upcomingSessions(), fetchNotices()]);
-  const attBySess = {};
-  await Promise.all(sessions.map(async s => { attBySess[s.id] = await fetchAttendance(s.id); }));
-  const cnt = s => ({
-    yes: (attBySess[s.id]||[]).filter(a=>a.status==='yes').length,
-    maybe: (attBySess[s.id]||[]).filter(a=>a.status==='maybe').length
-  });
-
-  const month = potmMonth();
-  const members = activeMembers(month);
-  const white = members.filter(m=>m.team==='WHITE').length;
-  const black = members.filter(m=>m.team==='BLACK').length;
-  const dormant = ROSTER.filter(p=>dormantMonthsOf(p).includes(month)).length;
-
-  const sessCards = sessions.map((s,i)=>{
-    const c = cnt(s);
-    return `
-    <div class="session-card">
-      <div class="lbl">${s.label?esc(s.label):(i===0?'다음 세션':'세션')}</div>
-      <div class="when">${fmtSessionDate(s.date, s.time)}</div>
-      <div class="where">${esc(s.place)}</div>
-      <div class="att-mini">
-        <span><b>${c.yes}</b> 참석</span><span><b>${c.maybe}</b> 미정</span>
-        <span style="margin-left:auto"><a href="#" onclick="openAtt('${s.id}');return false;" style="color:#14281b;text-decoration:underline">참석 체크 →</a></span>
-      </div>
-    </div>`;
-  });
-
-  let html = sessions.length > 1
-    ? `<div class="sess-carousel" id="sessCarousel" onscroll="updateSessDots()">${sessCards.join('')}</div>
-       <div class="sess-dots">
-         <span class="sess-count" id="sessCount">1 / ${sessions.length}</span>
-         <span id="sessDots">${sessions.map((_,i)=>`<span class="sdot ${i===0?'on':''}"></span>`).join('')}</span>
-       </div>`
-    : sessCards.join('');
-
-  html += `
-    <div class="section-title">공지사항</div>`;
-
-  if (notices.length === 0) {
-    html += `<div class="card"><div class="empty">아직 공지가 없어요.</div></div>`;
-  } else {
-    html += notices.map(n => `
-      <div class="notice ${n.pinned?'pinned':''}">
-        <div class="n-top">
-          <div class="n-title">${n.pinned?'<span class="pin-tag">고정</span>':''}${esc(n.title)}</div>
-          <div class="n-date">${noticeDateLabel(n.created_at)}</div>
-        </div>
-        ${n.body?`<div class="n-body">${esc(n.body)}</div>`:''}
-      </div>`).join('');
-  }
-
-  html += `<div class="section-title">팀 현황</div>`;
-  if (teamSplitOn) {
-    html += `
-    <p class="hint" style="text-align:center;margin:0 0 12px">활동 ${members.length}명 · WHITE ${white} · BLACK ${black}${dormant?` · 휴면 ${dormant}명`:''}</p>
-    <div class="squad-wrap">${squadBlock(members,'WHITE')}${squadBlock(members,'BLACK')}</div>`;
-  } else {
-    html += `
-    <p class="hint" style="text-align:center;margin:0 0 12px">활동 ${members.length}명${dormant?` · 휴면 ${dormant}명`:''}</p>
-    ${fullSquadBlock(members)}`;
-  }
-
-  el.innerHTML = html;
-}
-
-/* ============================================================
-   참석
-   ============================================================ */
-const ATT_STORE = 'socoffee_attendance_v1';
-const ME_KEY = 'socoffee_me';            // 이 브라우저의 '나' (멤버 id)
-function getMe(){ const v = localStorage.getItem(ME_KEY); return v?Number(v):null; }
-function setMe(id){ localStorage.setItem(ME_KEY, String(id)); }
-
-async function fetchAttendance(sessionId) {
-  if (!sessionId) sessionId = (await nearestSession()).id;
-  if (USE_DB) {
-    const { data, error } = await sb.from('attendance').select('member_id, status').eq('session_id', sessionId);
-    if (error) { return []; }
-    return data;
-  }
-  let a=[]; try { a = JSON.parse(localStorage.getItem(ATT_STORE)) || []; } catch(e){}
-  return a.filter(x=>x.session_id===sessionId);
-}
-async function setAttendance(sessionId, memberId, status) {
-  if (USE_DB) {
-    const { error } = await sb.from('attendance').upsert(
-      { session_id:sessionId, member_id:memberId, status, updated_at:new Date().toISOString() },
-      { onConflict:'session_id,member_id' });
-    if (error) { toast('저장 오류: ' + error.message); return false; }
-    return true;
-  }
-  let a=[]; try { a = JSON.parse(localStorage.getItem(ATT_STORE)) || []; } catch(e){}
-  a = a.filter(x=>!(x.session_id===sessionId && x.member_id===memberId));
-  a.push({ session_id:sessionId, member_id:memberId, status });
-  localStorage.setItem(ATT_STORE, JSON.stringify(a)); return true;
-}
-
-let attMe = null;
-let attSessionId = null;
-let attTeamView = false;     // 참석 탭: 팀별 보기 on/off
-let teamSplitOn = true;      // 이번 달 팀 구분(WHITE/BLACK) 사용 여부 (운영진 설정)
-function toggleAttTeam(){ attTeamView = !attTeamView; renderAtt(); }
-async function renderAtt() {
-  const el = document.getElementById('attContent');
-  el.innerHTML = `<div class="empty">불러오는 중...</div>`;
-  const sessions = await upcomingSessions();
-  if (attSessionId == null || !sessions.some(s=>s.id===attSessionId)) attSessionId = sessions[0].id;
-  const sess = sessions.find(s=>s.id===attSessionId);
-  const month = potmMonth();
-  const members = activeMembers(month);
-  attMe = getMe();
-  const att = await fetchAttendance(sess.id);
-  const map = {}; att.forEach(a=>{ map[a.member_id]=a.status; });
-  const yes = att.filter(a=>a.status==='yes').length;
-  const no  = att.filter(a=>a.status==='no').length;
-  const maybe = att.filter(a=>a.status==='maybe').length;
-  const mine = attMe ? map[attMe] : null;
-
-  let html = '';
-  if (sessions.length > 1) {
-    html += `<div class="sess-tabs">${sessions.map(s=>`<button class="sess-chip ${s.id===attSessionId?'on':''}" onclick="pickAttSession('${s.id}')">${esc(sessChipLabel(s))}</button>`).join('')}</div>`;
-  }
-  html += `
-    <div class="session-card">
-      <div class="lbl">${sess.label?esc(sess.label):'참석 체크'}</div>
-      <div class="when">${fmtSessionDate(sess.date, sess.time)}</div>
-      <div class="where">${esc(sess.place)}</div>
-    </div>`;
-
-  const meActive = attMe && members.some(m=>m.id===attMe);
-  if (!attMe) {
-    html += `<div class="card"><div class="empty">로그인이 필요해요.</div></div>`;
-  } else if (!meActive) {
-    html += `<div class="card"><h2>${esc(meName())} 님</h2><p class="sub">이번 달 활동 회원이 아니라 참석 체크 대상이 아니에요.</p></div>`;
-  } else {
-    html += `
-      <div class="voter-bar"><span class="who">나: <b>${esc(meName())}</b> 님</span></div>
-      <div class="card">
-        <h2>참석하시나요?</h2>
-        <div class="att-seg">
-          <button class="yes ${mine==='yes'?'on':''}" onclick="markAtt('yes')">참석</button>
-          <button class="no ${mine==='no'?'on':''}" onclick="markAtt('no')">불참</button>
-          <button class="maybe ${mine==='maybe'?'on':''}" onclick="markAtt('maybe')">미정</button>
-        </div>
-        <p class="hint">언제든 다시 누르면 변경돼요.</p>
-      </div>`;
-  }
-
-  const rosterRow = m => {
-    const s = map[m.id] || 'none';
-    const lbl = {yes:'참석',no:'불참',maybe:'미정',none:'—'}[s];
-    return `<div class="att-row"><span class="js">${m.jersey!=null?m.jersey:''}</span><span class="nm">${esc(m.name)}</span><span class="st ${s}">${lbl}</span></div>`;
-  };
-  const sortedM = [...members].sort(byJersey);
-  let listHtml;
-  if (teamSplitOn && attTeamView) {
-    listHtml = [['WHITE','WHITE'],['BLACK','BLACK'],['기타','기타']].map(([key,label])=>{
-      const gm = sortedM.filter(m=>(m.team||'기타')===key);
-      if (!gm.length) return '';
-      const gy = gm.filter(m=>map[m.id]==='yes').length;
-      return `<div class="att-grp-h">${label} <span>참석 ${gy} / ${gm.length}명</span></div>${gm.map(rosterRow).join('')}`;
-    }).join('');
-  } else {
-    listHtml = [['yes','참석'],['maybe','미정'],['no','불참'],['none','미응답']].map(([key,label])=>{
-      const gm = sortedM.filter(m=>(map[m.id]||'none')===key);
-      if (!gm.length) return '';
-      return `<div class="att-grp-h">${label} <span>${gm.length}명</span></div>${gm.map(rosterRow).join('')}`;
-    }).join('');
-  }
-
-  html += `
-    <div class="att-counts">
-      <div class="att-cnt yes"><div class="num">${yes}</div><div class="cap">참석</div></div>
-      <div class="att-cnt maybe"><div class="num">${maybe}</div><div class="cap">미정</div></div>
-      <div class="att-cnt no"><div class="num">${no}</div><div class="cap">불참</div></div>
-    </div>
-    <div class="card">
-      <div class="section-title" style="margin:0 0 8px;display:flex;justify-content:space-between;align-items:center">
-        <span>명단 현황 <span style="font-size:12px;color:var(--muted);font-weight:700">${att.length}/${members.length} 응답</span></span>
-        ${teamSplitOn?`<button class="btn ghost sm" onclick="toggleAttTeam()">${attTeamView?'전체 보기':'팀별 보기'}</button>`:''}
-      </div>
-      <div class="att-list">${listHtml}</div>
-    </div>`;
-  el.innerHTML = html;
-}
-function pickAttSession(id){ attSessionId = id; renderAtt(); }
-function openAtt(id){ if(id) attSessionId = id; switchTab('att'); }
-async function markAtt(status){
-  if(!attMe || !attSessionId) return;
-  const ok = await setAttendance(attSessionId, attMe, status);
-  if(!ok) return;
-  await renderAtt();
-  toast({yes:'참석으로 표시했어요',no:'불참으로 표시했어요',maybe:'미정으로 표시했어요'}[status]);
-}
-
-/* ============================================================
-   회비 — 이번 달 납부 현황판
-   ============================================================ */
-const DUES_STORE = 'socoffee_dues_v1';
-async function fetchDues(month) {
-  if (USE_DB) {
-    const { data, error } = await sb.from('dues').select('member_id, paid, amount').eq('month', month);
-    if (error) { return []; }
-    return data;
-  }
-  let a=[]; try { a = JSON.parse(localStorage.getItem(DUES_STORE)) || []; } catch(e){}
-  return a.filter(x=>x.month===month);
-}
-async function setDuesPaid(month, memberId, paid, amount) {
-  if (USE_DB) {
-    const { error } = await sb.from('dues').upsert(
-      { month, member_id:memberId, paid, amount, updated_at:new Date().toISOString() },
-      { onConflict:'month,member_id' });
-    if (error) { toast('저장 오류: ' + error.message); return false; }
-    return true;
-  }
-  let a=[]; try { a = JSON.parse(localStorage.getItem(DUES_STORE)) || []; } catch(e){}
-  a = a.filter(x=>!(x.month===month && x.member_id===memberId));
-  a.push({ month, member_id:memberId, paid, amount });
-  localStorage.setItem(DUES_STORE, JSON.stringify(a)); return true;
-}
-
-async function renderDues() {
-  const el = document.getElementById('duesContent');
-  el.innerHTML = `<div class="empty">불러오는 중...</div>`;
-  const month = duesMonth();
-  const members = activeMembers(month);
-  const dues = await fetchDues(month);
-  const paidMap = {}; dues.forEach(d=>{ paidMap[d.member_id]=d.paid; });
-  const admin = isAdmin();
-  const me = getMe();
-
-  const paidCount = members.filter(m=>paidMap[m.id]).length;
-  const total = members.length;
-  const collected = members.filter(m=>paidMap[m.id]).reduce((s,m)=>s+dueAmount(m.name),0);
-  const expected = members.reduce((s,m)=>s+dueAmount(m.name),0);
-  const pct = total ? Math.round(paidCount/total*100) : 0;
-
-  let html = `
-    <div class="potm-hero" style="background:linear-gradient(135deg,#2f7a4f,#245f3e)">
-      <div class="trophy"></div>
-      <h2>${potmMonthLabel(month)} 회비</h2>
-      <div class="month">${paidCount}/${total}명 납부 · ${pct}%</div>
-      <div class="turnout"><b>${won(collected)}</b> 걷힘 / 예상 ${won(expected)}</div>
-    </div>
-    <div class="dues-progress"><div style="width:${pct}%"></div></div>
-    <div class="dues-summary">
-      <div class="dues-stat paid"><div class="num">${paidCount}</div><div class="cap">납부</div></div>
-      <div class="dues-stat unpaid"><div class="num">${total-paidCount}</div><div class="cap">미납</div></div>
-      <div class="dues-stat"><div class="num">${won(collected).replace('원','')}</div><div class="cap">걷힌 금액(원)</div></div>
-    </div>
-    ${admin?'<div class="ops-note">운영진 모드 — 이름을 누르면 납부/미납이 전환돼요</div>':'<p class="hint" style="text-align:center;margin-bottom:12px">회비 납부 여부는 운영진이 확인해 표시해요. 입금 후 반영까지 시간이 걸릴 수 있어요.</p>'}
-    <div class="card">
-      <div class="att-list">
-        ${[...members].sort(byJersey).map(m=>{
-          const paid = !!paidMap[m.id];
-          const isMe = me===m.id;
-          const badge = admin
-            ? `<button class="dues-badge toggle ${paid?'paid':'unpaid'}" onclick="toggleDue(${m.id},${paid})">${paid?'납부':'미납'}</button>`
-            : `<span class="dues-badge ${paid?'paid':'unpaid'}">${paid?'납부':'미납'}</span>`;
-          return `<div class="dues-row ${isMe?'me':''}">
-            <span class="nm">${esc(m.name)}${isMe?' <span style="font-size:11px;color:var(--accent)">(나)</span>':''}</span>
-            <span class="amt">${won(dueAmount(m.name))}</span>
-            ${badge}
-          </div>`;
-        }).join('')}
-      </div>
-    </div>`;
-  el.innerHTML = html;
-}
-async function toggleDue(memberId, currentlyPaid) {
-  if (!isAdmin()) return;
-  const m = ROSTER.find(x=>x.id===memberId);
-  const ok = await setDuesPaid(duesMonth(), memberId, !currentlyPaid, dueAmount(m?m.name:''));
-  if (!ok) return;
-  await renderDues();
-}
-
-/* ============================================================
-   운영진 — 관리 통합 (공지작성 · 세션설정 · 회비 · 투표)
-   ============================================================ */
-async function renderOps() {
-  const el = document.getElementById('opsContent');
-  if (!isAdmin()) { el.innerHTML = `<div class="card"><div class="empty">운영진 모드에서만 보여요.</div></div>`; return; }
-  el.innerHTML = `<div class="empty">불러오는 중...</div>`;
-  const month = potmMonth();
-  const [allSessions, notices, dues, votesMvp, votesGrowth] = await Promise.all([
-    getSessions(), fetchNotices(), fetchDues(month), fetchVotes(month,'mvp'), fetchVotes(month,'growth')
-  ]);
-  const members = activeMembers(month);
-  const paidCount = members.filter(m=>dues.find(d=>d.member_id===m.id && d.paid)).length;
-  const defDate = upcomingSessionDate();
-
-  const OPS_TABS = [
-    { key:'notice',  label:'공지' },
-    { key:'session', label:'세션' },
-    { key:'roster',  label:'설정' },
-    { key:'dues',    label:'회비' },
-    { key:'vote',    label:'투표' },
-  ];
-  if (!OPS_TABS.some(t => t.key === opsTabSel)) opsTabSel = 'notice';
-
-  const secNotice = `
-    <div class="field"><label>제목</label><input id="opsNoticeTitle" placeholder="예: 이번 주 우천 시 실내 대체" maxlength="60"></div>
-    <div class="field"><label>내용 <span style="color:var(--muted);font-weight:400">(선택)</span></label><textarea id="opsNoticeBody" rows="3" placeholder="자세한 내용을 적어주세요"></textarea></div>
-    <label style="display:flex;align-items:center;gap:8px;font-weight:600;margin-bottom:12px"><input type="checkbox" id="opsNoticePin" style="width:auto"> 상단 고정</label>
-    <button class="btn accent sm" onclick="opsAddNotice()">공지 등록</button>
-    <div style="margin-top:16px">
-      ${notices.length===0?'<p class="hint">등록된 공지가 없어요.</p>':notices.map(n=>`
-        <div class="notice ${n.pinned?'pinned':''}">
-          <div class="n-top"><div class="n-title">${n.pinned?'<span class="pin-tag">고정</span>':''}${esc(n.title)}</div><div class="n-date">${noticeDateLabel(n.created_at)}</div></div>
-          ${n.body?`<div class="n-body">${esc(n.body)}</div>`:''}
-          <div class="n-actions">
-            <button class="btn ghost sm" onclick="opsPin('${n.id}',${!n.pinned})">${n.pinned?'고정 해제':'고정'}</button>
-            <button class="btn ghost sm" style="color:var(--red)" onclick="opsDelNotice('${n.id}')">삭제</button>
-          </div>
-        </div>`).join('')}
-    </div>`;
-
-  const secSession = `
-    <div class="row"><div class="field"><label>날짜</label><input id="opsSessDate" type="date" value="${defDate}"></div><div class="field"><label>시간</label><input id="opsSessTime" type="time" value="20:00"></div></div>
-    <div class="field"><label>장소</label><input id="opsSessPlace" value="상암 풋살장" maxlength="40"></div>
-    <div class="field"><label>이름/메모 <span style="color:var(--muted);font-weight:400">(선택, 예: A매치)</span></label><input id="opsSessLabel" maxlength="30" placeholder="예: A매치"></div>
-    <button class="btn accent sm" onclick="opsAddSession()">세션 추가</button>
-    <div style="margin-top:16px">
-      ${allSessions.length===0?'<p class="hint">등록된 세션이 없어요. (비우면 다가오는 수요일·상암 풋살장으로 자동 표시돼요)</p>':allSessions.map(s=>`
-        <div class="ops-row"><div style="min-width:0"><b>${fmtSessionDate(s.date,s.time)}</b>${s.label?` · ${esc(s.label)}`:''}<div class="hint" style="margin:0">${esc(s.place)}</div></div><button class="btn ghost sm" style="color:var(--red);flex-shrink:0" onclick="opsDelSession('${s.id}')">삭제</button></div>`).join('')}
-    </div>
-    <p class="hint" style="margin-top:10px">같은 날 여러 경기(A/B매치)도 따로 등록하면 참석을 각각 받아요.</p>`;
-
-  const secRoster = `
-    <div class="ops-row" style="border:none;padding:0 0 12px">
-      <div style="min-width:0"><b style="color:#ece6d2">이번 달 팀 구분 (WHITE/BLACK)</b><div class="hint" style="margin:0">끄면 홈·참석이 전체 명단으로 표시돼요</div></div>
-      <button class="dues-badge toggle ${teamSplitOn?'paid':'unpaid'}" style="flex-shrink:0" onclick="opsToggleTeamSplit()">${teamSplitOn?'사용 중':'미사용'}</button>
-    </div>
-    <p class="hint" style="margin-top:4px;line-height:1.6">선수 명단·등번호·티어·<b style="color:#ece6d2">휴면</b>은 <b style="color:#ece6d2">팀빌더</b>에서 관리해요(더 자세함).<br>휴면 상태는 팀빌더 데이터를 사이트가 자동으로 읽어 반영합니다.</p>`;
-
-  const secDues = `
-    <p class="hint" style="margin-top:0">'회비' 탭에서 이름을 눌러 납부 처리하세요. 빠른 이동:</p>
-    <button class="btn sm" onclick="switchTab('dues')">회비 현황판 열기</button>`;
-
-  const secVote = `
-    <p class="hint" style="margin:0 0 6px;font-weight:800;color:#ece6d2">이달의 선수 (${votesMvp.length}표)</p>
-    ${resultsHtml(votesMvp, members)}
-    <button class="btn ghost sm" style="color:var(--red);margin-top:10px" onclick="opsResetVote('mvp')">이달의 선수 초기화</button>
-    <p class="hint" style="margin:18px 0 6px;font-weight:800;color:#ece6d2">가장 성장한 선수 (${votesGrowth.length}표)</p>
-    ${resultsHtml(votesGrowth, members)}
-    <button class="btn ghost sm" style="color:var(--red);margin-top:10px" onclick="opsResetVote('growth')">가장 성장한 선수 초기화</button>`;
-
-  const bodyMap = { notice:secNotice, session:secSession, roster:secRoster, dues:secDues, vote:secVote };
-
-  el.innerHTML = `
-    <div class="ops-note">운영진 전용 화면입니다. 팀원에게는 보이지 않아요.</div>
-    <div class="ops-subtabs">
-      ${OPS_TABS.map(t => `<button class="ops-subtab ${t.key===opsTabSel?'on':''}" onclick="opsSwitch('${t.key}')">${t.label}</button>`).join('')}
-    </div>
-    <div class="card">${bodyMap[opsTabSel]}</div>`;
-}
-async function opsResetVote(cat) {
-  if (!isAdmin()) return;
-  const c = VOTE_CATS.find(x=>x.key===cat) || VOTE_CATS[0];
-  if (!confirm(`[${c.label}] 이번 달 투표를 초기화할까요? 되돌릴 수 없어요.`)) return;
-  if (await resetVotes(potmMonth(), cat)) { await renderOps(); toast('초기화했어요'); }
-}
-async function opsToggleTeamSplit() {
-  if (!isAdmin()) return;
-  const next = !teamSplitOn;
-  if (!(await saveSettings({ teamSplit: next }))) return;
-  teamSplitOn = next;
-  await renderOps(); refreshOpenMemberViews();
-  toast(teamSplitOn ? '팀 구분 사용' : '팀 구분 미사용 (전체 명단)');
-}
-
-/* ---------- 운영진 내부 서브탭 ---------- */
-let opsTabSel = 'notice';
-function opsSwitch(key){ opsTabSel = key; renderOps(); }
-
-/* ---------- 명단 관리 (운영진) ---------- */
-let opsEditId = null;
-function nextPlayerId(){ return PLAYERS.reduce((m,p)=>Math.max(m, p.id||0), 0) + 1; }
-function refreshOpenMemberViews(){
-  const open = id => !document.getElementById(id).classList.contains('hidden');
-  if (open('tab-home')) renderHome();
-  if (open('tab-att'))  renderAtt();
-  if (open('tab-dues')) renderDues();
-  if (open('tab-potm')) renderPotm();
-}
-async function opsAddPlayer(){
-  if (!isAdmin()) return;
-  const name = document.getElementById('opNewName').value.trim();
-  if (!name) return toast('이름을 입력해 주세요');
-  const team = document.getElementById('opNewTeam').value;
-  const jv = document.getElementById('opNewJersey').value;
-  const tier = parseInt(document.getElementById('opNewTier').value) || 3;
-  const eng = document.getElementById('opNewEng').value.trim();
-  const p = { id:nextPlayerId(), name, tier, status:'active', joinDate:potmMonth()+'-01',
-    friendsSince:null, dormantMonths:[], jersey:(jv!==''?parseInt(jv):null), eng, team, cap:false };
-  if (!(await saveRoster(PLAYERS.concat([p])))) return;
-  opsEditId = null; await renderOps(); refreshOpenMemberViews(); toast('선수를 추가했어요');
-}
-async function opsDelPlayer(id){
-  if (!isAdmin()) return;
-  const p = PLAYERS.find(x=>x.id===id);
-  if (!confirm(`'${p?p.name:''}' 님을 명단에서 삭제할까요?`)) return;
-  if (!(await saveRoster(PLAYERS.filter(x=>x.id!==id)))) return;
-  if (opsEditId===id) opsEditId = null;
-  await renderOps(); refreshOpenMemberViews(); toast('삭제했어요');
-}
-async function opsToggleDormant(id){
-  if (!isAdmin()) return;
-  const m = potmMonth();
-  const list = PLAYERS.map(p => {
-    if (p.id !== id) return p;
-    const dm = (p.dormantMonths||[]).slice();
-    const i = dm.indexOf(m); if (i>=0) dm.splice(i,1); else dm.push(m);
-    return { ...p, dormantMonths:dm };
-  });
-  if (!(await saveRoster(list))) return;
-  await renderOps(); refreshOpenMemberViews();
-}
-function opsEditPlayer(id){ opsEditId = id; renderOps(); }
-async function opsSavePlayer(id){
-  if (!isAdmin()) return;
-  const name = document.getElementById('opeName').value.trim();
-  if (!name) return toast('이름을 입력해 주세요');
-  const team = document.getElementById('opeTeam').value;
-  const jv = document.getElementById('opeJersey').value;
-  const tier = parseInt(document.getElementById('opeTier').value) || 3;
-  const eng = document.getElementById('opeEng').value.trim();
-  const cap = document.getElementById('opeCap').checked;
-  const status = document.getElementById('opeStatus').value;
-  const list = PLAYERS.map(p => p.id!==id ? p
-    : { ...p, name, team, tier, eng, cap, status, jersey:(jv!==''?parseInt(jv):null) });
-  if (!(await saveRoster(list))) return;
-  opsEditId = null; await renderOps(); refreshOpenMemberViews(); toast('저장했어요');
-}
-async function opsAddNotice() {
-  const title = document.getElementById('opsNoticeTitle').value.trim();
-  if (!title) return toast('제목을 입력해 주세요');
-  const body = document.getElementById('opsNoticeBody').value.trim();
-  const pinned = document.getElementById('opsNoticePin').checked;
-  const ok = await addNotice({ title, body, pinned });
-  if (!ok) return;
-  await renderOps(); toast('공지를 등록했어요 ');
-}
-async function opsDelNotice(id){ if(!confirm('이 공지를 삭제할까요?'))return; if(await deleteNotice(id)){ await renderOps(); toast('삭제했어요'); } }
-async function opsPin(id, pin){ if(await togglePinNotice(id, pin)){ await renderOps(); } }
-async function opsAddSession() {
-  const date = document.getElementById('opsSessDate').value;
-  if (!date) return toast('날짜를 선택해 주세요');
-  const time = document.getElementById('opsSessTime').value || '20:00';
-  const place = document.getElementById('opsSessPlace').value.trim() || '상암 풋살장';
-  const label = document.getElementById('opsSessLabel').value.trim();
-  const list = await getSessions();
-  list.push({ id:'s'+Date.now().toString(36)+Math.random().toString(36).slice(2,5), date, time, place, label });
-  if (!(await saveSettings({ sessions: list }))) return;
-  await renderOps(); toast('세션을 추가했어요');
-}
-async function opsDelSession(id) {
-  if (!confirm('이 세션을 삭제할까요? 참석 기록도 더는 표시되지 않아요.')) return;
-  const list = (await getSessions()).filter(s=>s.id!==id);
-  if (!(await saveSettings({ sessions: list }))) return;
-  await renderOps(); toast('세션을 삭제했어요');
-}
-
-/* ---------- 실시간 갱신 (새 테이블) ---------- */
-if (USE_DB) {
-  ['notices','attendance','dues','club_settings'].forEach(tbl => {
-    sb.channel(tbl+'-rt').on('postgres_changes', { event:'*', schema:'public', table:tbl }, async () => {
-      _settingsCache = null;
-      if (tbl === 'club_settings') { try { const r = await fetchRoster(); if (r) applyPlayers(r); const s = await fetchSettings(); teamSplitOn = s.teamSplit !== false; await loadTbDormant(); } catch (e) {} }
-      const open = id => !document.getElementById(id).classList.contains('hidden');
-      if (open('tab-home')) renderHome();
-      if (open('tab-att'))  renderAtt();
-      if (open('tab-dues')) renderDues();
-      if (open('tab-ops'))  renderOps();
-    }).subscribe();
-  });
-}
-
-/* ============================================================
-   랭킹 — 팀빌더 클라우드 데이터(club_settings id='teambuilder')를 읽어 집계
-   ============================================================ */
-let rankTab = 'att', rankYear = '2026';
-function switchRankTab(t){ rankTab = t; renderRank(); }
-function changeRankYear(y){ rankYear = y; renderRank(); }
-
-async function fetchTeamBuilder(){
-  if (!USE_DB) return null;
-  try { const { data } = await sb.from('club_settings').select('data').eq('id','teambuilder').maybeSingle(); return (data && data.data) || null; }
-  catch(e){ return null; }
-}
-function rkInPool(p, d){
-  if (p.joinDate && d < p.joinDate) return false;
-  if (p.leaveDate && p.rejoinDate){ if (d >= p.leaveDate && d < p.rejoinDate) return false; }
-  else if (p.leaveDate && !p.rejoinDate){ if (d >= p.leaveDate) return false; }
-  return true;
-}
-function rkDormant(p, mo){ return (p.dormantMonths||[]).includes(mo); }
-function rkAtt(p, sess){
-  let a=0,c=0;
-  sess.forEach(s=>{ if(!rkInPool(p,s.date)) return; if(rkDormant(p,s.date.slice(0,7))) return; c++; if((s.attendees||[]).includes(p.id)) a++; });
-  return { rate: c>0?Math.round(a/c*1000)/10:0, attended:a, counted:c };
-}
-function rkRanks(list, key){ const r=[]; list.forEach((x,i)=>{ if(i===0){r.push(1);return;} r.push(key(x)===key(list[i-1])?r[i-1]:i+1); }); return r; }
-
-async function renderRank(){
-  const el = document.getElementById('rankContent');
-  el.innerHTML = `<div class="empty">불러오는 중...</div>`;
-  const tb = await fetchTeamBuilder();
-  const tabsHtml = `<div class="rk-tabs">${[['att','출석율'],['lma','당일 불참'],['dorm','휴면율'],['model','모범생']].map(([k,l])=>`<button class="rk-tab ${k===rankTab?'on':''}" onclick="switchRankTab('${k}')">${l}</button>`).join('')}</div>`;
-  const hero = `<div class="potm-hero"><h2>랭킹</h2><div class="month">팀빌더 출석 기록 기준</div></div>`;
-  if (!tb || !Array.isArray(tb.sessions) || !tb.sessions.length){
-    el.innerHTML = hero + tabsHtml + `<div class="card"><div class="empty">아직 집계할 출석 데이터가 없어요.<br>팀빌더에서 세션 출석을 기록하면 여기에 랭킹이 나와요.</div></div>`;
-    return;
-  }
-  const players = tb.players || [];
-  const allSess = [...tb.sessions].sort((a,b)=>a.date.localeCompare(b.date));
-  const years = [...new Set(allSess.map(s=>(s.date||'').slice(0,4)).filter(Boolean))].sort();
-  if (rankYear && !years.includes(rankYear)) rankYear = '';
-  const sess = rankYear ? allSess.filter(s=>(s.date||'').startsWith(rankYear)) : allSess;
-  const yearLabel = rankYear ? `${rankYear}년` : '전체';
-  const elig = players.filter(p=>{ const st=p.status||'active'; return st!=='former' && st!=='friends'; });
-
-  let data, ranks, valFn, subFn, pctFn, note;
-  if (rankTab==='att'){
-    const tot=sess.length, min=Math.ceil(tot*0.5);
-    data = elig.map(p=>{ const r=rkAtt(p,sess); return {p,_r:r.rate,_a:r.attended,_t:r.counted}; }).filter(x=>x._t>=min).sort((a,b)=>b._r-a._r);
-    ranks = rkRanks(data,x=>x._a+'/'+x._t);
-    valFn=x=>x._r+'%'; subFn=x=>`${x._a}/${x._t}세션`; pctFn=x=>x._r;
-    note=`${yearLabel} · ${data.length}명 · 출석율 (${min}세션↑)`;
-  } else if (rankTab==='dorm'){
-    data = elig.map(p=>{ const pm=new Set(sess.filter(s=>rkInPool(p,s.date)).map(s=>s.date.slice(0,7))); const dm=new Set((p.dormantMonths||[]).filter(mo=>pm.has(mo))); const rate=pm.size>0?Math.round(dm.size/pm.size*1000)/10:0; return {p,_r:rate,_d:dm.size,_m:pm.size}; }).filter(x=>x._r>0).sort((a,b)=>b._r-a._r);
-    ranks = rkRanks(data,x=>x._d+'/'+x._m);
-    valFn=x=>x._r+'%'; subFn=x=>`${x._d}/${x._m}개월`; pctFn=x=>x._r;
-    note=`${yearLabel} · ${data.length}명 · 휴면율`;
-  } else if (rankTab==='lma'){
-    data = elig.map(p=>{ const pool=sess.filter(s=>rkInPool(p,s.date)&&!rkDormant(p,s.date.slice(0,7))); const cnt=pool.filter(s=>(s.lastMinuteAbsentIds||[]).includes(p.id)).length; const rate=pool.length>0?Math.round(cnt/pool.length*1000)/10:0; return {p,_c:cnt,_r:rate,_t:pool.length}; }).filter(x=>x._c>0).sort((a,b)=>b._r-a._r||b._c-a._c);
-    ranks = rkRanks(data,x=>x._c+'/'+x._t);
-    valFn=x=>x._r+'%'; subFn=x=>`${x._c}회`; pctFn=x=>Math.round(x._r);
-    note=`${yearLabel} · ${data.length}명 · 당일 불참율`;
-  } else {
-    const tot=sess.length, min=Math.ceil(tot*0.5);
-    let raw = elig.map(p=>{ const r=rkAtt(p,sess); if(r.counted<min) return null; const pm=new Set(sess.filter(s=>rkInPool(p,s.date)).map(s=>s.date.slice(0,7))); const dm=new Set((p.dormantMonths||[]).filter(mo=>pm.has(mo))); const dr=pm.size>0?Math.round(dm.size/pm.size*1000)/10:0; return {p,_ar:r.rate,_a:r.attended,_t:r.counted,_dr:dr,_base:r.rate*(1-dr/100)}; }).filter(Boolean);
-    const maxAtt=Math.max(...raw.map(x=>x._a),1);
-    data = raw.map(x=>{ const lon=0.75+0.25*(x._a/maxAtt); return {...x,_s:Math.round(x._base*lon*10)/10}; }).sort((a,b)=>b._s-a._s||b._ar-a._ar);
-    ranks = rkRanks(data,x=>String(x._s));
-    const maxs = data.length?(data[0]._s||1):1;
-    valFn=x=>x._s+'점'; subFn=x=>`출석 ${x._ar}% · 휴면 ${x._dr}%`; pctFn=x=>Math.round(x._s/maxs*100);
-    note=`${yearLabel} · ${data.length}명 · 출석율×(1−휴면율)×기간보정 (${min}세션↑)`;
-  }
-
-  let html = hero + tabsHtml;
-  html += `<div class="rk-years">${['전체',...years].map(y=>{ const v=y==='전체'?'':y; return `<button class="rk-year ${rankYear===v?'on':''}" onclick="changeRankYear('${v}')">${y}</button>`; }).join('')}</div>`;
-  html += `<div class="rk-note">${note}</div>`;
-  if (!data.length){ el.innerHTML = html + `<div class="card"><div class="empty">${yearLabel} 대상이 없어요.</div></div>`; return; }
-
-  const top = data.slice(0,3);
-  html += `<div class="rk-podium" style="grid-template-columns:repeat(${top.length},1fr)">` + top.map((x,i)=>`
-    <div class="rk-card">
-      <div class="rkrank">${ranks[i]}</div>
-      <div class="rknm">${esc(x.p.name)}</div>
-      <div class="rkval">${valFn(x)}</div>
-      <div class="rksub">${subFn(x)}</div>
-    </div>`).join('') + `</div>`;
-  if (data.length>3){
-    html += data.slice(3).map((x,i)=>`
-      <div class="rk-row">
-        <span class="rkr">${ranks[i+3]}</span>
-        <span class="rkn">${esc(x.p.name)}</span>
-        <span class="rkbar"><div style="width:${Math.max(2,Math.min(100,pctFn(x)))}%"></div></span>
-        <span class="rkv"><b>${valFn(x)}</b><span>${subFn(x)}</span></span>
-      </div>`).join('');
-  }
-  el.innerHTML = html;
-}
-
-/* ---------- 비밀번호 게이트 ---------- */
-/* ---------- 로그인 (이름 + 등번호) ---------- */
-const GATE_KEY = 'socoffee_unlocked';
-const IS_LOCAL = location.protocol === 'file:' ||
-  ['localhost','127.0.0.1','0.0.0.0',''].includes(location.hostname);
-
-function gateNameOptions() {
-  return [...PLAYERS].filter(p => p.status !== 'former')
-    .sort((a,b) => a.name.localeCompare(b.name,'ko'))
-    .map(p => `<option value="${p.id}">${esc(p.name)}</option>`).join('');
-}
-function populateGate() {
-  const sel = document.getElementById('gateName');
-  if (sel) sel.innerHTML = '<option value="">— 이름 선택 —</option>' + gateNameOptions();
-}
-function showGate(show) { document.getElementById('gate').classList.toggle('hidden', !show); }
-
-function gateLogin() {
-  const err = document.getElementById('gate-err');
-  const id = Number(document.getElementById('gateName').value);
-  const jersey = document.getElementById('gateJersey').value.trim();
-  if (!id) { err.textContent = '이름을 선택해 주세요.'; return; }
-  const p = PLAYERS.find(x => x.id === id);
-  if (!p) { err.textContent = '명단에서 찾을 수 없어요.'; return; }
-  if (p.jersey == null) { err.textContent = '등번호가 없어요. 운영진에 문의해 주세요.'; return; }
-  if (String(p.jersey) !== jersey) { err.textContent = '등번호가 일치하지 않아요.'; document.getElementById('gateJersey').value = ''; return; }
-  setMe(id);
-  localStorage.setItem(GATE_KEY, '1');
-  attMe = null; potmVoterId = null;
-  showGate(false);
-  updateAdminBtn();
-  switchTab('home');
-}
-function logout() {
-  if (!confirm('로그아웃할까요?')) return;
-  localStorage.removeItem(GATE_KEY);
-  localStorage.removeItem(ME_KEY);
-  location.reload();
-}
-function meName() {
-  const p = PLAYERS.find(x => x.id === getMe());
-  return p ? p.name : '';
-}
-
-async function initApp() {
-  updateAdminBtn();
-  try { const r = await fetchRoster(); if (r) applyPlayers(r); } catch (e) {}
-  try { const s = await fetchSettings(); teamSplitOn = s.teamSplit !== false; } catch (e) {}
-  await loadTbDormant();
-  // 로컬 미리보기: 첫 활동 회원으로 자동 로그인
-  if (IS_LOCAL && getMe() == null) {
-    const ms = activeMembers(potmMonth());
-    const def = ms.find(m => ADMIN_NAMES.includes(m.name)) || ms[0];
-    if (def) setMe(def.id);
-  }
-  const loggedIn = (IS_LOCAL || localStorage.getItem(GATE_KEY) === '1') && getMe() != null;
-  if (loggedIn) { showGate(false); }
-  else { populateGate(); showGate(true); }
-  updateAdminBtn();
-  const start = (location.hash.slice(1) || 'home');
-  const ok = ALL_TABS.includes(start) && (start !== 'ops' || isAdmin());
-  switchTab(ok ? start : 'home');
-  render();  // 카풀 데이터 미리 로드(실시간 구독 대비)
-}
-window.addEventListener('hashchange', () => {
-  const t = location.hash.slice(1);
-  if (ALL_TABS.includes(t) && (t !== 'ops' || isAdmin())) switchTab(t);
-});
-initApp();
+    }catch(e){ box.innerHTML='<p class="muted" style="font-size:13px">일정을 불러오지 못했어요.</p>'; }
+  })();
+})();
 </script>
+
+<script>
+// 선수 명단 — 팀사이트(팀빌더) 클라우드 연동: club_settings id='teambuilder'
+(function(){
+  var SB_URL="https://fjgxhguogsuypcdzcieg.supabase.co";
+  var SB_KEY="sb_publishable_K7TsALmaFyb2pPOZO-2i2w_UeirVr8l";
+  var box=document.getElementById('squad');
+  function esc(s){return (s||'').replace(/[<>&]/g,function(c){return c==='<'?'&lt;':c==='>'?'&gt;':'&amp;';});}
+  (async function(){
+    try{
+      var sb=supabase.createClient(SB_URL,SB_KEY);
+      var r=await sb.from('club_settings').select('data').eq('id','teambuilder').maybeSingle();
+      var players=(r && r.data && r.data.data && r.data.data.players) || [];
+      players=players.filter(function(p){var s=p.status||'active'; return s!=='former'&&s!=='friends';});
+      function byJersey(a,b){var ja=a.jersey==null?999:a.jersey, jb=b.jersey==null?999:b.jersey; return ja-jb || esc(a.name).localeCompare(esc(b.name));}
+      var active=players.filter(function(p){return (p.status||'active')!=='dormant';}).sort(byJersey);
+      var dormant=players.filter(function(p){return p.status==='dormant';}).sort(byJersey);
+      if(!active.length && !dormant.length){ box.innerHTML='<p class="muted" style="font-size:13px">명단을 준비 중이에요.</p>'; return; }
+      var lab=document.getElementById('squadLabel'); if(lab) lab.textContent='선수 명단 · '+active.length+'명';
+      function chip(p,dorm){var no=(p.jersey!=null)?p.jersey:'-'; return '<div class="pl'+(dorm?' dorm':'')+'"><span class="no">'+no+'</span><span class="nm">'+esc(p.name)+'</span></div>';}
+      var html=active.map(function(p){return chip(p,false);}).join('');
+      if(dormant.length){ html+='<div class="squad-grouplab">💤 휴면 '+dormant.length+'명</div>'+dormant.map(function(p){return chip(p,true);}).join(''); }
+      box.innerHTML=html;
+    }catch(e){ box.innerHTML='<p class="muted" style="font-size:13px">명단을 불러오지 못했어요.</p>'; }
+  })();
+})();
+</script>
+
 </body>
 </html>

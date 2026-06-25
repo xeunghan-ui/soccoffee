@@ -1,0 +1,13 @@
+<svg viewBox="0 0 520 260" width="520" height="260" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Supported by Oatly">
+  <rect x="6" y="6" width="508" height="248" rx="18" fill="#f1ece0" stroke="#1b1b18" stroke-width="3"/>
+  <text x="260" y="64" text-anchor="middle" font-family="Arial,Helvetica,sans-serif" font-size="22" font-weight="700" letter-spacing="6" fill="#1b1b18">SUPPORTED BY</text>
+  <g font-family="'Arial Black',Arial,sans-serif" font-weight="900" fill="#1b1b18" font-size="92">
+    <text x="120" y="172" transform="rotate(-4 120 172)">O</text>
+    <text x="178" y="176" transform="rotate(3 178 176)">a</text>
+    <text x="232" y="170" transform="rotate(-3 232 170)">t</text>
+    <text x="268" y="176" transform="rotate(4 268 176)">l</text>
+    <text x="300" y="172" transform="rotate(-2 300 172)">y</text>
+    <text x="356" y="176" transform="rotate(6 356 176)">!</text>
+  </g>
+  <text x="260" y="216" text-anchor="middle" font-family="Arial,sans-serif" font-size="15" font-style="italic" fill="#5a5a52">It's like milk, but made for 풋살.</text>
+</svg>

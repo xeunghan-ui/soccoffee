@@ -98,7 +98,8 @@
   .pl.dorm{opacity:.45;}
 
   /* 회원 카페 (CAFES) */
-  .cafes{display:grid; gap:8px; max-width:460px;}
+  .cafes{display:grid; grid-template-columns:1fr 1fr; gap:8px;}
+  @media(max-width:480px){ .cafes{grid-template-columns:1fr;} }
   .cafe{display:flex; align-items:center; justify-content:space-between; gap:12px; background:var(--green-2); border:1px solid var(--line); border-radius:14px; padding:13px 16px; text-decoration:none; color:inherit;}
   a.cafe:hover{border-color:var(--sand);}
   .cafe .info{display:flex; flex-direction:column; gap:2px; min-width:0;}
@@ -193,12 +194,12 @@
     <div class="eyebrow">멤버들의 카페 &amp; 바</div>
     <div class="sec-h">CAFES</div>
     <div class="cafes">
-      <a class="cafe" href="https://naver.me/FRLN7StS" target="_blank" rel="noopener"><span class="info"><span class="nm">도덕과 규범</span><span class="addr">서울 마포구 독막로19길 32 1층</span></span><span class="go">네이버 ↗</span></a>
-      <a class="cafe" href="https://naver.me/5pwsUpxO" target="_blank" rel="noopener"><span class="info"><span class="nm">로잉 커피</span><span class="addr">서울 마포구 동교로 34 2층 전부</span></span><span class="go">네이버 ↗</span></a>
-      <a class="cafe" href="https://naver.me/59U03tAw" target="_blank" rel="noopener"><span class="info"><span class="nm">로잉 커피바</span><span class="addr">서울 마포구 망원로4길 23 1층</span></span><span class="go">네이버 ↗</span></a>
-      <a class="cafe" href="https://naver.me/GDQaQcRd" target="_blank" rel="noopener"><span class="info"><span class="nm">토니 카페</span><span class="addr">서울 용산구 백범로79길 26 1층 102호</span></span><span class="go">네이버 ↗</span></a>
-      <a class="cafe" href="https://naver.me/5EUZwRQr" target="_blank" rel="noopener"><span class="info"><span class="nm">카쩨</span><span class="addr">서울 서대문구 이화여대2길 26 1층 102, 103호</span></span><span class="go">네이버 ↗</span></a>
-      <a class="cafe" href="https://naver.me/x2jDHprB" target="_blank" rel="noopener"><span class="info"><span class="nm">뱅가드 레코드바</span><span class="addr">서울 마포구 만리재로 19 1층 3호</span></span><span class="go">네이버 ↗</span></a>
+      <a class="cafe" href="https://naver.me/FRLN7StS" target="_blank" rel="noopener"><span class="info"><span class="nm">도덕과 규범</span><span class="addr">서울 마포구 독막로19길 32 1층</span></span></a>
+      <a class="cafe" href="https://naver.me/5pwsUpxO" target="_blank" rel="noopener"><span class="info"><span class="nm">로잉 커피</span><span class="addr">서울 마포구 동교로 34 2층 전부</span></span></a>
+      <a class="cafe" href="https://naver.me/59U03tAw" target="_blank" rel="noopener"><span class="info"><span class="nm">로잉 커피바</span><span class="addr">서울 마포구 망원로4길 23 1층</span></span></a>
+      <a class="cafe" href="https://naver.me/GDQaQcRd" target="_blank" rel="noopener"><span class="info"><span class="nm">토니 카페</span><span class="addr">서울 용산구 백범로79길 26 1층 102호</span></span></a>
+      <a class="cafe" href="https://naver.me/5EUZwRQr" target="_blank" rel="noopener"><span class="info"><span class="nm">카쩨</span><span class="addr">서울 서대문구 이화여대2길 26 1층 102, 103호</span></span></a>
+      <a class="cafe" href="https://naver.me/x2jDHprB" target="_blank" rel="noopener"><span class="info"><span class="nm">뱅가드 레코드바</span><span class="addr">서울 마포구 만리재로 19 1층 3호</span></span></a>
     </div>
   </section>
 

@@ -16,6 +16,7 @@
 <link rel="stylesheet" as="style" crossorigin href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css">
 <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Anton&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <style>
   :root{
     --green:#15281b; --green-2:#1e3526; --sand:#ddd6b6; --cream:#ece6d2; --muted:#95a083; --line:#33492f;
@@ -88,6 +89,13 @@
   .fx .when .d{font-size:19px;}
   .fx .when .wd{font-size:11px; opacity:.6; margin-left:6px; letter-spacing:1px;}
   .fx .when .t{font-size:12px; opacity:.75; display:block;}
+
+  /* 선수 명단 (SQUAD) */
+  .squad{display:grid; grid-template-columns:repeat(auto-fill,minmax(132px,1fr)); gap:8px;}
+  .pl{display:flex; align-items:center; gap:10px; background:var(--green-2); border:1px solid var(--line); border-radius:12px; padding:10px 12px;}
+  .pl .no{font-family:var(--disp); font-size:22px; color:var(--sand); min-width:30px; text-align:center; line-height:1;}
+  .pl .nm{font-size:14px; font-weight:800; color:var(--cream); white-space:nowrap; overflow:hidden; text-overflow:ellipsis;}
+  .pl.dorm{opacity:.45;}
   @media(max-width:420px){ .fx{grid-template-columns:70px 1fr auto; padding:13px 13px; gap:8px;} .fx .wk{font-size:18px;} .fx .loc{font-size:13px;} }
 
   /* 활동 정보 카드 */
@@ -165,6 +173,14 @@
   <div class="halfline"><span></span></div>
 
   <section>
+    <div class="eyebrow">선수 명단</div>
+    <div class="sec-h">SQUAD</div>
+    <div class="squad" id="squad"><p class="muted" style="font-size:13px">불러오는 중…</p></div>
+  </section>
+
+  <div class="halfline"><span></span></div>
+
+  <section>
     <div class="eyebrow">함께한 순간들</div>
     <div class="sec-h">MOMENTS</div>
     <div class="gallery">
@@ -190,6 +206,31 @@
   <img src="../scf_logo.png" alt="싸커피 SCF">
   <div class="c"><a href="https://instagram.com/soccoffee__" target="_blank" rel="noopener" style="color:var(--sand);text-decoration:none">@soccoffee__</a> · SOCCOFFEE FC · EST. 2024 · JUST KICK IT</div>
 </footer>
+
+<script>
+// 선수 명단 — 팀사이트(팀빌더) 클라우드 연동: club_settings id='teambuilder'
+(function(){
+  var SB_URL="https://fjgxhguogsuypcdzcieg.supabase.co";
+  var SB_KEY="sb_publishable_K7TsALmaFyb2pPOZO-2i2w_UeirVr8l";
+  var box=document.getElementById('squad');
+  function esc(s){return (s||'').replace(/[<>&]/g,function(c){return c==='<'?'&lt;':c==='>'?'&gt;':'&amp;';});}
+  (async function(){
+    try{
+      var sb=supabase.createClient(SB_URL,SB_KEY);
+      var r=await sb.from('club_settings').select('data').eq('id','teambuilder').maybeSingle();
+      var players=(r && r.data && r.data.data && r.data.data.players) || [];
+      players=players.filter(function(p){var s=p.status||'active'; return s!=='former'&&s!=='friends';});
+      players.sort(function(a,b){var ja=a.jersey==null?999:a.jersey, jb=b.jersey==null?999:b.jersey; return ja-jb || esc(a.name).localeCompare(esc(b.name));});
+      if(!players.length){ box.innerHTML='<p class="muted" style="font-size:13px">명단을 준비 중이에요.</p>'; return; }
+      box.innerHTML=players.map(function(p){
+        var dorm=(p.status==='dormant')?' dorm':'';
+        var no=(p.jersey!=null)?p.jersey:'-';
+        return '<div class="pl'+dorm+'"><span class="no">'+no+'</span><span class="nm">'+esc(p.name)+'</span></div>';
+      }).join('');
+    }catch(e){ box.innerHTML='<p class="muted" style="font-size:13px">명단을 불러오지 못했어요.</p>'; }
+  })();
+})();
+</script>
 
 </body>
 </html>

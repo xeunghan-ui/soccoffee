@@ -100,7 +100,6 @@
   /* 회원 카페 (CAFES) */
   .cafes{display:flex; flex-wrap:wrap; gap:9px;}
   .cafe{display:inline-flex; align-items:center; gap:7px; background:var(--green-2); border:1px solid var(--line); border-radius:999px; padding:11px 18px; font-size:14px; font-weight:800; color:var(--cream);}
-  .cafe::before{content:"☕"; font-size:14px;}
   @media(max-width:420px){ .fx{grid-template-columns:70px 1fr auto; padding:13px 13px; gap:8px;} .fx .wk{font-size:18px;} .fx .loc{font-size:13px;} }
 
   /* 활동 정보 카드 */
@@ -186,15 +185,16 @@
   <div class="halfline"><span></span></div>
 
   <section>
-    <div class="eyebrow">회원들의 카페</div>
+    <div class="eyebrow">멤버들의 카페 &amp; 바</div>
     <div class="sec-h">CAFES</div>
     <div class="cafes">
       <span class="cafe">도덕과 규범</span>
       <span class="cafe">로잉 커피바</span>
       <span class="cafe">카쩨</span>
       <span class="cafe">토니 카페</span>
+      <span class="cafe">뱅가드 레코드바</span>
     </div>
-    <p class="muted" style="font-size:12px;margin-top:10px">싸커피 멤버들이 운영하는 카페예요.</p>
+    <p class="muted" style="font-size:12px;margin-top:10px">싸커피 멤버들이 운영하는 카페·바예요.</p>
   </section>
 
   <div class="halfline"><span></span></div>

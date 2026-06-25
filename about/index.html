@@ -76,6 +76,18 @@
   .kit .num{font-size:50px; font-weight:400; line-height:1; font-family:var(--disp);}
   .kit .nm{font-size:13px; font-weight:900; letter-spacing:3px; margin-top:8px; text-transform:uppercase;}
 
+  /* 경기 일정 (MATCH DAY) */
+  .matchday-h{font-family:var(--disp); font-weight:400; font-size:clamp(40px,13vw,66px); line-height:.9; letter-spacing:1px; color:#f3eed9; text-transform:uppercase; margin:6px 0 16px;}
+  .fixtures{background:#ece6d2; border-radius:16px; overflow:hidden; border:1px solid var(--line);}
+  .fx{display:grid; grid-template-columns:92px 1fr auto; align-items:center; gap:12px; padding:15px 18px; color:#15281b;}
+  .fx:nth-child(even){background:#1e3526; color:#ece6d2;}
+  .fx .wk{font-family:var(--disp); font-size:21px; letter-spacing:1px;}
+  .fx .loc{font-weight:900; font-size:15px;}
+  .fx .when{text-align:right; font-family:var(--disp); letter-spacing:.5px; line-height:1.12;}
+  .fx .when .d{font-size:19px;}
+  .fx .when .t{font-size:12px; opacity:.75; display:block;}
+  @media(max-width:420px){ .fx{grid-template-columns:70px 1fr auto; padding:13px 13px; gap:8px;} .fx .wk{font-size:18px;} .fx .loc{font-size:13px;} }
+
   /* 활동 정보 카드 */
   .info{display:grid; gap:10px;}
   .info-row{display:flex; gap:13px; align-items:flex-start; background:var(--green-2); border:1px solid var(--line); border-radius:14px; padding:15px 16px;}
@@ -133,6 +145,21 @@
       <div class="stat"><div class="n">수 21–23시</div><div class="l">정기 모임</div></div>
       <div class="stat"><div class="n">월 3만원</div><div class="l">멤버 회비</div></div>
     </div>
+  </section>
+
+  <div class="halfline"><span></span></div>
+
+  <section>
+    <div class="eyebrow">7월 경기일정</div>
+    <div class="matchday-h">MATCH DAY</div>
+    <div class="fixtures">
+      <div class="fx"><span class="wk">WEEK 1</span><span class="loc">상암풋살장</span><span class="when"><span class="d">07.01</span><span class="t">21:00–23:00</span></span></div>
+      <div class="fx"><span class="wk">WEEK 2</span><span class="loc">상암풋살장</span><span class="when"><span class="d">07.08</span><span class="t">21:00–23:00</span></span></div>
+      <div class="fx"><span class="wk">WEEK 3</span><span class="loc">상암풋살장</span><span class="when"><span class="d">07.15</span><span class="t">21:00–23:00</span></span></div>
+      <div class="fx"><span class="wk">WEEK 4</span><span class="loc">상암풋살장</span><span class="when"><span class="d">07.22</span><span class="t">21:00–23:00</span></span></div>
+      <div class="fx"><span class="wk">WEEK 5</span><span class="loc">상암풋살장</span><span class="when"><span class="d">07.29</span><span class="t">21:00–23:00</span></span></div>
+    </div>
+    <p class="muted" style="font-size:12px;margin-top:10px">매주 수요일 · 예약 상황에 따라 변동될 수 있어요.</p>
   </section>
 
   <div class="halfline"><span></span></div>

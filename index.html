@@ -904,6 +904,7 @@ function switchTab(tab) {
     const el = document.getElementById('tab-' + t);
     if (el) el.classList.toggle('hidden', t !== tab);
   });
+  if (location.hash.slice(1) !== tab) { try { history.replaceState(null, '', '#' + tab); } catch(e){ location.hash = tab; } }
   if (tab === 'home') renderHome();
   if (tab === 'att')  renderAtt();
   if (tab === 'dues') renderDues();
@@ -1247,7 +1248,7 @@ const TEAM_SHEET_SEED = {
   '김유솔':{jersey:55, eng:'KEEMYOU SOL',          team:'WHITE'},
   '조은애':{jersey:89, eng:'CHO EUNAE',            team:'WHITE'},
   '브루노':{jersey:93, eng:'DA CONCEICAO BRUNO',   team:'WHITE'},
-  '안재영':{jersey:96, eng:'AN JAEYOUNG',          team:'WHITE'},
+  '안재영':{jersey:22, eng:'AN JAEYOUNG',          team:'WHITE'},
   '원재식':{jersey:99, eng:'WON JAESIK',           team:'WHITE'},
   // BLACK
   '박광우':{jersey:4,   eng:'PARK KWANGWOO',        team:'BLACK'},
@@ -2256,7 +2257,7 @@ if (USE_DB) {
 /* ============================================================
    랭킹 — 팀빌더 클라우드 데이터(club_settings id='teambuilder')를 읽어 집계
    ============================================================ */
-let rankTab = 'att', rankYear = '';
+let rankTab = 'att', rankYear = '2026';
 function switchRankTab(t){ rankTab = t; renderRank(); }
 function changeRankYear(y){ rankYear = y; renderRank(); }
 
@@ -2409,9 +2410,15 @@ async function initApp() {
   if (loggedIn) { showGate(false); }
   else { populateGate(); showGate(true); }
   updateAdminBtn();
-  switchTab('home');
+  const start = (location.hash.slice(1) || 'home');
+  const ok = ALL_TABS.includes(start) && (start !== 'ops' || isAdmin());
+  switchTab(ok ? start : 'home');
   render();  // 카풀 데이터 미리 로드(실시간 구독 대비)
 }
+window.addEventListener('hashchange', () => {
+  const t = location.hash.slice(1);
+  if (ALL_TABS.includes(t) && (t !== 'ops' || isAdmin())) switchTab(t);
+});
 initApp();
 </script>
 </body>

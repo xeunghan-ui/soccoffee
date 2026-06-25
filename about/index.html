@@ -1,0 +1,171 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>싸커피 — 소개</title>
+<meta name="description" content="싸커피(SOCCOFFEE FC) — 카페처럼 편하게 모여 풋살을 즐기는 동호회">
+<meta property="og:type" content="website">
+<meta property="og:title" content="싸커피 — SOCCOFFEE FC">
+<meta property="og:description" content="카페처럼 편하게 모여 풋살을 즐기는 동호회. 매주 수요일 상암.">
+<meta property="og:url" content="https://xeunghan-ui.github.io/soccoffee/about/">
+<meta property="og:image" content="https://xeunghan-ui.github.io/soccoffee/cover-soccoffee.jpg">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="750">
+<meta name="twitter:card" content="summary_large_image">
+<link rel="stylesheet" as="style" crossorigin href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<style>
+  :root{
+    --green:#15281b; --green-2:#1e3526; --sand:#ddd6b6; --cream:#ece6d2; --muted:#95a083; --line:#33492f;
+  }
+  *{box-sizing:border-box;}
+  body{
+    margin:0; font-family:"Pretendard","Pretendard Variable",-apple-system,BlinkMacSystemFont,"Apple SD Gothic Neo","Malgun Gothic",sans-serif;
+    color:var(--cream); background:var(--green); line-height:1.65; -webkit-font-smoothing:antialiased;
+  }
+  a{color:inherit;}
+  .wrap{max-width:760px; margin:0 auto; padding:0 18px;}
+  section{padding:46px 0;}
+  .eyebrow{font-size:12px; font-weight:900; letter-spacing:3px; text-transform:uppercase; color:var(--sand); opacity:.85;}
+  h2{font-size:24px; font-weight:900; letter-spacing:-0.5px; margin:6px 0 18px; color:#f3eed9;}
+  p{color:var(--cream); opacity:.92;}
+  .muted{color:var(--muted);}
+
+  /* 히어로 */
+  .hero{
+    position:relative; text-align:center; padding:70px 18px 60px;
+    background:linear-gradient(rgba(12,24,16,.72),rgba(12,24,16,.9)), url('../scf_bg.png') center/cover no-repeat;
+    border-bottom:1px solid var(--line);
+  }
+  .hero img{width:120px; height:auto; margin-bottom:16px; filter:drop-shadow(0 6px 16px rgba(0,0,0,.4));}
+  .hero .name{font-size:34px; font-weight:900; letter-spacing:-1px; color:#fff;}
+  .hero .en{font-size:13px; font-weight:800; letter-spacing:4px; color:var(--sand); margin-top:4px;}
+  .hero .tag{font-size:15px; color:var(--cream); opacity:.9; margin-top:14px;}
+
+  /* 스탯 */
+  .stats{display:grid; grid-template-columns:repeat(4,1fr); gap:10px;}
+  .stat{background:var(--green-2); border:1px solid var(--line); border-radius:14px; padding:18px 8px; text-align:center;}
+  .stat .n{font-size:24px; font-weight:900; color:var(--sand);}
+  .stat .l{font-size:11px; color:var(--muted); font-weight:700; margin-top:4px;}
+  @media(max-width:480px){ .stats{grid-template-columns:repeat(2,1fr);} }
+
+  /* 활동 정보 카드 */
+  .info{display:grid; gap:10px;}
+  .info-row{display:flex; gap:13px; align-items:flex-start; background:var(--green-2); border:1px solid var(--line); border-radius:14px; padding:15px 16px;}
+  .info-row .k{font-size:13px; font-weight:800; color:var(--sand); min-width:78px; flex-shrink:0;}
+  .info-row .v{font-size:14px; color:var(--cream);}
+
+  /* 갤러리 */
+  .gallery{display:grid; grid-template-columns:1fr 1fr; gap:10px;}
+  .gallery img{width:100%; height:200px; object-fit:cover; border-radius:14px; border:1px solid var(--line); display:block;}
+  .gallery .wide{grid-column:1 / -1; height:240px;}
+  @media(max-width:480px){ .gallery img{height:150px;} .gallery .wide{height:190px;} }
+
+  /* 가입 */
+  .join{background:var(--sand); color:var(--green); border-radius:18px; padding:30px 22px; text-align:center;}
+  .join h2{color:var(--green);}
+  .join p{color:#2d3a2c; opacity:1;}
+  .btn{display:inline-block; margin-top:14px; padding:13px 26px; border-radius:12px; background:var(--green); color:var(--sand); font-weight:800; text-decoration:none; font-size:15px;}
+  .btn.ghost{background:transparent; color:var(--green); border:1.5px solid var(--green); margin-left:8px;}
+
+  footer{text-align:center; padding:34px 18px 44px; border-top:1px solid var(--line);}
+  footer img{width:58px; opacity:.85;}
+  footer .c{font-size:11px; color:var(--muted); margin-top:10px;}
+</style>
+</head>
+<body>
+
+<div class="hero">
+  <img src="../scf_logo.png" alt="싸커피 SCF">
+  <div class="name">싸커피</div>
+  <div class="en">SOCCOFFEE FC</div>
+  <div class="tag">카페처럼 편하게 모여, 함께 공을 차는 사람들</div>
+</div>
+
+<div class="wrap">
+
+  <section>
+    <div class="eyebrow">About</div>
+    <h2>싸커피는요</h2>
+    <p>싸커피(SOCCOFFEE)는 <b>카페처럼 편하게 모여 풋살을 즐기는 동호회</b>예요. 2024년 9월 첫 모임을 시작으로, 매주 수요일 저녁 상암에서 공을 찹니다.</p>
+    <p>실력보다 <b>꾸준함과 즐거움</b>을 더 중요하게 생각해요. 멤버들을 <b>WHITE · BLACK</b> 두 팀으로 나눠 한 달 단위 리그처럼 운영하고, 가끔은 이벤트 매치로 색다르게도 즐깁니다. 남녀 누구나, 풋살이 처음이어도 환영이에요.</p>
+  </section>
+
+  <section>
+    <div class="eyebrow">By the numbers</div>
+    <h2>한눈에 보는 싸커피</h2>
+    <div class="stats">
+      <div class="stat"><div class="n" id="statMembers">—</div><div class="l">활동 멤버</div></div>
+      <div class="stat"><div class="n">2팀</div><div class="l">WHITE · BLACK</div></div>
+      <div class="stat"><div class="n">매주 수</div><div class="l">정기 모임</div></div>
+      <div class="stat"><div class="n">2024~</div><div class="l">since 9월</div></div>
+    </div>
+  </section>
+
+  <section>
+    <div class="eyebrow">Activity</div>
+    <h2>이렇게 활동해요</h2>
+    <div class="info">
+      <div class="info-row"><span class="k">정기 모임</span><span class="v">매주 <b>수요일 저녁 8시</b></span></div>
+      <div class="info-row"><span class="k">장소</span><span class="v">상암 풋살장 (실내·날씨 영향 적음)</span></div>
+      <div class="info-row"><span class="k">운영 방식</span><span class="v">WHITE · BLACK 2팀 리그 + 이벤트 매치</span></div>
+      <div class="info-row"><span class="k">분위기</span><span class="v">실력 무관 · 즐겁게 · 끝나면 커피 한 잔 ☕</span></div>
+    </div>
+  </section>
+
+  <section>
+    <div class="eyebrow">Gallery</div>
+    <h2>활동 모습</h2>
+    <div class="gallery">
+      <img class="wide" src="../cover-soccoffee.jpg" alt="싸커피 활동">
+      <img src="../poster.png" alt="싸커피 포스터">
+      <img src="../scf_bg.png" alt="싸커피 풋살장">
+    </div>
+  </section>
+
+  <section>
+    <div class="join">
+      <div class="eyebrow" style="color:#5e6e4d">Join us</div>
+      <h2>함께 뛸 사람을 기다려요</h2>
+      <p>풋살이 처음이어도, 오랜만이어도 괜찮아요.<br>편하게 한 번 나와서 같이 차봐요!</p>
+      <p class="muted" id="contactLine" style="font-size:13px;margin-top:12px">가입·문의는 인스타그램 DM 또는 운영진에게 연락해 주세요.</p>
+      <a class="btn" href="https://instagram.com/soccoffee__" target="_blank" rel="noopener">📷 인스타그램</a>
+      <a class="btn ghost" href="../">멤버 사이트</a>
+    </div>
+  </section>
+
+</div>
+
+<footer>
+  <img src="../scf_logo.png" alt="싸커피 SCF">
+  <div class="c"><a href="https://instagram.com/soccoffee__" target="_blank" rel="noopener" style="color:var(--sand);text-decoration:none">@soccoffee__</a> · SOCCOFFEE FC · since 2024</div>
+</footer>
+
+<script>
+// 활동 멤버 수 — Supabase(club_settings) 에서 실시간 (없으면 표시 생략/근사)
+const SB_URL="https://fjgxhguogsuypcdzcieg.supabase.co";
+const SB_KEY="sb_publishable_K7TsALmaFyb2pPOZO-2i2w_UeirVr8l";
+(async()=>{
+  try{
+    const sb = supabase.createClient(SB_URL, SB_KEY);
+    // 팀빌더 명단(활동 선수) 우선, 없으면 사이트 명단
+    let players=null;
+    const tb = await sb.from('club_settings').select('data').eq('id','teambuilder').maybeSingle();
+    if(tb.data && Array.isArray(tb.data.data?.players)) players=tb.data.data.players;
+    if(!players){
+      const cur = await sb.from('club_settings').select('data').eq('id','current').maybeSingle();
+      if(cur.data && Array.isArray(cur.data.data?.roster)) players=cur.data.data.roster;
+    }
+    let n=39;
+    if(players){
+      n = players.filter(p=>{const s=p.status||'active'; return s!=='former' && s!=='friends';}).length;
+    }
+    document.getElementById('statMembers').textContent = n+'명';
+  }catch(e){
+    document.getElementById('statMembers').textContent = '39명';
+  }
+})();
+</script>
+</body>
+</html>

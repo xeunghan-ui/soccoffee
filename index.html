@@ -1322,6 +1322,13 @@ function potmMonthLabel(m) {
   const [y, mo] = m.split('-');
   return `${y}년 ${parseInt(mo)}월`;
 }
+// 회비 표시 월: 매월 25일부터는 다음 달 회비를 띄움
+function duesMonth() {
+  const d = new Date();
+  let y = d.getFullYear(), m = d.getMonth(); // 0-indexed
+  if (d.getDate() >= 25) { m += 1; if (m > 11) { m = 0; y += 1; } }
+  return `${y}-${String(m + 1).padStart(2, '0')}`;
+}
 
 // 이번 주 수요일 오후 9시 (투표 오픈 시각)
 function votingOpensAt() {
@@ -1999,7 +2006,7 @@ async function setDuesPaid(month, memberId, paid, amount) {
 async function renderDues() {
   const el = document.getElementById('duesContent');
   el.innerHTML = `<div class="empty">불러오는 중...</div>`;
-  const month = potmMonth();
+  const month = duesMonth();
   const members = activeMembers(month);
   const dues = await fetchDues(month);
   const paidMap = {}; dues.forEach(d=>{ paidMap[d.member_id]=d.paid; });
@@ -2047,7 +2054,7 @@ async function renderDues() {
 async function toggleDue(memberId, currentlyPaid) {
   if (!isAdmin()) return;
   const m = ROSTER.find(x=>x.id===memberId);
-  const ok = await setDuesPaid(potmMonth(), memberId, !currentlyPaid, dueAmount(m?m.name:''));
+  const ok = await setDuesPaid(duesMonth(), memberId, !currentlyPaid, dueAmount(m?m.name:''));
   if (!ok) return;
   await renderDues();
 }

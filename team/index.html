@@ -401,7 +401,6 @@ body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; b
   <button class="tab-btn" id="tbtn-monthly" onclick="switchTab('monthly')"><span class="tab-icon">📅</span><span class="tab-label">월별 현황</span></button>
   <button class="tab-btn" id="tbtn-supplies" onclick="switchTab('supplies')"><span class="tab-icon">🛒</span><span class="tab-label">물품</span></button>
   <button class="tab-btn" id="tbtn-fee" onclick="switchTab('fee')"><span class="tab-icon">💰</span><span class="tab-label">회비</span></button>
-  <button class="tab-btn" id="tbtn-matches" onclick="switchTab('matches')"><span class="tab-icon">⚽</span><span class="tab-label">매치</span></button>
 </div>
 
 <div class="main">
@@ -1042,10 +1041,10 @@ function showToast(msg){
 }
 
 /* ─ Tab ─ */
-const ALL_TABS=['players','attendance','teams','tier','monthly','ranking','supplies','fee','matches'];
+const ALL_TABS=['players','attendance','teams','tier','monthly','ranking','supplies','fee'];
 const TAB_GROUPS={
   '선수':['players','tier','ranking'],
-  '경기':['attendance','teams','monthly','matches'],
+  '경기':['attendance','teams','monthly'],
   '운영':['supplies','fee']
 };
 let activeCategory='선수';
@@ -1082,18 +1081,6 @@ function switchTab(tab){
   if(tab==='ranking'){ renderRanking(); }
   if(tab==='supplies'){ renderSupplies(); }
   if(tab==='fee'){ renderFee(); }
-  if(tab==='matches'){
-    if(!matchRosterInited){
-      // 이번 로스터 직접 지정
-      setMatchRoster(
-        ['임한','박광우','홍순인','박원주','심소른','김균원','손다희','박지원'],
-        ['신동헌','도민환','한재욱','조지훈','이희성','김재유','허은혜','정은용'],
-        ['김우경','김두은','조은애','한승재','최승호','마상현','이일웅','안재영'],
-        ['김유솔','조수경','박승한','정희범','박우성','이민국','원재식','브루노','장세영']
-      );
-    }
-    renderMatches();
-  }
 }
 
 
@@ -4660,6 +4647,7 @@ updateYearFilter();
 renderAttYearChips();
 
 // Switch to saved tab
+if(!ALL_TABS.includes(activeTab)) activeTab='players';   // 삭제된 탭(매치 등) 방어
 // 활성 탭에 맞는 카테고리 복원
 Object.entries(TAB_GROUPS).forEach(([cat,tabs])=>{ if(tabs.includes(activeTab)) activeCategory=cat; });
 switchCat(activeCategory);

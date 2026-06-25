@@ -370,6 +370,7 @@ body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; b
   <div style="margin-left:auto;display:flex;align-items:center;gap:6px">
     <span id="cloudLabel" style="font-size:10px;color:rgba(255,255,255,0.65);white-space:nowrap"></span>
     <span id="autoBackupLabel" style="font-size:10px;color:rgba(255,255,255,0.5);white-space:nowrap"></span>
+    <button onclick="importFromSite()" style="font-size:11px;padding:5px 12px;border-radius:8px;border:1px solid rgba(255,255,255,0.4);background:rgba(255,255,255,0.22);color:#fff;cursor:pointer;font-weight:700;white-space:nowrap">🔄 사이트 출석</button>
     <button onclick="triggerImport()" style="font-size:11px;padding:5px 12px;border-radius:8px;border:1px solid rgba(255,255,255,0.4);background:rgba(255,255,255,0.15);color:#fff;cursor:pointer;font-weight:700;white-space:nowrap">⬆ 가져오기</button>
     <button onclick="exportData(true)" style="font-size:11px;padding:5px 12px;border-radius:8px;border:1px solid rgba(255,255,255,0.4);background:rgba(255,255,255,0.15);color:#fff;cursor:pointer;font-weight:700;white-space:nowrap">⬇ 저장</button>
   </div>
@@ -906,6 +907,44 @@ async function cloudInit(){
       cloudSavePush();
     }
   }catch(e){ setCloudLabel('클라우드 연결 실패'); }
+}
+
+// ─ 사이트(싸커피) 세션·출석 가져오기 ─
+// 사이트의 세션 + 참석(yes) 신청자를 빌더 세션 초안으로 가져옴. 이미 있는 날짜는 보존.
+async function importFromSite(){
+  if(!tbSb){ alert('클라우드 연결이 없어요.'); return; }
+  if(!confirm('사이트의 세션과 참석 신청자를 가져올까요?\n\n· 이미 같은 날짜 세션이 있으면 건드리지 않아요(확정본 보호).\n· 가져온 참석자는 "신청" 기준 초안이니, 세션 후 실제 출석을 확정해 주세요.')) return;
+  setCloudLabel('사이트 불러오는 중…');
+  try{
+    const [csRes, attRes] = await Promise.all([
+      tbSb.from('club_settings').select('data').eq('id','current').maybeSingle(),
+      tbSb.from('attendance').select('session_id,member_id,status')
+    ]);
+    const site = (csRes.data && csRes.data.data) || {};
+    const siteSessions = Array.isArray(site.sessions) ? site.sessions : [];
+    const siteRoster = Array.isArray(site.roster) ? site.roster : [];
+    if(!siteSessions.length){ setCloudLabel('☁ 동기화됨'); alert('사이트에 등록된 세션이 없어요.'); return; }
+    const idName = {}; siteRoster.forEach(p=>{ idName[p.id]=p.name; });
+    const nameId = {}; players.forEach(p=>{ nameId[p.name]=p.id; });
+    const yesBy = {}; (attRes.data||[]).forEach(a=>{ if(a.status==='yes'){ (yesBy[a.session_id]=yesBy[a.session_id]||[]).push(a.member_id); } });
+    const existingDates = new Set(sessions.map(s=>s.date));
+    let added=0, skipped=0; const unmatched=new Set();
+    [...siteSessions].sort((a,b)=>(a.date||'').localeCompare(b.date||'')).forEach(s=>{
+      if(!s.date){ return; }
+      if(existingDates.has(s.date)){ skipped++; return; }
+      const attendees=[];
+      (yesBy[s.id]||[]).forEach(mid=>{ const nm=idName[mid]; const bid=nm?nameId[nm]:undefined; if(bid!=null) attendees.push(bid); else if(nm) unmatched.add(nm); });
+      sessions.unshift({ id:Date.now()+Math.floor(Math.random()*100000), date:s.date, type:(s.label||'정기'), notes:'', guests:0, extraNames:[], attendees, lastMinuteAbsentIds:[] });
+      existingDates.add(s.date); added++;
+    });
+    sessions.sort((a,b)=>b.date.localeCompare(a.date));
+    recalcAttendance(); save(); renderAll();
+    let msg = `세션 ${added}개 가져왔어요` + (skipped?` (이미 있는 ${skipped}개는 건너뜀)`:'') + '.';
+    if(unmatched.size) msg += `\n\n빌더 명단에 없어 제외된 이름: ${[...unmatched].join(', ')}`;
+    msg += '\n\n가져온 참석자는 "신청" 기준 초안이에요. 세션별로 실제 출석을 확정해 주세요.';
+    setCloudLabel('☁ 동기화됨');
+    alert(msg);
+  }catch(e){ setCloudLabel('가져오기 실패'); alert('가져오기 실패: '+(e.message||e)); }
 }
 
 function triggerImport(){

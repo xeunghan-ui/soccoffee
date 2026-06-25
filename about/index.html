@@ -14,10 +14,13 @@
 <meta property="og:image:height" content="750">
 <meta name="twitter:card" content="summary_large_image">
 <link rel="stylesheet" as="style" crossorigin href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css">
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Anton&display=swap" rel="stylesheet">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <style>
   :root{
     --green:#15281b; --green-2:#1e3526; --sand:#ddd6b6; --cream:#ece6d2; --muted:#95a083; --line:#33492f;
+    --disp:"Anton","Pretendard",sans-serif;
   }
   *{box-sizing:border-box;}
   body{
@@ -34,23 +37,15 @@
 
   /* 히어로 — 저지 핀스트라이프 + 크레스트 */
   .hero{
-    position:relative; text-align:center; padding:64px 18px 54px; overflow:hidden;
-    background:
-      repeating-linear-gradient(90deg, transparent 0 27px, rgba(221,214,182,.05) 27px 28px),
-      linear-gradient(rgba(12,24,16,.74),rgba(12,24,16,.92)), url('../scf_bg.png') center/cover no-repeat;
+    position:relative; text-align:center; padding:66px 18px 58px; overflow:hidden;
+    background:linear-gradient(rgba(9,17,12,.82),rgba(7,14,10,.96)), url('../scf_bg.png') center/cover no-repeat;
     border-bottom:2px solid var(--sand);
   }
-  .hero .kicker{
-    display:inline-block; font-size:11px; font-weight:900; letter-spacing:3px; text-transform:uppercase;
-    color:var(--green); background:var(--sand); padding:5px 12px; border-radius:999px; margin:16px 0 0;
-  }
-  .hero img{width:124px; height:auto; margin-bottom:14px; filter:drop-shadow(0 6px 16px rgba(0,0,0,.45));}
-  .hero .name{font-size:42px; font-weight:900; letter-spacing:-1.5px; color:#fff; line-height:1;}
-  .hero .en{font-size:13px; font-weight:900; letter-spacing:6px; color:var(--sand); margin-top:8px;}
-  .hero .tag{font-size:14px; color:var(--cream); opacity:.9; margin-top:16px;}
-  .hero .shout{
-    margin-top:18px; font-size:13px; font-weight:900; letter-spacing:4px; text-transform:uppercase; color:var(--sand); opacity:.9;
-  }
+  .hero img{width:92px; height:auto; margin-bottom:18px; filter:drop-shadow(0 6px 16px rgba(0,0,0,.45));}
+  .hero .kicker{font-size:11px; font-weight:900; letter-spacing:5px; text-transform:uppercase; color:var(--sand); opacity:.8;}
+  .hero .bigname{font-family:var(--disp); font-weight:400; font-size:clamp(48px,15vw,86px); line-height:.9; letter-spacing:1px; color:#fff; text-transform:uppercase; margin:10px 0 0;}
+  .hero .name2{font-size:13px; font-weight:900; letter-spacing:5px; text-transform:uppercase; color:var(--sand); margin-top:12px;}
+  .hero .tag{font-size:14px; color:var(--cream); opacity:.85; margin-top:14px;}
 
   /* 매치데이 픽스처 바 */
   .matchbar{
@@ -67,7 +62,7 @@
   /* 스탯 — 스코어보드 */
   .stats{display:grid; grid-template-columns:repeat(4,1fr); gap:10px;}
   .stat{background:var(--green-2); border:1px solid var(--line); border-top:3px solid var(--sand); border-radius:12px; padding:18px 8px; text-align:center;}
-  .stat .n{font-size:24px; font-weight:900; color:var(--sand); font-variant-numeric:tabular-nums; font-family:ui-monospace,"SFMono-Regular",Menlo,monospace;}
+  .stat .n{font-size:30px; font-weight:400; color:var(--sand); font-family:var(--disp); letter-spacing:.5px;}
   .stat .l{font-size:11px; color:var(--muted); font-weight:700; margin-top:4px;}
   @media(max-width:480px){ .stats{grid-template-columns:repeat(2,1fr);} }
 
@@ -78,7 +73,7 @@
     background-image:repeating-linear-gradient(90deg, transparent 0 13px, rgba(21,40,27,.16) 13px 15px);}
   .kit.black{background:#171f1a; color:#ece6d2;
     background-image:repeating-linear-gradient(90deg, transparent 0 13px, rgba(221,214,182,.12) 13px 15px);}
-  .kit .num{font-size:38px; font-weight:900; line-height:1; font-family:ui-monospace,"SFMono-Regular",Menlo,monospace;}
+  .kit .num{font-size:50px; font-weight:400; line-height:1; font-family:var(--disp);}
   .kit .nm{font-size:13px; font-weight:900; letter-spacing:3px; margin-top:8px; text-transform:uppercase;}
 
   /* 활동 정보 카드 */
@@ -108,11 +103,10 @@
 
 <div class="hero">
   <img src="image/scf_logo_preview.png" alt="싸커피 SCF">
-  <div class="name">싸커피</div>
-  <div class="en">SOCCOFFEE FC</div>
   <div class="kicker">EST. 2024 · SEOUL</div>
+  <div class="bigname">SOCCOFFEE</div>
+  <div class="name2">싸커피 · FUTSAL CLUB</div>
   <div class="tag">성별 상관없이, 축구와 커피를 좋아하는 사람들</div>
-  <div class="shout">Just kick it · We love coffee &amp; soccer</div>
 </div>
 
 <div class="matchbar">

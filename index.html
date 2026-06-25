@@ -298,15 +298,13 @@
       var r=await sb.from('club_settings').select('data').eq('id','teambuilder').maybeSingle();
       var players=(r && r.data && r.data.data && r.data.data.players) || [];
       players=players.filter(function(p){var s=p.status||'active'; return s!=='former'&&s!=='friends';});
-      function byJersey(a,b){var ja=a.jersey==null?999:a.jersey, jb=b.jersey==null?999:b.jersey; return ja-jb || esc(a.name).localeCompare(esc(b.name));}
-      var active=players.filter(function(p){return (p.status||'active')!=='dormant';}).sort(byJersey);
-      var dormant=players.filter(function(p){return p.status==='dormant';}).sort(byJersey);
-      if(!active.length && !dormant.length){ box.innerHTML='<p class="muted" style="font-size:13px">명단을 준비 중이에요.</p>'; return; }
-      var lab=document.getElementById('squadLabel'); if(lab) lab.textContent='선수 명단 · '+active.length+'명';
-      function chip(p,dorm){var no=(p.jersey!=null)?p.jersey:'-'; return '<div class="pl'+(dorm?' dorm':'')+'"><span class="no">'+no+'</span><span class="nm">'+esc(p.name)+'</span></div>';}
-      var html=active.map(function(p){return chip(p,false);}).join('');
-      if(dormant.length){ html+='<div class="squad-grouplab">💤 휴면 '+dormant.length+'명</div>'+dormant.map(function(p){return chip(p,true);}).join(''); }
-      box.innerHTML=html;
+      players.sort(function(a,b){var ja=a.jersey==null?999:a.jersey, jb=b.jersey==null?999:b.jersey; return ja-jb || esc(a.name).localeCompare(esc(b.name));});
+      if(!players.length){ box.innerHTML='<p class="muted" style="font-size:13px">명단을 준비 중이에요.</p>'; return; }
+      box.innerHTML=players.map(function(p){
+        var dorm=(p.status==='dormant')?' dorm':'';
+        var no=(p.jersey!=null)?p.jersey:'-';
+        return '<div class="pl'+dorm+'"><span class="no">'+no+'</span><span class="nm">'+esc(p.name)+'</span></div>';
+      }).join('');
     }catch(e){ box.innerHTML='<p class="muted" style="font-size:13px">명단을 불러오지 못했어요.</p>'; }
   })();
 })();

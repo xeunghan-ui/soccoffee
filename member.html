@@ -2145,10 +2145,11 @@ async function renderOps() {
     </div>
     <p class="hint" style="margin-top:10px">같은 날 여러 경기(A/B매치)도 따로 등록하면 참석을 각각 받아요.</p>`;
 
-  const withPin = [...PLAYERS].filter(p => p.status !== 'former' && CLUB_PINS[p.id]).sort((a,b)=>a.name.localeCompare(b.name,'ko'));
-  const pinRows = withPin.length
-    ? withPin.map(p=>`<div class="dues-row"><span class="nm">${esc(p.name)}</span><button class="btn ghost sm" onclick="resetPin(${p.id})">PIN 초기화</button></div>`).join('')
-    : '<div class="hint" style="margin:0">아직 설정된 PIN이 없어요.</div>';
+  const pinMembers = [...PLAYERS].filter(p => p.status !== 'former').sort((a,b)=>a.name.localeCompare(b.name,'ko'));
+  const pinDone = pinMembers.filter(p => CLUB_PINS[p.id]).length;
+  const pinRows = pinMembers.map(p=>`<div class="dues-row"><span class="nm">${esc(p.name)}</span>${CLUB_PINS[p.id]
+      ? `<span class="dues-badge paid">설정됨</span> <button class="btn ghost sm" onclick="resetPin(${p.id})">초기화</button>`
+      : `<span class="dues-badge unpaid">미설정</span>`}</div>`).join('');
   const secRoster = `
     <div class="ops-row" style="border:none;padding:0 0 12px">
       <div style="min-width:0"><b style="color:#ece6d2">이번 달 팀 구분 (WHITE/BLACK)</b><div class="hint" style="margin:0">끄면 홈·참석이 전체 명단으로 표시돼요</div></div>
@@ -2156,8 +2157,8 @@ async function renderOps() {
     </div>
     <p class="hint" style="margin-top:4px;line-height:1.6">선수 명단·등번호·티어·<b style="color:#ece6d2">휴면</b>은 <b style="color:#ece6d2">팀빌더</b>에서 관리해요(더 자세함).<br>휴면 상태는 팀빌더 데이터를 사이트가 자동으로 읽어 반영합니다.</p>
     <div style="margin-top:16px;border-top:1px solid #2a3d30;padding-top:14px">
-      <b style="color:#ece6d2">PIN 관리</b>
-      <div class="hint" style="margin:2px 0 10px">멤버가 PIN을 잊으면 초기화하세요. 초기화하면 다음 로그인에서 새 PIN을 정해요.</div>
+      <b style="color:#ece6d2">PIN 관리 <span class="hint" style="font-weight:700">(${pinDone}/${pinMembers.length} 설정)</span></b>
+      <div class="hint" style="margin:2px 0 10px">미설정 멤버는 아직 첫 로그인을 안 한 거예요. 잊은 멤버는 초기화하면 다음 로그인에서 새로 정해요.</div>
       ${pinRows}
     </div>`;
 

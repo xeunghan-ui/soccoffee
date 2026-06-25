@@ -99,11 +99,12 @@
   .fx .when .t{font-size:12px; opacity:.75; display:block;}
 
   /* 선수 명단 (SQUAD) */
-  .squad{display:grid; grid-template-columns:repeat(auto-fill,minmax(132px,1fr)); gap:8px;}
-  .pl{display:flex; align-items:center; gap:10px; background:var(--green-2); border:1px solid var(--line); border-radius:12px; padding:10px 12px;}
-  .pl .no{font-family:var(--disp); font-size:22px; color:var(--sand); min-width:30px; text-align:center; line-height:1;}
+  .squad{display:grid; grid-template-columns:repeat(auto-fill,minmax(150px,1fr)); gap:8px;}
+  .pl{display:flex; align-items:center; gap:11px; background:var(--green-2); border:1px solid var(--line); border-radius:12px; padding:11px 14px;}
+  .pl .no{font-family:var(--disp); font-size:23px; color:var(--sand); min-width:34px; text-align:center; line-height:1;}
   .pl .nm{font-size:14px; font-weight:800; color:var(--cream); white-space:nowrap; overflow:hidden; text-overflow:ellipsis;}
-  .pl.dorm{opacity:.45;}
+  .pl.dorm{opacity:.42;}
+  .squad-grouplab{grid-column:1/-1; font-size:11px; font-weight:900; letter-spacing:2px; text-transform:uppercase; color:var(--muted); margin:8px 0 2px;}
 
   /* 회원 카페 (CAFES) */
   .cafes{display:grid; grid-template-columns:1fr 1fr; gap:8px;}
@@ -193,7 +194,7 @@
   <div class="halfline"><span></span></div>
 
   <section id="roster">
-    <div class="eyebrow">선수 명단</div>
+    <div class="eyebrow" id="squadLabel">선수 명단</div>
     <div class="sec-h">SQUAD</div>
     <div class="squad" id="squad"><p class="muted" style="font-size:13px">불러오는 중…</p></div>
   </section>
@@ -291,13 +292,15 @@
       var r=await sb.from('club_settings').select('data').eq('id','teambuilder').maybeSingle();
       var players=(r && r.data && r.data.data && r.data.data.players) || [];
       players=players.filter(function(p){var s=p.status||'active'; return s!=='former'&&s!=='friends';});
-      players.sort(function(a,b){var ja=a.jersey==null?999:a.jersey, jb=b.jersey==null?999:b.jersey; return ja-jb || esc(a.name).localeCompare(esc(b.name));});
-      if(!players.length){ box.innerHTML='<p class="muted" style="font-size:13px">명단을 준비 중이에요.</p>'; return; }
-      box.innerHTML=players.map(function(p){
-        var dorm=(p.status==='dormant')?' dorm':'';
-        var no=(p.jersey!=null)?p.jersey:'-';
-        return '<div class="pl'+dorm+'"><span class="no">'+no+'</span><span class="nm">'+esc(p.name)+'</span></div>';
-      }).join('');
+      function byJersey(a,b){var ja=a.jersey==null?999:a.jersey, jb=b.jersey==null?999:b.jersey; return ja-jb || esc(a.name).localeCompare(esc(b.name));}
+      var active=players.filter(function(p){return (p.status||'active')!=='dormant';}).sort(byJersey);
+      var dormant=players.filter(function(p){return p.status==='dormant';}).sort(byJersey);
+      if(!active.length && !dormant.length){ box.innerHTML='<p class="muted" style="font-size:13px">명단을 준비 중이에요.</p>'; return; }
+      var lab=document.getElementById('squadLabel'); if(lab) lab.textContent='선수 명단 · '+active.length+'명';
+      function chip(p,dorm){var no=(p.jersey!=null)?p.jersey:'-'; return '<div class="pl'+(dorm?' dorm':'')+'"><span class="no">'+no+'</span><span class="nm">'+esc(p.name)+'</span></div>';}
+      var html=active.map(function(p){return chip(p,false);}).join('');
+      if(dormant.length){ html+='<div class="squad-grouplab">💤 휴면 '+dormant.length+'명</div>'+dormant.map(function(p){return chip(p,true);}).join(''); }
+      box.innerHTML=html;
     }catch(e){ box.innerHTML='<p class="muted" style="font-size:13px">명단을 불러오지 못했어요.</p>'; }
   })();
 })();

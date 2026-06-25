@@ -657,13 +657,14 @@
 <div class="gate" id="gate">
   <div class="gate-box">
     <img class="brand-logo" src="scf_logo.png" alt="싸커피 SCF" style="width:150px;margin-bottom:14px">
-    <p>이름을 고르고 <b>등번호</b>를 입력해 로그인하세요.</p>
+    <p>이름을 고르고 <b>PIN(4자리)</b>을 입력해 로그인하세요.</p>
     <div class="field" style="text-align:left;margin-bottom:10px">
-      <select id="gateName"><option value="">— 이름 선택 —</option></select>
+      <select id="gateName" onchange="gateNameChanged()"><option value="">— 이름 선택 —</option></select>
     </div>
-    <input id="gateJersey" type="number" inputmode="numeric" placeholder="내 등번호" autocomplete="off"
+    <input id="gatePin" type="password" inputmode="numeric" maxlength="4" pattern="[0-9]*" placeholder="PIN 4자리" autocomplete="off"
            onkeydown="if(event.key==='Enter')gateLogin()">
     <div class="gate-err" id="gate-err"></div>
+    <div class="hint" id="gateHint" style="font-size:11px;margin-top:6px"></div>
     <button class="btn" onclick="gateLogin()" style="margin-top:10px">로그인</button>
     <a href="./" style="display:inline-block;margin-top:16px;font-size:12px;color:#8a9a7e;text-decoration:none">← 싸커피 소개로</a>
   </div>
@@ -1859,6 +1860,34 @@ const ME_KEY = 'socoffee_me';            // 이 브라우저의 '나' (멤버 id
 function getMe(){ const v = localStorage.getItem(ME_KEY); return v?Number(v):null; }
 function setMe(id){ localStorage.setItem(ME_KEY, String(id)); }
 
+// ===== PIN 로그인 (등번호 대체) — PIN은 해시로만 저장(평문 미저장) =====
+let CLUB_PINS = {};                      // { memberId: sha256hex }
+const PIN_SALT = 'scf-pin-v1';
+async function hashPin(id, pin){
+  const data = new TextEncoder().encode(PIN_SALT + ':' + id + ':' + pin);
+  const buf = await crypto.subtle.digest('SHA-256', data);
+  return Array.from(new Uint8Array(buf)).map(b => b.toString(16).padStart(2,'0')).join('');
+}
+function gateNameChanged(){
+  const id = Number(document.getElementById('gateName').value);
+  const h = document.getElementById('gateHint');
+  if (!h) return;
+  if (!id) { h.textContent = ''; return; }
+  h.textContent = CLUB_PINS[id]
+    ? '등록된 PIN을 입력하세요.'
+    : '처음이에요 — 사용할 PIN 4자리를 정해 입력하면 등록돼요.';
+}
+async function resetPin(id){
+  if (!isAdmin()) return;
+  const p = PLAYERS.find(x => x.id === id);
+  if (!confirm((p ? p.name : '') + ' 님의 PIN을 초기화할까요? 다음 로그인에서 새로 정하게 돼요.')) return;
+  const bak = CLUB_PINS[id];
+  delete CLUB_PINS[id];
+  const ok = await saveSettings({ pins: CLUB_PINS });
+  if (ok) { toast('PIN을 초기화했어요.'); renderOps(); }
+  else { CLUB_PINS[id] = bak; toast('초기화 중 오류가 났어요.'); }
+}
+
 async function fetchAttendance(sessionId) {
   if (!sessionId) sessionId = (await nearestSession()).id;
   if (USE_DB) {
@@ -2116,12 +2145,21 @@ async function renderOps() {
     </div>
     <p class="hint" style="margin-top:10px">같은 날 여러 경기(A/B매치)도 따로 등록하면 참석을 각각 받아요.</p>`;
 
+  const withPin = [...PLAYERS].filter(p => p.status !== 'former' && CLUB_PINS[p.id]).sort((a,b)=>a.name.localeCompare(b.name,'ko'));
+  const pinRows = withPin.length
+    ? withPin.map(p=>`<div class="dues-row"><span class="nm">${esc(p.name)}</span><button class="btn ghost sm" onclick="resetPin(${p.id})">PIN 초기화</button></div>`).join('')
+    : '<div class="hint" style="margin:0">아직 설정된 PIN이 없어요.</div>';
   const secRoster = `
     <div class="ops-row" style="border:none;padding:0 0 12px">
       <div style="min-width:0"><b style="color:#ece6d2">이번 달 팀 구분 (WHITE/BLACK)</b><div class="hint" style="margin:0">끄면 홈·참석이 전체 명단으로 표시돼요</div></div>
       <button class="dues-badge toggle ${teamSplitOn?'paid':'unpaid'}" style="flex-shrink:0" onclick="opsToggleTeamSplit()">${teamSplitOn?'사용 중':'미사용'}</button>
     </div>
-    <p class="hint" style="margin-top:4px;line-height:1.6">선수 명단·등번호·티어·<b style="color:#ece6d2">휴면</b>은 <b style="color:#ece6d2">팀빌더</b>에서 관리해요(더 자세함).<br>휴면 상태는 팀빌더 데이터를 사이트가 자동으로 읽어 반영합니다.</p>`;
+    <p class="hint" style="margin-top:4px;line-height:1.6">선수 명단·등번호·티어·<b style="color:#ece6d2">휴면</b>은 <b style="color:#ece6d2">팀빌더</b>에서 관리해요(더 자세함).<br>휴면 상태는 팀빌더 데이터를 사이트가 자동으로 읽어 반영합니다.</p>
+    <div style="margin-top:16px;border-top:1px solid #2a3d30;padding-top:14px">
+      <b style="color:#ece6d2">PIN 관리</b>
+      <div class="hint" style="margin:2px 0 10px">멤버가 PIN을 잊으면 초기화하세요. 초기화하면 다음 로그인에서 새 PIN을 정해요.</div>
+      ${pinRows}
+    </div>`;
 
   const secDues = `
     <p class="hint" style="margin-top:0">'회비' 탭에서 이름을 눌러 납부 처리하세요. 빠른 이동:</p>
@@ -2380,18 +2418,30 @@ function populateGate() {
 }
 function showGate(show) { document.getElementById('gate').classList.toggle('hidden', !show); }
 
-function gateLogin() {
+async function gateLogin() {
   const err = document.getElementById('gate-err');
   const id = Number(document.getElementById('gateName').value);
-  const jersey = document.getElementById('gateJersey').value.trim();
+  const pin = (document.getElementById('gatePin').value || '').trim();
   if (!id) { err.textContent = '이름을 선택해 주세요.'; return; }
   const p = PLAYERS.find(x => x.id === id);
   if (!p) { err.textContent = '명단에서 찾을 수 없어요.'; return; }
-  if (p.jersey == null) { err.textContent = '등번호가 없어요. 운영진에 문의해 주세요.'; return; }
-  if (String(p.jersey) !== jersey) { err.textContent = '등번호가 일치하지 않아요.'; document.getElementById('gateJersey').value = ''; return; }
+  if (!/^\d{4}$/.test(pin)) { err.textContent = 'PIN은 숫자 4자리예요.'; return; }
+  let h;
+  try { h = await hashPin(id, pin); }
+  catch (e) { err.textContent = '이 환경에서는 로그인할 수 없어요(보안 컨텍스트 필요).'; return; }
+  const stored = CLUB_PINS[id];
+  if (!stored) {
+    CLUB_PINS[id] = h;
+    const ok = await saveSettings({ pins: CLUB_PINS });
+    if (!ok) { delete CLUB_PINS[id]; err.textContent = 'PIN 등록 중 오류가 났어요. 다시 시도해 주세요.'; return; }
+    toast('PIN이 설정됐어요. 다음부터 이 PIN으로 로그인해요.');
+  } else if (stored !== h) {
+    err.textContent = 'PIN이 일치하지 않아요.'; document.getElementById('gatePin').value = ''; return;
+  }
   setMe(id);
   localStorage.setItem(GATE_KEY, '1');
   attMe = null; potmVoterId = null;
+  err.textContent = '';
   showGate(false);
   updateAdminBtn();
   switchTab('home');
@@ -2410,7 +2460,7 @@ function meName() {
 async function initApp() {
   updateAdminBtn();
   try { const r = await fetchRoster(); if (r) applyPlayers(r); } catch (e) {}
-  try { const s = await fetchSettings(); teamSplitOn = s.teamSplit !== false; } catch (e) {}
+  try { const s = await fetchSettings(); teamSplitOn = s.teamSplit !== false; CLUB_PINS = s.pins || {}; } catch (e) {}
   await loadTbDormant();
   // 로컬 미리보기: 첫 활동 회원으로 자동 로그인
   if (IS_LOCAL && getMe() == null) {

@@ -1337,6 +1337,20 @@ function fmtOpenTime(d) {
 }
 
 // 해당 월 활동 회원 (team-builder 월별 현황과 동일 로직)
+// 휴면은 팀빌더에서 읽어 반영 (이름 기준). 팀빌더에 없으면 사이트 명단의 값 사용
+let TB_DORMANT = {};
+function dormantMonthsOf(p){
+  return (TB_DORMANT[p.name] !== undefined) ? TB_DORMANT[p.name] : (p.dormantMonths || []);
+}
+async function loadTbDormant(){
+  try {
+    const tb = await fetchTeamBuilder();
+    const m = {};
+    if (tb && Array.isArray(tb.players)) tb.players.forEach(p => { m[p.name] = p.dormantMonths || []; });
+    TB_DORMANT = m;
+  } catch(e) {}
+}
+
 function activeMembers(monthStr) {
   const [yN, moN] = monthStr.split('-').map(Number);
   const monthEnd = new Date(yN, moN, 0);
@@ -1348,7 +1362,7 @@ function activeMembers(monthStr) {
     return new Date(p.joinDate) <= monthEnd;
   });
   const TEAM_ORDER = { 'WHITE': 0, 'BLACK': 1, '기타': 2 };
-  return relevant.filter(p => !(p.dormantMonths || []).includes(monthStr))
+  return relevant.filter(p => !dormantMonthsOf(p).includes(monthStr))
                  .map(p => {
                    const t = TEAM_SHEET[p.name] || { team: '기타' };
                    return { ...p, jersey: t.jersey, eng: t.eng || '', team: t.team, cap: !!t.cap };
@@ -1774,7 +1788,7 @@ async function renderHome() {
   const members = activeMembers(month);
   const white = members.filter(m=>m.team==='WHITE').length;
   const black = members.filter(m=>m.team==='BLACK').length;
-  const dormant = ROSTER.filter(p=>(p.dormantMonths||[]).includes(month)).length;
+  const dormant = ROSTER.filter(p=>dormantMonthsOf(p).includes(month)).length;
 
   const sessCards = sessions.map((s,i)=>{
     const c = cnt(s);
@@ -2055,7 +2069,7 @@ async function renderOps() {
   const OPS_TABS = [
     { key:'notice',  label:'공지' },
     { key:'session', label:'세션' },
-    { key:'roster',  label:'명단' },
+    { key:'roster',  label:'설정' },
     { key:'dues',    label:'회비' },
     { key:'vote',    label:'투표' },
   ];
@@ -2094,33 +2108,7 @@ async function renderOps() {
       <div style="min-width:0"><b style="color:#ece6d2">이번 달 팀 구분 (WHITE/BLACK)</b><div class="hint" style="margin:0">끄면 홈·참석이 전체 명단으로 표시돼요</div></div>
       <button class="dues-badge toggle ${teamSplitOn?'paid':'unpaid'}" style="flex-shrink:0" onclick="opsToggleTeamSplit()">${teamSplitOn?'사용 중':'미사용'}</button>
     </div>
-    <p class="hint" style="margin:0 0 6px;font-weight:800;color:#ece6d2">선수 추가</p>
-    <div class="row"><div class="field"><label>이름</label><input id="opNewName" maxlength="20"></div><div class="field"><label>팀</label><select id="opNewTeam"><option value="WHITE">WHITE</option><option value="BLACK">BLACK</option><option value="기타">기타</option></select></div></div>
-    <div class="row"><div class="field"><label>등번호</label><input id="opNewJersey" type="number" inputmode="numeric" placeholder="예: 9"></div><div class="field"><label>티어</label><select id="opNewTier"><option>1</option><option>2</option><option selected>3</option><option>4</option></select></div></div>
-    <div class="field"><label>영문명 <span style="color:var(--muted);font-weight:400">(선택)</span></label><input id="opNewEng" maxlength="40" placeholder="예: PARK SEUNGHAN"></div>
-    <button class="btn accent sm" onclick="opsAddPlayer()">선수 추가</button>
-    <p class="hint" style="margin:18px 0 6px;font-weight:800;color:#ece6d2">명단 — ${potmMonthLabel(month)} (배지 눌러 휴면/활동 전환)</p>
-    <div class="att-list">
-      ${[...PLAYERS].sort((a,b)=>{const o={WHITE:0,BLACK:1,'기타':2};return (o[a.team]??9)-(o[b.team]??9)||((a.jersey??999)-(b.jersey??999))||a.name.localeCompare(b.name,'ko');}).map(p=>{
-        const dormant=(p.dormantMonths||[]).includes(month);
-        const editing = opsEditId===p.id;
-        return `<div class="dues-row" style="flex-wrap:wrap;gap:6px">
-          <span class="nm">${p.jersey!=null?`<span style="color:var(--muted);font-variant-numeric:tabular-nums">${p.jersey}</span> `:''}${esc(p.name)} <span style="font-size:11px;color:var(--muted)">${esc(p.team||'기타')}${p.status&&p.status!=='active'?' · '+esc(p.status):''}</span></span>
-          <button class="dues-badge toggle ${dormant?'unpaid':'paid'}" onclick="opsToggleDormant(${p.id})">${dormant?'휴면':'활동'}</button>
-          <button class="btn ghost sm" onclick="opsEditPlayer(${editing?'null':p.id})">${editing?'닫기':'수정'}</button>
-          <button class="btn ghost sm" style="color:var(--red)" onclick="opsDelPlayer(${p.id})">삭제</button>
-          ${editing?`<div style="flex:0 0 100%;margin-top:8px;border-top:1px solid var(--line);padding-top:10px">
-            <div class="row"><div class="field"><label>이름</label><input id="opeName" value="${esc(p.name)}"></div><div class="field"><label>팀</label><select id="opeTeam"><option ${p.team==='WHITE'?'selected':''}>WHITE</option><option ${p.team==='BLACK'?'selected':''}>BLACK</option><option value="기타" ${p.team==='기타'?'selected':''}>기타</option></select></div></div>
-            <div class="row"><div class="field"><label>등번호</label><input id="opeJersey" type="number" value="${p.jersey!=null?p.jersey:''}"></div><div class="field"><label>티어</label><select id="opeTier">${[1,2,3,4].map(t=>`<option ${p.tier==t?'selected':''}>${t}</option>`).join('')}</select></div></div>
-            <div class="field"><label>영문명</label><input id="opeEng" value="${esc(p.eng||'')}"></div>
-            <label style="display:flex;align-items:center;gap:8px;font-weight:600;margin-bottom:10px"><input type="checkbox" id="opeCap" ${p.cap?'checked':''} style="width:auto"> 주장(C)</label>
-            <div class="field"><label>상태</label><select id="opeStatus">${['active','dormant','friends','former'].map(s=>`<option ${(p.status||'active')===s?'selected':''}>${s}</option>`).join('')}</select></div>
-            <button class="btn accent sm" onclick="opsSavePlayer(${p.id})">저장</button>
-          </div>`:''}
-        </div>`;
-      }).join('')}
-    </div>
-    <p class="hint" style="margin-top:10px">여기서 고친 명단·팀·휴면이 홈페이지(팀 현황·참석·회비·투표)에 그대로 반영돼요.</p>`;
+    <p class="hint" style="margin-top:4px;line-height:1.6">선수 명단·등번호·티어·<b style="color:#ece6d2">휴면</b>은 <b style="color:#ece6d2">팀빌더</b>에서 관리해요(더 자세함).<br>휴면 상태는 팀빌더 데이터를 사이트가 자동으로 읽어 반영합니다.</p>`;
 
   const secDues = `
     <p class="hint" style="margin-top:0">'회비' 탭에서 이름을 눌러 납부 처리하세요. 빠른 이동:</p>
@@ -2255,7 +2243,7 @@ if (USE_DB) {
   ['notices','attendance','dues','club_settings'].forEach(tbl => {
     sb.channel(tbl+'-rt').on('postgres_changes', { event:'*', schema:'public', table:tbl }, async () => {
       _settingsCache = null;
-      if (tbl === 'club_settings') { try { const r = await fetchRoster(); if (r) applyPlayers(r); const s = await fetchSettings(); teamSplitOn = s.teamSplit !== false; } catch (e) {} }
+      if (tbl === 'club_settings') { try { const r = await fetchRoster(); if (r) applyPlayers(r); const s = await fetchSettings(); teamSplitOn = s.teamSplit !== false; await loadTbDormant(); } catch (e) {} }
       const open = id => !document.getElementById(id).classList.contains('hidden');
       if (open('tab-home')) renderHome();
       if (open('tab-att'))  renderAtt();
@@ -2410,6 +2398,7 @@ async function initApp() {
   updateAdminBtn();
   try { const r = await fetchRoster(); if (r) applyPlayers(r); } catch (e) {}
   try { const s = await fetchSettings(); teamSplitOn = s.teamSplit !== false; } catch (e) {}
+  await loadTbDormant();
   // 로컬 미리보기: 첫 활동 회원으로 자동 로그인
   if (IS_LOCAL && getMe() == null) {
     const ms = activeMembers(potmMonth());

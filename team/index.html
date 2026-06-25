@@ -42,6 +42,17 @@ body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; b
 .tab-btn .tab-icon { font-size: 16px; line-height: 1; }
 .tab-btn .tab-label { font-size: 10px; }
 .tab-badge-info { display: none; }
+
+/* 데스크톱(노트북) 보기 최적화 — 메뉴/서브탭을 중앙 정렬·가로형·크게 */
+@media (min-width: 700px){
+  .main { max-width: 1080px; }
+  .cat-nav { justify-content: center; gap: 6px; }
+  .cat-btn { flex: 0 0 auto; padding: 12px 46px; font-size: 14px; letter-spacing: 1px; }
+  .tab-nav { justify-content: center; overflow-x: visible; gap: 2px; }
+  .tab-btn { flex-direction: row; gap: 7px; padding: 12px 20px; font-size: 14px; min-width: 0; border-bottom-width: 3px; }
+  .tab-btn .tab-icon { font-size: 16px; }
+  .tab-btn .tab-label { font-size: 14px; }
+}
 .rk-tab-btn { padding:7px 16px;border-radius:20px;font-size:12px;font-weight:700;cursor:pointer;border:1.5px solid #e2e8f0;background:#f9fafb;color:#718096;transition:all 0.15s; }
 .match-stat-bar { display:flex;gap:8px;margin-bottom:14px; }
 .match-stat { flex:1;border-radius:10px;padding:10px 8px;text-align:center; }

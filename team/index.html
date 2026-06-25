@@ -2680,12 +2680,23 @@ function toggleOtherInput(){
   tog.textContent=showing?'📝 기타 ▶':'📝 기타 ▼';
   if(!showing) setTimeout(()=>document.getElementById('pspOtherText').focus(),50);
 }
+// 휴면 적용 대상 월: 그 달 마지막 수요일(마지막 세션) 이후면 다음 달로
+function dormantTargetMonth(){
+  const now=new Date();
+  const y=now.getFullYear(), m=now.getMonth();           // m: 0-based
+  const lastWed=new Date(y, m+1, 0);                      // 이번 달 말일
+  while(lastWed.getDay()!==3) lastWed.setDate(lastWed.getDate()-1);  // 마지막 수요일
+  const today=new Date(y, m, now.getDate());
+  let ty=y, tm=m;
+  if(today>lastWed){ tm=m+1; if(tm>11){tm=0; ty=y+1;} }   // 마지막 수요일 이후 → 다음 달
+  return `${ty}-${String(tm+1).padStart(2,'0')}`;
+}
 function applyDormant(id,reason,memo){
   const p=players.find(x=>x.id===id);
   if(p){
     if(!p.dormantMonths)p.dormantMonths=[];
-    const currentMo=new Date().toISOString().slice(0,7);
-    if(!p.dormantMonths.includes(currentMo))p.dormantMonths.push(currentMo);
+    const mo=dormantTargetMonth();
+    if(!p.dormantMonths.includes(mo))p.dormantMonths.push(mo);
   }
   setStatus(id,'dormant',reason,memo);
   closSettingsPopup();

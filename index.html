@@ -378,14 +378,19 @@
   if(btn){
     var shown=16;
     if(imgs.length>shown){
-      imgs.forEach(function(im,i){ if(i>=shown) im.classList.add('gal-hidden'); });
-      btn.hidden=false;
-      btn.textContent='더보기 (+'+(imgs.length-shown)+')';
-      btn.addEventListener('click', function(){
-        imgs.forEach(function(im){ im.classList.remove('gal-hidden'); });
-        btn.hidden=true;
+      var expanded=false;
+      function applyMore(){
+        imgs.forEach(function(im,i){ im.classList.toggle('gal-hidden', !expanded && i>=shown); });
+        btn.textContent = expanded ? '접기' : ('더보기 (+'+(imgs.length-shown)+')');
         imgs.forEach(function(im){ if(im.complete) span(im); else im.addEventListener('load',function(){ span(im); }); });
         layout();
+      }
+      btn.hidden=false;
+      applyMore();
+      btn.addEventListener('click', function(){
+        expanded=!expanded;
+        applyMore();
+        if(!expanded){ var sec=document.getElementById('moments'); if(sec) sec.scrollIntoView({behavior:'smooth', block:'start'}); }
       });
     }
   }

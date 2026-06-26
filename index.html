@@ -94,7 +94,8 @@
   .fixtures{background:#ece6d2; border-radius:16px; overflow:hidden; border:1px solid var(--line);}
   .fx{color:#15281b;}
   .fx:nth-child(even){background:#1e3526; color:#ece6d2;}
-  .fx-row{display:grid; grid-template-columns:92px 1fr auto; align-items:center; gap:12px; padding:15px 18px;}
+  .fx-row{display:flex; align-items:center; justify-content:space-between; gap:14px; padding:15px 18px;}
+  .fx-end{display:flex; align-items:center; gap:18px; min-width:0;}
   .fx.has-detail .fx-row{cursor:pointer;}
   .fx .more{display:none;}
   .fx.has-detail .more{display:block; font-size:9px; font-weight:400; letter-spacing:1px; opacity:.6; margin-top:3px;}
@@ -103,7 +104,7 @@
   .fx-detail{display:none; padding:0 18px 15px; font-size:13px; line-height:1.6; white-space:pre-wrap; word-break:break-word;}
   .fx.open .fx-detail{display:block;}
   .fx .wk{font-family:var(--disp); font-size:21px; letter-spacing:1px;}
-  .fx .loc{font-weight:900; font-size:15px;}
+  .fx .loc{font-weight:900; font-size:15px; text-align:right; min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;}
   .fx .when{text-align:right; font-family:var(--disp); letter-spacing:.5px; line-height:1.12;}
   .fx .when .d{font-size:19px;}
   .fx .when .wd{font-size:11px; opacity:.6; margin-left:6px; letter-spacing:1px;}
@@ -132,7 +133,7 @@
   .cafe .nm{font-size:15px; font-weight:800; color:var(--cream);}
   .cafe .addr{font-size:12px; color:var(--muted);}
   .cafe .go{flex-shrink:0; font-size:11px; font-weight:800; color:var(--green); background:var(--sand); border-radius:999px; padding:6px 12px; white-space:nowrap;}
-  @media(max-width:420px){ .fx-row{grid-template-columns:70px 1fr auto; padding:13px 13px; gap:8px;} .fx .wk{font-size:18px;} .fx .loc{font-size:13px;} }
+  @media(max-width:420px){ .fx-row{padding:13px 13px; gap:8px;} .fx-end{gap:12px;} .fx .wk{font-size:18px;} .fx .loc{font-size:13px;} }
 
   /* 활동 정보 카드 */
   .info{display:grid; gap:10px;}
@@ -147,6 +148,9 @@
   @media(max-width:1000px){ .gallery{column-count:3;} }
   @media(max-width:680px){ .gallery{column-count:2;} }
   @media(max-width:420px){ .gallery{padding:0 8px;} }
+  .gallery img.gal-hidden{display:none;}
+  .morebtn{display:block; margin:18px auto 0; padding:11px 28px; border-radius:999px; background:var(--green-2); color:var(--sand); border:1px solid var(--line); font-weight:900; font-size:13px; letter-spacing:.5px; cursor:pointer;}
+  .morebtn:hover{background:#24402e;}
 
   /* 가입 */
   .join{background:var(--sand); color:var(--green); border-radius:18px; padding:30px 22px; text-align:center;}
@@ -265,7 +269,9 @@
       <img src="img/670E7A2748.jpg" alt="싸커피 활동" loading="lazy">
       <img src="img/510E7A9490.jpg" alt="싸커피 활동" loading="lazy">
       <img src="img/710E7A0056.jpg" alt="싸커피 활동" loading="lazy">
+      <img src="img/210E7A8160.jpg" alt="싸커피 활동" loading="lazy">
     </div>
+    <button class="morebtn" id="galMore" hidden>더보기</button>
   </section>
 
 
@@ -314,9 +320,10 @@
         var hasDetail = !!(s.desc && String(s.desc).trim());
         return '<div class="fx'+(hasDetail?' has-detail':'')+'">'
           +'<div class="fx-row"'+(hasDetail?' onclick="this.parentNode.classList.toggle(\'open\')"':'')+'>'
-          +'<span class="wk">'+label+'<span class="more"></span></span><span class="loc">'+place+'</span>'
+          +'<span class="wk">'+label+'<span class="more"></span></span>'
+          +'<div class="fx-end"><span class="loc">'+place+'</span>'
           +'<span class="when"><span class="d">'+md+(wd?'<span class="wd">'+wd+'</span>':'')+'</span>'
-          +(time?'<span class="t">'+time+'</span>':'')+'</span></div>'
+          +(time?'<span class="t">'+time+'</span>':'')+'</span></div></div>'
           +(hasDetail?'<div class="fx-detail">'+linkify(s.desc)+'</div>':'')
           +'</div>';
       }).join('');
@@ -344,6 +351,24 @@
     await loadFixtures(sb);   // ① 위
     await loadSquad(sb);      // ② 아래
   })();
+})();
+</script>
+
+<script>
+// 갤러리 50% 노출 + 더보기
+(function(){
+  var g=document.querySelector('.gallery'), btn=document.getElementById('galMore');
+  if(!g||!btn) return;
+  var imgs=[].slice.call(g.querySelectorAll('img'));
+  var shown=Math.ceil(imgs.length/2);
+  if(imgs.length<=shown) return;
+  imgs.forEach(function(im,i){ if(i>=shown) im.classList.add('gal-hidden'); });
+  btn.hidden=false;
+  btn.textContent='더보기 (+'+(imgs.length-shown)+')';
+  btn.addEventListener('click', function(){
+    imgs.forEach(function(im){ im.classList.remove('gal-hidden'); });
+    btn.hidden=true;
+  });
 })();
 </script>
 

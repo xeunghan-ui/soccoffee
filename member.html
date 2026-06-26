@@ -1756,6 +1756,14 @@ async function upcomingSessions() {
   }
   return list;
 }
+// 세션이 끝났는지(종료시간 경과). 종료시간 없으면 시작+2시간, 그것도 없으면 그날 끝.
+function sessionEnded(s){
+  if(!s || !s.date) return false;
+  let end = s.endTime;
+  if(!end && s.time){ const [h,m]=s.time.split(':').map(Number); end = String((h+2)%24).padStart(2,'0')+':'+String(m||0).padStart(2,'0'); }
+  if(!end) end = '23:59';
+  return new Date(s.date+'T'+end) < new Date();
+}
 async function nearestSession() { return (await upcomingSessions())[0]; }
 async function currentSession() { return nearestSession(); }   // 하위호환
 function sessChipLabel(s) {
@@ -1855,7 +1863,10 @@ function squadBlock(members, team) {
 async function renderHome() {
   const el = document.getElementById('homeContent');
   el.innerHTML = `<div class="empty">불러오는 중...</div>`;
-  const [sessions, notices] = await Promise.all([upcomingSessions(), fetchNotices()]);
+  const allUpcoming = await upcomingSessions();
+  // 홈에서는 이미 끝난(마감) 세션은 숨김
+  const sessions = allUpcoming.filter(s => !sessionEnded(s));
+  const notices = await fetchNotices();
   const attBySess = {};
   await Promise.all(sessions.map(async s => { attBySess[s.id] = await fetchAttendance(s.id); }));
   const cnt = s => ({

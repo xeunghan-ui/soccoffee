@@ -386,6 +386,7 @@
   .dues-badge { font-size: 12px; font-weight: 800; padding: 4px 11px; border-radius: 20px; border: none; cursor: default; font-family: inherit; }
   .dues-badge.paid { background: var(--green-soft); color: var(--green); }
   .dues-badge.unpaid { background: #f4e0dc; color: var(--red); }
+  .dues-badge.dormant { background: #6b6b6b; color: #f0ede2; }
   .dues-badge.toggle { cursor: pointer; }
   .dues-badge.toggle:hover { filter: brightness(.96); }
   /* 회비 탭 명단: 2열 그리드 (좁은 화면은 1열) */
@@ -2236,14 +2237,18 @@ async function renderDues() {
   duesPaidDB = paidMap;
   const admin = isAdmin();
   const me = getMe();
-  // 운영진 드래프트 우선 적용
-  const isPaid = id => (id in duesDraft) ? !!duesDraft[id] : !!paidMap[id];
+  // 운영진 드래프트 우선 적용 (상태: 'paid' | 'unpaid' | 'dormant')
+  const effState = id => (id in duesDraft) ? duesDraft[id] : (paidMap[id] ? 'paid' : 'unpaid');
+  const isPaid = id => effState(id) === 'paid';
+  const isDraftDormant = id => effState(id) === 'dormant';
   const nDraft = admin ? Object.keys(duesDraft).length : 0;
 
-  const paidCount = members.filter(m=>isPaid(m.id)).length;
-  const total = members.length;
-  const collected = members.filter(m=>isPaid(m.id)).reduce((s,m)=>s+dueAmount(m.name),0);
-  const expected = members.reduce((s,m)=>s+dueAmount(m.name),0);
+  // 드래프트로 휴면 처리된 회원은 회비 집계/미납에서 제외
+  const payMembers = members.filter(m => !isDraftDormant(m.id));
+  const paidCount = payMembers.filter(m=>isPaid(m.id)).length;
+  const total = payMembers.length;
+  const collected = payMembers.filter(m=>isPaid(m.id)).reduce((s,m)=>s+dueAmount(m.name),0);
+  const expected = payMembers.reduce((s,m)=>s+dueAmount(m.name),0);
   const pct = total ? Math.round(paidCount/total*100) : 0;
   const meActive = me != null && members.some(x => x.id === me);
   const myPaid = !!paidMap[me];
@@ -2268,23 +2273,25 @@ async function renderDues() {
     </div>` : ''}
     ${(total-paidCount)>0 ? `<div class="card" style="padding:12px 14px;margin-bottom:12px">
       <div style="font-size:12px;font-weight:800;color:var(--red);margin-bottom:6px">미납 ${total-paidCount}명</div>
-      <div style="font-size:14px;line-height:1.7;color:var(--text)">${[...members].filter(m=>!isPaid(m.id)).sort(byJersey).map(m=>esc(m.name)).join(', ')}</div>
+      <div style="font-size:14px;line-height:1.7;color:var(--text)">${[...payMembers].filter(m=>effState(m.id)==='unpaid').sort(byJersey).map(m=>esc(m.name)).join(', ')}</div>
     </div>` : ''}
-    ${admin?'<div class="ops-note">운영진 모드 — 이름을 눌러 변경하고, 아래 \'저장\'을 누르면 일괄 반영돼요</div>':'<p class="hint" style="text-align:center;margin-bottom:12px">본인 회비는 위 \'내 회비\'에서 직접 표시할 수 있어요. 다른 사람은 운영진이 확인해 표시해요.</p>'}
+    ${admin?'<div class="ops-note">운영진 모드 — 이름을 누르면 미납→납부→휴면(다음달) 순환. 아래 \'저장\'으로 일괄 반영돼요</div>':'<p class="hint" style="text-align:center;margin-bottom:12px">본인 회비는 위 \'내 회비\'에서 직접 표시할 수 있어요. 다른 사람은 운영진이 확인해 표시해요.</p>'}
     <div class="card">
       <div class="att-list dues-grid">
-        ${[...members].sort((a,b)=>((isPaid(a.id)?1:0)-(isPaid(b.id)?1:0)) || byJersey(a,b)).map(m=>{
-          const paid = isPaid(m.id);
+        ${[...members].sort((a,b)=>{ const rk=s=>s==='unpaid'?0:(s==='paid'?1:2); return rk(effState(a.id))-rk(effState(b.id)) || byJersey(a,b); }).map(m=>{
+          const stt = effState(m.id);
           const isMe = me===m.id;
           const dirty = admin && (m.id in duesDraft);
+          const lbl = {paid:'납부',unpaid:'미납',dormant:'휴면'}[stt];
+          const bcls = stt==='paid'?'paid':(stt==='unpaid'?'unpaid':'dormant');
           const badge = admin
-            ? `<button class="dues-badge toggle ${paid?'paid':'unpaid'}" onclick="duesDraftToggle(${m.id})">${paid?'납부':'미납'}</button>`
+            ? `<button class="dues-badge toggle ${bcls}" onclick="duesDraftCycle(${m.id})">${lbl}</button>`
             : (isMe
-                ? `<button class="dues-badge toggle ${paid?'paid':'unpaid'}" onclick="toggleDue(${m.id},${paid})">${paid?'납부':'미납'}</button>`
-                : `<span class="dues-badge ${paid?'paid':'unpaid'}">${paid?'납부':'미납'}</span>`);
+                ? `<button class="dues-badge toggle ${bcls}" onclick="toggleDue(${m.id},${stt==='paid'})">${lbl}</button>`
+                : `<span class="dues-badge ${bcls}">${lbl}</span>`);
           return `<div class="dues-row ${isMe?'me':''}${dirty?' dirty':''}">
             <span class="nm">${esc(m.name)}${isMe?' <span style="font-size:11px;color:var(--accent)">(나)</span>':''}${dirty?' <span class="dirty-dot">●</span>':''}</span>
-            <span class="amt">${won(dueAmount(m.name))}</span>
+            <span class="amt">${stt==='dormant'?'—':won(dueAmount(m.name))}</span>
             ${badge}
           </div>`;
         }).join('')}
@@ -2311,22 +2318,31 @@ async function toggleDue(memberId, currentlyPaid) {
   await renderDues();
   window.scrollTo(0, y);
 }
-// 운영진 회비 일괄: 클릭은 드래프트에만 반영
-function duesDraftToggle(id){
+// 운영진 회비 일괄: 클릭은 드래프트에만 반영 (미납→납부→휴면 순환)
+function duesDraftCycle(id){
   if(!isAdmin()) return;
-  const cur = (id in duesDraft) ? !!duesDraft[id] : !!duesPaidDB[id];
-  const next = !cur;
-  if (next === !!duesPaidDB[id]) delete duesDraft[id]; else duesDraft[id] = next;
+  const order = ['unpaid','paid','dormant'];
+  const base = duesPaidDB[id] ? 'paid' : 'unpaid';
+  const cur = (id in duesDraft) ? duesDraft[id] : base;
+  const next = order[(order.indexOf(cur)+1) % order.length];
+  if (next === base) delete duesDraft[id]; else duesDraft[id] = next;
   rerender(renderDues);
 }
 async function duesSaveDraft(){
   if(!isAdmin()) return;
   const entries = Object.entries(duesDraft);
   if(!entries.length) return;
-  const mo = duesMonth();
-  for(const [id,paid] of entries){
+  const mo = duesMonth();   // 회비 표시월 = 다음달(25일 이후)
+  const dormIds = [];
+  for(const [id,st] of entries){
     const mid = Number(id); const m = ROSTER.find(x=>x.id===mid);
-    await setDuesPaid(mo, mid, !!paid, dueAmount(m?m.name:''));
+    if (st === 'dormant') { dormIds.push(mid); }
+    else { await setDuesPaid(mo, mid, st === 'paid', dueAmount(m?m.name:'')); }
+  }
+  // 휴면: 해당 월을 명단(roster) dormantMonths에 등록 → 회비·참석·명단 전체 반영
+  if (dormIds.length) {
+    PLAYERS.forEach(p => { if (dormIds.includes(p.id)) p.dormantMonths = Array.from(new Set([...(p.dormantMonths||[]), mo])); });
+    if (await saveRoster(PLAYERS)) applyPlayers(PLAYERS);
   }
   duesDraft = {};
   await rerender(renderDues);

@@ -1690,8 +1690,16 @@ function upcomingSessionDate() {
 function fmtClock(t){
   if(!t) return '';
   const [h,m] = t.split(':').map(Number);
-  const ampm = h<12?'오전':'오후'; let h12=h%12; if(h12===0)h12=12;
-  return `${ampm} ${h12}:${String(m||0).padStart(2,'0')}`;
+  return `${String(h).padStart(2,'0')}:${String(m||0).padStart(2,'0')}`;   // 24시간제
+}
+// 시작 시간 + 2시간 → 종료 입력칸 자동 채움
+function endPlus2(startId, endId){
+  const v = document.getElementById(startId);
+  const e = document.getElementById(endId);
+  if(!v || !e || !v.value) return;
+  const [h,m] = v.value.split(':').map(Number);
+  const eh = (h + 2) % 24;
+  e.value = `${String(eh).padStart(2,'0')}:${String(m).padStart(2,'0')}`;
 }
 function fmtSessionDate(ds, time, endTime) {
   if (!ds) return '';
@@ -2419,7 +2427,7 @@ async function renderOps() {
 
   const secSession = `
     ${opsEditSessionId ? '' : (opsAddSessionOpen ? `
-    <div class="row"><div class="field"><label>날짜</label><input id="opsSessDate" type="date" value="${defDate}" onchange="opsSyncDeadline()"></div><div class="field"><label>시작</label><input id="opsSessTime" type="time" value="21:00"></div><div class="field"><label>종료 <span style="color:var(--muted);font-weight:400">(선택)</span></label><input id="opsSessEnd" type="time" value="23:00"></div></div>
+    <div class="row"><div class="field"><label>날짜</label><input id="opsSessDate" type="date" value="${defDate}" onchange="opsSyncDeadline()"></div><div class="field"><label>시작</label><input id="opsSessTime" type="time" value="21:00" onchange="endPlus2('opsSessTime','opsSessEnd')"></div><div class="field"><label>종료 <span style="color:var(--muted);font-weight:400">(시작+2시간 기본)</span></label><input id="opsSessEnd" type="time" value="23:00"></div></div>
     <div class="field"><label>장소</label><input id="opsSessPlace" value="상암 풋살장" maxlength="40"></div>
     <div class="field"><label>참석 신청 마감 <span style="color:var(--muted);font-weight:400">(기본: 전주 일요일 23:59)</span></label><input id="opsSessDeadline" type="date" value="${autoDeadlineStr(defDate)}"></div>
     <div class="field"><label>이름/메모 <span style="color:var(--muted);font-weight:400">(선택, 예: EVENT, A매치)</span></label><input id="opsSessLabel" maxlength="30" placeholder="예: EVENT, A매치"></div>
@@ -2430,7 +2438,7 @@ async function renderOps() {
       ${allSessions.length===0?'<p class="hint">등록된 세션이 없어요. (비우면 다가오는 수요일·상암 풋살장으로 자동 표시돼요)</p>':allSessions.map(s=>{
         if (String(s.id)===opsEditSessionId) {
           return `<div class="ops-row" style="flex-direction:column;align-items:stretch;gap:0">
-            <div class="row"><div class="field"><label>날짜</label><input id="esD" type="date" value="${s.date||''}"></div><div class="field"><label>시작</label><input id="esT" type="time" value="${s.time||'21:00'}"></div><div class="field"><label>종료 <span style="color:var(--muted);font-weight:400">(선택)</span></label><input id="esTe" type="time" value="${s.endTime||''}"></div></div>
+            <div class="row"><div class="field"><label>날짜</label><input id="esD" type="date" value="${s.date||''}"></div><div class="field"><label>시작</label><input id="esT" type="time" value="${s.time||'21:00'}" onchange="endPlus2('esT','esTe')"></div><div class="field"><label>종료 <span style="color:var(--muted);font-weight:400">(시작+2시간 기본)</span></label><input id="esTe" type="time" value="${s.endTime||''}"></div></div>
             <div class="field"><label>장소</label><input id="esP" value="${esc(s.place||'')}" maxlength="40"></div>
             <div class="field"><label>참석 신청 마감</label><input id="esDl" type="date" value="${s.deadline||autoDeadlineStr(s.date)}"></div>
             <div class="field"><label>이름/메모 <span style="color:var(--muted);font-weight:400">(예: EVENT, A매치)</span></label><input id="esL" value="${esc(s.label||'')}" maxlength="30"></div>

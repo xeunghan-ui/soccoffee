@@ -143,10 +143,9 @@
 
   /* 갤러리 — 원본 비율 유지(메이슨리) */
   /* 갤러리 — 풀블리드 그리드 메이슨리(비율 유지·정렬) */
-  .gallery{width:100vw; margin-left:calc(50% - 50vw); padding:0 12px; display:grid; grid-template-columns:repeat(4,1fr); grid-auto-rows:0; grid-auto-flow:row dense; gap:10px;}
+  .gallery{width:100vw; margin-left:calc(50% - 50vw); padding:0 12px; display:grid; grid-template-columns:repeat(3,1fr); grid-auto-rows:0; grid-auto-flow:row dense; gap:10px;}
   .gallery img{width:100%; height:auto; border-radius:12px; border:1px solid var(--line); display:block; align-self:start;}
-  @media(max-width:1000px){ .gallery{grid-template-columns:repeat(3,1fr);} }
-  @media(max-width:680px){ .gallery{grid-template-columns:repeat(2,1fr);} }
+  @media(max-width:760px){ .gallery{grid-template-columns:repeat(2,1fr);} }
   @media(max-width:420px){ .gallery{padding:0 8px;} }
   .gallery img.gal-hidden{display:none;}
   .morebtn{display:block; margin:18px auto 0; padding:11px 28px; border-radius:999px; background:var(--green-2); color:var(--sand); border:1px solid var(--line); font-weight:900; font-size:13px; letter-spacing:.5px; cursor:pointer;}

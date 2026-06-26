@@ -2283,7 +2283,7 @@ async function renderDues() {
       <div class="dues-stat paid"><div class="num">${paidCount}</div><div class="cap">납부</div></div>
       <div class="dues-stat unpaid"><div class="num">${total-paidCount}</div><div class="cap">미납</div></div>
     </div>
-    ${(meActive && !admin) ? `<div class="card" style="display:flex;align-items:center;justify-content:space-between;gap:12px;padding:14px 16px;margin-bottom:12px">
+    ${meActive ? `<div class="card" style="display:flex;align-items:center;justify-content:space-between;gap:12px;padding:14px 16px;margin-bottom:12px">
       <div style="min-width:0">
         <div style="font-size:13px;font-weight:800;color:var(--coffee)">내 회비 · ${potmMonthLabel(month)}</div>
         <div style="font-size:12px;color:var(--muted);margin-top:2px">${myPaid ? '납부 완료로 표시됨' : '입금 후 버튼을 눌러 납부로 표시하세요'}</div>

@@ -2134,8 +2134,16 @@ async function renderDues() {
   const el = document.getElementById('duesContent');
   el.innerHTML = `<div class="empty">불러오는 중...</div>`;
   const month = duesMonth();
-  const members = activeMembers(month);
-  // 휴면이지만 그 외 가입 조건은 충족하는 멤버 — 명단엔 '휴면'으로 표시, 미납/집계에서는 제외
+  // '회비 기준 휴면' 판정: ① 영구 휴면(status:'dormant') ② 회비월 휴면 ③ 이번 달 휴면.
+  // 회비월은 25일 이후 다음 달로 넘어가는데 팀빌더는 보통 이번 달까지만 휴면을 갱신하므로,
+  // 기존 휴면 회원(예: 김이연·함지상)이 회비월(다음 달)엔 누락되지 않도록 이번 달 휴면도 포함한다.
+  const nowMonth = (()=>{ const d=new Date(); return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}`; })();
+  const isDuesDormant = p => (p.status||'active')==='dormant'
+    || dormantMonthsOf(p).includes(month)
+    || dormantMonthsOf(p).includes(nowMonth);
+  // 활동 멤버 — 위 휴면은 제외해 미납 인원/명단/집계에서 빠짐
+  const members = activeMembers(month).filter(m => !isDuesDormant(m));
+  // 휴면이지만 그 외 가입 조건은 충족하는 멤버 — 명단엔 '휴면'으로 표시
   const [dyN, dmoN] = month.split('-').map(Number);
   const dMonthEnd = new Date(dyN, dmoN, 0);
   const dormantMembers = ROSTER.filter(p => {
@@ -2145,7 +2153,7 @@ async function renderDues() {
     else if (st === 'friends') eligible = !!(p.friendsSince && month < p.friendsSince);
     else if (!p.joinDate) eligible = false;
     else eligible = new Date(p.joinDate) <= dMonthEnd;
-    return eligible && dormantMonthsOf(p).includes(month);
+    return eligible && isDuesDormant(p);
   }).map(p => {
     const t = TEAM_SHEET[p.name] || { team: '기타' };
     return { ...p, jersey: t.jersey, eng: t.eng || '', team: t.team, cap: !!t.cap };

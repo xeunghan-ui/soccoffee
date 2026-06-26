@@ -360,6 +360,14 @@
   .st-set { display: flex; gap: 5px; flex-shrink: 0; }
   .att-row .st-set .st { padding: 4px 9px; opacity: .35; }
   .att-row .st-set .st.on { opacity: 1; }
+  /* 운영진 일괄 수정: 저장 바 + 변경(미저장) 표시 */
+  .save-bar { position: sticky; bottom: 10px; display: flex; align-items: center; justify-content: space-between; gap: 10px; background: var(--green); color: var(--sand); border-radius: 12px; padding: 11px 14px; margin-top: 14px; box-shadow: 0 6px 20px rgba(0,0,0,.28); z-index: 6; }
+  .save-bar .save-n { font-size: 13px; font-weight: 800; }
+  .save-bar button { font-family: inherit; border: none; border-radius: 8px; padding: 8px 16px; font-weight: 800; cursor: pointer; font-size: 13px; }
+  .save-bar .ok { background: var(--sand); color: var(--green); }
+  .save-bar .cancel { background: transparent; color: var(--sand); border: 1px solid rgba(255,255,255,.45); }
+  .dirty-dot { color: var(--accent); font-size: 9px; vertical-align: middle; }
+  .att-row.dirty, .dues-row.dirty { background: rgba(212,160,60,.10); border-radius: 8px; }
 
   /* ===== 회비 ===== */
   .dues-summary { display: flex; gap: 10px; margin-bottom: 14px; }
@@ -984,7 +992,7 @@ async function createRide() {
   document.getElementById('f-dest-sel').value = '상암 풋살장';
   onDestChange();
   setDefaults();
-  await render();
+  await rerender(render);
   toggleCreate(true);
   toast('카풀이 등록됐어요');
 }
@@ -1099,7 +1107,7 @@ async function repostRide(id) {
   const newId = await insertRide({ driver: r.driver, place: r.place, date: newDate, time: r.time, seats: r.seats, dest: r.dest });
   if (!newId) return;
   addMyRide(newId);
-  await render();
+  await rerender(render);
   toast(`다시 올렸어요 — ${fmtDate(newDate, r.time)} `);
 }
 
@@ -1147,7 +1155,7 @@ async function applyRide(id) {
   if (!res) return;
   addMyApp(rid);
   delete treatPick[id];
-  await render();
+  await rerender(render);
   toast('탑승 신청 완료! ');
 }
 
@@ -1163,7 +1171,7 @@ async function cancelSeat(rideId, index, own) {
   const ok = await removeRiderByIndex(idCast(rideId), index, target);
   if (!ok) return;
   if (target && target.rid) removeMyApp(target.rid);
-  await render();
+  await rerender(render);
   toast(admin && !own ? '탑승자를 뺐어요' : '탑승을 취소했어요');
 }
 
@@ -1171,7 +1179,7 @@ async function removeRide(id) {
   if (!confirm('이 카풀을 삭제할까요?')) return;
   const ok = await deleteRide(idCast(id));
   if (!ok) return;
-  await render();
+  await rerender(render);
   toast('삭제했어요');
 }
 
@@ -1631,7 +1639,7 @@ async function submitVote() {
   const r1 = await castVote(m, 'mvp', potmVoterId, potmPick.mvp);
   const r2 = await castVote(m, 'growth', potmVoterId, potmPick.growth);
   potmPick = { mvp:null, growth:null };
-  await renderPotm();
+  await rerender(renderPotm);
   toast((r1 === 'dup' || r2 === 'dup') ? '이미 이번 달 투표를 하셨어요' : '투표 완료!');
 }
 async function adminResetPotm() {
@@ -1640,7 +1648,7 @@ async function adminResetPotm() {
   if (!confirm(`[${cat.label}] 이번 달 투표를 모두 초기화할까요? 되돌릴 수 없어요.`)) return;
   const ok = await resetVotes(potmMonth(), potmCat);
   if (!ok) return;
-  await renderPotm();
+  await rerender(renderPotm);
   toast('이 부문 투표를 초기화했어요');
 }
 
@@ -1891,7 +1899,7 @@ async function renderHome() {
       </div>`).join('');
   }
 
-  html += `<div class="section-title">팀 현황</div>`;
+  html += `<div class="section-title">${potmMonthLabel(month)} 팀 현황</div>`;
   if (teamSplitOn) {
     html += `
     <p class="hint" style="text-align:center;margin:0 0 12px">활동 ${members.length}명 · WHITE ${white} · BLACK ${black}${dormant?` · 휴면 ${dormant}명`:''}</p>
@@ -1995,6 +2003,9 @@ function deadlineLabel(dl){
   const days=['일','월','화','수','목','금','토'];
   return `${dl.getMonth()+1}/${dl.getDate()}(${days[dl.getDay()]}) 23:59`;
 }
+// 운영진 일괄 수정용 드래프트 (출석) — 클릭은 로컬에만 반영, 저장 시 일괄 DB 반영
+let attDraft = {};      // memberId -> 'yes'|'no'|'maybe'|'none'
+let attMapDB = {};      // 현재 DB 상태 스냅샷
 async function renderAtt() {
   const el = document.getElementById('attContent');
   el.innerHTML = `<div class="empty">불러오는 중...</div>`;
@@ -2011,10 +2022,14 @@ async function renderAtt() {
   attMe = getMe();
   const att = await fetchAttendance(sess.id);
   const map = {}; att.forEach(a=>{ map[a.member_id]=a.status; });
-  const yes = att.filter(a=>a.status==='yes').length;
-  const no  = att.filter(a=>a.status==='no').length;
-  const maybe = att.filter(a=>a.status==='maybe').length;
+  attMapDB = map;
+  // 운영진 드래프트가 있으면 그 값을 우선 적용해 표시
+  const eff = id => (id in attDraft) ? attDraft[id] : (map[id]||'none');
+  const yes = members.filter(m=>eff(m.id)==='yes').length;
+  const no  = members.filter(m=>eff(m.id)==='no').length;
+  const maybe = members.filter(m=>eff(m.id)==='maybe').length;
   const mine = attMe ? map[attMe] : null;
+  const nDraft = admin ? Object.keys(attDraft).length : 0;
 
   let html = '';
   if (sessions.length > 1) {
@@ -2055,16 +2070,17 @@ async function renderAtt() {
   }
 
   const rosterRow = m => {
-    const s = map[m.id] || 'none';
+    const s = eff(m.id);
     const lbl = {yes:'참석',no:'불참',maybe:'미정',none:'—'}[s];
+    const dirty = admin && (m.id in attDraft);
     const st = admin
       ? `<span class="st-set">`
-        + `<button class="st yes ${s==='yes'?'on':''}" onclick="adminSetAtt(${m.id},'${s}','yes')">참석</button>`
-        + `<button class="st maybe ${s==='maybe'?'on':''}" onclick="adminSetAtt(${m.id},'${s}','maybe')">미정</button>`
-        + `<button class="st no ${s==='no'?'on':''}" onclick="adminSetAtt(${m.id},'${s}','no')">불참</button>`
+        + `<button class="st yes ${s==='yes'?'on':''}" onclick="attDraftSet(${m.id},'yes')">참석</button>`
+        + `<button class="st maybe ${s==='maybe'?'on':''}" onclick="attDraftSet(${m.id},'maybe')">미정</button>`
+        + `<button class="st no ${s==='no'?'on':''}" onclick="attDraftSet(${m.id},'no')">불참</button>`
         + `</span>`
       : `<span class="st ${s}">${lbl}</span>`;
-    return `<div class="att-row"><span class="js">${m.jersey!=null?m.jersey:''}</span><span class="nm">${esc(m.name)}</span>${st}</div>`;
+    return `<div class="att-row${dirty?' dirty':''}"><span class="js">${m.jersey!=null?m.jersey:''}</span><span class="nm">${esc(m.name)}${dirty?' <span class="dirty-dot">●</span>':''}</span>${st}</div>`;
   };
   const sortedM = [...members].sort(byJersey);
   let listHtml;
@@ -2072,12 +2088,12 @@ async function renderAtt() {
     listHtml = [['WHITE','WHITE'],['BLACK','BLACK'],['기타','기타']].map(([key,label])=>{
       const gm = sortedM.filter(m=>(m.team||'기타')===key);
       if (!gm.length) return '';
-      const gy = gm.filter(m=>map[m.id]==='yes').length;
+      const gy = gm.filter(m=>eff(m.id)==='yes').length;
       return `<div class="att-grp-h">${label} <span>참석 ${gy} / ${gm.length}명</span></div>${gm.map(rosterRow).join('')}`;
     }).join('');
   } else {
     listHtml = [['yes','참석'],['maybe','미정'],['no','불참'],['none','미응답']].map(([key,label])=>{
-      const gm = sortedM.filter(m=>(map[m.id]||'none')===key);
+      const gm = sortedM.filter(m=>eff(m.id)===key);
       if (!gm.length) return '';
       return `<div class="att-grp-h">${label} <span>${gm.length}명</span></div>${gm.map(rosterRow).join('')}`;
     }).join('');
@@ -2095,10 +2111,33 @@ async function renderAtt() {
         ${teamSplitOn?`<button class="btn ghost sm" onclick="toggleAttTeam()">${attTeamView?'전체 보기':'팀별 보기'}</button>`:''}
       </div>
       <div class="att-list">${listHtml}</div>
-    </div>`;
+    </div>
+    ${nDraft ? `<div class="save-bar"><span class="save-n">변경 ${nDraft}건 (미저장)</span><span style="display:flex;gap:8px"><button class="cancel" onclick="attCancelDraft()">취소</button><button class="ok" onclick="attSaveDraft()">저장</button></span></div>` : ''}`;
   el.innerHTML = html;
 }
-function pickAttSession(id){ attSessionId = id; renderAtt(); }
+function pickAttSession(id){ attSessionId = id; attDraft = {}; renderAtt(); }
+// 운영진 출석 일괄: 클릭은 드래프트에만 반영(같은 값 다시 누르면 미응답)
+function attDraftSet(id, target){
+  if(!isAdmin()) return;
+  const cur = (id in attDraft) ? attDraft[id] : (attMapDB[id]||'none');
+  const next = (cur===target) ? 'none' : target;
+  if (next === (attMapDB[id]||'none')) delete attDraft[id]; else attDraft[id] = next;
+  rerender(renderAtt);
+}
+async function attSaveDraft(){
+  if(!isAdmin() || !attSessionId) return;
+  const entries = Object.entries(attDraft);
+  if(!entries.length) return;
+  for(const [id,st] of entries){
+    const mid = Number(id);
+    if(st==='none') await clearAttendance(attSessionId, mid);
+    else await setAttendance(attSessionId, mid, st);
+  }
+  attDraft = {};
+  await rerender(renderAtt);
+  toast(`출석 ${entries.length}건 저장했어요`);
+}
+function attCancelDraft(){ attDraft = {}; rerender(renderAtt); }
 function openAtt(id){ if(id) attSessionId = id; switchTab('att'); }
 async function clearAttendance(sessionId, memberId){
   if (USE_DB) {
@@ -2110,6 +2149,8 @@ async function clearAttendance(sessionId, memberId){
   a = a.filter(x=>!(x.session_id===sessionId && x.member_id===memberId));
   localStorage.setItem(ATT_STORE, JSON.stringify(a)); return true;
 }
+// 재렌더 시 스크롤 위치 유지 (클릭해도 상단으로 튀지 않게)
+async function rerender(fn){ const y=window.scrollY; await fn(); window.scrollTo(0,y); }
 // 운영진: 명단에서 다른 멤버 참석을 직접 변경(미응답→참석→미정→불참→미응답 순환, 마감 무관)
 async function adminCycleAtt(memberId, cur){
   if(!isAdmin() || !attSessionId) return;
@@ -2118,7 +2159,7 @@ async function adminCycleAtt(memberId, cur){
   const ok = next==='none'
     ? await clearAttendance(attSessionId, memberId)
     : await setAttendance(attSessionId, memberId, next);
-  if(ok) await renderAtt();
+  if(ok) await rerender(renderAtt);
 }
 // 운영진: 참석/미정/불참 직접 선택 (같은 걸 다시 누르면 미응답으로 해제)
 async function adminSetAtt(memberId, cur, target){
@@ -2126,7 +2167,7 @@ async function adminSetAtt(memberId, cur, target){
   const ok = (cur===target)
     ? await clearAttendance(attSessionId, memberId)
     : await setAttendance(attSessionId, memberId, target);
-  if(ok) await renderAtt();
+  if(ok) await rerender(renderAtt);
 }
 async function markAtt(status){
   if(!attMe || !attSessionId) return;
@@ -2135,7 +2176,7 @@ async function markAtt(status){
   if (_dl && new Date() > _dl && !isAdmin()) { toast('신청이 마감됐어요. 운영진에 문의해 주세요.'); return; }
   const ok = await setAttendance(attSessionId, attMe, status);
   if(!ok) return;
-  await renderAtt();
+  await rerender(renderAtt);
   toast({yes:'참석으로 표시했어요',no:'불참으로 표시했어요',maybe:'미정으로 표시했어요'}[status]);
 }
 
@@ -2166,6 +2207,9 @@ async function setDuesPaid(month, memberId, paid, amount) {
   localStorage.setItem(DUES_STORE, JSON.stringify(a)); return true;
 }
 
+// 운영진 일괄 수정용 드래프트 (회비)
+let duesDraft = {};     // memberId -> bool(paid)
+let duesPaidDB = {};
 async function renderDues() {
   const el = document.getElementById('duesContent');
   el.innerHTML = `<div class="empty">불러오는 중...</div>`;
@@ -2189,14 +2233,20 @@ async function renderDues() {
   }).sort(byJersey);
   const dues = await fetchDues(month);
   const paidMap = {}; dues.forEach(d=>{ paidMap[d.member_id]=d.paid; });
+  duesPaidDB = paidMap;
   const admin = isAdmin();
   const me = getMe();
+  // 운영진 드래프트 우선 적용
+  const isPaid = id => (id in duesDraft) ? !!duesDraft[id] : !!paidMap[id];
+  const nDraft = admin ? Object.keys(duesDraft).length : 0;
 
-  const paidCount = members.filter(m=>paidMap[m.id]).length;
+  const paidCount = members.filter(m=>isPaid(m.id)).length;
   const total = members.length;
-  const collected = members.filter(m=>paidMap[m.id]).reduce((s,m)=>s+dueAmount(m.name),0);
+  const collected = members.filter(m=>isPaid(m.id)).reduce((s,m)=>s+dueAmount(m.name),0);
   const expected = members.reduce((s,m)=>s+dueAmount(m.name),0);
   const pct = total ? Math.round(paidCount/total*100) : 0;
+  const meActive = me != null && members.some(x => x.id === me);
+  const myPaid = !!paidMap[me];
 
   let html = `
     <div class="potm-hero" style="background:linear-gradient(135deg,#2f7a4f,#245f3e)">
@@ -2209,21 +2259,31 @@ async function renderDues() {
       <div class="dues-stat paid"><div class="num">${paidCount}</div><div class="cap">납부</div></div>
       <div class="dues-stat unpaid"><div class="num">${total-paidCount}</div><div class="cap">미납</div></div>
     </div>
+    ${(meActive && !admin) ? `<div class="card" style="display:flex;align-items:center;justify-content:space-between;gap:12px;padding:14px 16px;margin-bottom:12px">
+      <div style="min-width:0">
+        <div style="font-size:13px;font-weight:800;color:var(--coffee)">내 회비 · ${potmMonthLabel(month)}</div>
+        <div style="font-size:12px;color:var(--muted);margin-top:2px">${myPaid ? '납부 완료로 표시됨' : '입금 후 버튼을 눌러 납부로 표시하세요'}</div>
+      </div>
+      <button class="dues-badge toggle ${myPaid?'paid':'unpaid'}" style="flex-shrink:0" onclick="toggleDue(${me},${myPaid})">${myPaid ? '납부 취소' : '납부 표시'}</button>
+    </div>` : ''}
     ${(total-paidCount)>0 ? `<div class="card" style="padding:12px 14px;margin-bottom:12px">
       <div style="font-size:12px;font-weight:800;color:var(--red);margin-bottom:6px">미납 ${total-paidCount}명</div>
-      <div style="font-size:14px;line-height:1.7;color:var(--text)">${[...members].filter(m=>!paidMap[m.id]).sort(byJersey).map(m=>esc(m.name)).join(', ')}</div>
+      <div style="font-size:14px;line-height:1.7;color:var(--text)">${[...members].filter(m=>!isPaid(m.id)).sort(byJersey).map(m=>esc(m.name)).join(', ')}</div>
     </div>` : ''}
-    ${admin?'<div class="ops-note">운영진 모드 — 이름을 누르면 납부/미납이 전환돼요</div>':'<p class="hint" style="text-align:center;margin-bottom:12px">회비 납부 여부는 운영진이 확인해 표시해요. 입금 후 반영까지 시간이 걸릴 수 있어요.</p>'}
+    ${admin?'<div class="ops-note">운영진 모드 — 이름을 눌러 변경하고, 아래 \'저장\'을 누르면 일괄 반영돼요</div>':'<p class="hint" style="text-align:center;margin-bottom:12px">본인 회비는 위 \'내 회비\'에서 직접 표시할 수 있어요. 다른 사람은 운영진이 확인해 표시해요.</p>'}
     <div class="card">
       <div class="att-list dues-grid">
-        ${[...members].sort((a,b)=>((paidMap[a.id]?1:0)-(paidMap[b.id]?1:0)) || byJersey(a,b)).map(m=>{
-          const paid = !!paidMap[m.id];
+        ${[...members].sort((a,b)=>((isPaid(a.id)?1:0)-(isPaid(b.id)?1:0)) || byJersey(a,b)).map(m=>{
+          const paid = isPaid(m.id);
           const isMe = me===m.id;
+          const dirty = admin && (m.id in duesDraft);
           const badge = admin
-            ? `<button class="dues-badge toggle ${paid?'paid':'unpaid'}" onclick="toggleDue(${m.id},${paid})">${paid?'납부':'미납'}</button>`
-            : `<span class="dues-badge ${paid?'paid':'unpaid'}">${paid?'납부':'미납'}</span>`;
-          return `<div class="dues-row ${isMe?'me':''}">
-            <span class="nm">${esc(m.name)}${isMe?' <span style="font-size:11px;color:var(--accent)">(나)</span>':''}</span>
+            ? `<button class="dues-badge toggle ${paid?'paid':'unpaid'}" onclick="duesDraftToggle(${m.id})">${paid?'납부':'미납'}</button>`
+            : (isMe
+                ? `<button class="dues-badge toggle ${paid?'paid':'unpaid'}" onclick="toggleDue(${m.id},${paid})">${paid?'납부':'미납'}</button>`
+                : `<span class="dues-badge ${paid?'paid':'unpaid'}">${paid?'납부':'미납'}</span>`);
+          return `<div class="dues-row ${isMe?'me':''}${dirty?' dirty':''}">
+            <span class="nm">${esc(m.name)}${isMe?' <span style="font-size:11px;color:var(--accent)">(나)</span>':''}${dirty?' <span class="dirty-dot">●</span>':''}</span>
             <span class="amt">${won(dueAmount(m.name))}</span>
             ${badge}
           </div>`;
@@ -2237,11 +2297,13 @@ async function renderDues() {
           </div>`;
         }).join('')}
       </div>
-    </div>`;
+    </div>
+    ${nDraft ? `<div class="save-bar"><span class="save-n">변경 ${nDraft}건 (미저장)</span><span style="display:flex;gap:8px"><button class="cancel" onclick="duesCancelDraft()">취소</button><button class="ok" onclick="duesSaveDraft()">저장</button></span></div>` : ''}`;
   el.innerHTML = html;
 }
+// 본인/운영진 단건 즉시 토글 (회원 본인 self-service용)
 async function toggleDue(memberId, currentlyPaid) {
-  if (!isAdmin()) return;
+  if (!isAdmin() && memberId !== getMe()) return;   // 운영진 or 본인만
   const y = window.scrollY;
   const m = ROSTER.find(x=>x.id===memberId);
   const ok = await setDuesPaid(duesMonth(), memberId, !currentlyPaid, dueAmount(m?m.name:''));
@@ -2249,6 +2311,28 @@ async function toggleDue(memberId, currentlyPaid) {
   await renderDues();
   window.scrollTo(0, y);
 }
+// 운영진 회비 일괄: 클릭은 드래프트에만 반영
+function duesDraftToggle(id){
+  if(!isAdmin()) return;
+  const cur = (id in duesDraft) ? !!duesDraft[id] : !!duesPaidDB[id];
+  const next = !cur;
+  if (next === !!duesPaidDB[id]) delete duesDraft[id]; else duesDraft[id] = next;
+  rerender(renderDues);
+}
+async function duesSaveDraft(){
+  if(!isAdmin()) return;
+  const entries = Object.entries(duesDraft);
+  if(!entries.length) return;
+  const mo = duesMonth();
+  for(const [id,paid] of entries){
+    const mid = Number(id); const m = ROSTER.find(x=>x.id===mid);
+    await setDuesPaid(mo, mid, !!paid, dueAmount(m?m.name:''));
+  }
+  duesDraft = {};
+  await rerender(renderDues);
+  toast(`회비 ${entries.length}건 저장했어요`);
+}
+function duesCancelDraft(){ duesDraft = {}; rerender(renderDues); }
 
 /* ============================================================
    운영진 — 관리 통합 (공지작성 · 세션설정 · 회비 · 투표)

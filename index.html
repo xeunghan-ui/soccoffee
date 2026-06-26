@@ -191,7 +191,6 @@
     <div class="eyebrow" id="matchMonth">경기 일정</div>
     <div class="sec-h">MATCH DAY</div>
     <div class="fixtures" id="fixtures"><div class="skrow"></div><div class="skrow"></div><div class="skrow"></div><div class="skrow"></div></div>
-    <p class="muted" style="font-size:12px;margin-top:10px">예약 상황에 따라 변동될 수 있어요.</p>
   </section>
 
   <div class="halfline"><span></span></div>
@@ -292,13 +291,15 @@
       if(!sessions.length){ box.innerHTML='<p class="muted" style="font-size:13px">예정된 경기가 아직 없어요.</p>'; return; }
       var m=parseInt((sessions[0].date||'').split('-')[1],10);
       if(m) document.getElementById('matchMonth').textContent=m+'월 경기일정';
-      box.innerHTML=sessions.map(function(s,i){
+      var wn=0;
+      box.innerHTML=sessions.map(function(s){
         var p=(s.date||'').split('-');
         var md = p.length===3 ? p[1]+'.'+p[2] : (s.date||'');
         var wd = s.date ? ENG[new Date(s.date+'T00:00').getDay()] : '';
         var place=esc(s.place||'상암풋살장');
         var time=esc(s.time||'');
-        return '<div class="fx"><span class="wk">WEEK '+(i+1)+'</span><span class="loc">'+place+'</span>'
+        var label = s.label ? esc(s.label) : ('WEEK '+(++wn));
+        return '<div class="fx"><span class="wk">'+label+'</span><span class="loc">'+place+'</span>'
           +'<span class="when"><span class="d">'+md+(wd?'<span class="wd">'+wd+'</span>':'')+'</span>'
           +(time?'<span class="t">'+time+'</span>':'')+'</span></div>';
       }).join('');

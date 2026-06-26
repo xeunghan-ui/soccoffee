@@ -1179,10 +1179,15 @@ function linkify(s) {
   return esc(s).replace(/(https?:\/\/[^\s<]+)/g,
     u => `<a href="${u}" target="_blank" rel="noopener" style="color:var(--accent);text-decoration:underline;word-break:break-all">${u}</a>`);
 }
-// 공개 예약: publish_at 이 없거나 현재 시각 이전이면 공개
-function noticeVisible(n){ return !n.publish_at || new Date(n.publish_at) <= new Date(); }
-function toLocalInput(iso){ if(!iso) return ''; const d=new Date(iso); if(isNaN(d))return ''; const p=x=>String(x).padStart(2,'0'); return `${d.getFullYear()}-${p(d.getMonth()+1)}-${p(d.getDate())}T${p(d.getHours())}:${p(d.getMinutes())}`; }
-function publishLabel(iso){ const d=new Date(iso); const p=x=>String(x).padStart(2,'0'); return `${d.getMonth()+1}/${d.getDate()} ${p(d.getHours())}:${p(d.getMinutes())}`; }
+// 노출 기간: 시작(publish_at) 전이거나 종료(hide_at) 후면 숨김
+function noticeVisible(n){
+  const now = new Date();
+  if (n.publish_at && new Date(n.publish_at) > now) return false;
+  if (n.hide_at && new Date(n.hide_at) < now) return false;
+  return true;
+}
+function toDateInput(iso){ if(!iso) return ''; const d=new Date(iso); if(isNaN(d))return ''; const p=x=>String(x).padStart(2,'0'); return `${d.getFullYear()}-${p(d.getMonth()+1)}-${p(d.getDate())}`; }
+function mdLabel(iso){ const d=new Date(iso); if(isNaN(d))return ''; return `${d.getMonth()+1}/${d.getDate()}`; }
 let opsEditNoticeId = null;
 
 // 실시간 갱신 (DB 모드일 때, 다른 사람의 변경을 자동 반영)
@@ -1731,12 +1736,12 @@ async function fetchNotices() {
 }
 async function addNotice(n) {
   if (USE_DB) {
-    const { error } = await sb.from('notices').insert({ title:n.title, body:n.body, pinned:!!n.pinned, publish_at:n.publish_at||null });
+    const { error } = await sb.from('notices').insert({ title:n.title, body:n.body, pinned:!!n.pinned, publish_at:n.publish_at||null, hide_at:n.hide_at||null });
     if (error) { toast('등록 오류: ' + error.message); return false; }
     return true;
   }
   const a = await fetchNotices();
-  a.unshift({ id:Date.now(), title:n.title, body:n.body, pinned:!!n.pinned, publish_at:n.publish_at||null, created_at:new Date().toISOString() });
+  a.unshift({ id:Date.now(), title:n.title, body:n.body, pinned:!!n.pinned, publish_at:n.publish_at||null, hide_at:n.hide_at||null, created_at:new Date().toISOString() });
   localStorage.setItem(NOTICE_STORE, JSON.stringify(a)); return true;
 }
 async function updateNotice(id, fields) {
@@ -2179,7 +2184,10 @@ async function renderOps() {
   const secNotice = `
     <div class="field"><label>제목</label><input id="opsNoticeTitle" placeholder="예: 이번 주 우천 시 실내 대체" maxlength="60"></div>
     <div class="field"><label>내용 <span style="color:var(--muted);font-weight:400">(선택 · 링크 자동 연결)</span></label><textarea id="opsNoticeBody" rows="3" placeholder="자세한 내용을 적어주세요"></textarea></div>
-    <div class="field"><label>공개 일정 <span style="color:var(--muted);font-weight:400">(선택 · 비우면 즉시 공개)</span></label><input id="opsNoticePublish" type="datetime-local"></div>
+    <div class="row">
+      <div class="field"><label>노출 시작</label><input id="opsNoticeFrom" type="date" value="${todayStr()}"></div>
+      <div class="field"><label>노출 종료 <span style="color:var(--muted);font-weight:400">(비우면 무기한)</span></label><input id="opsNoticeUntil" type="date"></div>
+    </div>
     <label style="display:flex;align-items:center;gap:8px;font-weight:600;margin-bottom:12px"><input type="checkbox" id="opsNoticePin" style="width:auto"> 상단 고정</label>
     <button class="btn accent sm" onclick="opsAddNotice()">공지 등록</button>
     <div style="margin-top:16px">
@@ -2188,7 +2196,10 @@ async function renderOps() {
           return `<div class="notice">
             <div class="field"><label>제목</label><input id="opsEditTitle" value="${esc(n.title)}" maxlength="60"></div>
             <div class="field"><label>내용</label><textarea id="opsEditBody" rows="3">${esc(n.body||'')}</textarea></div>
-            <div class="field"><label>공개 일정 <span style="color:var(--muted);font-weight:400">(비우면 즉시)</span></label><input id="opsEditPublish" type="datetime-local" value="${toLocalInput(n.publish_at)}"></div>
+            <div class="row">
+              <div class="field"><label>노출 시작</label><input id="opsEditFrom" type="date" value="${toDateInput(n.publish_at)||todayStr()}"></div>
+              <div class="field"><label>노출 종료 <span style="color:var(--muted);font-weight:400">(비우면 무기한)</span></label><input id="opsEditUntil" type="date" value="${toDateInput(n.hide_at)}"></div>
+            </div>
             <label style="display:flex;align-items:center;gap:8px;font-weight:600;margin-bottom:10px"><input type="checkbox" id="opsEditPin" ${n.pinned?'checked':''} style="width:auto"> 상단 고정</label>
             <div class="n-actions">
               <button class="btn accent sm" onclick="opsSaveNotice('${n.id}')">저장</button>
@@ -2196,10 +2207,13 @@ async function renderOps() {
             </div>
           </div>`;
         }
-        const sched = (n.publish_at && new Date(n.publish_at) > new Date())
-          ? `<span class="pin-tag" style="background:#7a5b2e;color:#fff">예약 ${publishLabel(n.publish_at)}</span> ` : '';
+        const _now = new Date();
+        let badge = '';
+        if (n.publish_at && new Date(n.publish_at) > _now) badge = `<span class="pin-tag" style="background:#7a5b2e;color:#fff">노출예정 ${mdLabel(n.publish_at)}~</span> `;
+        else if (n.hide_at && new Date(n.hide_at) < _now) badge = `<span class="pin-tag" style="background:#5b5b5b;color:#fff">노출종료</span> `;
+        else if (n.publish_at || n.hide_at) badge = `<span class="pin-tag" style="background:#3b6b46;color:#fff">노출 ${n.publish_at?mdLabel(n.publish_at):''}~${n.hide_at?mdLabel(n.hide_at):''}</span> `;
         return `<div class="notice ${n.pinned?'pinned':''}">
-          <div class="n-top"><div class="n-title">${n.pinned?'<span class="pin-tag">고정</span>':''}${sched}${esc(n.title)}</div><div class="n-date">${noticeDateLabel(n.created_at)}</div></div>
+          <div class="n-top"><div class="n-title">${n.pinned?'<span class="pin-tag">고정</span>':''}${badge}${esc(n.title)}</div><div class="n-date">${noticeDateLabel(n.created_at)}</div></div>
           ${n.body?`<div class="n-body">${linkify(n.body)}</div>`:''}
           <div class="n-actions">
             <button class="btn ghost sm" onclick="opsEditNotice('${n.id}')">수정</button>
@@ -2343,11 +2357,13 @@ async function opsAddNotice() {
   if (!title) return toast('제목을 입력해 주세요');
   const body = document.getElementById('opsNoticeBody').value.trim();
   const pinned = document.getElementById('opsNoticePin').checked;
-  const pv = document.getElementById('opsNoticePublish').value;
-  const publish_at = pv ? new Date(pv).toISOString() : null;
-  const ok = await addNotice({ title, body, pinned, publish_at });
+  const fromV = document.getElementById('opsNoticeFrom').value;
+  const untilV = document.getElementById('opsNoticeUntil').value;
+  const publish_at = fromV ? new Date(fromV+'T00:00:00').toISOString() : null;
+  const hide_at = untilV ? new Date(untilV+'T23:59:59').toISOString() : null;
+  const ok = await addNotice({ title, body, pinned, publish_at, hide_at });
   if (!ok) return;
-  await renderOps(); toast(publish_at ? '공지를 예약했어요' : '공지를 등록했어요');
+  await renderOps(); toast('공지를 등록했어요');
 }
 function opsEditNotice(id){ opsEditNoticeId = String(id); renderOps(); }
 function opsCancelEdit(){ opsEditNoticeId = null; renderOps(); }
@@ -2356,9 +2372,11 @@ async function opsSaveNotice(id){
   if (!title) return toast('제목을 입력해 주세요');
   const body = document.getElementById('opsEditBody').value.trim();
   const pinned = document.getElementById('opsEditPin').checked;
-  const pv = document.getElementById('opsEditPublish').value;
-  const publish_at = pv ? new Date(pv).toISOString() : null;
-  if (await updateNotice(id, { title, body, pinned, publish_at })) { opsEditNoticeId = null; await renderOps(); toast('수정했어요'); }
+  const fromV = document.getElementById('opsEditFrom').value;
+  const untilV = document.getElementById('opsEditUntil').value;
+  const publish_at = fromV ? new Date(fromV+'T00:00:00').toISOString() : null;
+  const hide_at = untilV ? new Date(untilV+'T23:59:59').toISOString() : null;
+  if (await updateNotice(id, { title, body, pinned, publish_at, hide_at })) { opsEditNoticeId = null; await renderOps(); toast('수정했어요'); }
 }
 async function opsDelNotice(id){ if(!confirm('이 공지를 삭제할까요?'))return; if(await deleteNotice(id)){ await renderOps(); toast('삭제했어요'); } }
 async function opsPin(id, pin){ if(await togglePinNotice(id, pin)){ await renderOps(); } }

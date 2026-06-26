@@ -44,11 +44,13 @@ create table if not exists public.notices (
   id bigint primary key generated always as identity,
   title text not null, body text,
   pinned boolean not null default false,
-  publish_at timestamptz,                       -- 공개 예약(비우면 즉시 공개)
+  publish_at timestamptz,                       -- 노출 시작(비우면 즉시)
+  hide_at timestamptz,                          -- 노출 종료(비우면 무기한)
   created_at timestamptz not null default now()
 );
 -- 기존에 notices 테이블이 이미 있으면 컬럼만 추가(재실행 안전):
 alter table public.notices add column if not exists publish_at timestamptz;
+alter table public.notices add column if not exists hide_at timestamptz;
 alter table public.notices enable row level security;
 drop policy if exists "notices read"   on public.notices;
 drop policy if exists "notices insert" on public.notices;

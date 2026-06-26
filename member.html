@@ -2177,10 +2177,12 @@ async function renderDues() {
 }
 async function toggleDue(memberId, currentlyPaid) {
   if (!isAdmin()) return;
+  const y = window.scrollY;
   const m = ROSTER.find(x=>x.id===memberId);
   const ok = await setDuesPaid(duesMonth(), memberId, !currentlyPaid, dueAmount(m?m.name:''));
   if (!ok) return;
   await renderDues();
+  window.scrollTo(0, y);
 }
 
 /* ============================================================

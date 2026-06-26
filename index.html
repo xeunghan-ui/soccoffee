@@ -376,7 +376,7 @@
 
   // 50% 노출 + 더보기
   if(btn){
-    var shown=Math.ceil(imgs.length/2)+1;
+    var shown=16;
     if(imgs.length>shown){
       imgs.forEach(function(im,i){ if(i>=shown) im.classList.add('gal-hidden'); });
       btn.hidden=false;

@@ -2134,7 +2134,22 @@ async function renderDues() {
   const el = document.getElementById('duesContent');
   el.innerHTML = `<div class="empty">불러오는 중...</div>`;
   const month = duesMonth();
-  const members = activeMembers(month).filter(m => !dormantMonthsOf(m).includes(month));
+  const members = activeMembers(month);
+  // 휴면이지만 그 외 가입 조건은 충족하는 멤버 — 명단엔 '휴면'으로 표시, 미납/집계에서는 제외
+  const [dyN, dmoN] = month.split('-').map(Number);
+  const dMonthEnd = new Date(dyN, dmoN, 0);
+  const dormantMembers = ROSTER.filter(p => {
+    const st = p.status || 'active';
+    let eligible;
+    if (st === 'former') eligible = false;
+    else if (st === 'friends') eligible = !!(p.friendsSince && month < p.friendsSince);
+    else if (!p.joinDate) eligible = false;
+    else eligible = new Date(p.joinDate) <= dMonthEnd;
+    return eligible && dormantMonthsOf(p).includes(month);
+  }).map(p => {
+    const t = TEAM_SHEET[p.name] || { team: '기타' };
+    return { ...p, jersey: t.jersey, eng: t.eng || '', team: t.team, cap: !!t.cap };
+  }).sort(byJersey);
   const dues = await fetchDues(month);
   const paidMap = {}; dues.forEach(d=>{ paidMap[d.member_id]=d.paid; });
   const admin = isAdmin();
@@ -2174,6 +2189,14 @@ async function renderDues() {
             <span class="nm">${esc(m.name)}${isMe?' <span style="font-size:11px;color:var(--accent)">(나)</span>':''}</span>
             <span class="amt">${won(dueAmount(m.name))}</span>
             ${badge}
+          </div>`;
+        }).join('')}
+        ${dormantMembers.map(m=>{
+          const isMe = me===m.id;
+          return `<div class="dues-row ${isMe?'me':''}" style="opacity:.55">
+            <span class="nm">${esc(m.name)}${isMe?' <span style="font-size:11px;color:var(--accent)">(나)</span>':''}</span>
+            <span class="amt">—</span>
+            <span class="dues-badge" style="background:#555;color:#ddd">휴면</span>
           </div>`;
         }).join('')}
       </div>

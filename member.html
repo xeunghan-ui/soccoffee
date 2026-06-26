@@ -356,6 +356,10 @@
   .att-row .st.no { background: #f4e0dc; color: var(--red); }
   .att-row .st.maybe { background: var(--accent-soft); color: #9c5a1f; }
   .att-row .st.none { background: #efe6d9; color: var(--muted); }
+  /* 운영진 출석: 참석/미정/불참 직접 선택 (비활성 흐리게, 선택만 진하게) */
+  .st-set { display: flex; gap: 5px; flex-shrink: 0; }
+  .att-row .st-set .st { padding: 4px 9px; opacity: .35; }
+  .att-row .st-set .st.on { opacity: 1; }
 
   /* ===== 회비 ===== */
   .dues-summary { display: flex; gap: 10px; margin-bottom: 14px; }
@@ -1674,13 +1678,19 @@ function upcomingSessionDate() {
   const ds = `${y}-${m}-${dd}`;
   return ds < ATTENDANCE_START ? ATTENDANCE_START : ds;   // 시작일 전이면 7/1 세션으로
 }
-function fmtSessionDate(ds, time) {
+function fmtClock(t){
+  if(!t) return '';
+  const [h,m] = t.split(':').map(Number);
+  const ampm = h<12?'오전':'오후'; let h12=h%12; if(h12===0)h12=12;
+  return `${ampm} ${h12}:${String(m||0).padStart(2,'0')}`;
+}
+function fmtSessionDate(ds, time, endTime) {
   if (!ds) return '';
   const dt = new Date(ds + 'T' + (time||'20:00'));
   const days=['일','월','화','수','목','금','토'];
-  let hh=dt.getHours(), mm=String(dt.getMinutes()).padStart(2,'0');
-  const ampm=hh<12?'오전':'오후'; let h12=hh%12; if(h12===0)h12=12;
-  return `${dt.getMonth()+1}월 ${dt.getDate()}일 (${days[dt.getDay()]}) ${ampm} ${h12}:${mm}`;
+  const start = fmtClock(time||'20:00');
+  const end = endTime ? ' - ' + fmtClock(endTime) : '';
+  return `${dt.getMonth()+1}월 ${dt.getDate()}일 (${days[dt.getDay()]}) ${start}${end}`;
 }
 
 /* ---------- 클럽 설정(이번 세션 등) — jsonb 단일 행 ---------- */
@@ -1847,7 +1857,7 @@ async function renderHome() {
     return `
     <div class="session-card">
       <div class="lbl">${s.label?esc(s.label):(i===0?'다음 세션':'세션')}</div>
-      <div class="when">${fmtSessionDate(s.date, s.time)}</div>
+      <div class="when">${fmtSessionDate(s.date, s.time, s.endTime)}</div>
       <div class="where">${esc(s.place)}</div>
       <div class="att-mini">
         <span><b>${c.yes}</b> 참석</span><span><b>${c.maybe}</b> 미정</span>
@@ -2013,7 +2023,7 @@ async function renderAtt() {
   html += `
     <div class="session-card">
       <div class="lbl">${sess.label?esc(sess.label):'참석 체크'}</div>
-      <div class="when">${fmtSessionDate(sess.date, sess.time)}</div>
+      <div class="when">${fmtSessionDate(sess.date, sess.time, sess.endTime)}</div>
       <div class="where">${esc(sess.place)}</div>
     </div>`;
 
@@ -2048,7 +2058,11 @@ async function renderAtt() {
     const s = map[m.id] || 'none';
     const lbl = {yes:'참석',no:'불참',maybe:'미정',none:'—'}[s];
     const st = admin
-      ? `<button class="st ${s}" onclick="adminCycleAtt(${m.id},'${s}')">${lbl}</button>`
+      ? `<span class="st-set">`
+        + `<button class="st yes ${s==='yes'?'on':''}" onclick="adminSetAtt(${m.id},'${s}','yes')">참석</button>`
+        + `<button class="st maybe ${s==='maybe'?'on':''}" onclick="adminSetAtt(${m.id},'${s}','maybe')">미정</button>`
+        + `<button class="st no ${s==='no'?'on':''}" onclick="adminSetAtt(${m.id},'${s}','no')">불참</button>`
+        + `</span>`
       : `<span class="st ${s}">${lbl}</span>`;
     return `<div class="att-row"><span class="js">${m.jersey!=null?m.jersey:''}</span><span class="nm">${esc(m.name)}</span>${st}</div>`;
   };
@@ -2104,6 +2118,14 @@ async function adminCycleAtt(memberId, cur){
   const ok = next==='none'
     ? await clearAttendance(attSessionId, memberId)
     : await setAttendance(attSessionId, memberId, next);
+  if(ok) await renderAtt();
+}
+// 운영진: 참석/미정/불참 직접 선택 (같은 걸 다시 누르면 미응답으로 해제)
+async function adminSetAtt(memberId, cur, target){
+  if(!isAdmin() || !attSessionId) return;
+  const ok = (cur===target)
+    ? await clearAttendance(attSessionId, memberId)
+    : await setAttendance(attSessionId, memberId, target);
   if(ok) await renderAtt();
 }
 async function markAtt(status){
@@ -2194,7 +2216,7 @@ async function renderDues() {
     ${admin?'<div class="ops-note">운영진 모드 — 이름을 누르면 납부/미납이 전환돼요</div>':'<p class="hint" style="text-align:center;margin-bottom:12px">회비 납부 여부는 운영진이 확인해 표시해요. 입금 후 반영까지 시간이 걸릴 수 있어요.</p>'}
     <div class="card">
       <div class="att-list dues-grid">
-        ${[...members].sort(byJersey).map(m=>{
+        ${[...members].sort((a,b)=>((paidMap[a.id]?1:0)-(paidMap[b.id]?1:0)) || byJersey(a,b)).map(m=>{
           const paid = !!paidMap[m.id];
           const isMe = me===m.id;
           const badge = admin
@@ -2297,7 +2319,7 @@ async function renderOps() {
 
   const secSession = `
     ${opsEditSessionId ? '' : (opsAddSessionOpen ? `
-    <div class="row"><div class="field"><label>날짜</label><input id="opsSessDate" type="date" value="${defDate}" onchange="opsSyncDeadline()"></div><div class="field"><label>시간</label><input id="opsSessTime" type="time" value="21:00"></div></div>
+    <div class="row"><div class="field"><label>날짜</label><input id="opsSessDate" type="date" value="${defDate}" onchange="opsSyncDeadline()"></div><div class="field"><label>시작</label><input id="opsSessTime" type="time" value="21:00"></div><div class="field"><label>종료 <span style="color:var(--muted);font-weight:400">(선택)</span></label><input id="opsSessEnd" type="time" value="23:00"></div></div>
     <div class="field"><label>장소</label><input id="opsSessPlace" value="상암 풋살장" maxlength="40"></div>
     <div class="field"><label>참석 신청 마감 <span style="color:var(--muted);font-weight:400">(기본: 전주 일요일 23:59)</span></label><input id="opsSessDeadline" type="date" value="${autoDeadlineStr(defDate)}"></div>
     <div class="field"><label>이름/메모 <span style="color:var(--muted);font-weight:400">(선택, 예: EVENT, A매치)</span></label><input id="opsSessLabel" maxlength="30" placeholder="예: EVENT, A매치"></div>
@@ -2308,7 +2330,7 @@ async function renderOps() {
       ${allSessions.length===0?'<p class="hint">등록된 세션이 없어요. (비우면 다가오는 수요일·상암 풋살장으로 자동 표시돼요)</p>':allSessions.map(s=>{
         if (String(s.id)===opsEditSessionId) {
           return `<div class="ops-row" style="flex-direction:column;align-items:stretch;gap:0">
-            <div class="row"><div class="field"><label>날짜</label><input id="esD" type="date" value="${s.date||''}"></div><div class="field"><label>시간</label><input id="esT" type="time" value="${s.time||'21:00'}"></div></div>
+            <div class="row"><div class="field"><label>날짜</label><input id="esD" type="date" value="${s.date||''}"></div><div class="field"><label>시작</label><input id="esT" type="time" value="${s.time||'21:00'}"></div><div class="field"><label>종료 <span style="color:var(--muted);font-weight:400">(선택)</span></label><input id="esTe" type="time" value="${s.endTime||''}"></div></div>
             <div class="field"><label>장소</label><input id="esP" value="${esc(s.place||'')}" maxlength="40"></div>
             <div class="field"><label>참석 신청 마감</label><input id="esDl" type="date" value="${s.deadline||autoDeadlineStr(s.date)}"></div>
             <div class="field"><label>이름/메모 <span style="color:var(--muted);font-weight:400">(예: EVENT, A매치)</span></label><input id="esL" value="${esc(s.label||'')}" maxlength="30"></div>
@@ -2316,7 +2338,7 @@ async function renderOps() {
             <div class="n-actions"><button class="btn accent sm" onclick="opsSaveSession('${s.id}')">저장</button><button class="btn ghost sm" onclick="opsCancelSessionEdit()">취소</button></div>
           </div>`;
         }
-        return `<div class="ops-row"><div style="min-width:0"><b>${fmtSessionDate(s.date,s.time)}</b>${s.label?` · ${esc(s.label)}`:''}<div class="hint" style="margin:0">${esc(s.place)} · 마감 ${deadlineLabel(sessionDeadline(s))}</div></div><span style="display:flex;gap:6px;flex-shrink:0"><button class="btn ghost sm" onclick="opsEditSession('${s.id}')">수정</button><button class="btn ghost sm" style="color:var(--red)" onclick="opsDelSession('${s.id}')">삭제</button></span></div>`;
+        return `<div class="ops-row"><div style="min-width:0"><b>${fmtSessionDate(s.date,s.time,s.endTime)}</b>${s.label?` · ${esc(s.label)}`:''}<div class="hint" style="margin:0">${esc(s.place)} · 마감 ${deadlineLabel(sessionDeadline(s))}</div></div><span style="display:flex;gap:6px;flex-shrink:0"><button class="btn ghost sm" onclick="opsEditSession('${s.id}')">수정</button><button class="btn ghost sm" style="color:var(--red)" onclick="opsDelSession('${s.id}')">삭제</button></span></div>`;
       }).join('')}
     </div>
     <p class="hint" style="margin-top:10px">같은 날 여러 경기(A/B매치)도 따로 등록하면 참석을 각각 받아요.</p>`;
@@ -2476,12 +2498,13 @@ async function opsAddSession() {
   const date = document.getElementById('opsSessDate').value;
   if (!date) return toast('날짜를 선택해 주세요');
   const time = document.getElementById('opsSessTime').value || '21:00';
+  const endTime = document.getElementById('opsSessEnd').value || '';
   const place = document.getElementById('opsSessPlace').value.trim() || '상암 풋살장';
   const deadline = document.getElementById('opsSessDeadline').value || autoDeadlineStr(date);
   const label = document.getElementById('opsSessLabel').value.trim();
   const desc = document.getElementById('opsSessDesc').value.trim();
   const list = await getSessions();
-  list.push({ id:'s'+Date.now().toString(36)+Math.random().toString(36).slice(2,5), date, time, place, deadline, label, desc });
+  list.push({ id:'s'+Date.now().toString(36)+Math.random().toString(36).slice(2,5), date, time, endTime, place, deadline, label, desc });
   if (!(await saveSettings({ sessions: list }))) return;
   opsAddSessionOpen = false;
   await renderOps(); toast('세션을 추가했어요');
@@ -2502,6 +2525,7 @@ async function opsSaveSession(id) {
   if (!date) return toast('날짜를 선택해 주세요');
   s.date = date;
   s.time = document.getElementById('esT').value || '21:00';
+  s.endTime = document.getElementById('esTe').value || '';
   s.place = document.getElementById('esP').value.trim() || '상암 풋살장';
   s.deadline = document.getElementById('esDl').value || autoDeadlineStr(date);
   s.label = document.getElementById('esL').value.trim();

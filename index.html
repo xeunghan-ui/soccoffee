@@ -318,11 +318,14 @@
         var place=esc(s.place||'상암풋살장');
         var time=esc(s.time||'');
         var label = s.label ? esc(s.label) : ('WEEK '+(++wn));
-        var hasDetail = !!(s.desc && String(s.desc).trim());
+        var oatly = /오틀리|oatly/i.test((s.place||'')+' '+(s.label||''));
+        var hasDetail = !!(s.desc && String(s.desc).trim()) && !oatly;
+        var rowAttr = oatly ? ' onclick="location.href=\'oatly/\'" style="cursor:pointer"'
+                    : (hasDetail ? ' onclick="this.parentNode.classList.toggle(\'open\')"' : '');
         return '<div class="fx'+(hasDetail?' has-detail':'')+'">'
-          +'<div class="fx-row"'+(hasDetail?' onclick="this.parentNode.classList.toggle(\'open\')"':'')+'>'
+          +'<div class="fx-row"'+rowAttr+'>'
           +'<span class="wk">'+label+'<span class="more"></span></span>'
-          +'<div class="fx-end"><span class="loc">'+place+'</span>'
+          +'<div class="fx-end"><span class="loc">'+place+(oatly?' <span style="font-size:11px;opacity:.6">↗</span>':'')+'</span>'
           +'<span class="when"><span class="d">'+md+(wd?'<span class="wd">'+wd+'</span>':'')+'</span>'
           +(time?'<span class="t">'+time+'</span>':'')+'</span></div></div>'
           +(hasDetail?'<div class="fx-detail">'+linkify(s.desc)+'</div>':'')

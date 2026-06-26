@@ -363,8 +363,10 @@
   var GAP=10;
   function span(im){
     if(im.classList.contains('gal-hidden')){ im.style.gridRowEnd=''; return; }
-    var h=im.getBoundingClientRect().height;
-    if(!h) return;
+    if(!im.naturalWidth) return;
+    var w=im.getBoundingClientRect().width || im.clientWidth;
+    if(!w) return;
+    var h=w*im.naturalHeight/im.naturalWidth;
     im.style.gridRowEnd='span '+Math.ceil((h+GAP)/GAP);
   }
   function layout(){ imgs.forEach(span); }

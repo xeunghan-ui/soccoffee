@@ -351,6 +351,7 @@
   .att-row .js { width: 30px; color: var(--muted); font-weight: 700; font-size: 12px; text-align: center; flex-shrink: 0; }
   .att-row .nm { flex: 1; color: var(--coffee); font-weight: 600; }
   .att-row .st { font-size: 12px; font-weight: 800; padding: 3px 9px; border-radius: 20px; }
+  .att-row button.st { border: none; cursor: pointer; font-family: inherit; }
   .att-row .st.yes { background: var(--green-soft); color: var(--green); }
   .att-row .st.no { background: #f4e0dc; color: var(--red); }
   .att-row .st.maybe { background: var(--accent-soft); color: #9c5a1f; }
@@ -2029,7 +2030,10 @@ async function renderAtt() {
   const rosterRow = m => {
     const s = map[m.id] || 'none';
     const lbl = {yes:'참석',no:'불참',maybe:'미정',none:'—'}[s];
-    return `<div class="att-row"><span class="js">${m.jersey!=null?m.jersey:''}</span><span class="nm">${esc(m.name)}</span><span class="st ${s}">${lbl}</span></div>`;
+    const st = admin
+      ? `<button class="st ${s}" onclick="adminCycleAtt(${m.id},'${s}')">${lbl}</button>`
+      : `<span class="st ${s}">${lbl}</span>`;
+    return `<div class="att-row"><span class="js">${m.jersey!=null?m.jersey:''}</span><span class="nm">${esc(m.name)}</span>${st}</div>`;
   };
   const sortedM = [...members].sort(byJersey);
   let listHtml;
@@ -2056,7 +2060,7 @@ async function renderAtt() {
     </div>
     <div class="card">
       <div class="section-title" style="margin:0 0 8px;display:flex;justify-content:space-between;align-items:center">
-        <span>명단 현황 <span style="font-size:12px;color:var(--muted);font-weight:700">${att.length}/${members.length} 응답</span></span>
+        <span>명단 현황 <span style="font-size:12px;color:var(--muted);font-weight:700">${att.length}/${members.length} 응답${admin?' · 상태 눌러 변경':''}</span></span>
         ${teamSplitOn?`<button class="btn ghost sm" onclick="toggleAttTeam()">${attTeamView?'전체 보기':'팀별 보기'}</button>`:''}
       </div>
       <div class="att-list">${listHtml}</div>
@@ -2065,6 +2069,26 @@ async function renderAtt() {
 }
 function pickAttSession(id){ attSessionId = id; renderAtt(); }
 function openAtt(id){ if(id) attSessionId = id; switchTab('att'); }
+async function clearAttendance(sessionId, memberId){
+  if (USE_DB) {
+    const { error } = await sb.from('attendance').delete().eq('session_id',sessionId).eq('member_id',memberId);
+    if (error) { toast('오류: '+error.message); return false; }
+    return true;
+  }
+  let a=[]; try { a = JSON.parse(localStorage.getItem(ATT_STORE)) || []; } catch(e){}
+  a = a.filter(x=>!(x.session_id===sessionId && x.member_id===memberId));
+  localStorage.setItem(ATT_STORE, JSON.stringify(a)); return true;
+}
+// 운영진: 명단에서 다른 멤버 참석을 직접 변경(미응답→참석→미정→불참→미응답 순환, 마감 무관)
+async function adminCycleAtt(memberId, cur){
+  if(!isAdmin() || !attSessionId) return;
+  const order=['none','yes','maybe','no'];
+  const next=order[(order.indexOf(cur)+1)%order.length];
+  const ok = next==='none'
+    ? await clearAttendance(attSessionId, memberId)
+    : await setAttendance(attSessionId, memberId, next);
+  if(ok) await renderAtt();
+}
 async function markAtt(status){
   if(!attMe || !attSessionId) return;
   const _sess = (await upcomingSessions()).find(s=>s.id===attSessionId);

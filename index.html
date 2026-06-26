@@ -258,8 +258,8 @@
       <img src="img/190E7A0036.jpg" alt="싸커피 활동" loading="lazy">
       <img src="img/260E7A5359.jpg" alt="싸커피 활동" loading="lazy">
       <img src="img/430E7A3855.jpg" alt="싸커피 활동" loading="lazy">
-      <img src="img/480E7A9434.jpg" alt="싸커피 활동" loading="lazy">
       <img src="img/gal-ssau-6.jpg" alt="싸커피 활동" loading="lazy">
+      <img src="img/480E7A9434.jpg" alt="싸커피 활동" loading="lazy">
       <img src="img/190E7A7256.jpg" alt="싸커피 활동" loading="lazy">
       <img src="img/280E7A7608.jpg" alt="싸커피 활동" loading="lazy">
       <img src="img/80E7A9465.jpg" alt="싸커피 활동" loading="lazy">
@@ -360,7 +360,7 @@
   var g=document.querySelector('.gallery'), btn=document.getElementById('galMore');
   if(!g||!btn) return;
   var imgs=[].slice.call(g.querySelectorAll('img'));
-  var shown=Math.ceil(imgs.length/2);
+  var shown=Math.ceil(imgs.length/2)+1;
   if(imgs.length<=shown) return;
   imgs.forEach(function(im,i){ if(i>=shown) im.classList.add('gal-hidden'); });
   btn.hidden=false;

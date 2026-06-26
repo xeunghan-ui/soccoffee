@@ -2134,7 +2134,7 @@ async function renderDues() {
   const el = document.getElementById('duesContent');
   el.innerHTML = `<div class="empty">불러오는 중...</div>`;
   const month = duesMonth();
-  const members = activeMembers(month);
+  const members = activeMembers(month).filter(m => !dormantMonthsOf(m).includes(month));
   const dues = await fetchDues(month);
   const paidMap = {}; dues.forEach(d=>{ paidMap[d.member_id]=d.paid; });
   const admin = isAdmin();

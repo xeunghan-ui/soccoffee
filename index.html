@@ -92,8 +92,16 @@
   /* 경기 일정 (MATCH DAY) */
   .sec-h{font-family:var(--disp); font-weight:400; font-size:clamp(40px,13vw,66px); line-height:.9; letter-spacing:1px; color:#f3eed9; text-transform:uppercase; margin:6px 0 16px;}
   .fixtures{background:#ece6d2; border-radius:16px; overflow:hidden; border:1px solid var(--line);}
-  .fx{display:grid; grid-template-columns:92px 1fr auto; align-items:center; gap:12px; padding:15px 18px; color:#15281b;}
+  .fx{color:#15281b;}
   .fx:nth-child(even){background:#1e3526; color:#ece6d2;}
+  .fx-row{display:grid; grid-template-columns:92px 1fr auto; align-items:center; gap:12px; padding:15px 18px;}
+  .fx.has-detail .fx-row{cursor:pointer;}
+  .fx .more{display:none;}
+  .fx.has-detail .more{display:block; font-size:9px; font-weight:400; letter-spacing:1px; opacity:.6; margin-top:3px;}
+  .fx.has-detail .more::before{content:'＋ 자세히';}
+  .fx.open .more::before{content:'－ 닫기';}
+  .fx-detail{display:none; padding:0 18px 15px; font-size:13px; line-height:1.6; white-space:pre-wrap; word-break:break-word;}
+  .fx.open .fx-detail{display:block;}
   .fx .wk{font-family:var(--disp); font-size:21px; letter-spacing:1px;}
   .fx .loc{font-weight:900; font-size:15px;}
   .fx .when{text-align:right; font-family:var(--disp); letter-spacing:.5px; line-height:1.12;}
@@ -124,7 +132,7 @@
   .cafe .nm{font-size:15px; font-weight:800; color:var(--cream);}
   .cafe .addr{font-size:12px; color:var(--muted);}
   .cafe .go{flex-shrink:0; font-size:11px; font-weight:800; color:var(--green); background:var(--sand); border-radius:999px; padding:6px 12px; white-space:nowrap;}
-  @media(max-width:420px){ .fx{grid-template-columns:70px 1fr auto; padding:13px 13px; gap:8px;} .fx .wk{font-size:18px;} .fx .loc{font-size:13px;} }
+  @media(max-width:420px){ .fx-row{grid-template-columns:70px 1fr auto; padding:13px 13px; gap:8px;} .fx .wk{font-size:18px;} .fx .loc{font-size:13px;} }
 
   /* 활동 정보 카드 */
   .info{display:grid; gap:10px;}
@@ -277,6 +285,7 @@
   var SB_KEY="sb_publishable_K7TsALmaFyb2pPOZO-2i2w_UeirVr8l";
   var ENG=['SUN','MON','TUE','WED','THU','FRI','SAT'];
   function esc(s){return (s||'').replace(/[<>&]/g,function(c){return c==='<'?'&lt;':c==='>'?'&gt;':'&amp;';});}
+  function linkify(s){return esc(s).replace(/(https?:\/\/[^\s<]+)/g,function(u){return '<a href="'+u+'" target="_blank" rel="noopener" style="text-decoration:underline;color:inherit;word-break:break-all">'+u+'</a>';});}
   function pad(n){return String(n).padStart(2,'0');}
   function todayStr(){var d=new Date();return d.getFullYear()+'-'+pad(d.getMonth()+1)+'-'+pad(d.getDate());}
 
@@ -299,9 +308,14 @@
         var place=esc(s.place||'상암풋살장');
         var time=esc(s.time||'');
         var label = s.label ? esc(s.label) : ('WEEK '+(++wn));
-        return '<div class="fx"><span class="wk">'+label+'</span><span class="loc">'+place+'</span>'
+        var hasDetail = !!(s.desc && String(s.desc).trim());
+        return '<div class="fx'+(hasDetail?' has-detail':'')+'">'
+          +'<div class="fx-row"'+(hasDetail?' onclick="this.parentNode.classList.toggle(\'open\')"':'')+'>'
+          +'<span class="wk">'+label+'<span class="more"></span></span><span class="loc">'+place+'</span>'
           +'<span class="when"><span class="d">'+md+(wd?'<span class="wd">'+wd+'</span>':'')+'</span>'
-          +(time?'<span class="t">'+time+'</span>':'')+'</span></div>';
+          +(time?'<span class="t">'+time+'</span>':'')+'</span></div>'
+          +(hasDetail?'<div class="fx-detail">'+linkify(s.desc)+'</div>':'')
+          +'</div>';
       }).join('');
     }catch(e){ box.innerHTML='<p class="muted" style="font-size:13px">일정을 불러오지 못했어요.</p>'; }
   }

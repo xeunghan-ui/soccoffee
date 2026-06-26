@@ -133,11 +133,11 @@
   .info-row .v{font-size:14px; color:var(--cream);}
 
   /* 갤러리 — 원본 비율 유지(메이슨리) */
-  /* 갤러리 — 화면 전체 폭(풀블리드) 메이슨리 */
-  .gallery{width:100vw; margin-left:calc(50% - 50vw); padding:0 12px; column-count:4; column-gap:10px;}
-  .gallery img{width:100%; height:auto; border-radius:12px; border:1px solid var(--line); display:block; margin:0 0 10px; break-inside:avoid;}
-  @media(max-width:1000px){ .gallery{column-count:3;} }
-  @media(max-width:680px){ .gallery{column-count:2;} }
+  /* 갤러리 — 화면 전체 폭(풀블리드) 정사각 그리드 */
+  .gallery{display:grid; grid-template-columns:repeat(4,1fr); gap:10px; width:100vw; margin-left:calc(50% - 50vw); padding:0 12px;}
+  .gallery img{width:100%; aspect-ratio:1/1; object-fit:cover; border-radius:12px; border:1px solid var(--line); display:block;}
+  @media(max-width:1000px){ .gallery{grid-template-columns:repeat(3,1fr);} }
+  @media(max-width:680px){ .gallery{grid-template-columns:repeat(2,1fr);} }
   @media(max-width:420px){ .gallery{padding:0 8px;} }
 
   /* 가입 */

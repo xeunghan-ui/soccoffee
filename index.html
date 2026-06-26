@@ -142,11 +142,11 @@
   .info-row .v{font-size:14px; color:var(--cream);}
 
   /* 갤러리 — 원본 비율 유지(메이슨리) */
-  /* 갤러리 — 화면 전체 폭(풀블리드) 메이슨리, 원본 비율 유지 */
-  .gallery{width:100vw; margin-left:calc(50% - 50vw); padding:0 12px; column-count:4; column-gap:10px;}
-  .gallery img{width:100%; height:auto; border-radius:12px; border:1px solid var(--line); display:block; margin:0 0 10px; break-inside:avoid;}
-  @media(max-width:1000px){ .gallery{column-count:3;} }
-  @media(max-width:680px){ .gallery{column-count:2;} }
+  /* 갤러리 — 풀블리드 그리드 메이슨리(비율 유지·정렬) */
+  .gallery{width:100vw; margin-left:calc(50% - 50vw); padding:0 12px; display:grid; grid-template-columns:repeat(4,1fr); grid-auto-rows:0; grid-auto-flow:row dense; gap:10px;}
+  .gallery img{width:100%; height:auto; border-radius:12px; border:1px solid var(--line); display:block; align-self:start;}
+  @media(max-width:1000px){ .gallery{grid-template-columns:repeat(3,1fr);} }
+  @media(max-width:680px){ .gallery{grid-template-columns:repeat(2,1fr);} }
   @media(max-width:420px){ .gallery{padding:0 8px;} }
   .gallery img.gal-hidden{display:none;}
   .morebtn{display:block; margin:18px auto 0; padding:11px 28px; border-radius:999px; background:var(--green-2); color:var(--sand); border:1px solid var(--line); font-weight:900; font-size:13px; letter-spacing:.5px; cursor:pointer;}
@@ -355,20 +355,38 @@
 </script>
 
 <script>
-// 갤러리 50% 노출 + 더보기
+// 갤러리 — 그리드 메이슨리(높이만큼 행 차지) + 50% 노출/더보기
 (function(){
   var g=document.querySelector('.gallery'), btn=document.getElementById('galMore');
-  if(!g||!btn) return;
+  if(!g) return;
   var imgs=[].slice.call(g.querySelectorAll('img'));
-  var shown=Math.ceil(imgs.length/2)+1;
-  if(imgs.length<=shown) return;
-  imgs.forEach(function(im,i){ if(i>=shown) im.classList.add('gal-hidden'); });
-  btn.hidden=false;
-  btn.textContent='더보기 (+'+(imgs.length-shown)+')';
-  btn.addEventListener('click', function(){
-    imgs.forEach(function(im){ im.classList.remove('gal-hidden'); });
-    btn.hidden=true;
-  });
+  var GAP=10;
+  function span(im){
+    if(im.classList.contains('gal-hidden')){ im.style.gridRowEnd=''; return; }
+    var h=im.getBoundingClientRect().height;
+    if(!h) return;
+    im.style.gridRowEnd='span '+Math.ceil((h+GAP)/GAP);
+  }
+  function layout(){ imgs.forEach(span); }
+  imgs.forEach(function(im){ if(im.complete) span(im); else im.addEventListener('load',function(){ span(im); }); });
+  window.addEventListener('resize', layout);
+  window.addEventListener('load', layout);
+
+  // 50% 노출 + 더보기
+  if(btn){
+    var shown=Math.ceil(imgs.length/2)+1;
+    if(imgs.length>shown){
+      imgs.forEach(function(im,i){ if(i>=shown) im.classList.add('gal-hidden'); });
+      btn.hidden=false;
+      btn.textContent='더보기 (+'+(imgs.length-shown)+')';
+      btn.addEventListener('click', function(){
+        imgs.forEach(function(im){ im.classList.remove('gal-hidden'); });
+        btn.hidden=true;
+        imgs.forEach(function(im){ if(im.complete) span(im); else im.addEventListener('load',function(){ span(im); }); });
+        layout();
+      });
+    }
+  }
 })();
 </script>
 

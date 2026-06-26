@@ -361,7 +361,7 @@
   .att-row .st-set .st { padding: 4px 9px; opacity: .35; }
   .att-row .st-set .st.on { opacity: 1; }
   /* 운영진 일괄 수정: 저장 바 + 변경(미저장) 표시 */
-  .save-bar { position: sticky; bottom: 10px; display: flex; align-items: center; justify-content: space-between; gap: 10px; background: var(--green); color: var(--sand); border-radius: 12px; padding: 11px 14px; margin-top: 14px; box-shadow: 0 6px 20px rgba(0,0,0,.28); z-index: 6; }
+  .save-bar { position: fixed; left: 12px; right: 12px; bottom: 14px; max-width: 600px; margin: 0 auto; display: flex; align-items: center; justify-content: space-between; gap: 10px; background: var(--green); color: var(--sand); border-radius: 12px; padding: 13px 16px; box-shadow: 0 8px 28px rgba(0,0,0,.4); z-index: 200; }
   .save-bar .save-n { font-size: 13px; font-weight: 800; }
   .save-bar button { font-family: inherit; border: none; border-radius: 8px; padding: 8px 16px; font-weight: 800; cursor: pointer; font-size: 13px; }
   .save-bar .ok { background: var(--sand); color: var(--green); }
@@ -2270,7 +2270,10 @@ async function renderDues() {
   const expected = payMembers.reduce((s,m)=>s+dueAmount(m.name),0);
   const pct = total ? Math.round(paidCount/total*100) : 0;
   const meActive = me != null && members.some(x => x.id === me);
-  const myPaid = !!paidMap[me];
+  const myState = effState(me);                  // 드래프트까지 반영
+  const myPaid = myState === 'paid';
+  const myName = (ROSTER.find(x=>x.id===me)||{}).name || '';
+  const myDirty = admin && (me in duesDraft);    // 저장 전 변경 여부
 
   let html = `
     <div class="potm-hero" style="background:linear-gradient(135deg,#2f7a4f,#245f3e)">
@@ -2285,10 +2288,10 @@ async function renderDues() {
     </div>
     ${meActive ? `<div class="card" style="display:flex;align-items:center;justify-content:space-between;gap:12px;padding:14px 16px;margin-bottom:12px">
       <div style="min-width:0">
-        <div style="font-size:13px;font-weight:800;color:var(--coffee)">내 회비 · ${potmMonthLabel(month)}</div>
-        <div style="font-size:12px;color:var(--muted);margin-top:2px">${myPaid ? '납부 완료로 표시됨' : '입금 후 버튼을 눌러 납부로 표시하세요'}</div>
+        <div style="font-size:13px;font-weight:800;color:var(--coffee)">내 회비${myName?` — ${esc(myName)}`:''} · ${potmMonthLabel(month)}</div>
+        <div style="font-size:12px;color:var(--muted);margin-top:2px">${myPaid ? '납부 완료로 표시됨' : '미납 상태예요'}${myDirty?' · 저장 전 (아래 저장 필요)':''}</div>
       </div>
-      <button class="dues-badge toggle ${myPaid?'paid':'unpaid'}" style="flex-shrink:0" onclick="toggleDue(${me},${myPaid})">${myPaid ? '납부 취소' : '납부 표시'}</button>
+      <button class="dues-badge toggle ${myPaid?'paid':'unpaid'}" style="flex-shrink:0" onclick="${admin?`duesDraftCardToggle(${me})`:`toggleDue(${me},${myPaid})`}">${myPaid ? '납부 취소' : '납부 표시'}</button>
     </div>` : ''}
     ${(total-paidCount)>0 ? `<div class="card" style="padding:12px 14px;margin-bottom:12px">
       <div style="font-size:12px;font-weight:800;color:var(--red);margin-bottom:6px">미납 ${total-paidCount}명</div>
@@ -2344,6 +2347,15 @@ function duesDraftCycle(id){
   const base = duesPaidDB[id] ? 'paid' : 'unpaid';
   const cur = (id in duesDraft) ? duesDraft[id] : base;
   const next = order[(order.indexOf(cur)+1) % order.length];
+  if (next === base) delete duesDraft[id]; else duesDraft[id] = next;
+  rerender(renderDues);
+}
+// 운영진 '내 회비' 카드: 본인 납부/미납만 드래프트 토글 (휴면 제외)
+function duesDraftCardToggle(id){
+  if(!isAdmin()) return;
+  const base = duesPaidDB[id] ? 'paid' : 'unpaid';
+  const cur = (id in duesDraft) ? duesDraft[id] : base;
+  const next = cur === 'paid' ? 'unpaid' : 'paid';
   if (next === base) delete duesDraft[id]; else duesDraft[id] = next;
   rerender(renderDues);
 }

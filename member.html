@@ -1692,7 +1692,7 @@ async function upcomingSessions() {
   let list = (await getSessions()).filter(s => (s.date||'') >= t);
   if (!list.length) {
     const d = upcomingSessionDate();
-    list = [{ id:'auto-'+d, date:d, time:'20:00', place:'상암 풋살장', label:'', auto:true }];
+    list = [{ id:'auto-'+d, date:d, time:'21:00', place:'상암 풋살장', label:'', auto:true }];
   }
   return list;
 }
@@ -1917,12 +1917,40 @@ let attSessionId = null;
 let attTeamView = false;     // 참석 탭: 팀별 보기 on/off
 let teamSplitOn = true;      // 이번 달 팀 구분(WHITE/BLACK) 사용 여부 (운영진 설정)
 function toggleAttTeam(){ attTeamView = !attTeamView; renderAtt(); }
+// 참석 신청 마감: 세션에 deadline이 있으면 그 날 23:59, 없으면 매치일 직전 일요일(전주 일요일)
+function autoDeadline(dateStr){
+  if(!dateStr) return null;
+  const d = new Date(dateStr+'T00:00:00');
+  const day = d.getDay();              // 0=일
+  const back = day===0 ? 7 : day;      // 직전 일요일까지
+  d.setDate(d.getDate()-back);
+  d.setHours(23,59,59,999);
+  return d;
+}
+function autoDeadlineStr(dateStr){
+  const d = autoDeadline(dateStr);
+  if(!d) return '';
+  return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+}
+function sessionDeadline(s){
+  if(!s) return null;
+  if(s.deadline){ const d = new Date(s.deadline+'T23:59:59'); if(!isNaN(d)) return d; }
+  return autoDeadline(s.date);
+}
+function deadlineLabel(dl){
+  if(!dl) return '';
+  const days=['일','월','화','수','목','금','토'];
+  return `${dl.getMonth()+1}/${dl.getDate()}(${days[dl.getDay()]}) 23:59`;
+}
 async function renderAtt() {
   const el = document.getElementById('attContent');
   el.innerHTML = `<div class="empty">불러오는 중...</div>`;
   const sessions = await upcomingSessions();
   if (attSessionId == null || !sessions.some(s=>s.id===attSessionId)) attSessionId = sessions[0].id;
   const sess = sessions.find(s=>s.id===attSessionId);
+  const dl = sessionDeadline(sess);
+  const closed = dl ? (new Date() > dl) : false;
+  const admin = isAdmin();
   const month = potmMonth();
   const members = activeMembers(month);
   attMe = getMe();
@@ -1950,16 +1978,24 @@ async function renderAtt() {
   } else if (!meActive) {
     html += `<div class="card"><h2>${esc(meName())} 님</h2><p class="sub">이번 달 활동 회원이 아니라 참석 체크 대상이 아니에요.</p></div>`;
   } else {
+    const segDisabled = closed && !admin;
+    const seg = ['yes','no','maybe'].map(k=>{
+      const lbl = {yes:'참석',no:'불참',maybe:'미정'}[k];
+      return segDisabled
+        ? `<button class="${k} ${mine===k?'on':''}" disabled style="opacity:.5;cursor:default">${lbl}</button>`
+        : `<button class="${k} ${mine===k?'on':''}" onclick="markAtt('${k}')">${lbl}</button>`;
+    }).join('');
+    const hint = segDisabled
+      ? `신청이 마감됐어요 (마감 ${deadlineLabel(dl)}). 변경은 운영진에 문의해 주세요.`
+      : (closed
+          ? `마감됐지만 운영진은 변경할 수 있어요 (마감 ${deadlineLabel(dl)}).`
+          : `신청 마감 ${deadlineLabel(dl)} · 언제든 다시 누르면 변경돼요.`);
     html += `
       <div class="voter-bar"><span class="who">나: <b>${esc(meName())}</b> 님</span></div>
       <div class="card">
-        <h2>참석하시나요?</h2>
-        <div class="att-seg">
-          <button class="yes ${mine==='yes'?'on':''}" onclick="markAtt('yes')">참석</button>
-          <button class="no ${mine==='no'?'on':''}" onclick="markAtt('no')">불참</button>
-          <button class="maybe ${mine==='maybe'?'on':''}" onclick="markAtt('maybe')">미정</button>
-        </div>
-        <p class="hint">언제든 다시 누르면 변경돼요.</p>
+        <h2>${segDisabled ? '참석 신청 마감' : '참석하시나요?'}</h2>
+        <div class="att-seg">${seg}</div>
+        <p class="hint">${hint}</p>
       </div>`;
   }
 
@@ -2004,6 +2040,9 @@ function pickAttSession(id){ attSessionId = id; renderAtt(); }
 function openAtt(id){ if(id) attSessionId = id; switchTab('att'); }
 async function markAtt(status){
   if(!attMe || !attSessionId) return;
+  const _sess = (await upcomingSessions()).find(s=>s.id===attSessionId);
+  const _dl = sessionDeadline(_sess);
+  if (_dl && new Date() > _dl && !isAdmin()) { toast('신청이 마감됐어요. 운영진에 문의해 주세요.'); return; }
   const ok = await setAttendance(attSessionId, attMe, status);
   if(!ok) return;
   await renderAtt();
@@ -2135,13 +2174,14 @@ async function renderOps() {
     </div>`;
 
   const secSession = `
-    <div class="row"><div class="field"><label>날짜</label><input id="opsSessDate" type="date" value="${defDate}"></div><div class="field"><label>시간</label><input id="opsSessTime" type="time" value="20:00"></div></div>
+    <div class="row"><div class="field"><label>날짜</label><input id="opsSessDate" type="date" value="${defDate}" onchange="opsSyncDeadline()"></div><div class="field"><label>시간</label><input id="opsSessTime" type="time" value="21:00"></div></div>
     <div class="field"><label>장소</label><input id="opsSessPlace" value="상암 풋살장" maxlength="40"></div>
+    <div class="field"><label>참석 신청 마감 <span style="color:var(--muted);font-weight:400">(기본: 전주 일요일 23:59)</span></label><input id="opsSessDeadline" type="date" value="${autoDeadlineStr(defDate)}"></div>
     <div class="field"><label>이름/메모 <span style="color:var(--muted);font-weight:400">(선택, 예: A매치)</span></label><input id="opsSessLabel" maxlength="30" placeholder="예: A매치"></div>
     <button class="btn accent sm" onclick="opsAddSession()">세션 추가</button>
     <div style="margin-top:16px">
       ${allSessions.length===0?'<p class="hint">등록된 세션이 없어요. (비우면 다가오는 수요일·상암 풋살장으로 자동 표시돼요)</p>':allSessions.map(s=>`
-        <div class="ops-row"><div style="min-width:0"><b>${fmtSessionDate(s.date,s.time)}</b>${s.label?` · ${esc(s.label)}`:''}<div class="hint" style="margin:0">${esc(s.place)}</div></div><button class="btn ghost sm" style="color:var(--red);flex-shrink:0" onclick="opsDelSession('${s.id}')">삭제</button></div>`).join('')}
+        <div class="ops-row"><div style="min-width:0"><b>${fmtSessionDate(s.date,s.time)}</b>${s.label?` · ${esc(s.label)}`:''}<div class="hint" style="margin:0">${esc(s.place)} · 마감 ${deadlineLabel(sessionDeadline(s))}</div></div><button class="btn ghost sm" style="color:var(--red);flex-shrink:0" onclick="opsDelSession('${s.id}')">삭제</button></div>`).join('')}
     </div>
     <p class="hint" style="margin-top:10px">같은 날 여러 경기(A/B매치)도 따로 등록하면 참석을 각각 받아요.</p>`;
 
@@ -2272,14 +2312,20 @@ async function opsAddNotice() {
 }
 async function opsDelNotice(id){ if(!confirm('이 공지를 삭제할까요?'))return; if(await deleteNotice(id)){ await renderOps(); toast('삭제했어요'); } }
 async function opsPin(id, pin){ if(await togglePinNotice(id, pin)){ await renderOps(); } }
+function opsSyncDeadline() {
+  const dt = document.getElementById('opsSessDate');
+  const dd = document.getElementById('opsSessDeadline');
+  if (dt && dd) dd.value = autoDeadlineStr(dt.value);
+}
 async function opsAddSession() {
   const date = document.getElementById('opsSessDate').value;
   if (!date) return toast('날짜를 선택해 주세요');
-  const time = document.getElementById('opsSessTime').value || '20:00';
+  const time = document.getElementById('opsSessTime').value || '21:00';
   const place = document.getElementById('opsSessPlace').value.trim() || '상암 풋살장';
+  const deadline = document.getElementById('opsSessDeadline').value || autoDeadlineStr(date);
   const label = document.getElementById('opsSessLabel').value.trim();
   const list = await getSessions();
-  list.push({ id:'s'+Date.now().toString(36)+Math.random().toString(36).slice(2,5), date, time, place, label });
+  list.push({ id:'s'+Date.now().toString(36)+Math.random().toString(36).slice(2,5), date, time, place, deadline, label });
   if (!(await saveSettings({ sessions: list }))) return;
   await renderOps(); toast('세션을 추가했어요');
 }

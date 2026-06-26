@@ -1189,6 +1189,7 @@ function noticeVisible(n){
 function toDateInput(iso){ if(!iso) return ''; const d=new Date(iso); if(isNaN(d))return ''; const p=x=>String(x).padStart(2,'0'); return `${d.getFullYear()}-${p(d.getMonth()+1)}-${p(d.getDate())}`; }
 function mdLabel(iso){ const d=new Date(iso); if(isNaN(d))return ''; return `${d.getMonth()+1}/${d.getDate()}`; }
 let opsEditNoticeId = null;
+let opsEditSessionId = null;
 
 // 실시간 갱신 (DB 모드일 때, 다른 사람의 변경을 자동 반영)
 if (USE_DB) {
@@ -2231,8 +2232,18 @@ async function renderOps() {
     <div class="field"><label>이름/메모 <span style="color:var(--muted);font-weight:400">(선택, 예: A매치)</span></label><input id="opsSessLabel" maxlength="30" placeholder="예: A매치"></div>
     <button class="btn accent sm" onclick="opsAddSession()">세션 추가</button>
     <div style="margin-top:16px">
-      ${allSessions.length===0?'<p class="hint">등록된 세션이 없어요. (비우면 다가오는 수요일·상암 풋살장으로 자동 표시돼요)</p>':allSessions.map(s=>`
-        <div class="ops-row"><div style="min-width:0"><b>${fmtSessionDate(s.date,s.time)}</b>${s.label?` · ${esc(s.label)}`:''}<div class="hint" style="margin:0">${esc(s.place)} · 마감 ${deadlineLabel(sessionDeadline(s))}</div></div><button class="btn ghost sm" style="color:var(--red);flex-shrink:0" onclick="opsDelSession('${s.id}')">삭제</button></div>`).join('')}
+      ${allSessions.length===0?'<p class="hint">등록된 세션이 없어요. (비우면 다가오는 수요일·상암 풋살장으로 자동 표시돼요)</p>':allSessions.map(s=>{
+        if (String(s.id)===opsEditSessionId) {
+          return `<div class="ops-row" style="flex-direction:column;align-items:stretch;gap:0">
+            <div class="row"><div class="field"><label>날짜</label><input id="esD" type="date" value="${s.date||''}"></div><div class="field"><label>시간</label><input id="esT" type="time" value="${s.time||'21:00'}"></div></div>
+            <div class="field"><label>장소</label><input id="esP" value="${esc(s.place||'')}" maxlength="40"></div>
+            <div class="field"><label>참석 신청 마감</label><input id="esDl" type="date" value="${s.deadline||autoDeadlineStr(s.date)}"></div>
+            <div class="field"><label>이름/메모 <span style="color:var(--muted);font-weight:400">(예: EVENT, A매치)</span></label><input id="esL" value="${esc(s.label||'')}" maxlength="30"></div>
+            <div class="n-actions"><button class="btn accent sm" onclick="opsSaveSession('${s.id}')">저장</button><button class="btn ghost sm" onclick="opsCancelSessionEdit()">취소</button></div>
+          </div>`;
+        }
+        return `<div class="ops-row"><div style="min-width:0"><b>${fmtSessionDate(s.date,s.time)}</b>${s.label?` · ${esc(s.label)}`:''}<div class="hint" style="margin:0">${esc(s.place)} · 마감 ${deadlineLabel(sessionDeadline(s))}</div></div><span style="display:flex;gap:6px;flex-shrink:0"><button class="btn ghost sm" onclick="opsEditSession('${s.id}')">수정</button><button class="btn ghost sm" style="color:var(--red)" onclick="opsDelSession('${s.id}')">삭제</button></span></div>`;
+      }).join('')}
     </div>
     <p class="hint" style="margin-top:10px">같은 날 여러 경기(A/B매치)도 따로 등록하면 참석을 각각 받아요.</p>`;
 
@@ -2402,6 +2413,23 @@ async function opsDelSession(id) {
   const list = (await getSessions()).filter(s=>s.id!==id);
   if (!(await saveSettings({ sessions: list }))) return;
   await renderOps(); toast('세션을 삭제했어요');
+}
+function opsEditSession(id){ opsEditSessionId = String(id); renderOps(); }
+function opsCancelSessionEdit(){ opsEditSessionId = null; renderOps(); }
+async function opsSaveSession(id) {
+  const list = await getSessions();
+  const s = list.find(x=>String(x.id)===String(id));
+  if (!s) return;
+  const date = document.getElementById('esD').value;
+  if (!date) return toast('날짜를 선택해 주세요');
+  s.date = date;
+  s.time = document.getElementById('esT').value || '21:00';
+  s.place = document.getElementById('esP').value.trim() || '상암 풋살장';
+  s.deadline = document.getElementById('esDl').value || autoDeadlineStr(date);
+  s.label = document.getElementById('esL').value.trim();
+  if (!(await saveSettings({ sessions: list }))) return;
+  opsEditSessionId = null;
+  await renderOps(); toast('세션을 수정했어요');
 }
 
 /* ---------- 실시간 갱신 (새 테이블) ---------- */

@@ -106,7 +106,7 @@
   .fx.open .fx-detail{display:block;}
   .fx .wk{font-family:var(--disp); font-size:21px; letter-spacing:1px;}
   .fx .loc{font-weight:900; font-size:15px; text-align:left; min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;}
-  .fx .when{text-align:right; font-family:var(--disp); letter-spacing:.5px; line-height:1.12;}
+  .fx .when{margin-left:auto; padding-left:14px; text-align:right; font-family:var(--disp); letter-spacing:.5px; line-height:1.12; flex-shrink:0;}
   .fx .when .d{font-size:19px;}
   .fx .when .wd{font-size:11px; opacity:.6; margin-left:6px; letter-spacing:1px;}
   .fx .when .t{font-size:12px; opacity:.75; display:block;}
@@ -325,9 +325,9 @@
         return '<div class="fx'+(hasDetail?' has-detail':'')+'">'
           +'<div class="fx-row"'+rowAttr+'>'
           +'<span class="wk">'+label+'<span class="more"></span></span>'
-          +'<div class="fx-end"><span class="loc">'+place+(oatly?' <span style="font-size:11px;opacity:.6">↗</span>':'')+'</span>'
+          +'<span class="loc">'+place+(oatly?' <span style="font-size:11px;opacity:.6">↗</span>':'')+'</span>'
           +'<span class="when"><span class="d">'+md+(wd?'<span class="wd">'+wd+'</span>':'')+'</span>'
-          +(time?'<span class="t">'+time+'</span>':'')+'</span></div></div>'
+          +(time?'<span class="t">'+time+'</span>':'')+'</span></div>'
           +(hasDetail?'<div class="fx-detail">'+linkify(s.desc)+'</div>':'')
           +'</div>';
       }).join('');

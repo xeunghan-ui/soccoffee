@@ -2151,13 +2151,11 @@ async function renderDues() {
       <div class="trophy"></div>
       <h2>${potmMonthLabel(month)} 회비</h2>
       <div class="month">${paidCount}/${total}명 납부 · ${pct}%</div>
-      <div class="turnout"><b>${won(collected)}</b> 걷힘 / 예상 ${won(expected)}</div>
     </div>
     <div class="dues-progress"><div style="width:${pct}%"></div></div>
     <div class="dues-summary">
       <div class="dues-stat paid"><div class="num">${paidCount}</div><div class="cap">납부</div></div>
       <div class="dues-stat unpaid"><div class="num">${total-paidCount}</div><div class="cap">미납</div></div>
-      <div class="dues-stat"><div class="num">${won(collected).replace('원','')}</div><div class="cap">걷힌 금액(원)</div></div>
     </div>
     ${(total-paidCount)>0 ? `<div class="card" style="padding:12px 14px;margin-bottom:12px">
       <div style="font-size:12px;font-weight:800;color:var(--red);margin-bottom:6px">미납 ${total-paidCount}명</div>

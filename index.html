@@ -374,14 +374,15 @@
   window.addEventListener('resize', layout);
   window.addEventListener('load', layout);
 
-  // 50% 노출 + 더보기
+  // 첫 3줄(4열×3=12장) 노출 + 더보기
   if(btn){
-    var shown=16;
+    var cols=(getComputedStyle(g).gridTemplateColumns.split(' ').length)||4;
+    var shown=cols*3;
     if(imgs.length>shown){
       var expanded=false;
       function applyMore(){
         imgs.forEach(function(im,i){ im.classList.toggle('gal-hidden', !expanded && i>=shown); });
-        btn.textContent = expanded ? '접기' : ('더보기 (+'+(imgs.length-shown)+')');
+        btn.textContent = expanded ? '접기' : '더보기';
         imgs.forEach(function(im){ if(im.complete) span(im); else im.addEventListener('load',function(){ span(im); }); });
         layout();
       }

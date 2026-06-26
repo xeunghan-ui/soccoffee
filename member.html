@@ -1368,7 +1368,10 @@ function fmtOpenTime(d) {
 // 휴면은 팀빌더에서 읽어 반영 (이름 기준). 팀빌더에 없으면 사이트 명단의 값 사용
 let TB_DORMANT = {};
 function dormantMonthsOf(p){
-  return (TB_DORMANT[p.name] !== undefined) ? TB_DORMANT[p.name] : (p.dormantMonths || []);
+  const tb = TB_DORMANT[p.name];
+  const seed = p.dormantMonths || [];
+  if (tb === undefined) return seed;
+  return Array.from(new Set([...(tb||[]), ...seed]));
 }
 async function loadTbDormant(){
   try {
@@ -2156,6 +2159,10 @@ async function renderDues() {
       <div class="dues-stat unpaid"><div class="num">${total-paidCount}</div><div class="cap">미납</div></div>
       <div class="dues-stat"><div class="num">${won(collected).replace('원','')}</div><div class="cap">걷힌 금액(원)</div></div>
     </div>
+    ${(total-paidCount)>0 ? `<div class="card" style="padding:12px 14px;margin-bottom:12px">
+      <div style="font-size:12px;font-weight:800;color:var(--red);margin-bottom:6px">미납 ${total-paidCount}명</div>
+      <div style="font-size:14px;line-height:1.7;color:var(--text)">${[...members].filter(m=>!paidMap[m.id]).sort(byJersey).map(m=>esc(m.name)).join(', ')}</div>
+    </div>` : ''}
     ${admin?'<div class="ops-note">운영진 모드 — 이름을 누르면 납부/미납이 전환돼요</div>':'<p class="hint" style="text-align:center;margin-bottom:12px">회비 납부 여부는 운영진이 확인해 표시해요. 입금 후 반영까지 시간이 걸릴 수 있어요.</p>'}
     <div class="card">
       <div class="att-list">

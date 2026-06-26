@@ -1190,6 +1190,7 @@ function toDateInput(iso){ if(!iso) return ''; const d=new Date(iso); if(isNaN(d
 function mdLabel(iso){ const d=new Date(iso); if(isNaN(d))return ''; return `${d.getMonth()+1}/${d.getDate()}`; }
 let opsEditNoticeId = null;
 let opsEditSessionId = null;
+let opsAddSessionOpen = false;
 
 // 실시간 갱신 (DB 모드일 때, 다른 사람의 변경을 자동 반영)
 if (USE_DB) {
@@ -2226,13 +2227,14 @@ async function renderOps() {
     </div>`;
 
   const secSession = `
-    ${opsEditSessionId ? '' : `
+    ${opsEditSessionId ? '' : (opsAddSessionOpen ? `
     <div class="row"><div class="field"><label>날짜</label><input id="opsSessDate" type="date" value="${defDate}" onchange="opsSyncDeadline()"></div><div class="field"><label>시간</label><input id="opsSessTime" type="time" value="21:00"></div></div>
     <div class="field"><label>장소</label><input id="opsSessPlace" value="상암 풋살장" maxlength="40"></div>
     <div class="field"><label>참석 신청 마감 <span style="color:var(--muted);font-weight:400">(기본: 전주 일요일 23:59)</span></label><input id="opsSessDeadline" type="date" value="${autoDeadlineStr(defDate)}"></div>
     <div class="field"><label>이름/메모 <span style="color:var(--muted);font-weight:400">(선택, 예: EVENT, A매치)</span></label><input id="opsSessLabel" maxlength="30" placeholder="예: EVENT, A매치"></div>
     <div class="field"><label>세부내용 <span style="color:var(--muted);font-weight:400">(선택 · 소개 페이지에서 클릭하면 펼쳐짐 · 링크 자동연결)</span></label><textarea id="opsSessDesc" rows="2" placeholder="행사 안내, 준비물, 링크 등"></textarea></div>
-    <button class="btn accent sm" onclick="opsAddSession()">세션 추가</button>`}
+    <div class="n-actions"><button class="btn accent sm" onclick="opsAddSession()">세션 추가</button><button class="btn ghost sm" onclick="opsCloseAddSession()">취소</button></div>` : `
+    <button class="btn accent sm" onclick="opsOpenAddSession()">＋ 세션 추가</button>`)}
     <div style="margin-top:16px">
       ${allSessions.length===0?'<p class="hint">등록된 세션이 없어요. (비우면 다가오는 수요일·상암 풋살장으로 자동 표시돼요)</p>':allSessions.map(s=>{
         if (String(s.id)===opsEditSessionId) {
@@ -2399,6 +2401,8 @@ function opsSyncDeadline() {
   const dd = document.getElementById('opsSessDeadline');
   if (dt && dd) dd.value = autoDeadlineStr(dt.value);
 }
+function opsOpenAddSession(){ opsAddSessionOpen = true; renderOps(); }
+function opsCloseAddSession(){ opsAddSessionOpen = false; renderOps(); }
 async function opsAddSession() {
   const date = document.getElementById('opsSessDate').value;
   if (!date) return toast('날짜를 선택해 주세요');
@@ -2410,6 +2414,7 @@ async function opsAddSession() {
   const list = await getSessions();
   list.push({ id:'s'+Date.now().toString(36)+Math.random().toString(36).slice(2,5), date, time, place, deadline, label, desc });
   if (!(await saveSettings({ sessions: list }))) return;
+  opsAddSessionOpen = false;
   await renderOps(); toast('세션을 추가했어요');
 }
 async function opsDelSession(id) {

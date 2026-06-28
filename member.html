@@ -83,14 +83,14 @@
   label { display: block; font-size: 13px; font-weight: 600; margin: 0 0 6px; color: var(--coffee-2); }
   .field { margin-bottom: 16px; }
   input, select, textarea {
-    width: 100%; padding: 12px 13px; border: 1.5px solid var(--line);
+    width: 100%; min-width: 0; padding: 12px 13px; border: 1.5px solid var(--line);
     border-radius: 11px; font-size: 15px; font-family: inherit;
     background: #fdfbf8; color: var(--text); transition: border .15s;
   }
   input:focus, select:focus, textarea:focus { outline: none; border-color: var(--accent); }
   .hint { font-size: 12px; color: var(--muted); margin-top: 5px; }
   .row { display: flex; gap: 12px; }
-  .row .field { flex: 1; }
+  .row .field { flex: 1; min-width: 0; }
 
   .btn {
     width: 100%; padding: 14px; border: none; border-radius: 12px;

@@ -911,7 +911,7 @@ async function removeRiderByIndex(rideId, index, target) {
 }
 
 /* ---------- 운영진 권한 (로그인한 사람이 운영진 명단에 있으면 자동) ---------- */
-const ADMIN_NAMES = ['홍순인','박승한','원재식','최승호','정희범'];
+const ADMIN_NAMES = ['박승한'];
 function isAdmin() {
   const p = PLAYERS.find(x => x.id === getMe());
   return !!(p && ADMIN_NAMES.includes(p.name));
@@ -1971,6 +1971,18 @@ function renderFaq() {
     `<p class="hint" style="text-align:center;margin-top:12px">더 궁금한 건 인스타 <b style="color:var(--gold)">@soccoffee__</b> 또는 운영진에게 물어봐 주세요.</p>`;
 }
 
+// 홈에서 다음 매치 참석을 바로 변경 (마감 후 일반 멤버 차단)
+async function homeQuickAtt(sid, status){
+  const me = getMe(); if(!me || !sid) return;
+  const sess = (await upcomingSessions()).find(s=>s.id===sid);
+  const dl = sess ? sessionDeadline(sess) : null;
+  if (dl && new Date() > dl && !isAdmin()) { toast('신청이 마감됐어요. 운영진에 문의해 주세요.'); return; }
+  const ok = await setAttendance(sid, me, status);
+  if (!ok) return;
+  toast({yes:'참석으로 표시했어요',no:'불참으로 표시했어요',maybe:'미정으로 표시했어요'}[status]);
+  await rerender(renderHome);
+}
+
 async function renderHome() {
   const el = document.getElementById('homeContent');
   el.innerHTML = `<div class="empty">불러오는 중...</div>`;
@@ -1991,6 +2003,44 @@ async function renderHome() {
   const black = members.filter(m=>m.team==='BLACK').length;
   const dormant = ROSTER.filter(p=>dormantMonthsOf(p).includes(month)).length;
 
+  // ── 내 현황(개인 대시보드) ──
+  const me = getMe();
+  const meActive = me != null && members.some(x => x.id === me);
+  const dMonth = duesMonth();
+  const myDues = meActive ? await fetchDues(dMonth) : [];
+  const myPaid = myDues.some(d => d.member_id === me && d.paid);
+  const myStatusOf = sid => { const a = (attBySess[sid]||[]).find(x=>x.member_id===me); return a ? a.status : 'none'; };
+  const pending = meActive ? sessions.filter(s => myStatusOf(s.id) === 'none') : [];
+  const nextSess = sessions[0];
+  let dash = '';
+  if (meActive) {
+    const ns = nextSess ? myStatusOf(nextSess.id) : 'none';
+    const stLabel = {yes:'참석',no:'불참',maybe:'미정',none:'미응답'}[ns];
+    const stColor = {yes:'var(--win)',no:'var(--alert)',maybe:'var(--gold-bright)',none:'var(--muted)'}[ns];
+    const qbtn = (st, lbl, bg, fg) => `<button style="flex:1;border-radius:9px;padding:9px;border:1px solid ${ns===st?bg:'var(--line)'};cursor:pointer;font-family:inherit;font-weight:800;font-size:13px;background:${ns===st?bg:'transparent'};color:${ns===st?fg:'var(--muted)'}" onclick="homeQuickAtt('${nextSess?nextSess.id:''}','${st}')">${lbl}</button>`;
+    dash += `<div class="card" style="padding:14px 16px;margin-bottom:12px">
+      <div style="font-size:14px;font-weight:800;color:var(--cream)">${esc(meName())} 님${isAdmin()?' <span style="font-size:11px;color:var(--gold)">· 운영진</span>':''}</div>`;
+    if (nextSess) {
+      dash += `<div style="display:flex;align-items:center;justify-content:space-between;gap:10px;margin-top:11px">
+        <div style="min-width:0">
+          <div style="font-size:11px;color:var(--gold);font-weight:800;letter-spacing:.04em">다음 매치 내 응답</div>
+          <div style="font-size:13px;color:var(--muted);margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${esc(sessChipLabel(nextSess))}</div>
+        </div>
+        <span style="flex-shrink:0;font-size:12px;font-weight:800;padding:4px 11px;border-radius:999px;border:1px solid var(--line);color:${stColor}">${stLabel}</span>
+      </div>
+      <div style="display:flex;gap:6px;margin-top:10px">${qbtn('yes','참석','var(--win)','#07120c')}${qbtn('maybe','미정','var(--gold)','#23180a')}${qbtn('no','불참','var(--alert)','#fff')}</div>`;
+    }
+    dash += `<div style="display:flex;align-items:center;justify-content:space-between;gap:10px;margin-top:12px;padding-top:12px;border-top:1px solid #2a3d30">
+      <div style="font-size:13px;color:var(--muted)">${potmMonthLabel(dMonth)} 회비</div>
+      ${myPaid ? `<span class="dues-badge paid">납부 완료</span>` : `<button class="dues-badge toggle unpaid" onclick="toggleDue(${me},false)">납부 표시</button>`}
+    </div></div>`;
+    if (pending.length) {
+      dash += `<button onclick="switchTab('att')" style="width:100%;text-align:left;cursor:pointer;font-family:inherit;border:1px solid var(--gold-dim);background:var(--gold-bg);border-radius:12px;padding:13px 16px;margin-bottom:12px;display:flex;align-items:center;justify-content:space-between;gap:10px">
+        <span style="font-size:13px;font-weight:800;color:var(--gold-bright)">아직 응답 안 한 일정 ${pending.length}개</span>
+        <span style="font-size:12px;font-weight:800;color:var(--gold-bright)">응답하기 →</span></button>`;
+    }
+  }
+
   const sessCards = sessions.map((s,i)=>{
     const c = cnt(s);
     return `
@@ -2005,7 +2055,8 @@ async function renderHome() {
     </div>`;
   });
 
-  let html = sessions.length > 1
+  let html = dash + `<div class="section-title">다가오는 매치</div>`;
+  html += sessions.length > 1
     ? `<div class="sess-carousel" id="sessCarousel" onscroll="updateSessDots()">${sessCards.join('')}</div>
        <div class="sess-dots">
          <span class="sess-count" id="sessCount">1 / ${sessions.length}</span>

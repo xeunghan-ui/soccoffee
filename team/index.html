@@ -871,7 +871,28 @@ const TB_SUPA_KEY = "sb_publishable_K7TsALmaFyb2pPOZO-2i2w_UeirVr8l";
 let tbSb = null;
 try { if (window.supabase) tbSb = window.supabase.createClient(TB_SUPA_URL, TB_SUPA_KEY); } catch(e){}
 function setCloudLabel(t){ const el=document.getElementById('cloudLabel'); if(el) el.textContent=t; }
-function tbCloudState(){ return { players, teams, sessions, teamHistory, supplies, matches }; }
+let dormRollover = null; // 마지막으로 '다음 달 휴면 자동추가'를 처리한 월(YYYY-MM). 월 1회만 실행.
+function tbCloudState(){ return { players, teams, sessions, teamHistory, supplies, matches, dormRollover }; }
+// ─ 다음 달 휴면 자동추가(롤오버) ─
+// 매월 15일 이후, 이번 달 휴면(또는 영구휴면) 회원의 dormantMonths에 '다음 달'을 1회 추가.
+// → 멤버앱 상태창에서 다음 달이 '휴면'으로 기본 노출. 멤버가 '활동'으로 바꾸면 다음 달이 제거되고,
+//   이 함수는 월 1회(dormRollover 마커)만 돌아 멤버의 선택을 다시 덮어쓰지 않음.
+function autoRolloverDormancy(){
+  const now = new Date();
+  if (now.getDate() < 15) return false;
+  let ny = now.getFullYear(), nm = now.getMonth() + 1; if (nm > 11) { nm = 0; ny += 1; }
+  const nextMonth = `${ny}-${String(nm + 1).padStart(2, '0')}`;
+  if (dormRollover === nextMonth) return false; // 이번 롤오버 이미 처리
+  const curMonth = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
+  (players || []).forEach(p => {
+    if ((p.status || 'active') === 'former') return;
+    const dm = p.dormantMonths || [];
+    const curDorm = dm.includes(curMonth) || (p.status || 'active') === 'dormant';
+    if (curDorm && !dm.includes(nextMonth)) { dm.push(nextMonth); p.dormantMonths = dm; }
+  });
+  dormRollover = nextMonth;
+  return true; // 마커가 갱신됐으니 저장 필요
+}
 let _tbCloudTimer=null;
 function cloudSavePush(){
   if(!tbSb || !appReady) return;
@@ -899,6 +920,8 @@ async function cloudInit(){
       if(Array.isArray(d.supplies)) supplies = d.supplies;
       if(Array.isArray(d.matches)) matches = d.matches;
       players.forEach(p=>{ if(p.status===undefined)p.status=p.dormant?'dormant':'active'; if(p.inBalance===undefined)p.inBalance=(p.status||'active')!=='former'; if(p.engName===undefined)p.engName=''; });
+      if(typeof d.dormRollover==='string') dormRollover=d.dormRollover;
+      const _rolled = autoRolloverDormancy();   // 다음 달 휴면 자동추가(15일 이후, 월 1회)
       try{ recalcAttendance(); }catch(e){}
       try{
         localStorage.setItem('sc5_players',JSON.stringify(players));
@@ -909,7 +932,8 @@ async function cloudInit(){
         localStorage.setItem('sc5_matches',JSON.stringify(matches));
       }catch(e){}
       renderAll();
-      setCloudLabel('☁ 동기화됨');
+      if(_rolled){ cloudSavePush(); }   // 롤오버로 바뀐 휴면·마커를 클라우드에 반영
+      else setCloudLabel('☁ 동기화됨');
     } else {
       // 클라우드에 아직 없음 → 지금 로컬 데이터를 올림(최초 1회)
       cloudSavePush();

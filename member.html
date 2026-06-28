@@ -38,8 +38,8 @@
     --shadow: none;
     /* === 디자인 캐논 v0.1 — 에너지 액센트(레트로 골드) + 의미 색 === */
     --gold: #ddd6b6; --gold-bright: #ece6d2; --gold-dim: #4a6450; --gold-bg: rgba(221,214,182,.07);
-    --win: #46b381; --win-bg: rgba(70,179,129,.14);
-    --alert: #dc5238; --alert-bg: rgba(220,82,56,.13);
+    --win: #5a9277; --win-bg: rgba(90,146,119,.13);
+    --alert: #bd6452; --alert-bg: rgba(189,100,82,.12);
     --disp: "Anton", "Pretendard", sans-serif;
   }
   * { box-sizing: border-box; }
@@ -1463,6 +1463,13 @@ function duesMonth() {
   if (d.getDate() >= 25) { m += 1; if (m > 11) { m = 0; y += 1; } }
   return `${y}-${String(m + 1).padStart(2, '0')}`;
 }
+// 홈 상태박스 기준월: 매월 15일부터 다음 달
+function statusMonth() {
+  const d = new Date();
+  let y = d.getFullYear(), m = d.getMonth();
+  if (d.getDate() >= 15) { m += 1; if (m > 11) { m = 0; y += 1; } }
+  return `${y}-${String(m + 1).padStart(2, '0')}`;
+}
 
 // 이번 주 수요일 오후 9시 (투표 오픈 시각)
 function votingOpensAt() {
@@ -2040,6 +2047,15 @@ async function homeQuickAtt(sid, status){
   toast({yes:'참석으로 표시했어요',no:'불참으로 표시했어요',maybe:'미정으로 표시했어요'}[status]);
   await rerender(renderHome);
 }
+// 홈 상태박스: 본인 회비를 해당 월 납부로 표시
+async function homePayDue(memberId, month){
+  if (!getMe() || (memberId !== getMe() && !isAdmin())) return;
+  const m = ROSTER.find(x=>x.id===memberId);
+  const ok = await setDuesPaid(month, memberId, true, dueAmount(m?m.name:''));
+  if (!ok) return;
+  toast('납부로 표시했어요');
+  await rerender(renderHome);
+}
 
 async function renderHome() {
   const el = document.getElementById('homeContent');
@@ -2071,7 +2087,7 @@ async function renderHome() {
   // ── 내 현황(개인 대시보드) ──
   const me = getMe();
   const meActive = me != null && members.some(x => x.id === me);
-  const dMonth = duesMonth();
+  const dMonth = statusMonth();   // 홈 상태박스: 15일부터 다음 달
   const myDues = meActive ? await fetchDues(dMonth) : [];
   const myPaid = myDues.some(d => d.member_id === me && d.paid);
   const myStatusOf = sid => { const a = (attBySess[sid]||[]).find(x=>x.member_id===me); return a ? a.status : 'none'; };
@@ -2082,12 +2098,9 @@ async function renderHome() {
     const meP = PLAYERS.find(x => x.id === me) || {};
     const meT = TEAM_SHEET[meP.name] || {};
     const jersey = (meP.jersey != null) ? meP.jersey : ((meT.jersey != null) ? meT.jersey : '–');
-    let statusLabel;
-    if (isDormantFor(meP, month)) statusLabel = '이번 달 휴면';
-    else if (meP.status === 'friends') statusLabel = '싸커피 친구';
-    else statusLabel = '활동 중';
+    const dormStatus = isDormantFor(meP, dMonth);   // 기준월 휴면 여부
     const teamLabel = (teamSplitOn && meT.team && meT.team !== '기타') ? meT.team + ' 팀' : '';
-    const subline = [statusLabel, teamLabel, isAdmin() ? '운영진' : ''].filter(Boolean).join(' · ');
+    const subline = [meP.status === 'friends' ? '싸커피 친구' : '', teamLabel, isAdmin() ? '운영진' : ''].filter(Boolean).join(' · ') || '멤버';
     const targetSess = sessions.find(s => { const dl = sessionDeadline(s); return !(dl && new Date() > dl); }) || nextSess;
     const ns = targetSess ? myStatusOf(targetSess.id) : 'none';
     const qbtn = (st, lbl, bg, fg) => `<button style="flex:1;border-radius:9px;padding:9px;border:1px solid ${ns===st?bg:'var(--line)'};cursor:pointer;font-family:inherit;font-weight:800;font-size:13px;background:${ns===st?bg:'transparent'};color:${ns===st?fg:'var(--muted)'}" onclick="homeQuickAtt('${targetSess?targetSess.id:''}','${st}')">${lbl}</button>`;
@@ -2104,10 +2117,10 @@ async function renderHome() {
           <div class="pc-team">${subline}</div>
         </div>
         <div class="pc-right">
+          <div class="pc-stat"><span class="lbl">${moNum}월 활동</span><span class="pc-badge ${dormStatus?'neutral':'done'}">${dormStatus?'휴면':'활동'}</span></div>
           ${myPaid
             ? `<div class="pc-stat"><span class="lbl">${moNum}월 회비 납부</span><span class="pc-badge done">완료</span></div>`
-            : `<button class="pc-stat" style="background:none;border:none;cursor:pointer;font-family:inherit;width:100%;padding:0" onclick="toggleDue(${me},false)"><span class="lbl">${moNum}월 회비 납부</span><span class="pc-badge no">미납</span></button>`}
-          <div class="pc-stat"><span class="lbl">${sessLabel} 신청</span><span class="pc-badge ${sBadge[0]}">${sBadge[1]}</span></div>
+            : `<button class="pc-stat" style="background:none;border:none;cursor:pointer;font-family:inherit;width:100%;padding:0" onclick="homePayDue(${me},'${dMonth}')"><span class="lbl">${moNum}월 회비 납부</span><span class="pc-badge no">미납</span></button>`}
         </div>
       </div>
       ${targetSess ? `<div style="margin-top:14px;padding-top:14px;border-top:1px solid var(--line)">

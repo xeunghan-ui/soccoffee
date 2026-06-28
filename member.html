@@ -2030,7 +2030,8 @@ async function renderHome() {
     const meP = PLAYERS.find(x => x.id === me) || {};
     const meT = TEAM_SHEET[meP.name] || {};
     const jersey = (meT.jersey != null) ? meT.jersey : '–';
-    const teamNm = (meT.team && meT.team !== '기타') ? meT.team + ' 팀' : '팀 미배정';
+    const teamLabel = (teamSplitOn && meT.team && meT.team !== '기타') ? meT.team + ' 팀' : '';
+    const subline = [teamLabel, isAdmin() ? '운영진' : ''].filter(Boolean).join(' · ') || '멤버';
     const ns = nextSess ? myStatusOf(nextSess.id) : 'none';
     const stLabel = {yes:'참석',no:'불참',maybe:'미정',none:'미응답'}[ns];
     const stColor = {yes:'var(--win)',no:'var(--alert)',maybe:'var(--gold-bright)',none:'var(--muted)'}[ns];
@@ -2041,7 +2042,7 @@ async function renderHome() {
       <div class="pc-left">
         <div class="pc-jersey">${jersey}</div>
         <div class="pc-name">${esc(meName())}</div>
-        <div class="pc-team">${teamNm}${isAdmin()?' · 운영진':''}</div>
+        <div class="pc-team">${subline}</div>
       </div>
       <div class="pc-right">
         ${myPaid

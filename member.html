@@ -718,11 +718,13 @@
   .pc-name { font-size: 15px; font-weight: 800; color: var(--cream); margin-top: 8px; }
   .pc-team { font-size: 11px; color: var(--muted); margin-top: 2px; }
   .pc-right { flex: 1; min-width: 0; display: flex; flex-direction: column; justify-content: center; gap: 10px; }
-  .pc-stat { display: flex; align-items: center; gap: 8px; font-size: 13px; font-weight: 700; line-height: 1.3; }
-  .pc-stat .ic { font-size: 10px; flex-shrink: 0; }
-  .pc-stat.ok { color: var(--win); }
-  .pc-stat.no { color: var(--alert); }
-  .pc-stat.wait { color: var(--gold-bright); }
+  .pc-stat { display: flex; align-items: center; justify-content: space-between; gap: 8px; font-size: 13px; line-height: 1.3; width: 100%; }
+  .pc-stat .lbl { color: var(--muted); font-weight: 600; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .pc-badge { font-size: 11px; font-weight: 800; padding: 2px 10px; border-radius: 999px; flex-shrink: 0; white-space: nowrap; }
+  .pc-badge.done { background: var(--win-bg); color: var(--win); border: 1px solid rgba(70,179,129,.4); }
+  .pc-badge.no { background: var(--alert-bg); color: var(--alert); }
+  .pc-badge.wait { background: var(--alert-bg); color: var(--alert); }
+  .pc-badge.neutral { background: #2a3d30; color: var(--sand-2); }
   /* 팀 현황(팀빌더 명단) 2열 그리드 */
   .sq-grp-h { font-size: 12px; font-weight: 800; color: var(--muted); margin: 6px 0 8px; display: flex; justify-content: space-between; }
   .sq-grp-h span { font-weight: 700; }
@@ -838,6 +840,7 @@
   <button class="bnav-item active" data-tab="home" onclick="switchTab('home')"><span class="bn-ico">⌂</span>홈</button>
   <button class="bnav-item" data-tab="att" onclick="switchTab('att')"><span class="bn-ico">◷</span>일정</button>
   <button class="bnav-item" data-tab="list" onclick="switchTab('list')"><span class="bn-ico">⇄</span>카풀</button>
+  <button class="bnav-item" data-tab="potm" onclick="switchTab('potm')"><span class="bn-ico">★</span>투표</button>
   <button class="bnav-item" data-tab="more" onclick="switchTab('more')"><span class="bn-ico">≡</span>더보기</button>
 </nav>
 
@@ -982,7 +985,7 @@ async function deleteRide(id) {
 /* ---------- UI ---------- */
 const ALL_TABS = ['home','att','dues','list','potm','rank','more','mine','faq','squad','ops'];
 function switchTab(tab) {
-  const navPrimary = ['home','att','list'];
+  const navPrimary = ['home','att','list','potm'];
   const navActive = navPrimary.includes(tab) ? tab : 'more';
   document.querySelectorAll('.bnav-item').forEach(b => b.classList.toggle('active', b.dataset.tab === navActive));
   ALL_TABS.forEach(t => {
@@ -1935,13 +1938,13 @@ function renderMore() {
   const el = document.getElementById('moreContent');
   const admin = isAdmin();
   const items = [
-    ['dues', '회비', '이번 달 납부 현황'],
     ['rank', '랭킹', '출석 · 모범 랭킹'],
-    ['potm', '투표', '이달의 선수 · 가장 성장한 선수'],
     ['squad', '팀 현황', '활동 · 휴면 인원 · 스쿼드'],
-    ['faq', '회칙 · 안내', '회비 · 휴면 · 참석 마감 규정'],
   ];
-  if (admin) items.push(['ops', '운영진', '공지 · 세션 · 회비 · 설정']);
+  if (admin) {
+    items.unshift(['dues', '회비', '이번 달 납부 현황']);
+    items.push(['ops', '운영진', '공지 · 세션 · 회비 · 설정']);
+  }
   let html = `<div class="more-grid">` +
     items.map(([t, name, desc]) =>
       `<button class="more-item" onclick="switchTab('${t}')"><div class="mi-name">${name}</div><div class="mi-desc">${desc}</div></button>`
@@ -2047,12 +2050,13 @@ async function renderHome() {
     else statusLabel = '활동 중';
     const teamLabel = (teamSplitOn && meT.team && meT.team !== '기타') ? meT.team + ' 팀' : '';
     const subline = [statusLabel, teamLabel, isAdmin() ? '운영진' : ''].filter(Boolean).join(' · ');
-    const ns = nextSess ? myStatusOf(nextSess.id) : 'none';
-    const stLabel = {yes:'참석',no:'불참',maybe:'미정',none:'미응답'}[ns];
-    const stColor = {yes:'var(--win)',no:'var(--alert)',maybe:'var(--gold-bright)',none:'var(--muted)'}[ns];
-    const qbtn = (st, lbl, bg, fg) => `<button style="flex:1;border-radius:9px;padding:9px;border:1px solid ${ns===st?bg:'var(--line)'};cursor:pointer;font-family:inherit;font-weight:800;font-size:13px;background:${ns===st?bg:'transparent'};color:${ns===st?fg:'var(--muted)'}" onclick="homeQuickAtt('${nextSess?nextSess.id:''}','${st}')">${lbl}</button>`;
+    const targetSess = sessions.find(s => { const dl = sessionDeadline(s); return !(dl && new Date() > dl); }) || nextSess;
+    const ns = targetSess ? myStatusOf(targetSess.id) : 'none';
+    const qbtn = (st, lbl, bg, fg) => `<button style="flex:1;border-radius:9px;padding:9px;border:1px solid ${ns===st?bg:'var(--line)'};cursor:pointer;font-family:inherit;font-weight:800;font-size:13px;background:${ns===st?bg:'transparent'};color:${ns===st?fg:'var(--muted)'}" onclick="homeQuickAtt('${targetSess?targetSess.id:''}','${st}')">${lbl}</button>`;
     const moNum = parseInt(dMonth.split('-')[1], 10);
-    const sStat = { yes:['ok','세션 참석 신청 완료'], maybe:['wait','세션 미정 응답'], no:['no','세션 불참 응답'], none:['wait','세션 응답 필요'] }[ns];
+    const tp = (targetSess && targetSess.date) ? targetSess.date.split('-') : null;
+    const sessLabel = tp ? `${parseInt(tp[1])}월 ${parseInt(tp[2])}일 세션` : '다음 세션';
+    const sBadge = (ns !== 'none') ? ['done', '완료'] : ['no', '미완'];
     const myYes = sessions.filter(s => myStatusOf(s.id) === 'yes');
     dash += `<div class="card" style="padding:16px;margin-bottom:12px">
       <div style="display:flex;gap:14px">
@@ -2063,13 +2067,13 @@ async function renderHome() {
         </div>
         <div class="pc-right">
           ${myPaid
-            ? `<div class="pc-stat ok"><span class="ic">●</span><span>${moNum}월 회비 납부 완료</span></div>`
-            : `<button class="pc-stat no" style="background:none;border:none;cursor:pointer;font-family:inherit;text-align:left;padding:0" onclick="toggleDue(${me},false)"><span class="ic">●</span><span>${moNum}월 회비 미납 · 납부 표시</span></button>`}
-          <div class="pc-stat ${sStat[0]}"><span class="ic">●</span><span>${sStat[1]}</span></div>
+            ? `<div class="pc-stat"><span class="lbl">${moNum}월 회비 납부</span><span class="pc-badge done">완료</span></div>`
+            : `<button class="pc-stat" style="background:none;border:none;cursor:pointer;font-family:inherit;width:100%;padding:0" onclick="toggleDue(${me},false)"><span class="lbl">${moNum}월 회비 납부</span><span class="pc-badge no">미납</span></button>`}
+          <div class="pc-stat"><span class="lbl">${sessLabel} 신청</span><span class="pc-badge ${sBadge[0]}">${sBadge[1]}</span></div>
         </div>
       </div>
-      ${nextSess ? `<div style="margin-top:14px;padding-top:14px;border-top:1px solid var(--line)">
-        <div style="font-size:11px;color:var(--muted);font-weight:800;letter-spacing:.04em;margin-bottom:9px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(sessChipLabel(nextSess))} 참석</div>
+      ${targetSess ? `<div style="margin-top:14px;padding-top:14px;border-top:1px solid var(--line)">
+        <div style="font-size:11px;color:var(--muted);font-weight:800;letter-spacing:.04em;margin-bottom:9px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${sessLabel} 참석</div>
         <div style="display:flex;gap:6px">${qbtn('yes','참석','var(--win)','#07120c')}${qbtn('maybe','미정','var(--accent)','#14281b')}${qbtn('no','불참','var(--alert)','#fff')}</div>
       </div>` : ''}
       ${myYes.length ? `<div style="margin-top:12px;padding-top:12px;border-top:1px solid var(--line)">

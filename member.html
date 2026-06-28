@@ -1405,11 +1405,30 @@ function applyPlayers(players) {
   });
   TEAM_SHEET = {};
   players.forEach(p => {
-    if (p.team && p.team !== '기타')
-      TEAM_SHEET[p.name] = { jersey:p.jersey, eng:p.eng||'', team:p.team, cap:!!p.cap };
+    TEAM_SHEET[p.name] = { jersey:(p.jersey!=null?p.jersey:null), eng:p.eng||'', team:p.team||'기타', cap:!!p.cap };
   });
 }
 applyPlayers(PLAYERS);   // 초기엔 SEED 기준 (시작 시 Supabase 명단으로 덮어씀)
+
+// 팀빌더에만 있는 멤버를 사이트 명단에 병합 → 로그인·참석·회비 가능
+async function mergeTbMembers() {
+  let tb = null;
+  try { tb = await fetchTeamBuilder(); } catch(e) {}
+  if (!tb || !Array.isArray(tb.players)) return;
+  const names = new Set(PLAYERS.map(p => p.name));
+  const ids = new Set(PLAYERS.map(p => p.id));
+  const add = [];
+  tb.players.forEach(tp => {
+    if ((tp.status||'active') === 'former') return;
+    if (ids.has(tp.id) || names.has(tp.name)) return;
+    names.add(tp.name); ids.add(tp.id);
+    add.push({ id:tp.id, name:tp.name, tier:tp.tier, status:tp.status||'active',
+      joinDate:tp.joinDate||'', friendsSince:tp.friendsSince||null,
+      dormantMonths:(tp.dormantMonths||[]).slice(),
+      jersey:(tp.jersey!=null?tp.jersey:null), eng:tp.engName||'', team:'기타', cap:false });
+  });
+  if (add.length) applyPlayers(PLAYERS.concat(add));
+}
 
 async function fetchRoster() {
   const s = await fetchSettings();
@@ -2056,7 +2075,7 @@ async function renderHome() {
     const moNum = parseInt(dMonth.split('-')[1], 10);
     const tp = (targetSess && targetSess.date) ? targetSess.date.split('-') : null;
     const sessLabel = tp ? `${parseInt(tp[1])}월 ${parseInt(tp[2])}일 세션` : '다음 세션';
-    const sBadge = (ns !== 'none') ? ['done', '완료'] : ['no', '미완'];
+    const sBadge = (ns === 'yes' || ns === 'no') ? ['done', '완료'] : ['no', '미완'];
     const myYes = sessions.filter(s => myStatusOf(s.id) === 'yes');
     dash += `<div class="card" style="padding:16px;margin-bottom:12px">
       <div style="display:flex;gap:14px">
@@ -3060,6 +3079,7 @@ function meName() {
 async function initApp() {
   updateAdminBtn();
   try { const r = await fetchRoster(); if (r) applyPlayers(r); } catch (e) {}
+  await mergeTbMembers();   // 팀빌더에만 있는 멤버도 로그인 가능하게 병합
   try { const s = await fetchSettings(); teamSplitOn = s.teamSplit !== false; CLUB_PINS = s.pins || {}; } catch (e) {}
   await loadTbDormant();
   // 로컬 미리보기: 첫 활동 회원으로 자동 로그인

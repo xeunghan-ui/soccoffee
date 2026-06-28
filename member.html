@@ -2702,19 +2702,24 @@ async function duesSaveDraft(){
   if(!entries.length) return;
   const mo = duesMonth();   // 회비 표시월 = 다음달(25일 이후)
   const dormIds = [];
+  let anyErr = false;
   for(const [id,st] of entries){
     const mid = Number(id); const m = ROSTER.find(x=>x.id===mid);
     if (st === 'dormant') { dormIds.push(mid); }
-    else { await setDuesPaid(mo, mid, st === 'paid', dueAmount(m?m.name:'')); }
+    else { const ok = await setDuesPaid(mo, mid, st === 'paid', dueAmount(m?m.name:'')); if(!ok) anyErr = true; }
   }
-  // 휴면: 해당 월을 명단(roster) dormantMonths에 등록 → 회비·참석·명단 전체 반영
+  // 휴면: 팀빌더 명단에 해당 월 등록(roster에 쓰면 mergeTbMembers가 덮어쓰므로 팀빌더가 단일 출처)
   if (dormIds.length) {
-    PLAYERS.forEach(p => { if (dormIds.includes(p.id)) p.dormantMonths = Array.from(new Set([...(p.dormantMonths||[]), mo])); });
-    if (await saveRoster(PLAYERS)) applyPlayers(PLAYERS);
+    const tb = await fetchTeamBuilder();
+    if (tb && Array.isArray(tb.players)) {
+      tb.players.forEach(p => { if (dormIds.includes(p.id)) { const dm = p.dormantMonths || []; if(!dm.includes(mo)) dm.push(mo); p.dormantMonths = dm; } });
+      if (await saveTeamBuilder(tb)) { await mergeTbMembers(); await loadTbDormant(); }
+      else anyErr = true;
+    } else anyErr = true;
   }
   duesDraft = {};
   await rerender(renderDues);
-  toast(`회비 ${entries.length}건 저장했어요`);
+  toast(anyErr ? '일부 저장에 실패했어요' : `회비 ${entries.length}건 저장했어요`);
 }
 function duesCancelDraft(){ duesDraft = {}; rerender(renderDues); }
 

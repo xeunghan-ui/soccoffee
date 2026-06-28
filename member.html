@@ -402,6 +402,12 @@
   .dues-badge.dormant { background: #6b6b6b; color: #f0ede2; }
   .dues-badge.toggle { cursor: pointer; }
   .dues-badge.toggle:hover { filter: brightness(.96); }
+  /* 회비 운영진: 납부/미납/휴면 직접 선택(참석 방식) */
+  .dues-row .st-set .st { font-size: 12px; font-weight: 800; padding: 4px 10px; border-radius: 20px; border: none; cursor: pointer; font-family: inherit; opacity: .4; }
+  .dues-row .st-set .st.on { opacity: 1; }
+  .dues-row .st.paid { background: var(--win-bg); color: var(--win); }
+  .dues-row .st.unpaid { background: var(--alert-bg); color: var(--alert); }
+  .dues-row .st.dormant { background: #3a4a3e; color: #c3cbb6; }
   /* 회비 탭 명단: 2열 그리드 (좁은 화면은 1열) */
   .dues-grid { display: grid; grid-template-columns: 1fr; column-gap: 18px; }
 
@@ -2624,19 +2630,20 @@ async function renderDues() {
       <div style="font-size:12px;font-weight:800;color:var(--red);margin-bottom:6px">미납 ${total-paidCount}명</div>
       <div style="font-size:14px;line-height:1.7;color:var(--text)">${[...payMembers].filter(m=>effState(m.id)==='unpaid').sort(byJersey).map(m=>esc(m.name)).join(', ')}</div>
     </div>` : ''}
-    <div class="ops-note">운영진 모드 — 이름을 누르면 미납→납부→휴면(다음달) 순환. 아래 '저장'으로 일괄 반영돼요</div>
+    <div class="ops-note">운영진 모드 — 납부 / 미납 / 휴면(다음달)을 직접 선택하고, 아래 '저장'으로 일괄 반영돼요</div>
     <div class="card">
       <div class="att-list dues-grid">
         ${[...members].sort((a,b)=>{ const rk=s=>s==='unpaid'?0:(s==='paid'?1:2); return rk(effState(a.id))-rk(effState(b.id)) || byJersey(a,b); }).map(m=>{
           const stt = effState(m.id);
           const isMe = me===m.id;
           const dirty = admin && (m.id in duesDraft);
-          const lbl = {paid:'납부',unpaid:'미납',dormant:'휴면'}[stt];
-          const bcls = stt==='paid'?'paid':(stt==='unpaid'?'unpaid':'dormant');
           return `<div class="dues-row ${isMe?'me':''}${dirty?' dirty':''}">
             <span class="nm">${esc(m.name)}${isMe?' <span style="font-size:11px;color:var(--accent)">(나)</span>':''}${dirty?' <span class="dirty-dot">●</span>':''}</span>
-            <span class="amt">${stt==='dormant'?'—':won(dueAmount(m.name))}</span>
-            <button class="dues-badge toggle ${bcls}" onclick="duesDraftCycle(${m.id})">${lbl}</button>
+            <span class="st-set">
+              <button class="st paid ${stt==='paid'?'on':''}" onclick="duesDraftSet(${m.id},'paid')">납부</button>
+              <button class="st unpaid ${stt==='unpaid'?'on':''}" onclick="duesDraftSet(${m.id},'unpaid')">미납</button>
+              <button class="st dormant ${stt==='dormant'?'on':''}" onclick="duesDraftSet(${m.id},'dormant')">휴면</button>
+            </span>
           </div>`;
         }).join('')}
         ${dormantMembers.map(m=>{
@@ -2662,7 +2669,14 @@ async function toggleDue(memberId, currentlyPaid) {
   await renderDues();
   window.scrollTo(0, y);
 }
-// 운영진 회비 일괄: 클릭은 드래프트에만 반영 (미납→납부→휴면 순환)
+// 운영진 회비 일괄: 납부/미납/휴면 직접 선택 (드래프트에만 반영, DB 상태와 같으면 드래프트 제거)
+function duesDraftSet(id, state){
+  if(!isAdmin()) return;
+  const base = duesPaidDB[id] ? 'paid' : 'unpaid';
+  if (state === base) delete duesDraft[id]; else duesDraft[id] = state;
+  rerender(renderDues);
+}
+// (구) 순환 방식 — 미사용
 function duesDraftCycle(id){
   if(!isAdmin()) return;
   const order = ['unpaid','paid','dormant'];

@@ -2052,12 +2052,13 @@ async function renderHome() {
   await Promise.all(sessions.map(async s => { attBySess[s.id] = await fetchAttendance(s.id); }));
   const cnt = s => {
     const recs = attBySess[s.id] || [];
+    const sMembers = activeMembers((s.date||'').slice(0,7));   // 세션 월 기준 활동 멤버
     return {
       yes: recs.filter(a=>a.status==='yes').length,
       maybe: recs.filter(a=>a.status==='maybe').length,
       no: recs.filter(a=>a.status==='no').length,
-      responded: members.filter(m => recs.some(a=>a.member_id===m.id)).length,
-      total: members.length
+      responded: sMembers.filter(m => recs.some(a=>a.member_id===m.id)).length,
+      total: sMembers.length
     };
   };
 
@@ -2080,7 +2081,7 @@ async function renderHome() {
   if (meActive) {
     const meP = PLAYERS.find(x => x.id === me) || {};
     const meT = TEAM_SHEET[meP.name] || {};
-    const jersey = (meT.jersey != null) ? meT.jersey : '–';
+    const jersey = (meP.jersey != null) ? meP.jersey : ((meT.jersey != null) ? meT.jersey : '–');
     let statusLabel;
     if (isDormantFor(meP, month)) statusLabel = '이번 달 휴면';
     else if (meP.status === 'friends') statusLabel = '싸커피 친구';

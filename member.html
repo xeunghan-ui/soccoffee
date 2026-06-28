@@ -2286,7 +2286,6 @@ async function renderAtt() {
           ? `마감됐지만 운영진은 변경할 수 있어요 (마감 ${deadlineLabel(dl)}).`
           : `신청 마감 ${deadlineLabel(dl)} · 언제든 다시 누르면 변경돼요.`);
     html += `
-      <div class="voter-bar"><span class="who">나: <b>${esc(meName())}</b> 님</span></div>
       <div class="card">
         <h2>${segDisabled ? '참석 신청 마감' : '참석하시나요?'}</h2>
         <div class="att-seg">${seg}</div>

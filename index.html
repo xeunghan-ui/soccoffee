@@ -95,7 +95,7 @@
 
   /* 경기 일정 (MATCH DAY) */
   .sec-h{font-family:var(--disp); font-weight:400; font-size:clamp(40px,13vw,66px); line-height:.9; letter-spacing:1px; color:#f3eed9; text-transform:uppercase; margin:6px 0 16px;}
-  .fixtures{background:#ece6d2; border-radius:16px; overflow:hidden; border:1px solid var(--line);}
+  .fixtures{background:#ece6d2; border-radius:16px; overflow:hidden; border:1px solid var(--line); border-top:3px solid var(--gold);}
   .fx{color:#15281b;}
   .fx:nth-child(even){background:#1e3526; color:#ece6d2;}
   .fx-row{display:grid; grid-template-columns:1fr 1fr 1fr; align-items:center; gap:16px; padding:15px 18px;}
@@ -117,7 +117,7 @@
   /* 선수 명단 (SQUAD) */
   .squad{display:grid; grid-template-columns:repeat(auto-fill,minmax(150px,1fr)); gap:8px;}
   .pl{display:flex; align-items:center; gap:11px; background:var(--green-2); border:1px solid var(--line); border-radius:12px; padding:11px 14px;}
-  .pl .no{font-family:var(--disp); font-size:23px; color:var(--sand); min-width:34px; text-align:center; line-height:1;}
+  .pl .no{font-family:var(--disp); font-size:23px; color:var(--gold-bright); min-width:34px; text-align:center; line-height:1;}
   .pl .nm{font-size:14px; font-weight:800; color:var(--cream); white-space:nowrap; overflow:hidden; text-overflow:ellipsis;}
   .pl.dorm{opacity:.42;}
 
@@ -154,7 +154,7 @@
   @media(max-width:420px){ .gallery{padding:0 8px;} }
   .gallery img.gal-hidden{display:none;}
   .morebtn{display:block; margin:18px auto 0; padding:11px 28px; border-radius:999px; background:var(--green-2); color:var(--sand); border:1px solid var(--line); font-weight:900; font-size:13px; letter-spacing:.5px; cursor:pointer;}
-  .morebtn:hover{background:#24402e;}
+  .morebtn:hover{background:#24402e; color:var(--gold); border-color:var(--gold-dim);}
 
   /* 가입 */
   .join{background:var(--sand); color:var(--green); border-radius:18px; padding:30px 22px; text-align:center;}

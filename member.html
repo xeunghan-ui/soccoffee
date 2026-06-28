@@ -830,7 +830,6 @@
   <button class="bnav-item active" data-tab="home" onclick="switchTab('home')"><span class="bn-ico">⌂</span>홈</button>
   <button class="bnav-item" data-tab="att" onclick="switchTab('att')"><span class="bn-ico">◷</span>일정</button>
   <button class="bnav-item" data-tab="list" onclick="switchTab('list')"><span class="bn-ico">⇄</span>카풀</button>
-  <button class="bnav-item" data-tab="rank" onclick="switchTab('rank')"><span class="bn-ico">▲</span>랭킹</button>
   <button class="bnav-item" data-tab="more" onclick="switchTab('more')"><span class="bn-ico">≡</span>더보기</button>
 </nav>
 
@@ -975,7 +974,7 @@ async function deleteRide(id) {
 /* ---------- UI ---------- */
 const ALL_TABS = ['home','att','dues','list','potm','rank','more','mine','faq','squad','ops'];
 function switchTab(tab) {
-  const navPrimary = ['home','att','list','rank'];
+  const navPrimary = ['home','att','list'];
   const navActive = navPrimary.includes(tab) ? tab : 'more';
   document.querySelectorAll('.bnav-item').forEach(b => b.classList.toggle('active', b.dataset.tab === navActive));
   ALL_TABS.forEach(t => {
@@ -1929,6 +1928,7 @@ function renderMore() {
   const admin = isAdmin();
   const items = [
     ['dues', '회비', '이번 달 납부 현황'],
+    ['rank', '랭킹', '출석 · 모범 랭킹'],
     ['potm', '투표', '이달의 선수 · 가장 성장한 선수'],
     ['squad', '팀 현황', '활동 · 휴면 인원 · 스쿼드'],
     ['faq', '회칙 · 안내', '회비 · 휴면 · 참석 마감 규정'],
@@ -2033,8 +2033,12 @@ async function renderHome() {
     const meP = PLAYERS.find(x => x.id === me) || {};
     const meT = TEAM_SHEET[meP.name] || {};
     const jersey = (meT.jersey != null) ? meT.jersey : '–';
+    let statusLabel;
+    if (isDormantFor(meP, month)) statusLabel = '이번 달 휴면';
+    else if (meP.status === 'friends') statusLabel = '싸커피 친구';
+    else statusLabel = '활동 중';
     const teamLabel = (teamSplitOn && meT.team && meT.team !== '기타') ? meT.team + ' 팀' : '';
-    const subline = [teamLabel, isAdmin() ? '운영진' : ''].filter(Boolean).join(' · ') || '멤버';
+    const subline = [statusLabel, teamLabel, isAdmin() ? '운영진' : ''].filter(Boolean).join(' · ');
     const ns = nextSess ? myStatusOf(nextSess.id) : 'none';
     const stLabel = {yes:'참석',no:'불참',maybe:'미정',none:'미응답'}[ns];
     const stColor = {yes:'var(--win)',no:'var(--alert)',maybe:'var(--gold-bright)',none:'var(--muted)'}[ns];
@@ -2479,6 +2483,20 @@ async function renderDues() {
   const myName = (ROSTER.find(x=>x.id===me)||{}).name || '';
   const myDirty = admin && (me in duesDraft);    // 저장 전 변경 여부
 
+  const myCard = meActive ? `<div class="card" style="display:flex;align-items:center;justify-content:space-between;gap:12px;padding:14px 16px;margin-bottom:12px">
+      <div style="min-width:0">
+        <div style="font-size:13px;font-weight:800;color:var(--coffee)">내 회비${myName?` — ${esc(myName)}`:''} · ${potmMonthLabel(month)}</div>
+        <div style="font-size:12px;color:var(--muted);margin-top:2px">${myPaid ? '납부 완료로 표시됨' : '미납 상태예요'}${myDirty?' · 저장 전 (아래 저장 필요)':''}</div>
+      </div>
+      <button class="dues-badge toggle ${myPaid?'paid':'unpaid'}" style="flex-shrink:0" onclick="${admin?`duesDraftCardToggle(${me})`:`toggleDue(${me},${myPaid})`}">${myPaid ? '납부 취소' : '납부 표시'}</button>
+    </div>` : '';
+
+  // 멤버: 전체 납부현황 비공개 — 본인 회비만
+  if (!admin) {
+    el.innerHTML = `<div class="section-title">${potmMonthLabel(month)} 회비</div>${myCard}<p class="hint" style="text-align:center;margin-top:8px">전체 납부 현황은 운영진이 관리해요. 위에서 본인 회비를 확인하고 직접 표시할 수 있어요.</p>`;
+    return;
+  }
+
   let html = `
     <div class="potm-hero" style="background:linear-gradient(135deg,#2f7a4f,#245f3e)">
       <div class="trophy"></div>
@@ -2490,18 +2508,12 @@ async function renderDues() {
       <div class="dues-stat paid"><div class="num">${paidCount}</div><div class="cap">납부</div></div>
       <div class="dues-stat unpaid"><div class="num">${total-paidCount}</div><div class="cap">미납</div></div>
     </div>
-    ${meActive ? `<div class="card" style="display:flex;align-items:center;justify-content:space-between;gap:12px;padding:14px 16px;margin-bottom:12px">
-      <div style="min-width:0">
-        <div style="font-size:13px;font-weight:800;color:var(--coffee)">내 회비${myName?` — ${esc(myName)}`:''} · ${potmMonthLabel(month)}</div>
-        <div style="font-size:12px;color:var(--muted);margin-top:2px">${myPaid ? '납부 완료로 표시됨' : '미납 상태예요'}${myDirty?' · 저장 전 (아래 저장 필요)':''}</div>
-      </div>
-      <button class="dues-badge toggle ${myPaid?'paid':'unpaid'}" style="flex-shrink:0" onclick="${admin?`duesDraftCardToggle(${me})`:`toggleDue(${me},${myPaid})`}">${myPaid ? '납부 취소' : '납부 표시'}</button>
-    </div>` : ''}
+    ${myCard}
     ${(total-paidCount)>0 ? `<div class="card" style="padding:12px 14px;margin-bottom:12px">
       <div style="font-size:12px;font-weight:800;color:var(--red);margin-bottom:6px">미납 ${total-paidCount}명</div>
       <div style="font-size:14px;line-height:1.7;color:var(--text)">${[...payMembers].filter(m=>effState(m.id)==='unpaid').sort(byJersey).map(m=>esc(m.name)).join(', ')}</div>
     </div>` : ''}
-    ${admin?'<div class="ops-note">운영진 모드 — 이름을 누르면 미납→납부→휴면(다음달) 순환. 아래 \'저장\'으로 일괄 반영돼요</div>':'<p class="hint" style="text-align:center;margin-bottom:12px">본인 회비는 위 \'내 회비\'에서 직접 표시할 수 있어요. 다른 사람은 운영진이 확인해 표시해요.</p>'}
+    <div class="ops-note">운영진 모드 — 이름을 누르면 미납→납부→휴면(다음달) 순환. 아래 '저장'으로 일괄 반영돼요</div>
     <div class="card">
       <div class="att-list dues-grid">
         ${[...members].sort((a,b)=>{ const rk=s=>s==='unpaid'?0:(s==='paid'?1:2); return rk(effState(a.id))-rk(effState(b.id)) || byJersey(a,b); }).map(m=>{
@@ -2510,15 +2522,10 @@ async function renderDues() {
           const dirty = admin && (m.id in duesDraft);
           const lbl = {paid:'납부',unpaid:'미납',dormant:'휴면'}[stt];
           const bcls = stt==='paid'?'paid':(stt==='unpaid'?'unpaid':'dormant');
-          const badge = admin
-            ? `<button class="dues-badge toggle ${bcls}" onclick="duesDraftCycle(${m.id})">${lbl}</button>`
-            : (isMe
-                ? `<button class="dues-badge toggle ${bcls}" onclick="toggleDue(${m.id},${stt==='paid'})">${lbl}</button>`
-                : `<span class="dues-badge ${bcls}">${lbl}</span>`);
           return `<div class="dues-row ${isMe?'me':''}${dirty?' dirty':''}">
             <span class="nm">${esc(m.name)}${isMe?' <span style="font-size:11px;color:var(--accent)">(나)</span>':''}${dirty?' <span class="dirty-dot">●</span>':''}</span>
             <span class="amt">${stt==='dormant'?'—':won(dueAmount(m.name))}</span>
-            ${badge}
+            <button class="dues-badge toggle ${bcls}" onclick="duesDraftCycle(${m.id})">${lbl}</button>
           </div>`;
         }).join('')}
         ${dormantMembers.map(m=>{

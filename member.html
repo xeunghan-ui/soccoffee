@@ -2150,7 +2150,7 @@ async function renderHome() {
       </div>`) : ''}
       ${myYes.length ? `<div style="margin-top:12px;padding-top:12px;border-top:1px solid var(--line)">
         <div style="font-size:11px;color:var(--muted);font-weight:800;letter-spacing:.04em;margin-bottom:4px">참석 예정 ${myYes.length}개</div>
-        ${myYes.map(s => `<div style="display:flex;align-items:center;gap:8px;padding:5px 0;font-size:13px;color:var(--cream)"><span style="color:var(--win);font-size:9px">●</span><span style="min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(sessChipLabel(s))}</span><span style="margin-left:auto;flex-shrink:0;color:var(--muted);font-size:12px">${esc((s.time||'').slice(0,5))}${s.endTime?'–'+esc(s.endTime.slice(0,5)):''}</span></div>`).join('')}
+        ${myYes.map(s => `<div style="padding:5px 0;font-size:13px;color:var(--cream)"><div style="display:flex;align-items:center;gap:8px"><span style="color:var(--win);font-size:9px">●</span><span style="min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(sessChipLabel(s))}</span><span style="margin-left:auto;flex-shrink:0;color:var(--muted);font-size:12px">${esc((s.time||'').slice(0,5))}${s.endTime?'–'+esc(s.endTime.slice(0,5)):''}</span></div>${s.place ? `<div style="margin-left:17px;color:var(--muted);font-size:12px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(s.place)}</div>` : ''}</div>`).join('')}
       </div>` : ''}
     </div>`;
     if (pending.length) {

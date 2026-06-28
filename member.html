@@ -322,6 +322,8 @@
   .notice.has-body .n-top { cursor: pointer; }
   .notice.has-body .n-top::after { content: '▾'; font-size: 10px; color: var(--muted); flex-shrink: 0; }
   .notice.open.has-body .n-top::after { content: '▴'; }
+  .notice.has-link { cursor: pointer; }
+  .notice.has-link .n-top::after { content: '→'; font-size: 14px; color: var(--accent); flex-shrink: 0; }
   .notice .n-title { font-size: 15px; font-weight: 600; color: var(--coffee); word-break: keep-all; flex: 1; min-width: 0; }
   .notice .n-date { font-size: 11px; color: var(--muted); flex-shrink: 0; }
   .notice .n-body { display: none; font-size: 14px; color: var(--text); margin-top: 8px; white-space: pre-wrap; word-break: break-word; }
@@ -401,8 +403,7 @@
   .dues-badge.toggle { cursor: pointer; }
   .dues-badge.toggle:hover { filter: brightness(.96); }
   /* 회비 탭 명단: 2열 그리드 (좁은 화면은 1열) */
-  .dues-grid { display: grid; grid-template-columns: 1fr 1fr; column-gap: 18px; }
-  @media (max-width: 520px) { .dues-grid { grid-template-columns: 1fr; } }
+  .dues-grid { display: grid; grid-template-columns: 1fr; column-gap: 18px; }
 
   /* ===== 운영진 ===== */
   .ops-note { background: #f4e0dc; color: #8a2f22; font-size: 12px; padding: 9px 14px; border-radius: 10px; text-align: center; margin-bottom: 14px; font-weight: 600; }
@@ -1907,12 +1908,12 @@ async function fetchNotices() {
 }
 async function addNotice(n) {
   if (USE_DB) {
-    const { error } = await sb.from('notices').insert({ title:n.title, body:n.body, pinned:!!n.pinned, publish_at:n.publish_at||null, hide_at:n.hide_at||null });
+    const { error } = await sb.from('notices').insert({ title:n.title, body:n.body, pinned:!!n.pinned, publish_at:n.publish_at||null, hide_at:n.hide_at||null, link:n.link||null });
     if (error) { toast('등록 오류: ' + error.message); return false; }
     return true;
   }
   const a = await fetchNotices();
-  a.unshift({ id:Date.now(), title:n.title, body:n.body, pinned:!!n.pinned, publish_at:n.publish_at||null, hide_at:n.hide_at||null, created_at:new Date().toISOString() });
+  a.unshift({ id:Date.now(), title:n.title, body:n.body, pinned:!!n.pinned, publish_at:n.publish_at||null, hide_at:n.hide_at||null, link:n.link||null, created_at:new Date().toISOString() });
   localStorage.setItem(NOTICE_STORE, JSON.stringify(a)); return true;
 }
 async function updateNotice(id, fields) {
@@ -1932,6 +1933,17 @@ async function togglePinNotice(id, pinned) {
   if (USE_DB) { const { error } = await sb.from('notices').update({ pinned }).eq('id', id); if (error){toast('오류: '+error.message);return false;} return true; }
   const a = await fetchNotices(); const n = a.find(x=>String(x.id)===String(id)); if(n) n.pinned=pinned;
   localStorage.setItem(NOTICE_STORE, JSON.stringify(a)); return true;
+}
+// 공지 클릭 이동: 'tab:KEY'=내부 탭, 'http…'=외부 새 탭
+function noticeGo(link){
+  if(!link) return;
+  if(/^tab:/.test(link)){ switchTab(link.slice(4)); window.scrollTo(0,0); return; }
+  if(/^https?:\/\//i.test(link)) window.open(link,'_blank','noopener');
+}
+// 공지 폼: '외부 링크' 선택 시에만 URL 입력칸 노출
+function opsLinkToggle(selId, wrapId){
+  const sel=document.getElementById(selId), wrap=document.getElementById(wrapId);
+  if(sel&&wrap) wrap.style.display = (sel.value==='url') ? '' : 'none';
 }
 function noticeDateLabel(iso) {
   const d = new Date(iso); if (isNaN(d)) return '';
@@ -2194,6 +2206,17 @@ async function renderHome() {
   } else {
     html += vnotices.map(n => {
       const hasBody = !!(n.body && String(n.body).trim());
+      const link = n.link || '';
+      if (link) {
+        // 링크 공지: 클릭 시 이동(아코디언 대신). 본문 있으면 그냥 보여줌.
+        return `<div class="notice ${n.pinned?'pinned':''} has-link" onclick="noticeGo('${esc(link)}')">
+          <div class="n-top">
+            <div class="n-title">${n.pinned?'<span class="pin-tag">고정</span>':''}${esc(n.title)}</div>
+            <div class="n-date">${noticeDateLabel(n.created_at)}</div>
+          </div>
+          ${hasBody?`<div class="n-body" style="display:block">${linkify(n.body)}</div>`:''}
+        </div>`;
+      }
       return `<div class="notice ${n.pinned?'pinned':''}${hasBody?' has-body':''}">
         <div class="n-top"${hasBody?` onclick="this.parentNode.classList.toggle('open')"`:''}>
           <div class="n-title">${n.pinned?'<span class="pin-tag">고정</span>':''}${esc(n.title)}</div>
@@ -2707,6 +2730,16 @@ async function renderOps() {
   const secNotice = `
     <div class="field"><label>제목</label><input id="opsNoticeTitle" placeholder="예: 이번 주 우천 시 실내 대체" maxlength="60"></div>
     <div class="field"><label>내용 <span style="color:var(--muted);font-weight:400">(선택 · 링크 자동 연결)</span></label><textarea id="opsNoticeBody" rows="3" placeholder="자세한 내용을 적어주세요"></textarea></div>
+    <div class="field"><label>클릭 시 이동 <span style="color:var(--muted);font-weight:400">(선택)</span></label>
+      <select id="opsNoticeLinkType" onchange="opsLinkToggle('opsNoticeLinkType','opsNoticeLinkUrlWrap')">
+        <option value="">없음 (본문 펼치기)</option>
+        <option value="url">외부 링크 (URL)</option>
+        <option value="tab:potm">투표 탭으로 이동</option>
+        <option value="tab:att">일정 탭으로 이동</option>
+        <option value="tab:list">카풀 탭으로 이동</option>
+      </select>
+    </div>
+    <div class="field" id="opsNoticeLinkUrlWrap" style="display:none"><input id="opsNoticeLinkUrl" placeholder="https://..." maxlength="300"></div>
     <div class="row">
       <div class="field"><label>노출 시작</label><input id="opsNoticeFrom" type="date" value="${todayStr()}"></div>
       <div class="field"><label>노출 종료 <span style="color:var(--muted);font-weight:400">(비우면 무기한)</span></label><input id="opsNoticeUntil" type="date"></div>
@@ -2719,6 +2752,13 @@ async function renderOps() {
           return `<div class="notice">
             <div class="field"><label>제목</label><input id="opsEditTitle" value="${esc(n.title)}" maxlength="60"></div>
             <div class="field"><label>내용</label><textarea id="opsEditBody" rows="3">${esc(n.body||'')}</textarea></div>
+            ${(()=>{ const _lk=n.link||''; const _isUrl=/^https?:\/\//i.test(_lk); const _lt=_isUrl?'url':_lk; const o=(v,t)=>`<option value="${v}" ${(_lt===v)?'selected':''}>${t}</option>`; return `
+            <div class="field"><label>클릭 시 이동 <span style="color:var(--muted);font-weight:400">(선택)</span></label>
+              <select id="opsEditLinkType" onchange="opsLinkToggle('opsEditLinkType','opsEditLinkUrlWrap')">
+                ${o('','없음 (본문 펼치기)')}${o('url','외부 링크 (URL)')}${o('tab:potm','투표 탭으로 이동')}${o('tab:att','일정 탭으로 이동')}${o('tab:list','카풀 탭으로 이동')}
+              </select>
+            </div>
+            <div class="field" id="opsEditLinkUrlWrap" style="display:${_isUrl?'':'none'}"><input id="opsEditLinkUrl" placeholder="https://..." maxlength="300" value="${_isUrl?esc(_lk):''}"></div>`; })()}
             <div class="row">
               <div class="field"><label>노출 시작</label><input id="opsEditFrom" type="date" value="${toDateInput(n.publish_at)||todayStr()}"></div>
               <div class="field"><label>노출 종료 <span style="color:var(--muted);font-weight:400">(비우면 무기한)</span></label><input id="opsEditUntil" type="date" value="${toDateInput(n.hide_at)}"></div>
@@ -2900,7 +2940,9 @@ async function opsAddNotice() {
   const untilV = document.getElementById('opsNoticeUntil').value;
   const publish_at = fromV ? new Date(fromV+'T00:00:00').toISOString() : null;
   const hide_at = untilV ? new Date(untilV+'T23:59:59').toISOString() : null;
-  const ok = await addNotice({ title, body, pinned, publish_at, hide_at });
+  const _lt = document.getElementById('opsNoticeLinkType').value;
+  const link = _lt==='url' ? document.getElementById('opsNoticeLinkUrl').value.trim() : _lt;
+  const ok = await addNotice({ title, body, pinned, publish_at, hide_at, link });
   if (!ok) return;
   await renderOps(); toast('공지를 등록했어요');
 }
@@ -2915,7 +2957,9 @@ async function opsSaveNotice(id){
   const untilV = document.getElementById('opsEditUntil').value;
   const publish_at = fromV ? new Date(fromV+'T00:00:00').toISOString() : null;
   const hide_at = untilV ? new Date(untilV+'T23:59:59').toISOString() : null;
-  if (await updateNotice(id, { title, body, pinned, publish_at, hide_at })) { opsEditNoticeId = null; await renderOps(); toast('수정했어요'); }
+  const _lt = document.getElementById('opsEditLinkType').value;
+  const link = _lt==='url' ? document.getElementById('opsEditLinkUrl').value.trim() : _lt;
+  if (await updateNotice(id, { title, body, pinned, publish_at, hide_at, link: link||null })) { opsEditNoticeId = null; await renderOps(); toast('수정했어요'); }
 }
 async function opsDelNotice(id){ if(!confirm('이 공지를 삭제할까요?'))return; if(await deleteNotice(id)){ await renderOps(); toast('삭제했어요'); } }
 async function opsPin(id, pin){ if(await togglePinNotice(id, pin)){ await renderOps(); } }

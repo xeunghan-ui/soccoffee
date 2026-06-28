@@ -46,11 +46,13 @@ create table if not exists public.notices (
   pinned boolean not null default false,
   publish_at timestamptz,                       -- 노출 시작(비우면 즉시)
   hide_at timestamptz,                          -- 노출 종료(비우면 무기한)
+  link text,                                    -- 클릭 시 이동(외부 URL 또는 'tab:potm' 등 내부 탭)
   created_at timestamptz not null default now()
 );
 -- 기존에 notices 테이블이 이미 있으면 컬럼만 추가(재실행 안전):
 alter table public.notices add column if not exists publish_at timestamptz;
 alter table public.notices add column if not exists hide_at timestamptz;
+alter table public.notices add column if not exists link text;
 alter table public.notices enable row level security;
 drop policy if exists "notices read"   on public.notices;
 drop policy if exists "notices insert" on public.notices;

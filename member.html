@@ -37,7 +37,7 @@
     --radius: 12px;
     --shadow: none;
     /* === 디자인 캐논 v0.1 — 에너지 액센트(레트로 골드) + 의미 색 === */
-    --gold: #c2923a; --gold-bright: #d8b461; --gold-dim: #8a6b2e; --gold-bg: rgba(194,146,58,.11);
+    --gold: #ddd6b6; --gold-bright: #ece6d2; --gold-dim: #4a6450; --gold-bg: rgba(221,214,182,.07);
     --win: #46b381; --win-bg: rgba(70,179,129,.14);
     --alert: #dc5238; --alert-bg: rgba(220,82,56,.13);
     --disp: "Anton", "Pretendard", sans-serif;
@@ -2053,36 +2053,34 @@ async function renderHome() {
     const qbtn = (st, lbl, bg, fg) => `<button style="flex:1;border-radius:9px;padding:9px;border:1px solid ${ns===st?bg:'var(--line)'};cursor:pointer;font-family:inherit;font-weight:800;font-size:13px;background:${ns===st?bg:'transparent'};color:${ns===st?fg:'var(--muted)'}" onclick="homeQuickAtt('${nextSess?nextSess.id:''}','${st}')">${lbl}</button>`;
     const moNum = parseInt(dMonth.split('-')[1], 10);
     const sStat = { yes:['ok','세션 참석 신청 완료'], maybe:['wait','세션 미정 응답'], no:['no','세션 불참 응답'], none:['wait','세션 응답 필요'] }[ns];
-    dash += `<div class="card profile-card">
-      <div class="pc-left">
-        <div class="pc-jersey">${jersey}</div>
-        <div class="pc-name">${esc(meName())}</div>
-        <div class="pc-team">${subline}</div>
-      </div>
-      <div class="pc-right">
-        ${myPaid
-          ? `<div class="pc-stat ok"><span class="ic">●</span><span>${moNum}월 회비 납부 완료</span></div>`
-          : `<button class="pc-stat no" style="background:none;border:none;cursor:pointer;font-family:inherit;text-align:left;padding:0" onclick="toggleDue(${me},false)"><span class="ic">●</span><span>${moNum}월 회비 미납 · 납부 표시</span></button>`}
-        <div class="pc-stat ${sStat[0]}"><span class="ic">●</span><span>${sStat[1]}</span></div>
-      </div>
-    </div>`;
-    if (nextSess) {
-      dash += `<div class="card" style="padding:12px 16px;margin-bottom:12px">
-        <div style="font-size:11px;color:var(--gold);font-weight:800;letter-spacing:.04em;margin-bottom:9px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(sessChipLabel(nextSess))} 참석 응답</div>
-        <div style="display:flex;gap:6px">${qbtn('yes','참석','var(--win)','#07120c')}${qbtn('maybe','미정','var(--gold)','#23180a')}${qbtn('no','불참','var(--alert)','#fff')}</div>
-      </div>`;
-    }
     const myYes = sessions.filter(s => myStatusOf(s.id) === 'yes');
-    if (myYes.length) {
-      dash += `<div class="card" style="padding:12px 16px;margin-bottom:12px">
-        <div style="font-size:11px;color:var(--gold);font-weight:800;letter-spacing:.04em;margin-bottom:6px">참석 예정 일정 ${myYes.length}개</div>
-        ${myYes.map(s => `<div style="display:flex;align-items:center;gap:8px;padding:6px 0;font-size:13px;color:var(--cream)"><span style="color:var(--win);font-size:9px">●</span><span style="min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(sessChipLabel(s))}</span><span style="margin-left:auto;flex-shrink:0;color:var(--muted);font-size:12px">${esc((s.time||'').slice(0,5))}${s.endTime?'–'+esc(s.endTime.slice(0,5)):''}</span></div>`).join('')}
-      </div>`;
-    }
+    dash += `<div class="card" style="padding:16px;margin-bottom:12px">
+      <div style="display:flex;gap:14px">
+        <div class="pc-left">
+          <div class="pc-jersey">${jersey}</div>
+          <div class="pc-name">${esc(meName())}</div>
+          <div class="pc-team">${subline}</div>
+        </div>
+        <div class="pc-right">
+          ${myPaid
+            ? `<div class="pc-stat ok"><span class="ic">●</span><span>${moNum}월 회비 납부 완료</span></div>`
+            : `<button class="pc-stat no" style="background:none;border:none;cursor:pointer;font-family:inherit;text-align:left;padding:0" onclick="toggleDue(${me},false)"><span class="ic">●</span><span>${moNum}월 회비 미납 · 납부 표시</span></button>`}
+          <div class="pc-stat ${sStat[0]}"><span class="ic">●</span><span>${sStat[1]}</span></div>
+        </div>
+      </div>
+      ${nextSess ? `<div style="margin-top:14px;padding-top:14px;border-top:1px solid var(--line)">
+        <div style="font-size:11px;color:var(--muted);font-weight:800;letter-spacing:.04em;margin-bottom:9px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(sessChipLabel(nextSess))} 참석</div>
+        <div style="display:flex;gap:6px">${qbtn('yes','참석','var(--win)','#07120c')}${qbtn('maybe','미정','var(--accent)','#14281b')}${qbtn('no','불참','var(--alert)','#fff')}</div>
+      </div>` : ''}
+      ${myYes.length ? `<div style="margin-top:12px;padding-top:12px;border-top:1px solid var(--line)">
+        <div style="font-size:11px;color:var(--muted);font-weight:800;letter-spacing:.04em;margin-bottom:4px">참석 예정 ${myYes.length}개</div>
+        ${myYes.map(s => `<div style="display:flex;align-items:center;gap:8px;padding:5px 0;font-size:13px;color:var(--cream)"><span style="color:var(--win);font-size:9px">●</span><span style="min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(sessChipLabel(s))}</span><span style="margin-left:auto;flex-shrink:0;color:var(--muted);font-size:12px">${esc((s.time||'').slice(0,5))}${s.endTime?'–'+esc(s.endTime.slice(0,5)):''}</span></div>`).join('')}
+      </div>` : ''}
+    </div>`;
     if (pending.length) {
-      dash += `<button onclick="switchTab('att')" style="width:100%;text-align:left;cursor:pointer;font-family:inherit;border:1px solid var(--gold-dim);background:var(--gold-bg);border-radius:12px;padding:13px 16px;margin-bottom:12px;display:flex;align-items:center;justify-content:space-between;gap:10px">
-        <span style="font-size:13px;font-weight:800;color:var(--gold-bright)">아직 응답 안 한 일정 ${pending.length}개</span>
-        <span style="font-size:12px;font-weight:800;color:var(--gold-bright)">응답하기 →</span></button>`;
+      dash += `<button onclick="switchTab('att')" style="width:100%;text-align:left;cursor:pointer;font-family:inherit;border:1px solid var(--line);background:transparent;border-radius:12px;padding:12px 16px;margin-bottom:12px;display:flex;align-items:center;justify-content:space-between;gap:10px">
+        <span style="font-size:13px;font-weight:700;color:var(--cream)">아직 응답 안 한 일정 ${pending.length}개</span>
+        <span style="font-size:12px;font-weight:800;color:var(--accent)">응답하기 →</span></button>`;
     }
   }
 

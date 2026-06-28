@@ -2072,11 +2072,13 @@ async function renderHome() {
   const cnt = s => {
     const recs = attBySess[s.id] || [];
     const sMembers = activeMembers((s.date||'').slice(0,7));   // 세션 월 기준 활동 멤버
+    const activeIds = new Set(sMembers.map(m=>m.id));
+    const aRecs = recs.filter(a => activeIds.has(a.member_id));   // 활동 멤버 응답만 집계
     return {
-      yes: recs.filter(a=>a.status==='yes').length,
-      maybe: recs.filter(a=>a.status==='maybe').length,
-      no: recs.filter(a=>a.status==='no').length,
-      responded: sMembers.filter(m => recs.some(a=>a.member_id===m.id)).length,
+      yes: aRecs.filter(a=>a.status==='yes').length,
+      maybe: aRecs.filter(a=>a.status==='maybe').length,
+      no: aRecs.filter(a=>a.status==='no').length,
+      responded: aRecs.length,
       total: sMembers.length
     };
   };

@@ -1914,7 +1914,6 @@ function renderMore() {
   const items = [
     ['dues', '회비', '이번 달 납부 현황'],
     ['potm', '투표', '이달의 선수 · 가장 성장한 선수'],
-    ['mine', '마이페이지', '내 등번호 · 회비 · 기록'],
     ['faq', '회칙 · 안내', '회비 · 휴면 · 참석 마감 규정'],
   ];
   if (admin) items.push(['ops', '운영진', '공지 · 세션 · 회비 · 설정']);
@@ -2014,26 +2013,42 @@ async function renderHome() {
   const nextSess = sessions[0];
   let dash = '';
   if (meActive) {
+    const meP = PLAYERS.find(x => x.id === me) || {};
+    const meT = TEAM_SHEET[meP.name] || {};
+    const jersey = (meT.jersey != null) ? meT.jersey : '–';
+    const teamNm = (meT.team && meT.team !== '기타') ? meT.team + ' 팀' : '팀 미배정';
     const ns = nextSess ? myStatusOf(nextSess.id) : 'none';
     const stLabel = {yes:'참석',no:'불참',maybe:'미정',none:'미응답'}[ns];
     const stColor = {yes:'var(--win)',no:'var(--alert)',maybe:'var(--gold-bright)',none:'var(--muted)'}[ns];
     const qbtn = (st, lbl, bg, fg) => `<button style="flex:1;border-radius:9px;padding:9px;border:1px solid ${ns===st?bg:'var(--line)'};cursor:pointer;font-family:inherit;font-weight:800;font-size:13px;background:${ns===st?bg:'transparent'};color:${ns===st?fg:'var(--muted)'}" onclick="homeQuickAtt('${nextSess?nextSess.id:''}','${st}')">${lbl}</button>`;
+    dash += `<div class="mine-hero" style="margin-bottom:12px">
+      <div class="num">${jersey}</div>
+      <div class="nm">${esc(meName())} 님${isAdmin()?' <span style="font-size:11px;color:var(--gold)">· 운영진</span>':''}</div>
+      <div class="hint" style="margin-top:4px">${teamNm}</div>
+    </div>`;
     dash += `<div class="card" style="padding:14px 16px;margin-bottom:12px">
-      <div style="font-size:14px;font-weight:800;color:var(--cream)">${esc(meName())} 님${isAdmin()?' <span style="font-size:11px;color:var(--gold)">· 운영진</span>':''}</div>`;
+      <div style="display:flex;align-items:center;justify-content:space-between;gap:10px">
+        <div style="font-size:13px;color:var(--muted)">${potmMonthLabel(dMonth)} 회비</div>
+        ${myPaid ? `<span class="dues-badge paid">납부 완료</span>` : `<button class="dues-badge toggle unpaid" onclick="toggleDue(${me},false)">납부 표시</button>`}
+      </div>`;
     if (nextSess) {
-      dash += `<div style="display:flex;align-items:center;justify-content:space-between;gap:10px;margin-top:11px">
+      dash += `<div style="display:flex;align-items:center;justify-content:space-between;gap:10px;margin-top:12px;padding-top:12px;border-top:1px solid #2a3d30">
         <div style="min-width:0">
-          <div style="font-size:11px;color:var(--gold);font-weight:800;letter-spacing:.04em">다음 매치 내 응답</div>
+          <div style="font-size:11px;color:var(--gold);font-weight:800;letter-spacing:.04em">다음 매치 참석</div>
           <div style="font-size:13px;color:var(--muted);margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${esc(sessChipLabel(nextSess))}</div>
         </div>
         <span style="flex-shrink:0;font-size:12px;font-weight:800;padding:4px 11px;border-radius:999px;border:1px solid var(--line);color:${stColor}">${stLabel}</span>
       </div>
       <div style="display:flex;gap:6px;margin-top:10px">${qbtn('yes','참석','var(--win)','#07120c')}${qbtn('maybe','미정','var(--gold)','#23180a')}${qbtn('no','불참','var(--alert)','#fff')}</div>`;
     }
-    dash += `<div style="display:flex;align-items:center;justify-content:space-between;gap:10px;margin-top:12px;padding-top:12px;border-top:1px solid #2a3d30">
-      <div style="font-size:13px;color:var(--muted)">${potmMonthLabel(dMonth)} 회비</div>
-      ${myPaid ? `<span class="dues-badge paid">납부 완료</span>` : `<button class="dues-badge toggle unpaid" onclick="toggleDue(${me},false)">납부 표시</button>`}
-    </div></div>`;
+    dash += `</div>`;
+    const myYes = sessions.filter(s => myStatusOf(s.id) === 'yes');
+    if (myYes.length) {
+      dash += `<div class="card" style="padding:12px 16px;margin-bottom:12px">
+        <div style="font-size:11px;color:var(--gold);font-weight:800;letter-spacing:.04em;margin-bottom:6px">참석 예정 일정 ${myYes.length}개</div>
+        ${myYes.map(s => `<div style="display:flex;align-items:center;gap:8px;padding:6px 0;font-size:13px;color:var(--cream)"><span style="color:var(--win);font-size:9px">●</span><span style="min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(sessChipLabel(s))}</span><span style="margin-left:auto;flex-shrink:0;color:var(--muted);font-size:12px">${esc((s.time||'').slice(0,5))}${s.endTime?'–'+esc(s.endTime.slice(0,5)):''}</span></div>`).join('')}
+      </div>`;
+    }
     if (pending.length) {
       dash += `<button onclick="switchTab('att')" style="width:100%;text-align:left;cursor:pointer;font-family:inherit;border:1px solid var(--gold-dim);background:var(--gold-bg);border-radius:12px;padding:13px 16px;margin-bottom:12px;display:flex;align-items:center;justify-content:space-between;gap:10px">
         <span style="font-size:13px;font-weight:800;color:var(--gold-bright)">아직 응답 안 한 일정 ${pending.length}개</span>

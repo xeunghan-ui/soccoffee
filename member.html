@@ -314,14 +314,18 @@
   .session-card.none .when { color: var(--coffee-2); }
 
   .notice {
-    background: var(--card); border-radius: 13px; box-shadow: var(--shadow);
-    padding: 14px 16px; margin-bottom: 10px; border-left: 4px solid var(--line);
+    background: var(--card); border-radius: 12px; box-shadow: var(--shadow);
+    padding: 12px 14px; margin-bottom: 8px; border-left: 4px solid var(--line);
   }
   .notice.pinned { border-left-color: var(--accent); background: #fffaf1; }
-  .notice .n-top { display: flex; justify-content: space-between; align-items: baseline; gap: 8px; }
-  .notice .n-title { font-size: 15px; font-weight: 800; color: var(--coffee); word-break: keep-all; }
+  .notice .n-top { display: flex; justify-content: space-between; align-items: center; gap: 8px; }
+  .notice.has-body .n-top { cursor: pointer; }
+  .notice.has-body .n-top::after { content: '▾'; font-size: 10px; color: var(--muted); flex-shrink: 0; }
+  .notice.open.has-body .n-top::after { content: '▴'; }
+  .notice .n-title { font-size: 15px; font-weight: 800; color: var(--coffee); word-break: keep-all; flex: 1; min-width: 0; }
   .notice .n-date { font-size: 11px; color: var(--muted); flex-shrink: 0; }
-  .notice .n-body { font-size: 14px; color: var(--text); margin-top: 6px; white-space: pre-wrap; word-break: break-word; }
+  .notice .n-body { display: none; font-size: 14px; color: var(--text); margin-top: 8px; white-space: pre-wrap; word-break: break-word; }
+  .notice.open .n-body { display: block; }
   .notice .pin-tag { font-size: 10px; background: var(--accent); color: #fff; border-radius: 5px; padding: 1px 5px; margin-right: 5px; vertical-align: middle; }
   .notice .n-actions { margin-top: 10px; display: flex; gap: 8px; }
 
@@ -1856,6 +1860,12 @@ function sessionEnded(s){
   if(!end) end = '23:59';
   return new Date(s.date+'T'+end) < new Date();
 }
+// 세션 장소 — 링크 있으면 클릭 시 이동
+function sessPlaceHtml(s){
+  const url = s && s.placeUrl;
+  if (url && /^https?:\/\//i.test(url)) return `<a href="${esc(url)}" target="_blank" rel="noopener" style="color:inherit;text-decoration:underline">${esc(s.place)} ↗</a>`;
+  return esc(s.place);
+}
 async function nearestSession() { return (await upcomingSessions())[0]; }
 async function currentSession() { return nearestSession(); }   // 하위호환
 function sessChipLabel(s) {
@@ -2111,9 +2121,9 @@ async function renderHome() {
     const c = cnt(s);
     return `
     <div class="session-card">
-      <div class="lbl">${s.label?esc(s.label):(i===0?'다음 세션':'세션')}</div>
+      ${s.label?`<div class="lbl">${esc(s.label)}</div>`:''}
       <div class="when">${fmtSessionDate(s.date, s.time, s.endTime)}</div>
-      <div class="where">${esc(s.place)}</div>
+      <div class="where">${sessPlaceHtml(s)}</div>
       <div class="att-mini">
         <span><b>${c.yes}</b> 참석</span><span><b>${c.maybe}</b> 미정</span>
         <span style="margin-left:auto"><a href="#" onclick="openAtt('${s.id}');return false;" style="color:#14281b;text-decoration:underline">참석 체크 →</a></span>
@@ -2137,14 +2147,16 @@ async function renderHome() {
   if (vnotices.length === 0) {
     html += `<div class="card"><div class="empty">아직 공지가 없어요.</div></div>`;
   } else {
-    html += vnotices.map(n => `
-      <div class="notice ${n.pinned?'pinned':''}">
-        <div class="n-top">
+    html += vnotices.map(n => {
+      const hasBody = !!(n.body && String(n.body).trim());
+      return `<div class="notice ${n.pinned?'pinned':''}${hasBody?' has-body':''}">
+        <div class="n-top"${hasBody?` onclick="this.parentNode.classList.toggle('open')"`:''}>
           <div class="n-title">${n.pinned?'<span class="pin-tag">고정</span>':''}${esc(n.title)}</div>
           <div class="n-date">${noticeDateLabel(n.created_at)}</div>
         </div>
-        ${n.body?`<div class="n-body">${linkify(n.body)}</div>`:''}
-      </div>`).join('');
+        ${hasBody?`<div class="n-body">${linkify(n.body)}</div>`:''}
+      </div>`;
+    }).join('');
   }
 
   el.innerHTML = html;
@@ -2299,7 +2311,7 @@ async function renderAtt() {
     <div class="session-card">
       <div class="lbl">${sess.label?esc(sess.label):'참석 체크'}</div>
       <div class="when">${fmtSessionDate(sess.date, sess.time, sess.endTime)}</div>
-      <div class="where">${esc(sess.place)}</div>
+      <div class="where">${sessPlaceHtml(sess)}</div>
     </div>`;
 
   const meActive = attMe && members.some(m=>m.id===attMe);
@@ -2694,6 +2706,7 @@ async function renderOps() {
     ${opsEditSessionId ? '' : (opsAddSessionOpen ? `
     <div class="row"><div class="field"><label>날짜</label><input id="opsSessDate" type="date" value="${defDate}" onchange="opsSyncDeadline()"></div><div class="field"><label>시작</label><input id="opsSessTime" type="time" value="21:00" onchange="endPlus2('opsSessTime','opsSessEnd')"></div><div class="field"><label>종료 <span style="color:var(--muted);font-weight:400">(시작+2시간 기본)</span></label><input id="opsSessEnd" type="time" value="23:00"></div></div>
     <div class="field"><label>장소</label><input id="opsSessPlace" value="상암 풋살장" maxlength="40"></div>
+    <div class="field"><label>장소 링크 <span style="color:var(--muted);font-weight:400">(지도 URL · 선택)</span></label><input id="opsSessPlaceUrl" placeholder="https://naver.me/..." maxlength="300"></div>
     <div class="field"><label>참석 신청 마감 <span style="color:var(--muted);font-weight:400">(기본: 전주 일요일 23:59)</span></label><input id="opsSessDeadline" type="date" value="${autoDeadlineStr(defDate)}"></div>
     <div class="field"><label>이름/메모 <span style="color:var(--muted);font-weight:400">(선택, 예: EVENT, A매치)</span></label><input id="opsSessLabel" maxlength="30" placeholder="예: EVENT, A매치"></div>
     <div class="field"><label>세부내용 <span style="color:var(--muted);font-weight:400">(선택 · 소개 페이지에서 클릭하면 펼쳐짐 · 링크 자동연결)</span></label><textarea id="opsSessDesc" rows="2" placeholder="행사 안내, 준비물, 링크 등"></textarea></div>
@@ -2705,6 +2718,7 @@ async function renderOps() {
           return `<div class="ops-row" style="flex-direction:column;align-items:stretch;gap:0">
             <div class="row"><div class="field"><label>날짜</label><input id="esD" type="date" value="${s.date||''}"></div><div class="field"><label>시작</label><input id="esT" type="time" value="${s.time||'21:00'}" onchange="endPlus2('esT','esTe')"></div><div class="field"><label>종료 <span style="color:var(--muted);font-weight:400">(시작+2시간 기본)</span></label><input id="esTe" type="time" value="${s.endTime||''}"></div></div>
             <div class="field"><label>장소</label><input id="esP" value="${esc(s.place||'')}" maxlength="40"></div>
+            <div class="field"><label>장소 링크 <span style="color:var(--muted);font-weight:400">(선택)</span></label><input id="esPu" value="${esc(s.placeUrl||'')}" placeholder="https://naver.me/..." maxlength="300"></div>
             <div class="field"><label>참석 신청 마감</label><input id="esDl" type="date" value="${s.deadline||autoDeadlineStr(s.date)}"></div>
             <div class="field"><label>이름/메모 <span style="color:var(--muted);font-weight:400">(예: EVENT, A매치)</span></label><input id="esL" value="${esc(s.label||'')}" maxlength="30"></div>
             <div class="field"><label>세부내용 <span style="color:var(--muted);font-weight:400">(클릭 시 펼쳐짐)</span></label><textarea id="esDesc" rows="2">${esc(s.desc||'')}</textarea></div>
@@ -2873,11 +2887,12 @@ async function opsAddSession() {
   const time = document.getElementById('opsSessTime').value || '21:00';
   const endTime = document.getElementById('opsSessEnd').value || '';
   const place = document.getElementById('opsSessPlace').value.trim() || '상암 풋살장';
+  const placeUrl = document.getElementById('opsSessPlaceUrl').value.trim();
   const deadline = document.getElementById('opsSessDeadline').value || autoDeadlineStr(date);
   const label = document.getElementById('opsSessLabel').value.trim();
   const desc = document.getElementById('opsSessDesc').value.trim();
   const list = await getSessions();
-  list.push({ id:'s'+Date.now().toString(36)+Math.random().toString(36).slice(2,5), date, time, endTime, place, deadline, label, desc });
+  list.push({ id:'s'+Date.now().toString(36)+Math.random().toString(36).slice(2,5), date, time, endTime, place, placeUrl, deadline, label, desc });
   if (!(await saveSettings({ sessions: list }))) return;
   opsAddSessionOpen = false;
   await renderOps(); toast('세션을 추가했어요');
@@ -2900,6 +2915,7 @@ async function opsSaveSession(id) {
   s.time = document.getElementById('esT').value || '21:00';
   s.endTime = document.getElementById('esTe').value || '';
   s.place = document.getElementById('esP').value.trim() || '상암 풋살장';
+  s.placeUrl = document.getElementById('esPu').value.trim();
   s.deadline = document.getElementById('esDl').value || autoDeadlineStr(date);
   s.label = document.getElementById('esL').value.trim();
   s.desc = document.getElementById('esDesc').value.trim();

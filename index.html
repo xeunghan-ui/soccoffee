@@ -20,8 +20,10 @@
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <style>
   :root{
-    --green:#15281b; --green-2:#1e3526; --sand:#ddd6b6; --cream:#ece6d2; --muted:#95a083; --line:#33492f;
+    --green:#15281b; --green-2:#1e3526; --sand:#ddd6b6; --cream:#ece6d2; --muted:#a4b39a; --line:#33492f;
     --disp:"Anton","Pretendard",sans-serif;
+    --gold:#e6a92e; --gold-bright:#f5c95c; --gold-dim:#9c7a2a; --gold-bg:rgba(230,169,46,.14);
+    --win:#46b381; --alert:#dc5238;
   }
   *{box-sizing:border-box;}
   body{
@@ -31,7 +33,7 @@
   a{color:inherit;}
   .wrap{max-width:760px; margin:0 auto; padding:0 18px;}
   section{padding:46px 0;}
-  .eyebrow{font-size:12px; font-weight:900; letter-spacing:3px; text-transform:uppercase; color:var(--sand); opacity:.85;}
+  .eyebrow{font-size:12px; font-weight:900; letter-spacing:3px; text-transform:uppercase; color:var(--gold); opacity:1;}
   h2{font-size:24px; font-weight:900; letter-spacing:-0.5px; margin:6px 0 18px; color:#f3eed9;}
   p{color:var(--cream); opacity:.92;}
   .muted{color:var(--muted);}
@@ -42,7 +44,7 @@
   .anchnav{position:sticky; top:0; z-index:20; display:flex; gap:4px; justify-content:center; flex-wrap:nowrap; overflow-x:auto; background:#0a140d; border-bottom:1px solid var(--line); padding:9px 8px;}
   .anchnav::-webkit-scrollbar{display:none;}
   .anchnav a{font-size:12px; font-weight:900; letter-spacing:1px; color:var(--cream); opacity:.72; text-decoration:none; padding:6px 13px; border-radius:999px; white-space:nowrap;}
-  .anchnav a:hover{opacity:1; background:var(--green-2);}
+  .anchnav a:hover{opacity:1; background:var(--green-2); color:var(--gold);}
 
   /* 히어로 — 저지 핀스트라이프 + 크레스트 */
   .hero{
@@ -57,7 +59,8 @@
   .hero .tag{font-size:14px; color:var(--cream); opacity:.85; margin-top:14px;}
   .hero .cta{margin-top:22px; display:flex; gap:8px; justify-content:center; flex-wrap:wrap;}
   .hero .cta a{display:inline-flex; align-items:center; gap:7px; padding:12px 22px; border-radius:999px; font-weight:900; font-size:13px; letter-spacing:.3px; text-decoration:none;}
-  .hero .btn-member{background:var(--sand); color:var(--green);}
+  .hero .btn-member{background:var(--gold); color:#23180a;}
+  .hero .btn-member:hover{background:var(--gold-bright);}
   .hero .btn-insta{background:var(--green-2); color:var(--sand); border:1px solid var(--line);}
   .hero .btn-insta svg{width:16px; height:16px;}
 
@@ -75,8 +78,8 @@
 
   /* 스탯 — 스코어보드 */
   .stats{display:grid; grid-template-columns:repeat(4,1fr); gap:10px;}
-  .stat{background:var(--green-2); border:1px solid var(--line); border-top:3px solid var(--sand); border-radius:12px; padding:18px 8px; text-align:center;}
-  .stat .n{font-size:30px; font-weight:400; color:var(--sand); font-family:var(--disp); letter-spacing:.5px;}
+  .stat{background:var(--green-2); border:1px solid var(--line); border-top:3px solid var(--gold); border-radius:12px; padding:18px 8px; text-align:center;}
+  .stat .n{font-size:30px; font-weight:400; color:var(--gold-bright); font-family:var(--disp); letter-spacing:.5px;}
   .stat .l{font-size:11px; color:var(--muted); font-weight:700; margin-top:4px;}
   @media(max-width:480px){ .stats{grid-template-columns:repeat(2,1fr);} }
 

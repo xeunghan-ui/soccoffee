@@ -375,7 +375,8 @@
   .att-row .st-set .st.on { opacity: 1; }
   /* 운영진 일괄 수정: 저장 바 + 변경(미저장) 표시 */
   .save-bar { position: fixed; left: 12px; right: 12px; bottom: 14px; max-width: 456px; margin: 0 auto; display: flex; align-items: center; justify-content: space-between; gap: 10px; background: var(--green); color: var(--sand); border-radius: 12px; padding: 13px 16px; box-shadow: 0 8px 28px rgba(0,0,0,.4); z-index: 200; }
-  .save-bar .save-n { font-size: 13px; font-weight: 800; }
+  .save-bar .save-n { font-size: 13px; font-weight: 800; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .save-bar > span { flex-shrink: 0; }
   .save-bar button { font-family: inherit; border: none; border-radius: 8px; padding: 8px 16px; font-weight: 800; cursor: pointer; font-size: 13px; }
   .save-bar .ok { background: var(--sand); color: var(--green); }
   .save-bar .cancel { background: transparent; color: var(--sand); border: 1px solid rgba(255,255,255,.45); }

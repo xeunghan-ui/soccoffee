@@ -374,12 +374,12 @@
   .att-row .st-set .st { padding: 4px 9px; opacity: .35; }
   .att-row .st-set .st.on { opacity: 1; }
   /* 운영진 일괄 수정: 저장 바 + 변경(미저장) 표시 */
-  .save-bar { position: fixed; left: 12px; right: 12px; bottom: 14px; max-width: 456px; margin: 0 auto; display: flex; align-items: center; justify-content: space-between; gap: 10px; background: var(--green); color: var(--sand); border-radius: 12px; padding: 13px 16px; box-shadow: 0 8px 28px rgba(0,0,0,.4); z-index: 200; }
-  .save-bar .save-n { font-size: 13px; font-weight: 800; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-  .save-bar > span { flex-shrink: 0; }
+  .save-bar { position: fixed; left: 12px; right: 12px; bottom: 14px; max-width: 456px; margin: 0 auto; display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 8px 10px; background: var(--green, #2f5a3f); color: var(--sand, #ddd6b6); border-radius: 12px; padding: 13px 16px; box-shadow: 0 8px 28px rgba(0,0,0,.4); z-index: 200; }
+  .save-bar .save-n { font-size: 13px; font-weight: 800; flex: 1 1 auto; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .save-bar .sb-actions { display: flex; gap: 8px; flex: 0 0 auto; }
   .save-bar button { font-family: inherit; border: none; border-radius: 8px; padding: 8px 16px; font-weight: 800; cursor: pointer; font-size: 13px; }
-  .save-bar .ok { background: var(--sand); color: var(--green); }
-  .save-bar .cancel { background: transparent; color: var(--sand); border: 1px solid rgba(255,255,255,.45); }
+  .save-bar .ok { background: #ddd6b6; color: #14281b; }
+  .save-bar .cancel { background: transparent; color: #ece6d2; border: 1px solid rgba(255,255,255,.45); }
   .dirty-dot { color: var(--accent); font-size: 9px; vertical-align: middle; }
   .att-row.dirty, .dues-row.dirty { background: rgba(212,160,60,.10); border-radius: 8px; }
 
@@ -2458,7 +2458,7 @@ async function renderAtt() {
       </div>
       <div class="att-list">${listHtml}</div>
     </div>
-    ${nDraft ? `<div class="save-bar"><span class="save-n">변경 ${nDraft}건 (미저장)</span><span style="display:flex;gap:8px"><button class="cancel" onclick="attCancelDraft()">취소</button><button class="ok" onclick="attSaveDraft()">저장</button></span></div>` : ''}`;
+    ${nDraft ? `<div class="save-bar"><span class="save-n">변경 ${nDraft}건 (미저장)</span><span class="sb-actions"><button class="cancel" onclick="attCancelDraft()">취소</button><button class="ok" onclick="attSaveDraft()">저장</button></span></div>` : ''}`;
   el.innerHTML = html;
 }
 function pickAttSession(id){ attSessionId = id; attDraft = {}; renderAtt(); }
@@ -2657,7 +2657,7 @@ async function renderDues() {
         }).join('')}
       </div>
     </div>
-    ${nDraft ? `<div class="save-bar"><span class="save-n">변경 ${nDraft}건 (미저장)</span><span style="display:flex;gap:8px"><button class="cancel" onclick="duesCancelDraft()">취소</button><button class="ok" onclick="duesSaveDraft()">저장</button></span></div>` : ''}`;
+    ${nDraft ? `<div class="save-bar"><span class="save-n">변경 ${nDraft}건 (미저장)</span><span class="sb-actions"><button class="cancel" onclick="duesCancelDraft()">취소</button><button class="ok" onclick="duesSaveDraft()">저장</button></span></div>` : ''}`;
   el.innerHTML = html;
 }
 // 본인/운영진 단건 즉시 토글 (회원 본인 self-service용)

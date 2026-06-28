@@ -37,7 +37,7 @@
     --radius: 12px;
     --shadow: none;
     /* === 디자인 캐논 v0.1 — 에너지 액센트(레트로 골드) + 의미 색 === */
-    --gold: #e6a92e; --gold-bright: #f5c95c; --gold-dim: #9c7a2a; --gold-bg: rgba(230,169,46,.14);
+    --gold: #c2923a; --gold-bright: #d8b461; --gold-dim: #8a6b2e; --gold-bg: rgba(194,146,58,.11);
     --win: #46b381; --win-bg: rgba(70,179,129,.14);
     --alert: #dc5238; --alert-bg: rgba(220,82,56,.13);
     --disp: "Anton", "Pretendard", sans-serif;
@@ -463,11 +463,11 @@
     text-transform: uppercase; font-size: 15px; }
   .refresh { color: var(--gold); font-weight: 800; }
 
-  /* 버튼 — 골드 CTA + 딥그린 텍스트 (레트로) */
-  .btn { background: var(--gold); color: #23180a; border-radius: 10px; letter-spacing: -0.2px; }
-  .btn:hover { background: var(--gold-bright); }
-  .btn.accent { background: var(--gold); color: #23180a; }
-  .btn.accent:hover { background: var(--gold-bright); }
+  /* 버튼 — 샌드 채움 + 딥그린 텍스트 */
+  .btn { background: var(--accent); color: #14281b; border-radius: 10px; letter-spacing: -0.2px; }
+  .btn:hover { background: #cfc7a2; }
+  .btn.accent { background: var(--accent); color: #14281b; }
+  .btn.accent:hover { background: #cfc7a2; }
   .btn.ghost { color: #ece6d2; border: 1px solid #4a6450; background: transparent; }
   .btn:disabled { background: #4a6450; color: #97a085; }
 
@@ -564,17 +564,17 @@
   .cand { background: #1e3526; border-color: #33492f; }
   .cand .nm { color: #ece6d2; }
   .cand .tr { color: #95a083; }
-  .cand:hover { border-color: var(--gold); }
-  .cand.sel { background: var(--gold); border-color: var(--gold); box-shadow: none; }
-  .cand.sel .nm { color: #23180a; }
-  .cand.sel .tr { color: #5a4310; }
+  .cand:hover { border-color: var(--accent); }
+  .cand.sel { background: var(--accent); border-color: var(--accent); box-shadow: none; }
+  .cand.sel .nm { color: #14281b; }
+  .cand.sel .tr { color: #3a4a32; }
   .cand .av { background: #2a3d30; color: #ece6d2; }
-  .cand.sel .av { background: #23180a; color: var(--gold-bright); }
+  .cand.sel .av { background: #14281b; color: var(--accent); }
   input:focus, select:focus, textarea:focus { border-color: #14281b; }
   .rider-chip { background: #2a3d30; color: #ece6d2; }
   .rider-chip .treat { color: var(--gold); }
   .treat-opt { background: #1e3526; color: #d6cfb4; border-color: #3a523f; }
-  .treat-opt.selected { background: var(--gold); border-color: var(--gold); color: #23180a; }
+  .treat-opt.selected { background: var(--accent); border-color: var(--accent); color: #14281b; }
   .voter-bar { background: #1e3526; border-color: #33492f; }
   .voter-bar .who, .voter-bar .who b { color: #ece6d2; }
   .toast { background: #ddd6b6; color: #14281b; border-radius: 8px; }
@@ -595,7 +595,7 @@
   .ops-subtabs::-webkit-scrollbar { display: none; }
   .ops-subtab { flex: 1 0 auto; padding: 9px 14px; border-radius: 9px; border: 1px solid var(--line);
     background: #1e3526; color: #ece6d2; font-weight: 800; font-size: 13px; cursor: pointer; font-family: inherit; white-space: nowrap; }
-  .ops-subtab.on { background: var(--gold); color: #23180a; border-color: var(--gold); }
+  .ops-subtab.on { background: var(--accent); color: #14281b; border-color: var(--accent); }
 
   /* 모바일 운영진 화면 최적화 */
   @media (max-width: 460px){
@@ -622,11 +622,11 @@
   .rk-tabs::-webkit-scrollbar { display: none; }
   .rk-tab { flex: 1 0 auto; padding: 9px 13px; border-radius: 9px; border: 1px solid var(--line);
     background: #1e3526; color: #ece6d2; font-weight: 800; font-size: 13px; cursor: pointer; font-family: inherit; white-space: nowrap; }
-  .rk-tab.on { background: var(--gold); color: #23180a; border-color: var(--gold); }
+  .rk-tab.on { background: var(--accent); color: #14281b; border-color: var(--accent); }
   .rk-years { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 12px; }
   .rk-year { padding: 5px 11px; border-radius: 20px; border: 1px solid var(--line); background: transparent;
     color: #95a083; font-size: 12px; font-weight: 700; cursor: pointer; font-family: inherit; }
-  .rk-year.on { background: var(--gold); color: #23180a; border-color: var(--gold); }
+  .rk-year.on { background: var(--accent); color: #14281b; border-color: var(--accent); }
   .rk-note { font-size: 12px; color: #95a083; margin-bottom: 12px; }
   .rk-podium { display: grid; gap: 8px; margin-bottom: 16px; }
   .rk-card { background: #1e3526; border: 1px solid var(--line); border-top: 3px solid var(--gold); border-radius: 12px; padding: 13px 10px; text-align: center; }
@@ -648,12 +648,12 @@
   .vote-cats { display: flex; gap: 8px; margin-bottom: 14px; }
   .vote-cat { flex: 1; padding: 11px 8px; border-radius: 10px; border: 1px solid var(--line);
     background: #1e3526; color: #ece6d2; font-weight: 800; font-size: 14px; cursor: pointer; font-family: inherit; }
-  .vote-cat.on { background: var(--gold); color: #23180a; border-color: var(--gold); }
+  .vote-cat.on { background: var(--accent); color: #14281b; border-color: var(--accent); }
 
   /* 세션 선택 칩 / 운영 행 */
   .sess-tabs { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 12px; }
   .sess-chip { padding: 8px 13px; border-radius: 20px; border: 1px solid var(--line); background: #1e3526; color: #ece6d2; font-weight: 700; font-size: 13px; cursor: pointer; font-family: inherit; }
-  .sess-chip.on { background: var(--gold); color: #23180a; border-color: var(--gold); }
+  .sess-chip.on { background: var(--accent); color: #14281b; border-color: var(--accent); }
   .ops-row { display: flex; justify-content: space-between; align-items: center; gap: 10px; padding: 11px 0; border-top: 1px solid var(--line); font-size: 14px; }
   .ops-row:first-child { border-top: none; }
 
@@ -753,6 +753,7 @@
   <div id="tab-more" class="hidden"><div id="moreContent"></div></div>
   <div id="tab-mine" class="hidden"><div id="mineContent"></div></div>
   <div id="tab-faq" class="hidden"><div id="faqContent"></div></div>
+  <div id="tab-squad" class="hidden"><div id="squadContent"></div></div>
   <div id="tab-att" class="hidden"><div id="attContent"></div></div>
   <div id="tab-dues" class="hidden"><div id="duesContent"></div></div>
   <div id="tab-ops" class="hidden"><div id="opsContent"></div></div>
@@ -972,7 +973,7 @@ async function deleteRide(id) {
 }
 
 /* ---------- UI ---------- */
-const ALL_TABS = ['home','att','dues','list','potm','rank','more','mine','faq','ops'];
+const ALL_TABS = ['home','att','dues','list','potm','rank','more','mine','faq','squad','ops'];
 function switchTab(tab) {
   const navPrimary = ['home','att','list','rank'];
   const navActive = navPrimary.includes(tab) ? tab : 'more';
@@ -992,6 +993,7 @@ function switchTab(tab) {
   if (tab === 'more') renderMore();
   if (tab === 'mine') renderMine();
   if (tab === 'faq')  renderFaq();
+  if (tab === 'squad') renderSquad();
 }
 
 // 카풀 등록 패널 펼치기/접기 (등록 탭을 카풀 탭으로 통합)
@@ -1928,6 +1930,7 @@ function renderMore() {
   const items = [
     ['dues', '회비', '이번 달 납부 현황'],
     ['potm', '투표', '이달의 선수 · 가장 성장한 선수'],
+    ['squad', '팀 현황', '활동 · 휴면 인원 · 스쿼드'],
     ['faq', '회칙 · 안내', '회비 · 휴면 · 참석 마감 규정'],
   ];
   if (admin) items.push(['ops', '운영진', '공지 · 세션 · 회비 · 설정']);
@@ -2111,7 +2114,18 @@ async function renderHome() {
       </div>`).join('');
   }
 
-  html += `<div class="section-title">${potmMonthLabel(month)} 팀 현황</div>`;
+  el.innerHTML = html;
+}
+
+/* ===== 팀 현황(명단) — 서브 페이지 ===== */
+function renderSquad() {
+  const el = document.getElementById('squadContent');
+  const month = potmMonth();
+  const members = activeMembers(month);
+  const white = members.filter(m => m.team === 'WHITE').length;
+  const black = members.filter(m => m.team === 'BLACK').length;
+  const dormant = ROSTER.filter(p => dormantMonthsOf(p).includes(month)).length;
+  let html = `<div class="section-title">${potmMonthLabel(month)} 팀 현황</div>`;
   if (teamSplitOn) {
     html += `
     <p class="hint" style="text-align:center;margin:0 0 12px">활동 ${members.length}명 · WHITE ${white} · BLACK ${black}${dormant?` · 휴면 ${dormant}명`:''}</p>
@@ -2121,7 +2135,6 @@ async function renderHome() {
     <p class="hint" style="text-align:center;margin:0 0 12px">활동 ${members.length}명${dormant?` · 휴면 ${dormant}명`:''}</p>
     ${fullSquadBlock(members)}`;
   }
-
   el.innerHTML = html;
 }
 

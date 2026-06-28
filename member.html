@@ -723,6 +723,14 @@
   .pc-stat.ok { color: var(--win); }
   .pc-stat.no { color: var(--alert); }
   .pc-stat.wait { color: var(--gold-bright); }
+  /* 팀 현황(팀빌더 명단) 2열 그리드 */
+  .sq-grp-h { font-size: 12px; font-weight: 800; color: var(--muted); margin: 6px 0 8px; display: flex; justify-content: space-between; }
+  .sq-grp-h span { font-weight: 700; }
+  .sq-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 16px; }
+  .sq-grid.dim .sq-chip { opacity: .5; }
+  .sq-chip { display: flex; align-items: center; gap: 10px; background: var(--card); border: 1px solid var(--line); border-radius: 10px; padding: 9px 12px; min-width: 0; }
+  .sq-no { font-family: var(--disp); font-size: 19px; color: var(--accent); min-width: 26px; text-align: center; flex-shrink: 0; }
+  .sq-nm { font-size: 14px; font-weight: 700; color: var(--cream); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 </style>
 </head>
 <body>
@@ -2121,25 +2129,27 @@ async function renderHome() {
   el.innerHTML = html;
 }
 
-/* ===== 팀 현황(명단) — 서브 페이지 ===== */
-function renderSquad() {
+/* ===== 팀 현황(팀빌더 명단 연동) — 서브 페이지 ===== */
+async function renderSquad() {
   const el = document.getElementById('squadContent');
+  el.innerHTML = `<div class="empty">불러오는 중...</div>`;
+  let tb = null;
+  try { tb = await fetchTeamBuilder(); } catch(e) {}
   const month = potmMonth();
-  const members = activeMembers(month);
-  const white = members.filter(m => m.team === 'WHITE').length;
-  const black = members.filter(m => m.team === 'BLACK').length;
-  const dormant = ROSTER.filter(p => dormantMonthsOf(p).includes(month)).length;
-  let html = `<div class="section-title">${potmMonthLabel(month)} 팀 현황</div>`;
-  if (teamSplitOn) {
-    html += `
-    <p class="hint" style="text-align:center;margin:0 0 12px">활동 ${members.length}명 · WHITE ${white} · BLACK ${black}${dormant?` · 휴면 ${dormant}명`:''}</p>
-    <div class="squad-wrap">${squadBlock(members,'WHITE')}${squadBlock(members,'BLACK')}</div>`;
-  } else {
-    html += `
-    <p class="hint" style="text-align:center;margin:0 0 12px">활동 ${members.length}명${dormant?` · 휴면 ${dormant}명`:''}</p>
-    ${fullSquadBlock(members)}`;
-  }
-  el.innerHTML = html;
+  const players = (tb && Array.isArray(tb.players) ? tb.players : []).filter(p => (p.status||'active') !== 'former');
+  if (!players.length) { el.innerHTML = `<div class="section-title">팀 현황</div><div class="card"><div class="empty">명단을 불러오지 못했어요.</div></div>`; return; }
+  const isDorm = p => (p.status === 'dormant') || (p.dormantMonths||[]).includes(month);
+  const active = [], friends = [], dormant = [];
+  players.forEach(p => { isDorm(p) ? dormant.push(p) : (p.status === 'friends' ? friends.push(p) : active.push(p)); });
+  const sortJ = (a,b) => ((a.jersey==null?999:a.jersey) - (b.jersey==null?999:b.jersey)) || a.name.localeCompare(b.name,'ko');
+  [active, friends, dormant].forEach(g => g.sort(sortJ));
+  const chip = p => `<div class="sq-chip"><span class="sq-no">${p.jersey!=null?p.jersey:'–'}</span><span class="sq-nm">${esc(p.name)}</span></div>`;
+  const grp = (title, arr, dim) => arr.length ? `<div class="sq-grp-h"><span>${title}</span><span>${arr.length}명</span></div><div class="sq-grid${dim?' dim':''}">${arr.map(chip).join('')}</div>` : '';
+  el.innerHTML = `<div class="section-title">${potmMonthLabel(month)} 팀 현황</div>
+    <p class="hint" style="text-align:center;margin:0 0 14px">팀빌더 명단 기준 · 활동 ${active.length}${friends.length?` · 친구 ${friends.length}`:''}${dormant.length?` · 휴면 ${dormant.length}`:''}</p>
+    ${grp('활동', active, false)}
+    ${grp('싸커피 친구', friends, false)}
+    ${grp('이번 달 휴면', dormant, true)}`;
 }
 
 /* ============================================================

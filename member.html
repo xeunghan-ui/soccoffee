@@ -2158,7 +2158,7 @@ async function renderHome() {
         ? `<div style="margin-top:14px;padding-top:14px;border-top:1px solid var(--line);font-size:12px;color:var(--muted);line-height:1.6">이번 달 휴면이라 참석 신청 대상이 아니에요.<br>게스트 참여를 원하는 경우 운영진에게 문의 부탁드립니다.</div>`
         : `<div style="margin-top:14px;padding-top:14px;border-top:1px solid var(--line)">
         <div style="font-size:11px;color:var(--muted);font-weight:800;letter-spacing:.04em;margin-bottom:9px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${sessLabel} 참석</div>
-        <div style="display:flex;gap:6px">${qbtn('yes','참석','var(--win)','var(--cream)')}${qbtn('maybe','미정','var(--accent)','#14281b')}${qbtn('no','불참','var(--alert)','var(--cream)')}</div>
+        <div style="display:flex;gap:6px">${qbtn('yes','참석','var(--win)','var(--cream)')}${qbtn('no','불참','var(--alert)','var(--cream)')}${qbtn('maybe','미정','var(--accent)','#14281b')}</div>
       </div>`) : ''}
       ${myYes.length ? `<div style="margin-top:12px;padding-top:12px;border-top:1px solid var(--line)">
         <div style="font-size:11px;color:var(--muted);font-weight:800;letter-spacing:.04em;margin-bottom:4px">참석 예정 ${myYes.length}개</div>
@@ -2181,7 +2181,7 @@ async function renderHome() {
       <div class="where">${sessPlaceHtml(s)}</div>
       <div class="att-mini">
         ${isAdmin()
-          ? `<span><b>${c.yes}</b> 참석</span><span><b>${c.maybe}</b> 미정</span><span><b>${c.no}</b> 불참</span><span style="opacity:.6">응답 ${c.responded}/${c.total}</span>`
+          ? `<span><b>${c.yes}</b> 참석</span><span><b>${c.no}</b> 불참</span><span><b>${c.maybe}</b> 미정</span><span style="opacity:.6">응답 ${c.responded}/${c.total}</span>`
           : `<span><b>${c.yes}</b> 참석</span><span><b>${c.maybe}</b> 미정</span>`}
         <span style="margin-left:auto"><a href="#" onclick="openAtt('${s.id}');return false;" style="color:#14281b;text-decoration:underline">참석 체크 →</a></span>
       </div>
@@ -2415,8 +2415,8 @@ async function renderAtt() {
     const st = admin
       ? `<span class="st-set">`
         + `<button class="st yes ${s==='yes'?'on':''}" onclick="attDraftSet(${m.id},'yes')">참석</button>`
-        + `<button class="st maybe ${s==='maybe'?'on':''}" onclick="attDraftSet(${m.id},'maybe')">미정</button>`
         + `<button class="st no ${s==='no'?'on':''}" onclick="attDraftSet(${m.id},'no')">불참</button>`
+        + `<button class="st maybe ${s==='maybe'?'on':''}" onclick="attDraftSet(${m.id},'maybe')">미정</button>`
         + `</span>`
       : `<span class="st ${s}">${lbl}</span>`;
     return `<div class="att-row${dirty?' dirty':''}"><span class="js">${m.jersey!=null?m.jersey:''}</span><span class="nm">${esc(m.name)}${dirty?' <span class="dirty-dot">●</span>':''}</span>${st}</div>`;
@@ -2431,7 +2431,7 @@ async function renderAtt() {
       return `<div class="att-grp-h">${label} <span>참석 ${gy} / ${gm.length}명</span></div>${gm.map(rosterRow).join('')}`;
     }).join('');
   } else {
-    listHtml = [['yes','참석'],['maybe','미정'],['no','불참'],['none','미응답']].map(([key,label])=>{
+    listHtml = [['yes','참석'],['no','불참'],['maybe','미정'],['none','미응답']].map(([key,label])=>{
       const gm = sortedM.filter(m=>eff(m.id)===key);
       if (!gm.length) return '';
       return `<div class="att-grp-h">${label} <span>${gm.length}명</span></div>${gm.map(rosterRow).join('')}`;
@@ -2441,8 +2441,8 @@ async function renderAtt() {
   html += `
     <div class="att-counts">
       <div class="att-cnt yes"><div class="num">${yes}</div><div class="cap">참석</div></div>
-      <div class="att-cnt maybe"><div class="num">${maybe}</div><div class="cap">미정</div></div>
       <div class="att-cnt no"><div class="num">${no}</div><div class="cap">불참</div></div>
+      <div class="att-cnt maybe"><div class="num">${maybe}</div><div class="cap">미정</div></div>
     </div>
     <div class="card">
       <div class="section-title" style="margin:0 0 8px;display:flex;justify-content:space-between;align-items:center">

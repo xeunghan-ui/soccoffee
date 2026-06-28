@@ -2541,10 +2541,19 @@ async function fetchDues(month) {
 }
 async function setDuesPaid(month, memberId, paid, amount) {
   if (USE_DB) {
-    const { error } = await sb.from('dues').upsert(
-      { month, member_id:memberId, paid, amount, updated_at:new Date().toISOString() },
-      { onConflict:'month,member_id' });
-    if (error) { toast('저장 오류: ' + error.message); return false; }
+    // onConflict 유니크 제약에 의존하지 않도록 조회 후 update/insert (제약 없어도 동작)
+    const { data: ex, error: selErr } = await sb.from('dues')
+      .select('id').eq('month', month).eq('member_id', memberId).limit(1);
+    if (selErr) { toast('저장 오류: ' + selErr.message); return false; }
+    if (ex && ex.length) {
+      const { error } = await sb.from('dues')
+        .update({ paid, amount, updated_at:new Date().toISOString() }).eq('id', ex[0].id);
+      if (error) { toast('저장 오류: ' + error.message); return false; }
+    } else {
+      const { error } = await sb.from('dues')
+        .insert({ month, member_id:memberId, paid, amount, updated_at:new Date().toISOString() });
+      if (error) { toast('저장 오류: ' + error.message); return false; }
+    }
     return true;
   }
   let a=[]; try { a = JSON.parse(localStorage.getItem(DUES_STORE)) || []; } catch(e){}

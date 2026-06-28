@@ -308,7 +308,7 @@
   .session-card .lbl { font-size: 12px; font-weight: 700; color: #cdeBD8; color: #d6efe0; letter-spacing: .4px; }
   .session-card .when { font-size: 22px; font-weight: 800; margin: 4px 0 2px; }
   .session-card .where { font-size: 14px; color: #e6f4ec; }
-  .session-card .att-mini { margin-top: 12px; display: flex; gap: 14px; font-size: 13px; color: #eafbf1; }
+  .session-card .att-mini { margin-top: 12px; display: flex; flex-wrap: wrap; align-items: center; gap: 8px 13px; font-size: 13px; color: #eafbf1; }
   .session-card .att-mini b { font-size: 16px; color: #fff; }
   .session-card.none { background: #ece5db; color: var(--muted); }
   .session-card.none .when { color: var(--coffee-2); }
@@ -1419,19 +1419,21 @@ async function mergeTbMembers() {
   let tb = null;
   try { tb = await fetchTeamBuilder(); } catch(e) {}
   if (!tb || !Array.isArray(tb.players)) return;
-  const names = new Set(PLAYERS.map(p => p.name));
-  const ids = new Set(PLAYERS.map(p => p.id));
-  const add = [];
+  // 팀빌더를 명단 단일 출처로: 등번호·티어·상태·휴면을 팀빌더 기준으로 구성(전 멤버 동기화)
+  const seen = new Set();
+  const players = [];
   tb.players.forEach(tp => {
-    if ((tp.status||'active') === 'former') return;
-    if (ids.has(tp.id) || names.has(tp.name)) return;
-    names.add(tp.name); ids.add(tp.id);
-    add.push({ id:tp.id, name:tp.name, tier:tp.tier, status:tp.status||'active',
+    if ((tp.status||'active') === 'former') return;   // 탈퇴 제외
+    if (seen.has(tp.name)) return;                     // 중복 이름 방지
+    seen.add(tp.name);
+    const t = TEAM_SHEET[tp.name] || {};               // 팀(WHITE/BLACK)은 사이트 배정 유지
+    players.push({ id:tp.id, name:tp.name, tier:tp.tier, status:tp.status||'active',
       joinDate:tp.joinDate||'', friendsSince:tp.friendsSince||null,
       dormantMonths:(tp.dormantMonths||[]).slice(),
-      jersey:(tp.jersey!=null?tp.jersey:null), eng:tp.engName||'', team:'기타', cap:false });
+      jersey:(tp.jersey!=null?tp.jersey:null), eng:tp.engName||'',
+      team:t.team||'기타', cap:!!t.cap });
   });
-  if (add.length) applyPlayers(PLAYERS.concat(add));
+  if (players.length) applyPlayers(players);
 }
 
 async function fetchRoster() {
@@ -2048,10 +2050,16 @@ async function renderHome() {
   const notices = await fetchNotices();
   const attBySess = {};
   await Promise.all(sessions.map(async s => { attBySess[s.id] = await fetchAttendance(s.id); }));
-  const cnt = s => ({
-    yes: (attBySess[s.id]||[]).filter(a=>a.status==='yes').length,
-    maybe: (attBySess[s.id]||[]).filter(a=>a.status==='maybe').length
-  });
+  const cnt = s => {
+    const recs = attBySess[s.id] || [];
+    return {
+      yes: recs.filter(a=>a.status==='yes').length,
+      maybe: recs.filter(a=>a.status==='maybe').length,
+      no: recs.filter(a=>a.status==='no').length,
+      responded: members.filter(m => recs.some(a=>a.member_id===m.id)).length,
+      total: members.length
+    };
+  };
 
   const month = potmMonth();
   const members = activeMembers(month);
@@ -2125,7 +2133,9 @@ async function renderHome() {
       <div class="when">${fmtSessionDate(s.date, s.time, s.endTime)}</div>
       <div class="where">${sessPlaceHtml(s)}</div>
       <div class="att-mini">
-        <span><b>${c.yes}</b> 참석</span><span><b>${c.maybe}</b> 미정</span>
+        ${isAdmin()
+          ? `<span><b>${c.yes}</b> 참석</span><span><b>${c.maybe}</b> 미정</span><span><b>${c.no}</b> 불참</span><span style="opacity:.6">응답 ${c.responded}/${c.total}</span>`
+          : `<span><b>${c.yes}</b> 참석</span><span><b>${c.maybe}</b> 미정</span>`}
         <span style="margin-left:auto"><a href="#" onclick="openAtt('${s.id}');return false;" style="color:#14281b;text-decoration:underline">참석 체크 →</a></span>
       </div>
     </div>`;

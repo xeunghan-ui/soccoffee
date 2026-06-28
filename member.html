@@ -680,6 +680,35 @@
   .squad.white .sq-cap { background: #14281b; color: #ddd6b6; }
   .squad.black .sq-cap { background: #ddd6b6; color: #14281b; }
 
+  /* ===== 하단 네비게이션 ===== */
+  body { padding-bottom: 76px; }
+  .bottomnav { position: fixed; left: 0; right: 0; bottom: 0; z-index: 150;
+    display: flex; background: #102016; border-top: 1px solid var(--line);
+    padding: 6px 4px calc(6px + env(safe-area-inset-bottom)); }
+  .bnav-item { flex: 1; background: none; border: none; cursor: pointer; font-family: inherit;
+    display: flex; flex-direction: column; align-items: center; gap: 3px; padding: 6px 2px;
+    color: #8c9a7c; font-size: 11px; font-weight: 700; }
+  .bnav-item .bn-ico { font-size: 19px; line-height: 1; }
+  .bnav-item.active { color: var(--gold); }
+  /* 더보기 메뉴 */
+  .more-grid { display: grid; gap: 10px; }
+  .more-item { display: block; width: 100%; text-align: left; cursor: pointer; font-family: inherit;
+    background: #1e3526; border: 1px solid var(--line); border-radius: 12px; padding: 14px 16px;
+    text-decoration: none; }
+  .more-item:hover { border-color: var(--gold-dim); }
+  .more-item .mi-name { font-size: 15px; font-weight: 800; color: #ece6d2; }
+  .more-item .mi-desc { font-size: 12px; color: var(--muted); margin-top: 2px; }
+  /* FAQ / 마이페이지 */
+  .faq-q { background: #1e3526; border: 1px solid var(--line); border-radius: 12px; padding: 14px 16px; margin-bottom: 8px; }
+  .faq-q h4 { margin: 0 0 6px; font-size: 14px; font-weight: 800; color: var(--gold-bright); }
+  .faq-q p { margin: 0; font-size: 13px; color: #d6cfb4; line-height: 1.6; }
+  .mine-hero { background: #1e3526; border: 1px solid var(--line); border-top: 3px solid var(--gold); border-radius: 12px; padding: 18px 16px; text-align: center; margin-bottom: 12px; }
+  .mine-hero .num { font-family: var(--disp); font-size: 40px; line-height: 1; color: var(--gold-bright); }
+  .mine-hero .nm { font-size: 16px; font-weight: 800; margin-top: 6px; }
+  .mine-stats { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+  .mine-stat { background: #1e3526; border: 1px solid var(--line); border-radius: 12px; padding: 14px; text-align: center; }
+  .mine-stat .v { font-family: var(--disp); font-size: 26px; color: var(--cream); }
+  .mine-stat .k { font-size: 11px; color: var(--muted); font-weight: 700; margin-top: 3px; }
 </style>
 </head>
 <body>
@@ -706,17 +735,10 @@
 
   <div class="demo-note hidden" id="demoNote">데모 모드 — 데이터가 이 브라우저에만 저장돼요. (Supabase 키를 넣으면 실제 공유됩니다)</div>
 
-  <div class="tabs">
-    <button class="tab active" data-tab="home" onclick="switchTab('home')">공지</button>
-    <button class="tab" data-tab="att" onclick="switchTab('att')">참석</button>
-    <button class="tab" data-tab="dues" onclick="switchTab('dues')">회비</button>
-    <button class="tab" data-tab="list" onclick="switchTab('list')">카풀</button>
-    <button class="tab" data-tab="potm" onclick="switchTab('potm')">투표</button>
-    <button class="tab" data-tab="rank" onclick="switchTab('rank')">랭킹</button>
-    <button class="tab ops hidden" id="opsTab" data-tab="ops" onclick="switchTab('ops')">운영진</button>
-  </div>
-
   <div id="tab-home" class="hidden"><div id="homeContent"></div></div>
+  <div id="tab-more" class="hidden"><div id="moreContent"></div></div>
+  <div id="tab-mine" class="hidden"><div id="mineContent"></div></div>
+  <div id="tab-faq" class="hidden"><div id="faqContent"></div></div>
   <div id="tab-att" class="hidden"><div id="attContent"></div></div>
   <div id="tab-dues" class="hidden"><div id="duesContent"></div></div>
   <div id="tab-ops" class="hidden"><div id="opsContent"></div></div>
@@ -788,6 +810,14 @@
     <button class="admin-link" onclick="logout()">로그아웃</button>
   </div>
 </div>
+
+<nav class="bottomnav" id="bottomNav">
+  <button class="bnav-item active" data-tab="home" onclick="switchTab('home')"><span class="bn-ico">⌂</span>홈</button>
+  <button class="bnav-item" data-tab="att" onclick="switchTab('att')"><span class="bn-ico">◷</span>일정</button>
+  <button class="bnav-item" data-tab="list" onclick="switchTab('list')"><span class="bn-ico">⇄</span>카풀</button>
+  <button class="bnav-item" data-tab="rank" onclick="switchTab('rank')"><span class="bn-ico">▲</span>랭킹</button>
+  <button class="bnav-item" data-tab="more" onclick="switchTab('more')"><span class="bn-ico">≡</span>더보기</button>
+</nav>
 
 <div class="toast" id="toast"></div>
 
@@ -928,9 +958,11 @@ async function deleteRide(id) {
 }
 
 /* ---------- UI ---------- */
-const ALL_TABS = ['home','att','dues','list','potm','rank','ops'];
+const ALL_TABS = ['home','att','dues','list','potm','rank','more','mine','faq','ops'];
 function switchTab(tab) {
-  document.querySelectorAll('.tab').forEach(t => t.classList.toggle('active', t.dataset.tab === tab));
+  const navPrimary = ['home','att','list','rank'];
+  const navActive = navPrimary.includes(tab) ? tab : 'more';
+  document.querySelectorAll('.bnav-item').forEach(b => b.classList.toggle('active', b.dataset.tab === navActive));
   ALL_TABS.forEach(t => {
     const el = document.getElementById('tab-' + t);
     if (el) el.classList.toggle('hidden', t !== tab);
@@ -943,6 +975,9 @@ function switchTab(tab) {
   if (tab === 'potm') renderPotm();
   if (tab === 'rank') renderRank();
   if (tab === 'ops')  renderOps();
+  if (tab === 'more') renderMore();
+  if (tab === 'mine') renderMine();
+  if (tab === 'faq')  renderFaq();
 }
 
 // 카풀 등록 패널 펼치기/접기 (등록 탭을 카풀 탭으로 통합)
@@ -1870,6 +1905,70 @@ function squadBlock(members, team) {
       <span class="en">${esc(m.eng || '')}</span>
     </div>`).join('')}
   </div>`;
+}
+
+/* ===== 더보기 메뉴 ===== */
+function renderMore() {
+  const el = document.getElementById('moreContent');
+  const admin = isAdmin();
+  const items = [
+    ['dues', '회비', '이번 달 납부 현황'],
+    ['potm', '투표', '이달의 선수 · 가장 성장한 선수'],
+    ['mine', '마이페이지', '내 등번호 · 회비 · 기록'],
+    ['faq', '회칙 · 안내', '회비 · 휴면 · 참석 마감 규정'],
+  ];
+  if (admin) items.push(['ops', '운영진', '공지 · 세션 · 회비 · 설정']);
+  let html = `<div class="more-grid">` +
+    items.map(([t, name, desc]) =>
+      `<button class="more-item" onclick="switchTab('${t}')"><div class="mi-name">${name}</div><div class="mi-desc">${desc}</div></button>`
+    ).join('');
+  if (admin) html += `<a class="more-item" href="team/" target="_blank" rel="noopener"><div class="mi-name">팀빌더 ↗</div><div class="mi-desc">명단 · 등번호 · 휴면 · 팀 배분</div></a>`;
+  html += `</div>`;
+  el.innerHTML = html;
+}
+
+/* ===== 마이페이지 ===== */
+async function renderMine() {
+  const el = document.getElementById('mineContent');
+  el.innerHTML = `<div class="empty">불러오는 중...</div>`;
+  const me = getMe();
+  const p = PLAYERS.find(x => x.id === me);
+  if (!p) { el.innerHTML = `<div class="card"><div class="empty">로그인이 필요해요.</div></div>`; return; }
+  const t = TEAM_SHEET[p.name] || {};
+  const jersey = (t.jersey != null) ? t.jersey : '–';
+  const team = (t.team && t.team !== '기타') ? t.team : '미배정';
+  const month = duesMonth();
+  const dues = await fetchDues(month);
+  const myPaid = dues.some(d => d.member_id === me && d.paid);
+  const dorm = isDormantFor(p, month);
+  el.innerHTML = `
+    <div class="mine-hero">
+      <div class="num">${jersey === '–' ? '–' : jersey}</div>
+      <div class="nm">${esc(p.name)} 님${isAdmin() ? ' · 운영진' : ''}</div>
+      <div class="hint" style="margin-top:4px">${team} 팀${dorm ? ' · 이번 달 휴면' : ''}</div>
+    </div>
+    <div class="mine-stats">
+      <div class="mine-stat"><div class="v" style="color:${myPaid ? 'var(--win)' : 'var(--alert)'}">${myPaid ? '납부' : '미납'}</div><div class="k">${potmMonthLabel(month)} 회비</div></div>
+      <div class="mine-stat"><div class="v">T${p.tier || '–'}</div><div class="k">티어</div></div>
+    </div>
+    <button class="btn ghost" style="margin-top:14px" onclick="switchTab('rank')">출석 랭킹에서 내 순위 보기</button>
+    <button class="btn ghost" style="margin-top:8px" onclick="switchTab('dues')">회비 화면으로</button>`;
+}
+
+/* ===== 회칙 · 안내 (FAQ) ===== */
+function renderFaq() {
+  const el = document.getElementById('faqContent');
+  const qs = [
+    ['회비는 언제, 얼마인가요?', '매월 25일부터 다음 달 회비가 표시돼요. 금액은 회비 화면에서 본인 항목으로 확인하고, 입금 후 \'내 회비\'에서 직접 납부로 표시할 수 있어요.'],
+    ['참석 신청 마감은 언제예요?', '매치일 직전 일요일 23:59에 마감돼요. 마감 뒤 변경은 운영진에게 문의해 주세요(운영진은 마감 후에도 변경 가능).'],
+    ['휴면이 뭔가요?', '한 달 단위로 활동을 쉬는 거예요. 운영진이 팀빌더에서 설정하며, 휴면인 달은 회비·참석·명단에서 자동 제외돼요.'],
+    ['로그인 / PIN을 잊었어요', '이름 선택 + 4자리 PIN으로 로그인해요. 첫 로그인 때 PIN이 등록되고, 잊으면 운영진에게 초기화를 요청하면 새로 설정할 수 있어요.'],
+    ['카풀은 어떻게 쓰나요?', '카풀 탭에서 운전자가 출발지·좌석을 등록하고, 탑승자는 빈 좌석을 눌러 신청해요. 매치 후 지난 카풀은 접혀서 정리돼요.'],
+    ['투표는 언제 열려요?', '매주 수요일 21시부터 열려요. 이달의 선수와 가장 성장한 선수를 부문별로 1인 1표씩 뽑아요.'],
+  ];
+  el.innerHTML = `<div class="section-title">회칙 · 안내</div>` +
+    qs.map(([q, a]) => `<div class="faq-q"><h4>${q}</h4><p>${a}</p></div>`).join('') +
+    `<p class="hint" style="text-align:center;margin-top:12px">더 궁금한 건 인스타 <b style="color:var(--gold)">@soccoffee__</b> 또는 운영진에게 물어봐 주세요.</p>`;
 }
 
 async function renderHome() {

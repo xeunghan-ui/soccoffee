@@ -879,6 +879,7 @@ function tbCloudState(){ return { players, teams, sessions, teamHistory, supplie
 //   이 함수는 월 1회(dormRollover 마커)만 돌아 멤버의 선택을 다시 덮어쓰지 않음.
 function autoRolloverDormancy(){
   const now = new Date();
+  if (now < new Date('2026-07-15T00:00:00')) return false;   // 기능 시작: 2026-07-15
   if (now.getDate() < 15) return false;
   let ny = now.getFullYear(), nm = now.getMonth() + 1; if (nm > 11) { nm = 0; ny += 1; }
   const nextMonth = `${ny}-${String(nm + 1).padStart(2, '0')}`;

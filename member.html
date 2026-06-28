@@ -1467,6 +1467,10 @@ function duesMonth() {
   return `${y}-${String(m + 1).padStart(2, '0')}`;
 }
 // 홈 상태박스 기준월: 매월 15일부터 다음 달
+// 다음 달 '활동/휴면 셀프 토글·자동 롤오버' 기능 시작일. 이 날 전에는 토글 대신 상태 뱃지만(저장 없음).
+// (월 표시 자체는 기존대로 15일부터 다음 달 — 회비 탭과 일관)
+const DORM_FEATURE_START = new Date('2026-07-15T00:00:00');
+function dormFeatureOn() { return new Date() >= DORM_FEATURE_START; }
 function statusMonth() {
   const d = new Date();
   let y = d.getFullYear(), m = d.getMonth();
@@ -2108,7 +2112,7 @@ async function renderHome() {
     const jersey = (meP.jersey != null) ? meP.jersey : ((meT.jersey != null) ? meT.jersey : '–');
     // 박스는 '해당 월'만 본다(isDormantFor의 이번달 고정 규칙 제외) — 다음 달 토글이 작동하도록
     const dormStatus = ((meP.status||'active')==='dormant') || dormantMonthsOf(meP).includes(dMonth);
-    const confirmPhase = new Date().getDate() >= 15;   // 15일 이후: 다음 달 활동/휴면 확인
+    const confirmPhase = dormFeatureOn() && new Date().getDate() >= 15;   // 2026-07-15부터, 매월 15일 이후 다음 달 활동/휴면 확인
     const teamLabel = (teamSplitOn && meT.team && meT.team !== '기타') ? meT.team + ' 팀' : '';
     const subline = [meP.status === 'friends' ? '싸커피 친구' : '', teamLabel, isAdmin() ? '운영진' : ''].filter(Boolean).join(' · ') || '멤버';
     const targetSess = sessions.find(s => { const dl = sessionDeadline(s); return !(dl && new Date() > dl); }) || nextSess;
@@ -3014,6 +3018,29 @@ async function setMyDormancy(memberId, month, dormant){
   toast(dormant ? '다음 달 휴면으로 신청했어요' : '다음 달 활동으로 신청했어요');
   await rerender(renderHome);
 }
+// 15일 이후 '다음 달 휴면 자동추가'를 멤버앱 로드 시에도 1회 처리(누가 앱을 열든 자동).
+// dormRollover 마커로 월 1회만 실행 → 멤버가 멤버앱에서 '활동'으로 바꾼 걸 덮어쓰지 않음.
+async function rolloverDormancyIfNeeded(){
+  if (!USE_DB) return;
+  if (!dormFeatureOn()) return;   // 2026-07-15부터 작동
+  const now = new Date();
+  if (now.getDate() < 15) return;
+  let ny = now.getFullYear(), nm = now.getMonth() + 1; if (nm > 11) { nm = 0; ny += 1; }
+  const nextMonth = `${ny}-${String(nm + 1).padStart(2, '0')}`;
+  let tb;
+  try { tb = await fetchTeamBuilder(); } catch(e) { return; }
+  if (!tb || !Array.isArray(tb.players)) return;
+  if (tb.dormRollover === nextMonth) return;   // 이번 롤오버 이미 처리됨
+  const curMonth = nowMonthStr();
+  tb.players.forEach(p => {
+    if ((p.status || 'active') === 'former') return;
+    const dm = p.dormantMonths || [];
+    const curDorm = dm.includes(curMonth) || (p.status || 'active') === 'dormant';
+    if (curDorm && !dm.includes(nextMonth)) { dm.push(nextMonth); p.dormantMonths = dm; }
+  });
+  tb.dormRollover = nextMonth;
+  if (await saveTeamBuilder(tb)) { await mergeTbMembers(); await loadTbDormant(); }
+}
 function rkInPool(p, d){
   if (p.joinDate && d < p.joinDate) return false;
   if (p.leaveDate && p.rejoinDate){ if (d >= p.leaveDate && d < p.rejoinDate) return false; }
@@ -3161,6 +3188,7 @@ async function initApp() {
   await mergeTbMembers();   // 팀빌더에만 있는 멤버도 로그인 가능하게 병합
   try { const s = await fetchSettings(); teamSplitOn = s.teamSplit !== false; CLUB_PINS = s.pins || {}; } catch (e) {}
   await loadTbDormant();
+  await rolloverDormancyIfNeeded();   // 15일 이후 다음 달 휴면 자동 롤오버(월 1회) — 누가 앱을 열든 자동
   // 로컬 미리보기: 첫 활동 회원으로 자동 로그인
   if (IS_LOCAL && getMe() == null) {
     const ms = activeMembers(potmMonth());

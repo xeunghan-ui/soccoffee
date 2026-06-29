@@ -744,9 +744,28 @@
   .sq-grp-h span { font-weight: 600; }
   .sq-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 16px; }
   .sq-grid.dim .sq-chip { opacity: .5; }
-  .sq-chip { display: flex; align-items: center; gap: 10px; background: var(--card); border: 1px solid var(--line); border-radius: 10px; padding: 9px 12px; min-width: 0; }
+  .sq-chip { display: flex; align-items: center; gap: 10px; background: var(--card); border: 1px solid var(--line); border-radius: 10px; padding: 9px 12px; min-width: 0; width: 100%; text-align: left; font-family: inherit; cursor: pointer; }
+  .sq-chip.role-admin { border-color: var(--win); background: rgba(90,146,119,.12); }
+  .sq-chip.role-other { border-color: #7a6cae; background: rgba(122,108,174,.13); }
   .sq-no { font-family: var(--disp); font-size: 19px; color: var(--accent); min-width: 26px; text-align: center; flex-shrink: 0; }
   .sq-nm { font-size: 14px; font-weight: 600; color: var(--cream); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  /* 멤버 카드 모달 */
+  .mm-back { position: fixed; inset: 0; z-index: 400; background: rgba(0,0,0,.55); display: flex; align-items: center; justify-content: center; padding: 18px; }
+  .mm-box { background: var(--card); border: 1px solid var(--line); border-radius: 16px; width: 100%; max-width: 360px; max-height: 86vh; overflow-y: auto; padding: 18px; box-shadow: 0 12px 40px rgba(0,0,0,.5); }
+  .mm-head { display: flex; align-items: center; gap: 12px; margin-bottom: 4px; }
+  .mm-no { font-family: var(--disp); font-size: 32px; color: var(--accent); line-height: 1; }
+  .mm-name { font-size: 18px; font-weight: 800; color: var(--cream); }
+  .mm-role { display: inline-block; font-size: 11px; font-weight: 800; padding: 3px 9px; border-radius: 999px; margin-top: 5px; }
+  .mm-role.admin { background: var(--win); color: #fff; }
+  .mm-role.other { background: #7a6cae; color: #fff; }
+  .mm-x { margin-left: auto; background: none; border: none; color: var(--muted); font-size: 22px; cursor: pointer; font-family: inherit; }
+  .mm-sec { font-size: 11px; font-weight: 800; letter-spacing: .04em; color: var(--muted); text-transform: uppercase; margin: 16px 0 8px; }
+  .sk-row { display: flex; align-items: center; gap: 8px; margin-bottom: 8px; }
+  .sk-row input { flex: 1; min-width: 0; }
+  .sk-lv { display: flex; gap: 3px; flex-shrink: 0; }
+  .sk-lv button { width: 22px; height: 26px; border-radius: 6px; border: 1px solid var(--line); background: transparent; color: var(--muted); font-family: inherit; font-weight: 800; font-size: 12px; cursor: pointer; }
+  .sk-lv button.on { background: var(--accent); color: #14281b; border-color: var(--accent); }
+  .sk-del { background: none; border: none; color: var(--alert); font-size: 18px; cursor: pointer; flex-shrink: 0; }
 </style>
 </head>
 <body>
@@ -956,6 +975,25 @@ async function removeRiderByIndex(rideId, index, target) {
 
 /* ---------- 운영진 권한 (로그인한 사람이 운영진 명단에 있으면 자동) ---------- */
 const ADMIN_NAMES = ['박승한'];
+// 멤버 역할(표시용). type:'admin'=운영진 색, 'role'=그외 역할 색
+const MEMBER_ROLES = {
+  '박승한':{role:'구장 예약 및 총괄',type:'admin'},
+  '원재식':{role:'총무',type:'admin'},
+  '홍순인':{role:'경기 및 팀 운영',type:'admin'},
+  '정희범':{role:'사진',type:'admin'},
+  '최승호':{role:'물품 및 장비',type:'admin'},
+  '김이연':{role:'사진',type:'role'},
+  '조은애':{role:'디자인',type:'role'},
+  '김균원':{role:'MD',type:'role'},
+};
+// 멤버 스킬(스파이더 차트) — club_settings.current.skills[memberId] = [{name,level(1~5)}]
+async function getMemberSkills(id){ const s = await fetchSettings(); return ((s.skills||{})[id]) || []; }
+async function saveMemberSkills(id, arr){
+  const s = await fetchSettings();
+  const skills = { ...(s.skills||{}) };
+  if (arr && arr.length) skills[id] = arr; else delete skills[id];
+  return await saveSettings({ skills });
+}
 function isAdmin() {
   const p = PLAYERS.find(x => x.id === getMe());
   return !!(p && ADMIN_NAMES.includes(p.name));
@@ -2296,12 +2334,69 @@ async function renderSquad() {
   players.forEach(p => { isDorm(p) ? dormant.push(p) : (p.status === 'friends' ? friends.push(p) : active.push(p)); });
   const sortJ = (a,b) => ((a.jersey==null?999:a.jersey) - (b.jersey==null?999:b.jersey)) || a.name.localeCompare(b.name,'ko');
   [active, friends, dormant].forEach(g => g.sort(sortJ));
-  const chip = p => `<div class="sq-chip"><span class="sq-no">${p.jersey!=null?p.jersey:'–'}</span><span class="sq-nm">${esc(p.name)}</span></div>`;
+  const chip = p => { const r = MEMBER_ROLES[p.name]; const rc = r ? (r.type==='admin'?' role-admin':' role-other') : ''; return `<button class="sq-chip${rc}" onclick="openMemberCard(${p.id})"><span class="sq-no">${p.jersey!=null?p.jersey:'–'}</span><span class="sq-nm">${esc(p.name)}</span></button>`; };
   const grp = (title, arr, dim) => arr.length ? `<div class="sq-grp-h"><span>${title}</span><span>${arr.length}명</span></div><div class="sq-grid${dim?' dim':''}">${arr.map(chip).join('')}</div>` : '';
   el.innerHTML = `<div class="section-title">${potmMonthLabel(month)} 팀 현황</div>
-    <p class="hint" style="text-align:center;margin:0 0 14px">팀빌더 명단 기준 · 전체 ${active.length+dormant.length} / 활동 ${active.length} / 휴면 ${dormant.length}</p>
+    <div class="att-counts" style="margin:6px 0 8px">
+      <div class="att-cnt"><div class="num">${active.length+dormant.length}</div><div class="cap">전체</div></div>
+      <div class="att-cnt yes"><div class="num">${active.length}</div><div class="cap">활동</div></div>
+      <div class="att-cnt none"><div class="num">${dormant.length}</div><div class="cap">휴면</div></div>
+    </div>
+    <p class="hint" style="text-align:center;margin:0 0 14px;font-size:11px">팀빌더 명단 기준</p>
     ${grp('활동', active, false)}
     ${grp('이번 달 휴면', dormant, true)}`;
+}
+
+/* ===== 멤버 카드 모달 (역할 + 스파이더 차트) ===== */
+let mmState = null;
+async function openMemberCard(id){
+  let p = (typeof PLAYERS!=='undefined'?PLAYERS:[]).find(x=>x.id===id);
+  if(!p){ try{ const tb=await fetchTeamBuilder(); p=(tb&&tb.players||[]).find(x=>x.id===id); }catch(e){} }
+  if(!p) return;
+  const skills = await getMemberSkills(id);
+  mmState = { id, name:p.name, jersey:(p.jersey!=null?p.jersey:null), role:(MEMBER_ROLES[p.name]||null),
+    skills:skills.map(s=>({name:s.name,level:s.level})), edit:false, own:(getMe()===id) };
+  renderMemberCard();
+}
+function closeMemberCard(){ mmState=null; const h=document.getElementById('mmHost'); if(h) h.innerHTML=''; }
+function mmEdit(on){ if(!mmState) return; mmState.edit=on; if(on && !mmState.skills.length) mmState.skills=[{name:'',level:3}]; renderMemberCard(); }
+function mmAddSkill(){ if(mmState){ mmState.skills.push({name:'',level:3}); renderMemberCard(); } }
+function mmDelSkill(i){ if(mmState){ mmState.skills.splice(i,1); renderMemberCard(); } }
+function mmSetLevel(i,lv){ if(mmState){ mmState.skills[i].level=lv; renderMemberCard(); } }
+function mmSetName(i,v){ if(mmState && mmState.skills[i]) mmState.skills[i].name=v; }
+async function mmSave(){
+  if(!mmState) return;
+  const arr = mmState.skills.map(s=>({name:(s.name||'').trim(), level:Math.max(1,Math.min(5,s.level||3))})).filter(s=>s.name);
+  if(!(await saveMemberSkills(mmState.id, arr))){ toast('저장 오류'); return; }
+  mmState.skills=arr; mmState.edit=false; toast('스킬을 저장했어요'); renderMemberCard();
+}
+function radarSvg(skills){
+  const n=skills.length; if(n<3) return '';
+  const cx=110,cy=110,R=82,rings=5; let g='';
+  for(let k=1;k<=rings;k++){ const rr=R*k/rings; let pts=''; for(let i=0;i<n;i++){ const a=-Math.PI/2+i*2*Math.PI/n; pts+=(cx+rr*Math.cos(a)).toFixed(1)+','+(cy+rr*Math.sin(a)).toFixed(1)+' '; } g+=`<polygon points="${pts}" fill="none" stroke="#33492f" stroke-width="1"/>`; }
+  for(let i=0;i<n;i++){ const a=-Math.PI/2+i*2*Math.PI/n; g+=`<line x1="${cx}" y1="${cy}" x2="${(cx+R*Math.cos(a)).toFixed(1)}" y2="${(cy+R*Math.sin(a)).toFixed(1)}" stroke="#33492f" stroke-width="1"/>`; }
+  let dp=''; for(let i=0;i<n;i++){ const a=-Math.PI/2+i*2*Math.PI/n; const rr=R*(skills[i].level/5); dp+=(cx+rr*Math.cos(a)).toFixed(1)+','+(cy+rr*Math.sin(a)).toFixed(1)+' '; }
+  g+=`<polygon points="${dp}" fill="rgba(221,214,182,.35)" stroke="#ddd6b6" stroke-width="2"/>`;
+  for(let i=0;i<n;i++){ const a=-Math.PI/2+i*2*Math.PI/n; const lx=cx+(R+15)*Math.cos(a), ly=cy+(R+15)*Math.sin(a); const anc=Math.abs(Math.cos(a))<0.3?'middle':(Math.cos(a)>0?'start':'end'); g+=`<text x="${lx.toFixed(1)}" y="${(ly+3).toFixed(1)}" fill="#a4b39a" font-size="10" text-anchor="${anc}">${esc(skills[i].name)} ${skills[i].level}</text>`; }
+  return `<svg viewBox="0 0 220 220" style="width:100%;max-width:260px;display:block;margin:4px auto 0">${g}</svg>`;
+}
+function renderMemberCard(){
+  let h=document.getElementById('mmHost'); if(!h){ h=document.createElement('div'); h.id='mmHost'; document.body.appendChild(h); }
+  if(!mmState){ h.innerHTML=''; return; }
+  const s=mmState;
+  const roleHtml = s.role ? `<span class="mm-role ${s.role.type==='admin'?'admin':'other'}">${esc(s.role.role)}</span>` : '';
+  let body;
+  if(s.edit){
+    body = s.skills.map((sk,i)=>`<div class="sk-row"><input type="text" maxlength="8" value="${esc(sk.name)}" placeholder="스킬명" oninput="mmSetName(${i},this.value)"><span class="sk-lv">${[1,2,3,4,5].map(lv=>`<button class="${sk.level===lv?'on':''}" onclick="mmSetLevel(${i},${lv})">${lv}</button>`).join('')}</span><button class="sk-del" onclick="mmDelSkill(${i})">×</button></div>`).join('')
+      + `<button class="btn ghost sm" onclick="mmAddSkill()" style="margin-top:4px">＋ 스킬 추가</button><div style="display:flex;gap:8px;margin-top:14px"><button class="btn accent sm" onclick="mmSave()" style="flex:1">저장</button><button class="btn ghost sm" onclick="mmEdit(false)">취소</button></div>`;
+  } else {
+    const radar = radarSvg(s.skills);
+    body = s.skills.length
+      ? (radar || s.skills.map(sk=>`<div style="display:flex;justify-content:space-between;font-size:13px;color:var(--cream);padding:4px 0"><span>${esc(sk.name)}</span><span style="color:var(--accent);font-weight:800">${sk.level}/5</span></div>`).join(''))
+      : `<div class="empty" style="font-size:13px">${s.own?'아직 스킬이 없어요. 추가해보세요.':'아직 스킬 미설정'}</div>`;
+    if(s.own) body += `<button class="btn ghost sm" onclick="mmEdit(true)" style="margin-top:12px;width:100%">스킬 편집</button>`;
+  }
+  h.innerHTML = `<div class="mm-back" onclick="if(event.target===this)closeMemberCard()"><div class="mm-box"><div class="mm-head"><span class="mm-no">${s.jersey!=null?s.jersey:'–'}</span><div><div class="mm-name">${esc(s.name)}</div>${roleHtml}</div><button class="mm-x" onclick="closeMemberCard()">×</button></div><div class="mm-sec">스킬</div>${body}</div></div>`;
 }
 
 /* ============================================================

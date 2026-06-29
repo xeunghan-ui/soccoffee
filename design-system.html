@@ -1,0 +1,307 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>싸커피 디자인 시스템 — 캐논 스펙 v0.1 (제안)</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Anton&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/[email protected]/dist/web/static/pretendard.min.css">
+<style>
+:root{
+  /* ===== 제안 캐논 토큰 (NEW) ===== */
+  /* 표면 — 딥그린 베이스(현재 값 유지·통합) */
+  --bg:#15281b; --surface:#1e3526; --surface-2:#26402f;
+  --line:#33492f; --line-soft:#2a3d30;
+  /* 뉴트럴 — 크림/샌드 */
+  --cream:#ece6d2; --sand:#ddd6b6; --sand-2:#d6cfb4;
+  --muted:#a4b39a;            /* 현재 #95a083 → 대비 개선 */
+  /* 에너지 액센트 — 레트로 골드 (NEW) */
+  --gold:#e6a92e; --gold-bright:#f5c95c; --gold-dim:#9c7a2a;
+  --gold-bg:rgba(230,169,46,.12);
+  /* 상태 */
+  --win:#46b381;             /* 참석·납부 (NEW, 선명한 피치그린) */
+  --alert:#dc5238;           /* 미납·에러·컷오프 (NEW, 빈티지 레드) */
+  --alert-bg:rgba(220,82,56,.12); --win-bg:rgba(70,179,129,.13);
+  --mono:ui-monospace,"SF Mono",Menlo,Consolas,monospace;
+  --disp:"Anton",sans-serif;
+}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--cream);
+  font-family:"Pretendard Variable",Pretendard,-apple-system,sans-serif;
+  font-size:14px;line-height:1.6;padding:0 0 90px;
+  background-image:repeating-linear-gradient(90deg,transparent,transparent 119px,var(--line-soft) 119px,var(--line-soft) 120px);
+  background-attachment:fixed}
+.wrap{max-width:940px;margin:0 auto;padding:0 22px}
+/* hero */
+header.hero{padding:54px 22px 30px;border-bottom:2px solid var(--gold-dim);position:relative;overflow:hidden}
+header.hero::after{content:"";position:absolute;left:0;right:0;bottom:-1px;height:2px;background:linear-gradient(90deg,var(--gold),transparent)}
+header.hero .wrap{padding:0}
+.kicker{font-family:var(--disp);font-size:13px;letter-spacing:.18em;color:var(--gold);text-transform:uppercase;margin:0 0 10px}
+h1{font-family:var(--disp);font-size:clamp(40px,9vw,68px);line-height:.92;font-weight:400;
+  letter-spacing:.01em;text-transform:uppercase;margin:0 0 12px;color:var(--cream)}
+h1 em{color:var(--gold);font-style:normal}
+.sub{font-size:14px;color:var(--muted);margin:0;max-width:620px}
+.meta-line{font-family:var(--mono);font-size:11px;color:var(--muted);margin-top:16px}
+.legend{display:flex;gap:14px;flex-wrap:wrap;font-size:11.5px;color:var(--muted);margin-top:14px}
+.legend span{display:flex;align-items:center;gap:6px}
+/* sections */
+section{padding:34px 0;border-bottom:1px solid var(--line)}
+.eyebrow{font-family:var(--mono);font-size:12px;color:var(--gold-dim)}
+h2{font-family:var(--disp);font-size:26px;font-weight:400;letter-spacing:.02em;text-transform:uppercase;
+  margin:2px 0 6px;color:var(--cream)}
+h2 .n{color:var(--gold)}
+.lead{font-size:13.5px;color:var(--muted);margin:0 0 22px;max-width:660px}
+h3{font-family:var(--disp);font-size:14px;font-weight:400;color:var(--sand);margin:26px 0 12px;
+  text-transform:uppercase;letter-spacing:.08em}
+.note{font-size:12.5px;color:var(--muted);background:var(--surface);
+  border:1px solid var(--line);border-left:3px solid var(--gold);
+  border-radius:10px;padding:13px 15px;margin:16px 0}
+.note.bad{border-left-color:var(--alert)}
+.note b{color:var(--sand)}
+.grid{display:grid;gap:10px}
+.cols-2{grid-template-columns:repeat(2,1fr)}
+.cols-3{grid-template-columns:repeat(3,1fr)}
+@media(max-width:660px){.cols-2,.cols-3{grid-template-columns:1fr}}
+/* token card */
+.tok{background:var(--surface);border:1px solid var(--line);border-radius:12px;
+  padding:14px;display:flex;flex-direction:column;gap:9px}
+.tok .top{display:flex;align-items:center;gap:11px}
+.sw{width:42px;height:42px;border-radius:9px;flex:0 0 auto;border:1px solid rgba(255,255,255,.08)}
+.tok .name{font-family:var(--mono);font-size:12.5px;color:var(--cream);font-weight:700}
+.tok .val{font-family:var(--mono);font-size:10.5px;color:var(--muted)}
+.tok .use{font-size:11.5px;color:var(--muted);line-height:1.5}
+.flag{display:inline-block;font-family:var(--mono);font-size:9px;font-weight:700;
+  padding:2px 7px;border-radius:999px;letter-spacing:.08em;vertical-align:middle;text-transform:uppercase}
+.f-new{background:var(--gold-bg);color:var(--gold-bright);border:1px solid var(--gold-dim)}
+.f-keep{background:var(--win-bg);color:var(--win);border:1px solid rgba(70,179,129,.4)}
+.f-change{background:var(--alert-bg);color:#ff8b75;border:1px solid rgba(220,82,56,.45)}
+/* type ramp */
+.ramp-row{display:flex;align-items:baseline;gap:16px;padding:12px 0;border-bottom:1px solid var(--line-soft)}
+.ramp-row:last-child{border-bottom:0}
+.ramp-row .tk{font-family:var(--mono);font-size:11px;color:var(--gold);width:96px;flex:0 0 auto}
+.ramp-row .px{font-family:var(--mono);font-size:10.5px;color:var(--muted);width:42px;flex:0 0 auto}
+.ramp-row .sample{color:var(--cream);flex:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.ramp-row .absorb{font-size:10px;color:var(--gold-dim);font-family:var(--mono);flex:0 0 auto;text-align:right}
+.disp-sample{font-family:var(--disp);text-transform:uppercase;letter-spacing:.01em;color:var(--cream)}
+/* weight */
+.wt-row{display:flex;align-items:baseline;gap:16px;padding:10px 0;border-bottom:1px solid var(--line-soft)}
+.wt-row:last-child{border-bottom:0}
+.wt-row .tk{font-family:var(--mono);font-size:11px;color:var(--gold);width:160px;flex:0 0 auto}
+.wt-row .sample{font-size:17px;color:var(--cream);flex:1}
+/* radius / spacing */
+.box-demo{display:flex;flex-wrap:wrap;gap:16px}
+.rad{display:flex;flex-direction:column;align-items:center;gap:7px}
+.rad .b{width:66px;height:50px;background:var(--gold-bg);border:1.5px solid var(--gold-dim)}
+.rad .t{font-family:var(--mono);font-size:10.5px;color:var(--muted);text-align:center}
+.rad .t b{color:var(--sand);display:block;font-size:11.5px}
+.sp{display:flex;flex-direction:column;gap:8px;align-items:flex-start}
+.sp .bar{height:18px;background:var(--gold);border-radius:2px}
+.sp .lbl{font-family:var(--mono);font-size:10.5px;color:var(--muted)}
+.sp .lbl b{color:var(--sand)}
+/* component previews */
+.comp{display:grid;gap:14px;grid-template-columns:repeat(2,1fr)}
+@media(max-width:660px){.comp{grid-template-columns:1fr}}
+.demo-card{background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:0;overflow:hidden}
+.demo-card .cap{font-family:var(--mono);font-size:10px;color:var(--gold-dim);padding:8px 12px 0;text-transform:uppercase;letter-spacing:.06em}
+.demo-pad{padding:14px}
+/* sample widgets */
+.tabs{display:flex;gap:6px}
+.tab{font-size:12px;font-weight:700;padding:7px 13px;border-radius:999px;background:var(--surface-2);color:var(--muted)}
+.tab.on{background:var(--gold);color:#23180a}
+.btn{display:inline-flex;align-items:center;gap:7px;font-weight:800;font-size:13px;
+  padding:11px 18px;border-radius:10px;border:none;cursor:default}
+.btn.primary{background:var(--gold);color:#23180a}
+.btn.ghost{background:transparent;color:var(--sand);border:1.5px solid var(--line)}
+.badge{display:inline-block;font-size:11px;font-weight:800;padding:4px 11px;border-radius:999px}
+.badge.win{background:var(--win-bg);color:var(--win)}
+.badge.alert{background:var(--alert-bg);color:#ff8b75}
+.badge.gold{background:var(--gold-bg);color:var(--gold-bright)}
+.dnum{font-family:var(--disp);font-size:42px;line-height:.9;color:var(--gold)}
+.dlabel{font-family:var(--disp);font-size:12px;letter-spacing:.12em;color:var(--muted);text-transform:uppercase}
+.statline{display:flex;align-items:baseline;gap:10px}
+table.cmp{width:100%;border-collapse:collapse;font-size:12px;margin-top:10px}
+table.cmp th,table.cmp td{text-align:left;padding:9px 11px;border-bottom:1px solid var(--line-soft);vertical-align:top}
+table.cmp th{color:var(--sand);font-family:var(--mono);font-weight:700;font-size:10px;text-transform:uppercase;letter-spacing:.05em}
+table.cmp td{color:var(--muted)}
+table.cmp td.k{font-family:var(--mono);color:var(--cream)}
+.pitch-rule{height:2px;background:linear-gradient(90deg,var(--gold),var(--gold-dim) 40%,transparent);margin:4px 0 0}
+</style>
+</head>
+<body>
+<header class="hero">
+  <div class="wrap">
+    <p class="kicker">Soccoffee FC · Design System</p>
+    <h1>싸커피 <em>디자인 캐논</em></h1>
+    <p class="sub">흩어진 인라인 스타일을 의도된 단일 체계로. 딥그린·샌드 정체성은 지키고, 레트로 골드 액센트로 활력을 더한다. — 클래식 스포츠 클럽 무드.</p>
+    <p class="meta-line">v0.1 제안 · 2026-06-28 · 실제 코드 추출 기반 · 코드 미반영(문서)</p>
+    <div class="legend">
+      <span><span class="flag f-new">NEW</span> 새로 도입</span>
+      <span><span class="flag f-keep">KEEP</span> 현재 값 유지·통합</span>
+      <span><span class="flag f-change">CHANGE</span> 교체·폐기</span>
+    </div>
+  </div>
+</header>
+<div class="wrap">
+
+<!-- 00 -->
+<section>
+  <p class="eyebrow">00</p>
+  <h2><span class="n">//</span> 현재 진단</h2>
+  <p class="lead">싸커피는 3개의 정적 HTML(소개·멤버앱·팀빌더)이 각자 인라인 &lt;style&gt;을 들고 있고, 공유 토큰 파일이 없다. 색은 일부 변수화돼 있으나 페이지마다 체계가 다르다.</p>
+  <div class="note bad">
+    <b>왜 마음에 안 드나 — 구조적 원인 5가지</b><br><br>
+    1. <b>토큰 체계가 분리</b> — 소개는 <code>--green/--sand/--cream</code>, 멤버앱은 <code>--bg/--card/--coffee/--accent</code>. <b>같은 hex를 다른 이름으로</b> 중복 정의(#15281b가 --green이자 --bg, #ddd6b6이 --sand이자 --accent이자 --green(멤버)).<br>
+    2. <b>오명명 토큰</b> — 멤버앱 <code>--green</code>과 <code>--red</code>가 둘 다 샌드(#ddd6b6)를 가리킨다. 의미 색이 없다.<br>
+    3. <b>디스플레이 폰트 불일치</b> — 소개는 Anton, 멤버앱은 WildGag(로드 불명확). 큰 글자 인상이 페이지마다 다르다.<br>
+    4. <b>평평한 위계</b> — 굵기가 700·800·900에 몰려(합 86곳) 다 굵다 → 강조가 강조 같지 않다. 본문도 무겁다.<br>
+    5. <b>에너지 컬러 부재</b> — 전체가 그린·샌드·크림뿐. 차분을 넘어 밋밋하고, CTA·활성·D-day가 눈에 안 띈다.
+  </div>
+  <div class="note">
+    <b>토큰 부재의 결과</b> — 폰트 크기 25종+(하프픽셀 10.5px 포함), radius 15종, gap/padding 제각각. 전부 96개 인라인에 하드코딩. 이 스펙은 그걸 수렴할 <b>단일 캐논</b>을 정의한다(색은 통합·정명명, 타입/간격/radius는 신규 토큰화).
+  </div>
+</section>
+
+<!-- 01 색 -->
+<section>
+  <p class="eyebrow">01</p>
+  <h2><span class="n">//</span> 색 (Color)</h2>
+  <p class="lead">베이스(딥그린·크림·샌드)는 그대로 살리고 이름만 단일화. 핵심 추가는 <b>레트로 골드</b> 액센트와 <b>진짜 의미 색</b>(win/alert)이다.</p>
+
+  <h3>표면 — Field</h3>
+  <div class="grid cols-3">
+    <div class="tok"><div class="top"><div class="sw" style="background:#15281b"></div><div><div class="name">--bg <span class="flag f-keep">KEEP</span></div><div class="val">#15281b</div></div></div><div class="use">페이지 배경. 소개 --green + 멤버 --bg 통합</div></div>
+    <div class="tok"><div class="top"><div class="sw" style="background:#1e3526"></div><div><div class="name">--surface <span class="flag f-keep">KEEP</span></div><div class="val">#1e3526</div></div></div><div class="use">카드·패널. --green-2 + --card 통합</div></div>
+    <div class="tok"><div class="top"><div class="sw" style="background:#26402f"></div><div><div class="name">--surface-2 <span class="flag f-keep">KEEP</span></div><div class="val">#26402f</div></div></div><div class="use">한 단 위 표면·활성 칩 배경. accent-soft/green-soft 통합</div></div>
+  </div>
+
+  <h3>뉴트럴 — Cream / Sand</h3>
+  <div class="grid cols-3">
+    <div class="tok"><div class="top"><div class="sw" style="background:#ece6d2"></div><div><div class="name">--cream <span class="flag f-keep">KEEP</span></div><div class="val">#ece6d2</div></div></div><div class="use">본문 1차·밝은 표면. --cream/--coffee/--text 3중복 → 하나로</div></div>
+    <div class="tok"><div class="top"><div class="sw" style="background:#ddd6b6"></div><div><div class="name">--sand <span class="flag f-keep">KEEP</span></div><div class="val">#ddd6b6</div></div></div><div class="use">샌드 뉴트럴·라벨·밝은 텍스트. --sand/--accent/멤버--green 통합</div></div>
+    <div class="tok"><div class="top"><div class="sw" style="background:#d6cfb4"></div><div><div class="name">--sand-2 <span class="flag f-keep">KEEP</span></div><div class="val">#d6cfb4</div></div></div><div class="use">샌드 보조</div></div>
+    <div class="tok"><div class="top"><div class="sw" style="background:#a4b39a"></div><div><div class="name">--muted <span class="flag f-change">CHANGE</span></div><div class="val">#95a083 → #a4b39a</div></div></div><div class="use">보조 텍스트. 현재 값은 딥그린 위 대비 부족 → 살짝 밝게(소형 가독)</div></div>
+  </div>
+
+  <h3>에너지 액센트 — Retro Gold</h3>
+  <div class="grid cols-3">
+    <div class="tok"><div class="top"><div class="sw" style="background:#e6a92e"></div><div><div class="name">--gold <span class="flag f-new">NEW</span></div><div class="val">#e6a92e</div></div></div><div class="use">활성 탭·CTA·D-day·강조 수치. 클래식 키트 골드</div></div>
+    <div class="tok"><div class="top"><div class="sw" style="background:#f5c95c"></div><div><div class="name">--gold-bright <span class="flag f-new">NEW</span></div><div class="val">#f5c95c</div></div></div><div class="use">골드 위 밝은 텍스트·하이라이트</div></div>
+    <div class="tok"><div class="top"><div class="sw" style="background:#9c7a2a"></div><div><div class="name">--gold-dim <span class="flag f-new">NEW</span></div><div class="val">#9c7a2a</div></div></div><div class="use">border·아이콘 전용. <b>본문 텍스트 금지</b></div></div>
+  </div>
+
+  <h3>상태 — State</h3>
+  <div class="grid cols-3">
+    <div class="tok"><div class="top"><div class="sw" style="background:#46b381"></div><div><div class="name">--win <span class="flag f-new">NEW</span></div><div class="val">#46b381</div></div></div><div class="use">참석·납부·긍정. 현재는 샌드로 뭉뚱그려 신호가 약함 → 선명한 피치그린</div></div>
+    <div class="tok"><div class="top"><div class="sw" style="background:#dc5238"></div><div><div class="name">--alert <span class="flag f-new">NEW</span></div><div class="val">#dc5238</div></div></div><div class="use">미납·에러·컷오프 초과. 멤버 --red(=샌드 오명명) 교체</div></div>
+    <div class="tok"><div class="top"><div class="sw" style="background:#e6a92e"></div><div><div class="name">--warn <span class="flag f-new">NEW</span></div><div class="val">= --gold</div></div></div><div class="use">주의는 골드로 통일(앰버=경고는 보편적)</div></div>
+  </div>
+
+  <h3>선 — Line</h3>
+  <div class="grid cols-2">
+    <div class="tok"><div class="top"><div class="sw" style="background:#33492f"></div><div><div class="name">--line <span class="flag f-keep">KEEP</span></div><div class="val">#33492f</div></div></div><div class="use">기본 헤어라인</div></div>
+    <div class="tok"><div class="top"><div class="sw" style="background:#2a3d30"></div><div><div class="name">--line-soft <span class="flag f-keep">KEEP</span></div><div class="val">#2a3d30</div></div></div><div class="use">더 약한 내부 구분선(리스트 행 등)</div></div>
+  </div>
+
+  <div class="note bad"><b>교체·폐기</b> — 멤버앱 <code>--green:#ddd6b6</code>·<code>--red:#ddd6b6</code>(샌드 오명명) → <code>--win</code>·<code>--alert</code>로. 라이트 잔재 <code>--text-2/--text-3/--meta</code>, 하드코딩 <code>rgba(45,255,158,*)</code> 류 없음(확인됨) — 싸커피는 대신 #f4e0dc, #2f7a4f 같은 날것 hex가 dues에 흩어져 있어 토큰으로 흡수.</div>
+</section>
+
+<!-- 02 타이포 -->
+<section>
+  <p class="eyebrow">02</p>
+  <h2><span class="n">//</span> 타이포 (Type)</h2>
+  <p class="lead">디스플레이는 Anton 하나로 통일(콘덴스드 대문자 = 저지 넘버·클래식 스포츠). 본문은 Pretendard. 크기는 25종+를 정수 ramp로 수렴, 하프픽셀 폐기.</p>
+
+  <h3>디스플레이 — Anton (콘덴스드)</h3>
+  <div>
+    <div class="ramp-row"><span class="tk">--fd-1</span><span class="px">56</span><span class="sample disp-sample" style="font-size:46px">MATCH DAY</span><span class="absorb">히어로</span></div>
+    <div class="ramp-row"><span class="tk">--fd-2</span><span class="px">40</span><span class="sample disp-sample" style="font-size:34px">07.01 WED</span><span class="absorb">날짜·섹션</span></div>
+    <div class="ramp-row"><span class="tk">--fd-3</span><span class="px">28</span><span class="sample disp-sample" style="font-size:26px">20 / 30 납부</span><span class="absorb">수치·통계</span></div>
+  </div>
+  <div class="note">날짜·등번호·D-day·스코어·큰 수치 = Anton. 대문자 + 좁은 자간으로 클래식 키트 느낌. <b>WildGag는 로고 워드마크에만</b> 남기고 디스플레이 면은 Anton으로 단일화.</div>
+
+  <h3>본문 — Pretendard Ramp</h3>
+  <div>
+    <div class="ramp-row"><span class="tk">--fs-2xl</span><span class="px">22</span><span class="sample" style="font-size:22px;font-weight:800">이번 주 매치</span><span class="absorb">← 22/23/24</span></div>
+    <div class="ramp-row"><span class="tk">--fs-xl</span><span class="px">18</span><span class="sample" style="font-size:18px;font-weight:700">섹션 제목</span><span class="absorb">← 17/18/19/20</span></div>
+    <div class="ramp-row"><span class="tk">--fs-lg</span><span class="px">16</span><span class="sample" style="font-size:16px;font-weight:700">카드 제목·강조 본문</span><span class="absorb">← 16</span></div>
+    <div class="ramp-row"><span class="tk">--fs-base</span><span class="px">14</span><span class="sample" style="font-size:14px">기본 본문 — 참석/회비 안내 문구</span><span class="absorb">← 13/13.5/14/14.5/15</span></div>
+    <div class="ramp-row"><span class="tk">--fs-sm</span><span class="px">13</span><span class="sample" style="font-size:13px;color:var(--muted)">보조 본문·리스트 텍스트</span><span class="absorb">← 12.5/13</span></div>
+    <div class="ramp-row"><span class="tk">--fs-xs</span><span class="px">12</span><span class="sample" style="font-size:12px;color:var(--muted)">라벨·메타·뱃지</span><span class="absorb">← 11.5/12</span></div>
+    <div class="ramp-row"><span class="tk">--fs-micro</span><span class="px">11</span><span class="sample" style="font-size:11px;color:var(--sand)">최소 태그 — 가독성 하한</span><span class="absorb">← 7/8/9/10/10.5</span></div>
+  </div>
+  <div class="note bad"><b>하프픽셀·초소형 폐기.</b> 10.5px 등은 의도가 아니라 드리프트, 기기별 서브픽셀 반올림으로 렌더가 들쭉날쭉. 7–10px 텍스트는 딥그린 위에서 거의 안 읽힘 → micro <b>11px</b> 하한으로 흡수(취향 아닌 가독성 결정). 본문 기준은 13→<b>14</b>로 올려 한 호흡 키운다.</div>
+
+  <h3>굵기 — Weight</h3>
+  <div>
+    <div class="wt-row"><span class="tk">--fw-regular 400</span><span class="sample" style="font-weight:400">본문 기본 — 평소 텍스트는 여기</span></div>
+    <div class="wt-row"><span class="tk">--fw-medium 500</span><span class="sample" style="font-weight:500">약한 강조·활성 라벨</span></div>
+    <div class="wt-row"><span class="tk">--fw-bold 700</span><span class="sample" style="font-weight:700">라벨·소제목·강조</span></div>
+    <div class="wt-row"><span class="tk">--fw-extra 800</span><span class="sample" style="font-weight:800">히어로·디스플레이 보조</span></div>
+  </div>
+  <div class="note"><b>위계 복구.</b> 현재 700·800·900이 86곳 — 다 굵으니 강조가 안 산다. 본문을 400/500으로 내리고 700은 진짜 라벨/제목에, 800은 최상위에만. <b>900(20곳)은 폐기 → 800</b>, 600은 700에 흡수. 굵기 5→4단.</div>
+</section>
+
+<!-- 03 radius -->
+<section>
+  <p class="eyebrow">03</p>
+  <h2><span class="n">//</span> 모서리 (Radius)</h2>
+  <p class="lead">현재 15종. 5단으로 수렴. 레트로 스포츠는 과한 라운딩보다 <b>약간 또렷한</b> 모서리가 어울려 카드 기준을 12px로 못박는다(현재 --radius 14는 12로).</p>
+  <div class="box-demo">
+    <div class="rad"><div class="b" style="border-radius:6px"></div><div class="t"><b>--r-sm</b>6px<br>칩·인풋 <span style="color:var(--gold-dim)">←2~7</span></div></div>
+    <div class="rad"><div class="b" style="border-radius:10px"></div><div class="t"><b>--r-md</b>10px<br>버튼·작은 카드 <span style="color:var(--gold-dim)">←9~11</span></div></div>
+    <div class="rad"><div class="b" style="border-radius:12px"></div><div class="t"><b>--r-lg</b>12px<br>카드 기본 <span style="color:var(--gold-dim)">←12/14/20</span></div></div>
+    <div class="rad"><div class="b" style="border-radius:999px"></div><div class="t"><b>--r-pill</b>999px<br>뱃지·탭</div></div>
+    <div class="rad"><div class="b" style="border-radius:50%"></div><div class="t"><b>--r-circle</b>50%<br>아바타·도트</div></div>
+  </div>
+  <div class="note">12px(120회)·10px(67회)·999px(60회) 우세 그대로 채택. 20px·14px → 12px lg로, 2~8px 소형 → 6px sm으로 흡수.</div>
+</section>
+
+<!-- 04 spacing -->
+<section>
+  <p class="eyebrow">04</p>
+  <h2><span class="n">//</span> 간격 (Spacing)</h2>
+  <p class="lead">4px 그리드. gap 최다인 6px·8px을 살린 8단 스케일. gap·margin 우선 적용, 비대칭 padding은 케이스별로.</p>
+  <div class="sp">
+    <div><div class="bar" style="width:4px"></div><div class="lbl"><b>--sp-1</b> 4</div></div>
+    <div><div class="bar" style="width:6px"></div><div class="lbl"><b>--sp-1h</b> 6 <span style="color:var(--gold-dim)">gap 2위(115회)</span></div></div>
+    <div><div class="bar" style="width:8px"></div><div class="lbl"><b>--sp-2</b> 8 <span style="color:var(--gold-dim)">gap 1위</span></div></div>
+    <div><div class="bar" style="width:12px"></div><div class="lbl"><b>--sp-3</b> 12</div></div>
+    <div><div class="bar" style="width:16px"></div><div class="lbl"><b>--sp-4</b> 16</div></div>
+    <div><div class="bar" style="width:20px"></div><div class="lbl"><b>--sp-5</b> 20</div></div>
+    <div><div class="bar" style="width:24px"></div><div class="lbl"><b>--sp-6</b> 24</div></div>
+    <div><div class="bar" style="width:32px"></div><div class="lbl"><b>--sp-8</b> 32</div></div>
+  </div>
+  <div class="note">현재 우세 padding <code>8px 4px</code>·<code>9px 14px</code>·<code>0 16px</code> 등 비대칭이 많아 단일 토큰화는 한계 → 스케일은 gap·margin·세로 리듬에 먼저 적용.</div>
+</section>
+
+<!-- 05 컴포넌트 방향 -->
+<section>
+  <p class="eyebrow">05</p>
+  <h2><span class="n">//</span> 컴포넌트 방향</h2>
+  <p class="lead">새 토큰이 실제로 어떻게 보이는가 — 레트로 골드 + 의미 색이 들어간 핵심 위젯 미리보기.</p>
+  <div class="comp">
+    <div class="demo-card"><div class="cap">탭 — 활성=골드</div><div class="demo-pad"><div class="tabs"><span class="tab on">회비</span><span class="tab">참석</span><span class="tab">랭킹</span></div></div></div>
+    <div class="demo-card"><div class="cap">버튼</div><div class="demo-pad" style="display:flex;gap:8px;flex-wrap:wrap"><button class="btn primary">참석 체크</button><button class="btn ghost">자세히</button></div></div>
+    <div class="demo-card"><div class="cap">상태 뱃지 — win / alert / gold</div><div class="demo-pad" style="display:flex;gap:8px;flex-wrap:wrap"><span class="badge win">납부</span><span class="badge alert">미납</span><span class="badge gold">D-2</span></div></div>
+    <div class="demo-card"><div class="cap">디스플레이 수치 — Anton</div><div class="demo-pad"><div class="statline"><span class="dnum">20</span><span class="dlabel">/ 30 납부 · 67%</span></div></div></div>
+  </div>
+  <div class="note">레트로 시그니처 — ① 디스플레이/수치/등번호는 Anton 대문자, ② 라벨·섹션 헤더 대문자+자간, ③ 활성·CTA·D-day는 골드, ④ 카드 상단/섹션에 골드 1px 라인, ⑤ 배경에 은은한 피치 라인(이 문서 배경 참고). 차분한 그린 위에 골드가 포인트로 튀며 클래식 스포츠 클럽 인상을 만든다.</div>
+</section>
+
+<!-- 06 다음 단계 -->
+<section style="border-bottom:0">
+  <p class="eyebrow">06</p>
+  <h2><span class="n">//</span> 다음 단계</h2>
+  <p class="lead">이건 ①정의 단계 결과물(이 문서). 코드는 아직 안 건드렸다.</p>
+  <table class="cmp">
+    <tr><th>단계</th><th>내용</th><th>위험</th></tr>
+    <tr><td class="k">① 정의 ✓</td><td>이 캐논 스펙 합의 (팔레트·타입·radius·간격·컴포넌트 방향)</td><td style="color:var(--win)">없음</td></tr>
+    <tr><td class="k">② 토큰화</td><td>공유 <code>:root</code>(또는 tokens.css)에 --gold/--win/--alert/--fs-*/--sp-*/--r-* 추가. 소개·멤버앱 토큰 단일화·정명명. 신규라 비파괴적</td><td style="color:var(--warn)">중</td></tr>
+    <tr><td class="k">③ 점진 적용</td><td>탭·버튼·뱃지·디스플레이부터 골드/win/alert 반영 → 카테고리별 분리 커밋. 96파일 일괄 치환은 지양</td><td style="color:var(--alert)">고</td></tr>
+  </table>
+  <div class="note">CLAUDE.md 원칙대로 ③ 대규모 일괄 치환은 위험(회귀·캐시). <b>②는 "앞으로 이 토큰 써라" 기준만 세워 라이브 안전</b>, ③은 화면 단위로 쪼개 시각 확인하며 이행. 스펙(①) 합의 후 ②부터 권장.<br><br><b>먼저 정해주실 것</b> — 골드 정확한 채도(#e6a92e가 적당한지, 더 진하게/연하게), 본문 13→14 상향 동의 여부, 그리고 ②를 바로 진행할지.</div>
+</section>
+</div>
+</body>
+</html>

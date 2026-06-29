@@ -36,6 +36,7 @@
     --line: #33492f;
     --radius: 12px;
     --shadow: none;
+    --navh: calc(62px + env(safe-area-inset-bottom));   /* 하단 네비 높이 — 모든 하단 오버레이가 이 위로 */
     /* === 디자인 캐논 v0.1 — 에너지 액센트(레트로 골드) + 의미 색 === */
     --gold: #ddd6b6; --gold-bright: #ece6d2; --gold-dim: #4a6450; --gold-bg: rgba(221,214,182,.07);
     --win: #5a9277; --win-bg: rgba(90,146,119,.13);
@@ -203,10 +204,10 @@
   .empty .big { font-size: 40px; margin-bottom: 10px; }
 
   .toast {
-    position: fixed; left: 50%; bottom: 28px; transform: translateX(-50%) translateY(20px);
+    position: fixed; left: 50%; bottom: calc(var(--navh) + 18px); transform: translateX(-50%) translateY(20px);
     background: var(--coffee); color: #fff; padding: 13px 22px; border-radius: 30px;
     font-size: 14px; font-weight: 600; box-shadow: 0 6px 20px rgba(0,0,0,.2);
-    opacity: 0; pointer-events: none; transition: all .25s; z-index: 100;
+    opacity: 0; pointer-events: none; transition: all .25s; z-index: 300;
   }
   .toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
 
@@ -358,6 +359,7 @@
   .att-cnt.yes .num { color: var(--green); }
   .att-cnt.no .num { color: var(--red); }
   .att-cnt.maybe .num { color: var(--accent); }
+  .att-cnt.none .num { color: var(--muted); }
   .att-list { margin-top: 8px; }
   .att-row { display: flex; align-items: center; gap: 8px; padding: 8px 4px; border-bottom: 1px solid var(--line); font-size: 14px; }
   .att-row:last-child { border-bottom: none; }
@@ -374,7 +376,7 @@
   .att-row .st-set .st { padding: 4px 9px; opacity: .35; }
   .att-row .st-set .st.on { opacity: 1; }
   /* 운영진 일괄 수정: 저장 바 + 변경(미저장) 표시 */
-  .save-bar { position: fixed; left: 12px; right: 12px; bottom: calc(74px + env(safe-area-inset-bottom)); max-width: 456px; margin: 0 auto; display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 8px 10px; background: var(--green, #2f5a3f); color: var(--sand, #ddd6b6); border-radius: 12px; padding: 13px 16px; box-shadow: 0 8px 28px rgba(0,0,0,.4); z-index: 250; }
+  .save-bar { position: fixed; left: 12px; right: 12px; bottom: calc(var(--navh) + 8px); max-width: 456px; margin: 0 auto; display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 8px 10px; background: var(--green, #2f5a3f); color: var(--sand, #ddd6b6); border-radius: 12px; padding: 13px 16px; box-shadow: 0 8px 28px rgba(0,0,0,.4); z-index: 250; }
   .save-bar .save-n { font-size: 13px; font-weight: 800; flex: 1 1 auto; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
   .save-bar .sb-actions { display: flex; gap: 8px; flex: 0 0 auto; }
   .save-bar button { font-family: inherit; border: none; border-radius: 8px; padding: 8px 16px; font-weight: 800; cursor: pointer; font-size: 13px; }
@@ -518,6 +520,7 @@
   .att-cnt.yes .num { color: var(--win); }
   .att-cnt.no .num { color: var(--alert); }
   .att-cnt.maybe .num { color: var(--gold-bright); }
+  .att-cnt.none .num { color: #95a083; }
   .att-row { border-color: #2a3d30; }
   .att-row .nm { color: #ece6d2; }
   .att-row .js { color: #8c9a7c; }
@@ -2375,6 +2378,7 @@ async function renderAtt() {
   const yes = members.filter(m=>eff(m.id)==='yes').length;
   const no  = members.filter(m=>eff(m.id)==='no').length;
   const maybe = members.filter(m=>eff(m.id)==='maybe').length;
+  const none = members.length - yes - no - maybe;   // 미응답
   const mine = attMe ? map[attMe] : null;
   const nDraft = admin ? Object.keys(attDraft).length : 0;
 
@@ -2450,6 +2454,7 @@ async function renderAtt() {
       <div class="att-cnt yes"><div class="num">${yes}</div><div class="cap">참석</div></div>
       <div class="att-cnt no"><div class="num">${no}</div><div class="cap">불참</div></div>
       <div class="att-cnt maybe"><div class="num">${maybe}</div><div class="cap">미정</div></div>
+      <div class="att-cnt none"><div class="num">${none}</div><div class="cap">미응답</div></div>
     </div>
     <div class="card">
       <div class="section-title" style="margin:0 0 8px;display:flex;justify-content:space-between;align-items:center">

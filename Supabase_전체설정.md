@@ -30,7 +30,7 @@ create table public.potm_votes (
   id bigint primary key generated always as identity,
   month text not null,
   category text not null default 'mvp',        -- 'mvp' | 'growth'
-  voter_id int not null, candidate_id int not null,
+  voter_id bigint not null, candidate_id bigint not null,   -- bigint: 신규 회원 id(Date.now) 수용
   created_at timestamptz not null default now(),
   unique (month, category, voter_id)
 );
@@ -67,7 +67,7 @@ create policy "notices delete" on public.notices for delete using (true);
 drop table if exists public.attendance;
 create table public.attendance (
   id bigint primary key generated always as identity,
-  session_id text not null, member_id int not null,
+  session_id text not null, member_id bigint not null,   -- bigint: 신규 회원 id(Date.now) 수용
   status text not null,                         -- 'yes' | 'no' | 'maybe'
   updated_at timestamptz not null default now(),
   unique (session_id, member_id)
@@ -81,7 +81,7 @@ create policy "att delete" on public.attendance for delete using (true);
 -- 5) 회비 (월별 납부 현황)
 create table if not exists public.dues (
   id bigint primary key generated always as identity,
-  month text not null, member_id int not null,
+  month text not null, member_id bigint not null,   -- bigint: 신규 회원 id(Date.now) 수용
   paid boolean not null default false, amount int,
   updated_at timestamptz not null default now(),
   unique (month, member_id)
@@ -93,6 +93,12 @@ drop policy if exists "dues update" on public.dues;
 create policy "dues read"   on public.dues for select using (true);
 create policy "dues insert" on public.dues for insert with check (true);
 create policy "dues update" on public.dues for update using (true);
+
+-- 5-1) 기존 테이블이 int로 만들어졌다면 bigint로 변환(신규 회원 id=Date.now 수용). 재실행 안전.
+alter table public.dues       alter column member_id    type bigint;
+alter table public.attendance alter column member_id    type bigint;
+alter table public.potm_votes alter column voter_id     type bigint;
+alter table public.potm_votes alter column candidate_id type bigint;
 
 -- 6) 클럽 설정 + 명단 + 팀빌더 상태 (jsonb 보관함)
 --    id='current'  → 사이트 설정/명단(roster)/세션/팀구분

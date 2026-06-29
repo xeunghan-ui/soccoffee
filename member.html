@@ -2614,6 +2614,10 @@ async function renderAtt() {
     </div>
     ${nDraft ? `<div class="save-bar"><span class="save-n">변경 ${nDraft}건 (미저장)</span><span class="sb-actions"><button class="cancel" onclick="attCancelDraft()">취소</button><button class="ok" onclick="attSaveDraft()">저장</button></span></div>` : ''}`;
   el.innerHTML = html;
+  // 선택된 일정 칩을 가장 왼쪽으로 스크롤
+  const _tabs = el.querySelector('.sess-tabs');
+  const _on = _tabs && _tabs.querySelector('.sess-chip.on');
+  if (_tabs && _on) _tabs.scrollLeft = Math.max(0, _on.offsetLeft - _tabs.offsetLeft);
 }
 function pickAttSession(id){ attSessionId = id; attDraft = {}; renderAtt(); }
 // 운영진 출석 일괄: 클릭은 드래프트에만 반영(같은 값 다시 누르면 미응답)

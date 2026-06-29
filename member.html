@@ -2547,7 +2547,7 @@ async function renderAtt() {
     html += `<div class="card"><div class="empty">로그인이 필요해요.</div></div>`;
   } else if (!meActive) {
     html += `<div class="card"><h2>${esc(meName())} 님</h2><p class="sub">이번 달 활동 회원이 아니라 참석 체크 대상이 아니에요.</p></div>`;
-  } else {
+  } else if (!closed) {
     const segDisabled = closed && !admin;
     const seg = ['yes','no','maybe'].map(k=>{
       const lbl = {yes:'참석',no:'불참',maybe:'미정'}[k];

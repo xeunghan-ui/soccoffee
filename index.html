@@ -116,6 +116,9 @@
   .fx .when .d{font-size:15px; font-weight:600;}
   .fx .when .wd{font-size:11px; opacity:.6; margin-left:6px; letter-spacing:1px;}
   .fx .when .t{font-size:12px; opacity:.75; display:block;}
+  .fx-guest{padding:0 18px 14px; margin-top:-4px; text-align:right;}
+  .fx-guest a{display:inline-flex; align-items:center; gap:5px; font-size:12px; font-weight:700; letter-spacing:.3px; padding:7px 15px; border-radius:999px; border:1.5px solid currentColor; color:inherit; text-decoration:none; opacity:.9;}
+  .fx-guest a:hover{opacity:1;}
 
   /* 선수 명단 (SQUAD) */
   .squad{display:grid; grid-template-columns:repeat(auto-fill,minmax(150px,1fr)); gap:8px;}
@@ -328,6 +331,7 @@
         var label = s.label ? esc(s.label) : ('WEEK '+(++wn));
         var oatly = /오틀리|oatly/i.test((s.place||'')+' '+(s.label||''));
         var purl=(s.placeUrl||'').trim(); var plink=/^https?:\/\//i.test(purl);
+        var gurl=(s.guestUrl||'').trim(); var glink=/^https?:\/\//i.test(gurl);
         var hasDetail = !!(s.desc && String(s.desc).trim()) && !oatly;
         var rowAttr = oatly ? ' onclick="location.href=\'oatly/\'" style="cursor:pointer"'
                     : (hasDetail ? ' onclick="this.parentNode.classList.toggle(\'open\')"' : '');
@@ -338,6 +342,7 @@
           +'<span class="when"><span class="d">'+md+(wd?'<span class="wd">'+wd+'</span>':'')+'</span>'
           +(time?'<span class="t">'+timerange+'</span>':'')+'</span></div>'
           +(hasDetail?'<div class="fx-detail">'+linkify(s.desc)+'</div>':'')
+          +(glink?'<div class="fx-guest"><a href="'+esc(gurl)+'" target="_blank" rel="noopener" onclick="event.stopPropagation()">게스트 신청 →</a></div>':'')
           +'</div>';
       }).join('');
     }catch(e){ box.innerHTML='<p class="muted" style="font-size:13px">일정을 불러오지 못했어요.</p>'; }

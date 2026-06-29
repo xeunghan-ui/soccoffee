@@ -324,13 +324,14 @@
         var timerange=time+(endt?' - '+endt:'');
         var label = s.label ? esc(s.label) : ('WEEK '+(++wn));
         var oatly = /오틀리|oatly/i.test((s.place||'')+' '+(s.label||''));
+        var purl=(s.placeUrl||'').trim(); var plink=/^https?:\/\//i.test(purl);
         var hasDetail = !!(s.desc && String(s.desc).trim()) && !oatly;
         var rowAttr = oatly ? ' onclick="location.href=\'oatly/\'" style="cursor:pointer"'
                     : (hasDetail ? ' onclick="this.parentNode.classList.toggle(\'open\')"' : '');
         return '<div class="fx'+(hasDetail?' has-detail':'')+'">'
           +'<div class="fx-row"'+rowAttr+'>'
           +'<span class="wk">'+label+'<span class="more"></span></span>'
-          +'<span class="loc">'+place+(oatly?' <span style="font-size:11px;opacity:.6">↗</span>':'')+'</span>'
+          +'<span class="loc">'+(plink?'<a href="'+esc(purl)+'" target="_blank" rel="noopener" onclick="event.stopPropagation()" style="color:inherit;text-decoration:underline">'+place+' <span style="font-size:11px;opacity:.6">↗</span></a>':place+(oatly?' <span style="font-size:11px;opacity:.6">↗</span>':''))+'</span>'
           +'<span class="when"><span class="d">'+md+(wd?'<span class="wd">'+wd+'</span>':'')+'</span>'
           +(time?'<span class="t">'+timerange+'</span>':'')+'</span></div>'
           +(hasDetail?'<div class="fx-detail">'+linkify(s.desc)+'</div>':'')

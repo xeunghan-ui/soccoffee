@@ -2258,7 +2258,7 @@ async function renderHome() {
     </div>`;
     if (pending.length) {
       dash += `<button onclick="switchTab('att')" style="width:100%;text-align:left;cursor:pointer;font-family:inherit;border:1px solid var(--line);background:transparent;border-radius:12px;padding:12px 16px;margin-bottom:12px;display:flex;align-items:center;justify-content:space-between;gap:10px">
-        <span style="font-size:13px;font-weight: 600;color:var(--cream)">아직 응답 안 한 일정 ${pending.length}개</span>
+        <span style="font-size:13px;font-weight:600;color:#ece6d2">아직 응답 안 한 일정 ${pending.length}개</span>
         <span style="font-size:12px;font-weight:800;color:var(--accent)">응답하기 →</span></button>`;
     }
     // 내 스킬 카드(스파이더 차트) — 홈에서 편집
@@ -2399,7 +2399,7 @@ function renderMemberCard(){
   const roleHtml = s.role ? `<span class="mm-role ${s.role.type==='admin'?'admin':'other'}">${esc(s.role.role)}</span>` : '';
   let body;
   if(s.edit){
-    body = `<div class="hint" style="margin-bottom:8px;font-size:11px">스킬명은 최대 8자 · 레벨 1~5</div>` + s.skills.map((sk,i)=>`<div class="sk-row"><input type="text" maxlength="8" value="${esc(sk.name)}" placeholder="스킬명 (8자)" oninput="mmSetName(${i},this.value)"><span class="sk-lv">${[1,2,3,4,5].map(lv=>`<button class="${sk.level===lv?'on':''}" onclick="mmSetLevel(${i},${lv})">${lv}</button>`).join('')}</span><button class="sk-del" onclick="mmDelSkill(${i})">×</button></div>`).join('')
+    body = `<div class="hint" style="margin-bottom:8px;font-size:11px">스킬명은 최대 5자 · 레벨 1~5</div>` + s.skills.map((sk,i)=>`<div class="sk-row"><input type="text" maxlength="5" value="${esc(sk.name)}" placeholder="스킬명 (5자)" oninput="mmSetName(${i},this.value)"><span class="sk-lv">${[1,2,3,4,5].map(lv=>`<button class="${sk.level===lv?'on':''}" onclick="mmSetLevel(${i},${lv})">${lv}</button>`).join('')}</span><button class="sk-del" onclick="mmDelSkill(${i})">×</button></div>`).join('')
       + `<button class="btn ghost sm" onclick="mmAddSkill()" style="margin-top:4px">＋ 스킬 추가</button><div style="display:flex;gap:8px;margin-top:14px"><button class="btn accent sm" onclick="mmSave()" style="flex:1">저장</button><button class="btn ghost sm" onclick="mmEdit(false)">취소</button></div>`;
   } else {
     const radar = radarSvg(s.skills);

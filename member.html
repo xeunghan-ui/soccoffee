@@ -2088,15 +2088,16 @@ function renderMore() {
     return `<button class="more-item" onclick="${click}"><div class="mi-name">${name}</div><div class="mi-desc">${desc}</div></button>`;
   };
   const teamLink = `<a class="more-item" href="team/" target="_blank" rel="noopener"><div class="mi-name">팀빌더 ↗</div><div class="mi-desc">명단 · 등번호 · 휴면 · 팀 배분</div></a>`;
+  const guideBtn = `<button class="more-item" onclick="showAddHomeGuide()"><div class="mi-name">홈 화면에 추가</div><div class="mi-desc">앱처럼 바로 열기 (설치 가이드)</div></button>`;
   let html = '';
   if (admin) {
     // 운영진: 회원 메뉴 / 운영진 메뉴 두 구역으로 구분
     html += `<div class="more-sec-title">회원 메뉴</div>`;
-    html += `<div class="more-grid">` + memberItems.map(btn).join('') + `</div>`;
+    html += `<div class="more-grid">` + memberItems.map(btn).join('') + guideBtn + `</div>`;
     html += `<div class="more-sec-title">운영진 메뉴</div>`;
     html += `<div class="more-grid">` + adminItems.map(adminBtn).join('') + teamLink + `</div>`;
   } else {
-    html += `<div class="more-grid">` + memberItems.map(btn).join('') + `</div>`;
+    html += `<div class="more-grid">` + memberItems.map(btn).join('') + guideBtn + `</div>`;
   }
   el.innerHTML = html;
 }
@@ -2358,6 +2359,19 @@ async function openMemberCard(id){
   renderMemberCard();
 }
 function closeMemberCard(){ mmState=null; const h=document.getElementById('mmHost'); if(h) h.innerHTML=''; }
+// 홈 화면에 추가 가이드(모달)
+function showAddHomeGuide(){
+  let h=document.getElementById('mmHost'); if(!h){ h=document.createElement('div'); h.id='mmHost'; document.body.appendChild(h); }
+  const ol = `style="margin:6px 0 4px 18px;padding:0;font-size:13px;color:var(--cream);line-height:1.9"`;
+  h.innerHTML = `<div class="mm-back" onclick="if(event.target===this)closeMemberCard()"><div class="mm-box">
+    <div class="mm-head"><div class="mm-name">홈 화면에 추가</div><button class="mm-x" onclick="closeMemberCard()">×</button></div>
+    <p class="hint" style="margin:2px 0 14px">앱처럼 한 번에 열 수 있어요. 기기에 맞게 따라 해 주세요.</p>
+    <div class="mm-sec">아이폰 · Safari</div>
+    <ol ${ol}><li>하단 <b>공유</b> 버튼 탭</li><li><b>홈 화면에 추가</b> 선택</li><li>오른쪽 위 <b>추가</b> 탭</li></ol>
+    <div class="mm-sec">안드로이드 · Chrome</div>
+    <ol ${ol}><li>오른쪽 위 <b>⋮ 메뉴</b> 탭</li><li><b>홈 화면에 추가</b> 선택</li><li><b>추가</b> 탭</li></ol>
+  </div></div>`;
+}
 function mmEdit(on){ if(!mmState) return; mmState.edit=on; if(on && !mmState.skills.length) mmState.skills=[{name:'',level:3}]; renderMemberCard(); }
 function mmAddSkill(){ if(mmState){ mmState.skills.push({name:'',level:3}); renderMemberCard(); } }
 function mmDelSkill(i){ if(mmState){ mmState.skills.splice(i,1); renderMemberCard(); } }

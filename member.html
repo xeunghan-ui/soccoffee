@@ -15,7 +15,7 @@
 <meta name="apple-mobile-web-app-title" content="싸커피">
 <link rel="stylesheet" as="style" crossorigin href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css">
 <link rel="preconnect" href="https://fonts.googleapis.com">
-<link href="https://fonts.googleapis.com/css2?family=Anton&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Oswald:wght@400;500;600&display=swap" rel="stylesheet">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <style>
   :root {
@@ -38,7 +38,7 @@
     --gold: #ddd6b6; --gold-bright: #ece6d2; --gold-dim: #4a6450; --gold-bg: rgba(221,214,182,.07);
     --win: #5a9277; --win-bg: rgba(90,146,119,.13);
     --alert: #bd6452; --alert-bg: rgba(189,100,82,.12);
-    --disp: "Anton", "Pretendard", sans-serif;
+    --disp: "Oswald", "Pretendard", sans-serif;
   }
   * { box-sizing: border-box; }
   body {
@@ -2407,20 +2407,29 @@ async function saveMyCard(){
   const p=(typeof PLAYERS!=='undefined'?PLAYERS:[]).find(x=>x.id===me)||{};
   const skills=await getMemberSkills(me);
   const name=meName(); const jersey=(p.jersey!=null)?p.jersey:'–'; const role=MEMBER_ROLES[name];
-  const W=640,H=820, c=document.createElement('canvas'); c.width=W; c.height=H; const x=c.getContext('2d');
+  const W=640,H=940, c=document.createElement('canvas'); c.width=W; c.height=H; const x=c.getContext('2d');
   x.fillStyle='#15281b'; x.fillRect(0,0,W,H);
   x.strokeStyle='#33492f'; x.lineWidth=2; x.strokeRect(16,16,W-32,H-32);
   try{ await document.fonts.ready; }catch(e){}
-  await new Promise(r=>{ const img=new Image(); img.onload=()=>{ const lw=150, lh=lw*img.naturalHeight/img.naturalWidth; x.drawImage(img,(W-lw)/2,52,lw,lh); r(); }; img.onerror=r; img.src='scf_logo.png'; });
+  await new Promise(r=>{ const img=new Image(); img.onload=()=>{ const lw=148, lh=lw*img.naturalHeight/img.naturalWidth; x.drawImage(img,(W-lw)/2,58,lw,lh); r(); }; img.onerror=r; img.src='scf_logo.png'; });
   x.textAlign='center';
-  x.fillStyle='#ece6d2'; x.font='800 110px "Anton","Pretendard",sans-serif'; x.fillText(String(jersey), W/2, 332);
-  x.font='800 34px "Pretendard",sans-serif'; x.fillText(name, W/2, 384);
-  if(role){ x.fillStyle='#a4b39a'; x.font='600 18px "Pretendard",sans-serif'; x.fillText(role.role, W/2, 414); }
-  if(skills.length>=3){ drawRadarCanvas(x, W/2, 610, 150, skills); }
-  else { x.fillStyle='#a4b39a'; x.font='400 18px "Pretendard",sans-serif'; x.fillText(skills.length?('스킬 '+skills.length+'개'):'스킬 미설정', W/2, 600); }
-  let url; try{ url=c.toDataURL('image/png'); }catch(e){ toast('이미지 저장 실패'); return; }
-  const a=document.createElement('a'); a.href=url; a.download='싸커피_'+(name||'card')+'.png'; document.body.appendChild(a); a.click(); a.remove();
-  toast('이미지를 저장했어요');
+  x.fillStyle='#ece6d2'; x.font='600 126px "Oswald","Pretendard",sans-serif'; x.fillText(String(jersey), W/2, 320);
+  x.font='800 36px "Pretendard",sans-serif'; x.fillText(name, W/2, 376);
+  x.strokeStyle='#33492f'; x.lineWidth=1; x.beginPath(); x.moveTo(90, 414); x.lineTo(W-90, 414); x.stroke();
+  if(skills.length>=3){ drawRadarCanvas(x, W/2, 680, 158, skills); }
+  else { x.fillStyle='#a4b39a'; x.font='400 18px "Pretendard",sans-serif'; x.fillText(skills.length?('스킬 '+skills.length+'개'):'스킬 미설정', W/2, 620); }
+  let url; try{ url=c.toDataURL('image/png'); }catch(e){ toast('이미지 생성 실패'); return; }
+  showCardPreview(url, name||'card');
+}
+// 카드 이미지 미리보기 → 저장
+function showCardPreview(url, name){
+  let h=document.getElementById('mmHost'); if(!h){ h=document.createElement('div'); h.id='mmHost'; document.body.appendChild(h); }
+  h.innerHTML = `<div class="mm-back" onclick="if(event.target===this)closeMemberCard()"><div class="mm-box">
+    <div class="mm-head"><div class="mm-name">사진 저장</div><button class="mm-x" onclick="closeMemberCard()">×</button></div>
+    <img src="${url}" alt="내 카드" style="width:100%;border-radius:10px;display:block;border:1px solid var(--line)">
+    <p class="hint" style="margin:10px 0 12px;font-size:11px">아이폰은 위 이미지를 길게 눌러 "사진에 저장"하세요.</p>
+    <a href="${url}" download="싸커피_${name}.png" class="btn accent" style="display:block;text-align:center;text-decoration:none" onclick="setTimeout(closeMemberCard,300)">저장하기</a>
+  </div></div>`;
 }
 function drawRadarCanvas(x, cx, cy, R, skills){
   const n=skills.length; if(n<3) return;

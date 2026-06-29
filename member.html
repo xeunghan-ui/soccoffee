@@ -2204,6 +2204,7 @@ async function renderHome() {
   const dMonth = statusMonth();   // 홈 상태박스: 15일부터 다음 달
   const myDues = meActive ? await fetchDues(dMonth) : [];
   const myPaid = myDues.some(d => d.member_id === me && d.paid);
+  const mySkills = meActive ? await getMemberSkills(me) : [];
   const myStatusOf = sid => { const a = (attBySess[sid]||[]).find(x=>x.member_id===me); return a ? a.status : 'none'; };
   const pending = meActive ? sessions.filter(s => myStatusOf(s.id) === 'none') : [];
   const nextSess = sessions[0];
@@ -2260,6 +2261,18 @@ async function renderHome() {
         <span style="font-size:13px;font-weight: 600;color:var(--cream)">아직 응답 안 한 일정 ${pending.length}개</span>
         <span style="font-size:12px;font-weight:800;color:var(--accent)">응답하기 →</span></button>`;
     }
+    // 내 스킬 카드(스파이더 차트) — 홈에서 편집
+    dash += `<div class="card" style="padding:14px 16px;margin-bottom:12px">
+      <div style="display:flex;justify-content:space-between;align-items:center">
+        <span style="font-size:13px;font-weight:800;color:var(--cream)">내 스킬</span>
+        <button class="btn ghost sm" onclick="openMemberCard(${me})">${mySkills.length?'보기 · 편집':'추가하기'}</button>
+      </div>
+      ${mySkills.length>=3
+        ? radarSvg(mySkills)
+        : (mySkills.length
+            ? `<div style="margin-top:8px">${mySkills.map(sk=>`<div style="display:flex;justify-content:space-between;font-size:13px;color:var(--cream);padding:3px 0"><span>${esc(sk.name)}</span><span style="color:var(--accent);font-weight:800">${sk.level}/5</span></div>`).join('')}</div>`
+            : `<div class="hint" style="margin-top:6px">스파이더 차트로 내 스킬을 표시해 보세요.</div>`)}
+    </div>`;
   }
 
   const sessCards = sessions.map((s,i)=>{

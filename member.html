@@ -2389,8 +2389,8 @@ function radarSvg(skills){
   for(let i=0;i<n;i++){ const a=-Math.PI/2+i*2*Math.PI/n; g+=`<line x1="${cx}" y1="${cy}" x2="${(cx+R*Math.cos(a)).toFixed(1)}" y2="${(cy+R*Math.sin(a)).toFixed(1)}" stroke="#33492f" stroke-width="1"/>`; }
   let dp=''; for(let i=0;i<n;i++){ const a=-Math.PI/2+i*2*Math.PI/n; const rr=R*(skills[i].level/5); dp+=(cx+rr*Math.cos(a)).toFixed(1)+','+(cy+rr*Math.sin(a)).toFixed(1)+' '; }
   g+=`<polygon points="${dp}" fill="rgba(221,214,182,.35)" stroke="#ddd6b6" stroke-width="2"/>`;
-  for(let i=0;i<n;i++){ const a=-Math.PI/2+i*2*Math.PI/n; const lx=cx+(R+15)*Math.cos(a), ly=cy+(R+15)*Math.sin(a); const anc=Math.abs(Math.cos(a))<0.3?'middle':(Math.cos(a)>0?'start':'end'); g+=`<text x="${lx.toFixed(1)}" y="${(ly+3).toFixed(1)}" fill="#a4b39a" font-size="10" text-anchor="${anc}">${esc(skills[i].name)} ${skills[i].level}</text>`; }
-  return `<svg viewBox="0 0 220 220" style="width:100%;max-width:260px;display:block;margin:4px auto 0">${g}</svg>`;
+  for(let i=0;i<n;i++){ const a=-Math.PI/2+i*2*Math.PI/n; const lx=cx+(R+15)*Math.cos(a), ly=cy+(R+15)*Math.sin(a); const anc=Math.abs(Math.cos(a))<0.3?'middle':(Math.cos(a)>0?'start':'end'); g+=`<text x="${lx.toFixed(1)}" y="${(ly+3).toFixed(1)}" fill="#ece6d2" font-size="11" font-weight="600" text-anchor="${anc}">${esc(skills[i].name)} ${skills[i].level}</text>`; }
+  return `<svg viewBox="0 0 220 220" style="width:100%;max-width:230px;display:block;margin:6px auto 0;overflow:visible">${g}</svg>`;
 }
 function renderMemberCard(){
   let h=document.getElementById('mmHost'); if(!h){ h=document.createElement('div'); h.id='mmHost'; document.body.appendChild(h); }
@@ -2399,7 +2399,7 @@ function renderMemberCard(){
   const roleHtml = s.role ? `<span class="mm-role ${s.role.type==='admin'?'admin':'other'}">${esc(s.role.role)}</span>` : '';
   let body;
   if(s.edit){
-    body = s.skills.map((sk,i)=>`<div class="sk-row"><input type="text" maxlength="8" value="${esc(sk.name)}" placeholder="스킬명" oninput="mmSetName(${i},this.value)"><span class="sk-lv">${[1,2,3,4,5].map(lv=>`<button class="${sk.level===lv?'on':''}" onclick="mmSetLevel(${i},${lv})">${lv}</button>`).join('')}</span><button class="sk-del" onclick="mmDelSkill(${i})">×</button></div>`).join('')
+    body = `<div class="hint" style="margin-bottom:8px;font-size:11px">스킬명은 최대 8자 · 레벨 1~5</div>` + s.skills.map((sk,i)=>`<div class="sk-row"><input type="text" maxlength="8" value="${esc(sk.name)}" placeholder="스킬명 (8자)" oninput="mmSetName(${i},this.value)"><span class="sk-lv">${[1,2,3,4,5].map(lv=>`<button class="${sk.level===lv?'on':''}" onclick="mmSetLevel(${i},${lv})">${lv}</button>`).join('')}</span><button class="sk-del" onclick="mmDelSkill(${i})">×</button></div>`).join('')
       + `<button class="btn ghost sm" onclick="mmAddSkill()" style="margin-top:4px">＋ 스킬 추가</button><div style="display:flex;gap:8px;margin-top:14px"><button class="btn accent sm" onclick="mmSave()" style="flex:1">저장</button><button class="btn ghost sm" onclick="mmEdit(false)">취소</button></div>`;
   } else {
     const radar = radarSvg(s.skills);

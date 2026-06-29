@@ -807,6 +807,7 @@
 
   <div id="memberSubnav" class="member-subnav hidden">
     <button class="msub" data-sub="squad" onclick="switchTab('squad')">멤버 현황</button>
+    <button class="msub" data-sub="rank" onclick="switchTab('rank')">랭킹</button>
     <button class="msub" data-sub="list" onclick="switchTab('list')">카풀</button>
     <button class="msub" data-sub="potm" onclick="switchTab('potm')">투표</button>
   </div>
@@ -1056,7 +1057,7 @@ async function deleteRide(id) {
 const ALL_TABS = ['home','att','dues','list','potm','rank','more','mine','faq','squad','ops'];
 function switchTab(tab, mode) {
   if (tab === 'ops' && !isAdmin()) tab = 'home';   // 운영진 전용 탭은 비운영진 직접 접근 차단
-  const memberTabs = ['squad','list','potm'];   // 멤버 탭 묶음(멤버현황·카풀·투표)
+  const memberTabs = ['squad','rank','list','potm'];   // 멤버 탭 묶음(멤버현황·랭킹·카풀·투표)
   const navActive = memberTabs.includes(tab) ? 'member' : (['home','att'].includes(tab) ? tab : 'more');
   document.querySelectorAll('.bnav-item').forEach(b => b.classList.toggle('active', b.dataset.tab === navActive));
   ALL_TABS.forEach(t => {
@@ -1076,6 +1077,8 @@ function switchTab(tab, mode) {
       else history.pushState(null, '', '#' + tab);
     } catch(e){ location.hash = tab; }
   }
+  // 탭 전환 시 맨 위로 (하단에서 다른 탭으로 이동해도 빈 화면처럼 보이지 않게)
+  if (mode !== 'none') { try { window.scrollTo(0, 0); document.scrollingElement.scrollTop = 0; } catch(e){} }
   if (tab === 'home') renderHome();
   if (tab === 'att')  renderAtt();
   if (tab === 'dues') renderDues();
@@ -2104,9 +2107,7 @@ function squadBlock(members, team) {
 function renderMore() {
   const el = document.getElementById('moreContent');
   const admin = isAdmin();
-  const memberItems = [
-    ['rank', '랭킹', '출석 · 모범 랭킹'],
-  ];
+  const memberItems = [];   // 랭킹은 멤버 탭 서브탭으로 이동
   // 운영진 메뉴 = 옛 운영진 탭의 내부 기능들을 개별 항목으로(공지·세션·회비·투표·설정 + 팀빌더)
   const adminItems = [
     ['notice',  '공지',   '공지 작성 · 노출 기간', 'ops'],

@@ -2286,7 +2286,7 @@ async function renderSquad() {
   const chip = p => `<div class="sq-chip"><span class="sq-no">${p.jersey!=null?p.jersey:'–'}</span><span class="sq-nm">${esc(p.name)}</span></div>`;
   const grp = (title, arr, dim) => arr.length ? `<div class="sq-grp-h"><span>${title}</span><span>${arr.length}명</span></div><div class="sq-grid${dim?' dim':''}">${arr.map(chip).join('')}</div>` : '';
   el.innerHTML = `<div class="section-title">${potmMonthLabel(month)} 팀 현황</div>
-    <p class="hint" style="text-align:center;margin:0 0 14px">팀빌더 명단 기준 · 활동 ${active.length}${friends.length?` · 친구 ${friends.length}`:''}${dormant.length?` · 휴면 ${dormant.length}`:''}</p>
+    <p class="hint" style="text-align:center;margin:0 0 14px">팀빌더 명단 기준 · 전체 ${active.length+friends.length+dormant.length} / 활동 ${active.length} / 휴면 ${dormant.length}</p>
     ${grp('활동', active, false)}
     ${grp('싸커피 친구', friends, false)}
     ${grp('이번 달 휴면', dormant, true)}`;

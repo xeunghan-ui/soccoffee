@@ -348,10 +348,23 @@
       players=players.filter(function(p){var s=p.status||'active'; return s!=='former'&&s!=='friends';});
       players.sort(function(a,b){var ja=a.jersey==null?999:a.jersey, jb=b.jersey==null?999:b.jersey; return ja-jb || esc(a.name).localeCompare(esc(b.name));});
       if(!players.length){ box.innerHTML='<p class="muted" style="font-size:13px">명단을 준비 중이에요.</p>'; return; }
+      // 최신 투표월의 MVP·성장캐 집계
+      var mvpId=null, growthId=null;
+      try{
+        var vr=await sb.from('potm_votes').select('month,category,candidate_id');
+        var votes=(vr&&vr.data)||[];
+        var latest=votes.map(function(v){return v.month;}).filter(Boolean).sort().slice(-1)[0];
+        function topOf(cat){ var t={}; votes.forEach(function(v){ if(v.month===latest&&v.category===cat) t[v.candidate_id]=(t[v.candidate_id]||0)+1; }); var b=null,bc=0; for(var k in t){ if(t[k]>bc){bc=t[k]; b=Number(k);} } return b; }
+        mvpId=topOf('mvp'); growthId=topOf('growth');
+      }catch(e){}
+      var BST='font-size:9px;font-weight:800;border-radius:5px;padding:1px 5px;margin-left:6px;vertical-align:middle;';
       box.innerHTML=players.map(function(p){
         var dorm=(p.status==='dormant')?' dorm':'';
         var no=(p.jersey!=null)?p.jersey:'-';
-        return '<div class="pl'+dorm+'"><span class="no">'+no+'</span><span class="nm">'+esc(p.name)+'</span></div>';
+        var badge='';
+        if(p.id===mvpId) badge+=' <span style="'+BST+'background:var(--gold);color:#14281b">MVP</span>';
+        if(p.id===growthId) badge+=' <span style="'+BST+'background:var(--win);color:#fff">성장</span>';
+        return '<div class="pl'+dorm+'"><span class="no">'+no+'</span><span class="nm">'+esc(p.name)+badge+'</span></div>';
       }).join('');
     }catch(e){ box.innerHTML='<p class="muted" style="font-size:13px">명단을 불러오지 못했어요.</p>'; }
   }

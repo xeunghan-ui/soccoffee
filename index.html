@@ -19,12 +19,12 @@
 <meta name="apple-mobile-web-app-title" content="싸커피">
 <link rel="stylesheet" as="style" crossorigin href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css">
 <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Oswald:wght@400;500;600&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Anton&family=Oswald:wght@400;500;600&display=swap" rel="stylesheet">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <style>
   :root{
     --green:#15281b; --green-2:#1e3526; --sand:#ddd6b6; --cream:#ece6d2; --muted:#a4b39a; --line:#33492f;
-    --disp:"Oswald","Pretendard",sans-serif;
+    --disp:"Anton","Pretendard",sans-serif;
     --gold:#ddd6b6; --gold-bright:#ece6d2; --gold-dim:#4a6450; --gold-bg:rgba(221,214,182,.07);
     --win:#5a9277; --alert:#bd6452;
   }
@@ -97,7 +97,7 @@
   .kit .nm{font-size:13px; font-weight:600; letter-spacing:3px; margin-top:8px; text-transform:uppercase;}
 
   /* 경기 일정 (MATCH DAY) */
-  .sec-h{font-family:var(--disp); font-weight:400; font-size:clamp(40px,13vw,66px); line-height:.9; letter-spacing:1px; color:#f3eed9; text-transform:uppercase; margin:6px 0 16px;}
+  .sec-h{font-family:"Anton","Pretendard",sans-serif; font-weight:400; font-size:clamp(40px,13vw,66px); line-height:.9; letter-spacing:1px; color:#f3eed9; text-transform:uppercase; margin:6px 0 16px;}
   .fixtures{background:#ece6d2; border-radius:16px; overflow:hidden; border:1px solid var(--line); border-top:3px solid var(--gold);}
   .fx{color:#15281b;}
   .fx:nth-child(even){background:#1e3526; color:#ece6d2;}
@@ -354,10 +354,11 @@
       // 최신 투표월의 MVP·성장캐 집계
       var mvpId=null, growthId=null;
       try{
-        var vr=await sb.from('potm_votes').select('month,category,candidate_id');
+        var _d=new Date(); _d.setDate(1); _d.setMonth(_d.getMonth()-1);
+        var pm=_d.getFullYear()+'-'+('0'+(_d.getMonth()+1)).slice(-2);   // 전 달(확정)만 표시
+        var vr=await sb.from('potm_votes').select('category,candidate_id').eq('month', pm);
         var votes=(vr&&vr.data)||[];
-        var latest=votes.map(function(v){return v.month;}).filter(Boolean).sort().slice(-1)[0];
-        function topOf(cat){ var t={}; votes.forEach(function(v){ if(v.month===latest&&v.category===cat) t[v.candidate_id]=(t[v.candidate_id]||0)+1; }); var b=null,bc=0; for(var k in t){ if(t[k]>bc){bc=t[k]; b=Number(k);} } return b; }
+        function topOf(cat){ var t={}; votes.forEach(function(v){ if(v.category===cat) t[v.candidate_id]=(t[v.candidate_id]||0)+1; }); var b=null,bc=0; for(var k in t){ if(t[k]>bc){bc=t[k]; b=Number(k);} } return b; }
         mvpId=topOf('mvp'); growthId=topOf('growth');
       }catch(e){}
       var BST='font-size:9px;font-weight:800;border-radius:5px;padding:1px 5px;margin-left:6px;vertical-align:middle;';

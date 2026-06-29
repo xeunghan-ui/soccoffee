@@ -15,7 +15,7 @@
 <meta name="apple-mobile-web-app-title" content="싸커피">
 <link rel="stylesheet" as="style" crossorigin href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css">
 <link rel="preconnect" href="https://fonts.googleapis.com">
-<link href="https://fonts.googleapis.com/css2?family=Oswald:wght@400;500;600&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Anton&family=Oswald:wght@400;500;600&display=swap" rel="stylesheet">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <style>
   :root {
@@ -38,7 +38,7 @@
     --gold: #ddd6b6; --gold-bright: #ece6d2; --gold-dim: #4a6450; --gold-bg: rgba(221,214,182,.07);
     --win: #5a9277; --win-bg: rgba(90,146,119,.13);
     --alert: #bd6452; --alert-bg: rgba(189,100,82,.12);
-    --disp: "Oswald", "Pretendard", sans-serif;
+    --disp: "Anton", "Pretendard", sans-serif;
   }
   * { box-sizing: border-box; }
   body {
@@ -703,11 +703,12 @@
     display: flex; background: #102016; border-top: 1px solid var(--line);
     border-left: 1px solid var(--line); border-right: 1px solid var(--line);
     padding: 6px 4px calc(6px + env(safe-area-inset-bottom)); }
-  .bnav-item { flex: 1; background: none; border: none; cursor: pointer; font-family: inherit;
+  .bnav-item { position: relative; flex: 1; background: none; border: none; cursor: pointer; font-family: inherit;
     display: flex; flex-direction: column; align-items: center; gap: 3px; padding: 6px 2px;
     color: #8c9a7c; font-size: 11px; font-weight: 600; }
   .bnav-item .bn-ico { font-size: 19px; line-height: 1; }
   .bnav-item.active { color: var(--gold); }
+  .bn-badge { position: absolute; top: 2px; left: calc(50% + 5px); min-width: 16px; height: 16px; padding: 0 4px; border-radius: 8px; background: var(--alert); color: #fff; font-size: 10px; font-weight: 800; line-height: 16px; text-align: center; box-sizing: border-box; }
   /* 더보기 메뉴 */
   .more-grid { display: grid; gap: 10px; }
   .more-item { display: block; width: 100%; text-align: left; cursor: pointer; font-family: inherit;
@@ -884,7 +885,7 @@
 
 <nav class="bottomnav" id="bottomNav">
   <button class="bnav-item active" data-tab="home" onclick="switchTab('home')"><span class="bn-ico">⌂</span>홈</button>
-  <button class="bnav-item" data-tab="att" onclick="switchTab('att')"><span class="bn-ico">◷</span>일정</button>
+  <button class="bnav-item" data-tab="att" onclick="switchTab('att')"><span class="bn-ico">◷</span>일정<span class="bn-badge" id="attBadge" style="display:none"></span></button>
   <button class="bnav-item" data-tab="member" onclick="switchTab('squad')"><span class="bn-ico">▦</span>멤버</button>
   <button class="bnav-item" data-tab="more" onclick="switchTab('more')"><span class="bn-ico">≡</span>더보기</button>
 </nav>
@@ -2109,6 +2110,20 @@ function renderMore() {
   el.innerHTML = html;
 }
 
+// 일정 하단탭 배지: 내 미응답(미정 포함) 일정 개수
+async function refreshAttBadge(){
+  const b = document.getElementById('attBadge'); if (!b) return;
+  const me = getMe(); let cnt = 0;
+  try{
+    if (me != null && Array.isArray(sessions) && sessions.length && activeMembers(potmMonth()).some(m=>m.id===me)){
+      const arr = await Promise.all(sessions.map(s=>fetchAttendance(s.id)));
+      sessions.forEach((s,i)=>{ const a=(arr[i]||[]).find(x=>x.member_id===me); const st=a?a.status:'none'; if(st==='none'||st==='maybe') cnt++; });
+    }
+  }catch(e){}
+  b.textContent = cnt>0 ? String(cnt) : '';
+  b.style.display = cnt>0 ? '' : 'none';
+}
+
 /* ===== 마이페이지 ===== */
 async function renderMine() {
   const el = document.getElementById('mineContent');
@@ -2166,6 +2181,7 @@ async function homeQuickAtt(sid, status){
   if (!ok) return;
   toast({yes:'참석으로 표시했어요',no:'불참으로 표시했어요',maybe:'미정으로 표시했어요'}[status]);
   await rerender(renderHome);
+  refreshAttBadge();
 }
 // 홈 상태박스: 본인 회비를 해당 월 납부로 표시
 async function homePayDue(memberId, month){
@@ -2214,7 +2230,7 @@ async function renderHome() {
   const myPaid = myDues.some(d => d.member_id === me && d.paid);
   const mySkills = meActive ? await getMemberSkills(me) : [];
   const myStatusOf = sid => { const a = (attBySess[sid]||[]).find(x=>x.member_id===me); return a ? a.status : 'none'; };
-  const pending = meActive ? sessions.filter(s => myStatusOf(s.id) === 'none') : [];
+  const pending = meActive ? sessions.filter(s => { const st = myStatusOf(s.id); return st === 'none' || st === 'maybe'; }) : [];
   const nextSess = sessions[0];
   let dash = '';
   if (meActive) {
@@ -2686,6 +2702,7 @@ async function attSaveDraft(){
   attDraft = {};
   await rerender(renderAtt);
   toast(`출석 ${entries.length}건 저장했어요`);
+  refreshAttBadge();
 }
 function attCancelDraft(){ attDraft = {}; rerender(renderAtt); }
 function openAtt(id){ if(id) attSessionId = id; switchTab('att'); }
@@ -2728,6 +2745,7 @@ async function markAtt(status){
   if(!ok) return;
   await rerender(renderAtt);
   toast({yes:'참석으로 표시했어요',no:'불참으로 표시했어요',maybe:'미정으로 표시했어요'}[status]);
+  refreshAttBadge();
 }
 
 /* ============================================================
@@ -3482,6 +3500,7 @@ async function initApp() {
   const ok = ALL_TABS.includes(start) && (start !== 'ops' || isAdmin());
   switchTab(ok ? start : 'home', 'replace');   // 초기 진입은 히스토리 대체(중복 항목 방지)
   render();  // 카풀 데이터 미리 로드(실시간 구독 대비)
+  refreshAttBadge();   // 일정 탭 미응답 배지
 }
 // 뒤로/앞으로 가기(해시 변경) → 해당 탭으로(히스토리 조작 없이)
 window.addEventListener('hashchange', () => {

@@ -744,9 +744,9 @@
   .sq-grp-h span { font-weight: 600; }
   .sq-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 16px; }
   .sq-grid.dim .sq-chip { opacity: .5; }
-  .sq-chip { display: flex; align-items: center; gap: 10px; background: var(--card); border: 1px solid var(--line); border-radius: 10px; padding: 9px 12px; min-width: 0; width: 100%; text-align: left; font-family: inherit; cursor: pointer; }
+  .sq-chip { display: flex; align-items: center; gap: 10px; background: var(--card); border: 1px solid var(--line); border-radius: 10px; padding: 9px 12px; min-width: 0; width: 100%; text-align: left; font-family: inherit; cursor: pointer; color: #ece6d2; }
   .sq-chip.role-admin { border-color: var(--win); background: rgba(90,146,119,.12); }
-  .sq-chip.role-other { border-color: #7a6cae; background: rgba(122,108,174,.13); }
+  .sq-chip.role-other { border-color: var(--accent); background: rgba(221,214,182,.10); }
   .sq-no { font-family: var(--disp); font-size: 19px; color: var(--accent); min-width: 26px; text-align: center; flex-shrink: 0; }
   .sq-nm { font-size: 14px; font-weight: 600; color: var(--cream); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
   /* 멤버 카드 모달 */
@@ -757,7 +757,7 @@
   .mm-name { font-size: 18px; font-weight: 800; color: var(--cream); }
   .mm-role { display: inline-block; font-size: 11px; font-weight: 800; padding: 3px 9px; border-radius: 999px; margin-top: 5px; }
   .mm-role.admin { background: var(--win); color: #fff; }
-  .mm-role.other { background: #7a6cae; color: #fff; }
+  .mm-role.other { background: var(--accent); color: #14281b; }
   .mm-x { margin-left: auto; background: none; border: none; color: var(--muted); font-size: 22px; cursor: pointer; font-family: inherit; }
   .mm-sec { font-size: 11px; font-weight: 800; letter-spacing: .04em; color: var(--muted); text-transform: uppercase; margin: 16px 0 8px; }
   .sk-row { display: flex; align-items: center; gap: 8px; margin-bottom: 8px; }
@@ -2342,7 +2342,6 @@ async function renderSquad() {
       <div class="att-cnt yes"><div class="num">${active.length}</div><div class="cap">활동</div></div>
       <div class="att-cnt none"><div class="num">${dormant.length}</div><div class="cap">휴면</div></div>
     </div>
-    <p class="hint" style="text-align:center;margin:0 0 14px;font-size:11px">팀빌더 명단 기준</p>
     ${grp('활동', active, false)}
     ${grp('이번 달 휴면', dormant, true)}`;
 }

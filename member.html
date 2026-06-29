@@ -1623,8 +1623,8 @@ async function renderPotm() {
   const voter = members.find(m => m.id === potmVoterId) || null;
   const admin = isAdmin();
   const bothResults = () =>
-    `<div class="card"><h2>이달의 선수 결과</h2>${resultsHtml(votesMvp, members)}</div>
-     <div class="card"><h2>가장 성장한 선수 결과</h2>${resultsHtml(votesGrowth, members)}</div>`;
+    `<div class="card"><h2>이달의 선수 결과</h2>${resultsHtml(votesMvp, members, admin)}</div>
+     <div class="card"><h2>가장 성장한 선수 결과</h2>${resultsHtml(votesGrowth, members, admin)}</div>`;
 
   // 1) 로그인 안 됐거나 이번 달 활동 회원이 아님
   if (!voter) {
@@ -1713,13 +1713,19 @@ function pickCandSel(cat, val) {
   syncVoteBtn();
 }
 
-function resultsHtml(votes, members) {
+function resultsHtml(votes, members, showVoters) {
   const tally = {};
   votes.forEach(v => { tally[v.candidate_id] = (tally[v.candidate_id] || 0) + 1; });
   const ranked = members.map(m => ({ ...m, c: tally[m.id] || 0 }))
     .filter(m => m.c > 0)
     .sort((a, b) => b.c - a.c || a.name.localeCompare(b.name, 'ko'));
-  if (ranked.length === 0) return `<div class="res-locked"><div class="big"></div>아직 집계된 표가 없어요.</div>`;
+  // 운영진 전용: 누가 누구에게 투표했는지
+  const nameOf = id => { const m = members.find(x => x.id === id); return m ? m.name : ('#' + id); };
+  const votersBlock = (showVoters && votes.length)
+    ? `<div style="margin-top:14px;padding-top:10px;border-top:1px solid var(--line);font-size:12px;color:var(--muted);line-height:1.7">
+         <b style="color:var(--coffee-2)">투표자 ${votes.length}명</b><br>${votes.map(v => esc(nameOf(v.voter_id))).join(', ')}</div>`
+    : '';
+  if (ranked.length === 0) return `<div class="res-locked"><div class="big"></div>아직 집계된 표가 없어요.</div>${votersBlock}`;
   const max = ranked[0].c;
   return `<div style="margin-top:16px">` + ranked.map((m, i) => `
     <div class="res-row">
@@ -1728,7 +1734,7 @@ function resultsHtml(votes, members) {
         <div class="res-name"><span>${m.jersey != null ? `<span style="color:var(--muted)">${m.jersey}</span> ` : ''}${esc(m.name)}</span><span class="cnt">${m.c}표</span></div>
         <div class="res-bar"><div style="width:${Math.round(m.c / max * 100)}%"></div></div>
       </div>
-    </div>`).join('') + `</div>`;
+    </div>`).join('') + `</div>` + votersBlock;
 }
 
 function adminPanel(cat, month, votes, members) {
@@ -1736,7 +1742,7 @@ function adminPanel(cat, month, votes, members) {
     <div class="card" style="border:1.5px dashed var(--accent)">
       <h2>운영진 — ${cat.label} 실시간 결과</h2>
       <p class="sub">${potmMonthLabel(month)} · 총 ${votes.length}표</p>
-      ${resultsHtml(votes, members)}
+      ${resultsHtml(votes, members, true)}
       <button class="btn ghost sm" style="color:var(--red);margin-top:14px" onclick="adminResetPotm()">이 부문 투표 초기화</button>
     </div>`;
 }
@@ -2010,12 +2016,20 @@ function renderMore() {
     ['rank', '랭킹', '출석 · 모범 랭킹'],
     ['squad', '팀 현황', '활동 · 휴면 인원 · 스쿼드'],
   ];
+  // 운영진 메뉴 = 옛 운영진 탭의 내부 기능들을 개별 항목으로(공지·세션·회비·투표·설정 + 팀빌더)
   const adminItems = [
-    ['dues', '회비', '이번 달 납부 현황'],
-    ['ops', '운영진', '공지 · 세션 · 회비 · 설정'],
+    ['notice',  '공지',   '공지 작성 · 노출 기간', 'ops'],
+    ['session', '세션',   '세션 추가 · 마감 설정', 'ops'],
+    ['dues',    '회비',   '이번 달 납부 현황',     'dues'],
+    ['vote',    '투표',   '투표 결과 · 투표자',   'ops'],
+    ['roster',  '설정',   'PIN 관리 · 팀 구분',   'ops'],
   ];
   const btn = ([t, name, desc]) =>
     `<button class="more-item" onclick="switchTab('${t}')"><div class="mi-name">${name}</div><div class="mi-desc">${desc}</div></button>`;
+  const adminBtn = ([key, name, desc, kind]) => {
+    const click = kind === 'ops' ? `openOps('${key}')` : `switchTab('${key}')`;
+    return `<button class="more-item" onclick="${click}"><div class="mi-name">${name}</div><div class="mi-desc">${desc}</div></button>`;
+  };
   const teamLink = `<a class="more-item" href="team/" target="_blank" rel="noopener"><div class="mi-name">팀빌더 ↗</div><div class="mi-desc">명단 · 등번호 · 휴면 · 팀 배분</div></a>`;
   let html = '';
   if (admin) {
@@ -2023,7 +2037,7 @@ function renderMore() {
     html += `<div class="more-sec-title">회원 메뉴</div>`;
     html += `<div class="more-grid">` + memberItems.map(btn).join('') + `</div>`;
     html += `<div class="more-sec-title">운영진 메뉴</div>`;
-    html += `<div class="more-grid">` + adminItems.map(btn).join('') + teamLink + `</div>`;
+    html += `<div class="more-grid">` + adminItems.map(adminBtn).join('') + teamLink + `</div>`;
   } else {
     html += `<div class="more-grid">` + memberItems.map(btn).join('') + `</div>`;
   }
@@ -2914,6 +2928,8 @@ async function opsToggleTeamSplit() {
 /* ---------- 운영진 내부 서브탭 ---------- */
 let opsTabSel = 'notice';
 function opsSwitch(key){ opsTabSel = key; renderOps(); }
+// 더보기에서 특정 운영진 기능으로 바로 진입
+function openOps(sub){ if(!isAdmin()) return; if(sub) opsTabSel = sub; switchTab('ops'); }
 
 /* ---------- 명단 관리 (운영진) ---------- */
 let opsEditId = null;

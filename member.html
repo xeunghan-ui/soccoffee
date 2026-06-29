@@ -736,6 +736,9 @@
   .pc-jersey { font-family: var(--disp); font-size: 46px; line-height: .85; color: var(--gold-bright); }
   .pc-name { font-size: 15px; font-weight: 800; color: var(--cream); margin-top: 8px; }
   .pc-team { font-size: 11px; color: var(--muted); margin-top: 2px; }
+  .win-badge { font-size: 10px; font-weight: 800; padding: 1px 6px; border-radius: 5px; vertical-align: middle; white-space: nowrap; }
+  .win-badge.mvp { background: var(--accent); color: #14281b; }
+  .win-badge.grow { background: var(--win); color: #fff; }
   .pc-right { flex: 1; min-width: 0; display: flex; flex-direction: column; justify-content: center; gap: 10px; }
   .pc-stat { display: flex; align-items: center; justify-content: space-between; gap: 8px; font-size: 13px; line-height: 1.3; width: 100%; }
   .pc-stat .lbl { color: var(--muted); font-weight: 600; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
@@ -1549,19 +1552,34 @@ function statusMonth() {
   return `${y}-${String(m + 1).padStart(2, '0')}`;
 }
 
-// 이번 주 수요일 오후 9시 (투표 오픈 시각)
+// 투표 오픈 시각: 그 달 15일 0시 (= 매월 15일부터 말일까지 그 달 MVP·성장 투표)
 function votingOpensAt() {
   const d = new Date();
-  d.setDate(d.getDate() + (3 - d.getDay())); // 이번 주 수요일
-  d.setHours(21, 0, 0, 0);
+  d.setDate(15);
+  d.setHours(0, 0, 0, 0);
   return d;
 }
-// 투표 가능: 수요일 21시 ~ 토요일 말까지(일~수 낮은 잠금)
+// 투표 가능: 매월 15일 0시 ~ 말일 끝(1~14일은 잠금). 다음 달 15일 전까지 닫혀 있어 "그 달까지만" 투표됨.
 function isVotingOpen() { return Date.now() >= votingOpensAt().getTime(); }
 function fmtOpenTime(d) {
   const days = ['일', '월', '화', '수', '목', '금', '토'];
-  return `${d.getMonth() + 1}/${d.getDate()}(${days[d.getDay()]}) 오후 9시`;
+  return `${d.getMonth() + 1}월 ${d.getDate()}일(${days[d.getDay()]})`;
 }
+
+// 전 달(확정) MVP·성장 당선자 id (홈·이미지·소개 공용). 캐시.
+let _prevWinners = null;
+async function getPrevWinners(){
+  if (_prevWinners) return _prevWinners;
+  const d = new Date(); d.setDate(1); d.setMonth(d.getMonth()-1);
+  const pm = `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}`;
+  const topId = votes => { const t={}; (votes||[]).forEach(v=>{ t[v.candidate_id]=(t[v.candidate_id]||0)+1; }); let b=null,bc=0; for(const k in t){ if(t[k]>bc){bc=t[k]; b=Number(k);} } return b; };
+  try {
+    const [mvp, growth] = await Promise.all([fetchVotes(pm,'mvp'), fetchVotes(pm,'growth')]);
+    _prevWinners = { mvp: topId(mvp), growth: topId(growth), month: pm };
+  } catch(e){ _prevWinners = { mvp:null, growth:null, month:pm }; }
+  return _prevWinners;
+}
+function myWinTitles(id, w){ return [(id!=null&&id===w.mvp)?'MVP':'', (id!=null&&id===w.growth)?'성장':''].filter(Boolean); }
 
 // 해당 월 활동 회원 (team-builder 월별 현황과 동일 로직)
 // 휴면은 팀빌더에서 읽어 반영 (이름 기준). 팀빌더에 없으면 사이트 명단의 값 사용
@@ -1670,6 +1688,26 @@ async function renderPotm() {
   const members = activeMembers(month);
   potmVoterId = getMe();   // 로그인한 본인
 
+  // 1~14일(현재 달 투표 잠금 기간) → 전 달 확정 결과를 모두에게 노출 (투표 없음)
+  if (!isVotingOpen()) {
+    const d = new Date(); d.setDate(1); d.setMonth(d.getMonth() - 1);
+    const pMonth = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
+    const pMembers = activeMembers(pMonth);
+    el.innerHTML = `<div class="empty">불러오는 중...</div>`;
+    const [pMvp, pGrowth] = await Promise.all([fetchVotes(pMonth, 'mvp'), fetchVotes(pMonth, 'growth')]);
+    const adminP = isAdmin();
+    el.innerHTML = `
+      <div class="potm-hero">
+        <span class="trophy">🏆</span>
+        <h2>지난 투표 결과</h2>
+        <div class="month">${potmMonthLabel(pMonth)} · 참여 ${pMvp.length}명</div>
+        <div class="turnout">${parseInt(month.slice(5))}월 투표는 <b>15일</b>부터 열려요</div>
+      </div>
+      <div class="card"><h2>이달의 선수 결과</h2>${resultsHtml(pMvp, pMembers, adminP)}</div>
+      <div class="card"><h2>가장 성장한 선수 결과</h2>${resultsHtml(pGrowth, pMembers, adminP)}</div>`;
+    return;
+  }
+
   el.innerHTML = `<div class="empty">불러오는 중...</div>`;
   const [votesMvp, votesGrowth] = await Promise.all([fetchVotes(month,'mvp'), fetchVotes(month,'growth')]);
   const total = members.length;
@@ -1718,20 +1756,6 @@ async function renderPotm() {
     body += `<div class="card"><h2>투표 완료</h2>
       <p class="sub">이달의 선수 <b>${pm?esc(pm.name):'-'}</b> · 가장 성장한 선수 <b>${pg?esc(pg.name):'-'}</b></p></div>`;
     body += bothResults();
-    el.innerHTML = body;
-    return;
-  }
-
-  // 3) 투표 시간 잠금 (관리자는 예외)
-  if (!isVotingOpen() && !admin) {
-    body += `
-      <div class="card">
-        <div class="res-locked">
-          <div class="big"></div>
-          <div style="font-weight: 600;color:var(--coffee-2);margin-bottom:4px">아직 투표 시간이 아니에요</div>
-          <div>투표는 <b style="color:var(--coffee)">${fmtOpenTime(votingOpensAt())}</b>부터 열려요.</div>
-        </div>
-      </div>`;
     el.innerHTML = body;
     return;
   }
@@ -2233,6 +2257,7 @@ async function renderHome() {
   const myDues = meActive ? await fetchDues(dMonth) : [];
   const myPaid = myDues.some(d => d.member_id === me && d.paid);
   const mySkills = meActive ? await getMemberSkills(me) : [];
+  const myWins = meActive ? myWinTitles(me, await getPrevWinners()) : [];
   const myStatusOf = sid => { const a = (attBySess[sid]||[]).find(x=>x.member_id===me); return a ? a.status : 'none'; };
   const meP0 = me != null ? PLAYERS.find(x => x.id === me) : null;
   const pending = meActive ? sessions.filter(s => {
@@ -2282,7 +2307,7 @@ async function renderHome() {
     dash += `<div class="card" style="padding:16px;margin-bottom:12px">
       <div style="display:flex;align-items:center;gap:14px">
         <div class="pc-jersey" style="font-size:38px">${jersey}</div>
-        <div style="min-width:0;flex:1"><div class="pc-name" style="margin:0">${esc(meName())}</div><div class="pc-team">${subline}</div></div>
+        <div style="min-width:0;flex:1"><div class="pc-name" style="margin:0">${esc(meName())}${myWins.map(t=>` <span class="win-badge ${t==='MVP'?'mvp':'grow'}">${t}</span>`).join('')}</div><div class="pc-team">${subline}</div></div>
         <button class="btn ghost sm" style="flex-shrink:0" onclick="openMemberCard(${me})">${mySkills.length?'스킬 편집':'스킬 추가'}</button>
       </div>
       ${skillHtml}
@@ -2437,11 +2462,13 @@ async function saveMyCard(){
   try{ await document.fonts.ready; }catch(e){}
   await new Promise(r=>{ const img=new Image(); img.onload=()=>{ const lw=148, lh=lw*img.naturalHeight/img.naturalWidth; x.drawImage(img,(W-lw)/2,58,lw,lh); r(); }; img.onerror=r; img.src='scf_logo.png'; });
   x.textAlign='center';
-  x.fillStyle='#ece6d2'; x.font='600 126px "Oswald","Pretendard",sans-serif'; x.fillText(String(jersey), W/2, 320);
-  x.font='800 36px "Pretendard",sans-serif'; x.fillText(name, W/2, 376);
-  x.strokeStyle='#33492f'; x.lineWidth=1; x.beginPath(); x.moveTo(90, 414); x.lineTo(W-90, 414); x.stroke();
-  if(skills.length>=3){ drawRadarCanvas(x, W/2, 680, 158, skills); }
-  else { x.fillStyle='#a4b39a'; x.font='400 18px "Pretendard",sans-serif'; x.fillText(skills.length?('스킬 '+skills.length+'개'):'스킬 미설정', W/2, 620); }
+  x.fillStyle='#ece6d2'; x.font='600 126px "Oswald","Pretendard",sans-serif'; x.fillText(String(jersey), W/2, 312);
+  x.font='800 36px "Pretendard",sans-serif'; x.fillText(name, W/2, 366);
+  const wins = myWinTitles(me, await getPrevWinners());
+  if(wins.length) drawWinPills(x, W/2, 400, wins);
+  x.strokeStyle='#33492f'; x.lineWidth=1; x.beginPath(); x.moveTo(90, 432); x.lineTo(W-90, 432); x.stroke();
+  if(skills.length>=3){ drawRadarCanvas(x, W/2, 692, 158, skills); }
+  else { x.fillStyle='#a4b39a'; x.textAlign='center'; x.font='400 18px "Pretendard",sans-serif'; x.fillText(skills.length?('스킬 '+skills.length+'개'):'스킬 미설정', W/2, 632); }
   let url; try{ url=c.toDataURL('image/png'); }catch(e){ toast('이미지 생성 실패'); return; }
   showCardPreview(url, name||'card');
 }
@@ -2454,6 +2481,21 @@ function showCardPreview(url, name){
     <p class="hint" style="margin:10px 0 12px;font-size:11px">아이폰은 위 이미지를 길게 눌러 "사진에 저장"하세요.</p>
     <a href="${url}" download="싸커피_${name}.png" class="btn accent" style="display:block;text-align:center;text-decoration:none" onclick="setTimeout(closeMemberCard,300)">저장하기</a>
   </div></div>`;
+}
+function drawWinPills(x, cx, cy, wins){
+  x.font='800 17px "Pretendard",sans-serif'; x.textAlign='center';
+  const padX=13, gap=8, h=28;
+  const ws = wins.map(t=>x.measureText(t).width + padX*2);
+  const total = ws.reduce((a,b)=>a+b,0) + gap*(wins.length-1);
+  let xx = cx - total/2;
+  wins.forEach((t,i)=>{
+    const w=ws[i], yy=cy-h/2, r=h/2;
+    x.fillStyle = (t==='MVP') ? '#ddd6b6' : '#5a9277';
+    x.beginPath(); x.moveTo(xx+r,yy); x.arcTo(xx+w,yy,xx+w,yy+h,r); x.arcTo(xx+w,yy+h,xx,yy+h,r); x.arcTo(xx,yy+h,xx,yy,r); x.arcTo(xx,yy,xx+w,yy,r); x.closePath(); x.fill();
+    x.fillStyle = (t==='MVP') ? '#14281b' : '#ffffff';
+    x.fillText(t, xx+w/2, cy+6);
+    xx += w + gap;
+  });
 }
 function drawRadarCanvas(x, cx, cy, R, skills){
   const n=skills.length; if(n<3) return;

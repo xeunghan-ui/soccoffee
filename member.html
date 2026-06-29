@@ -656,6 +656,9 @@
   .vote-cat.on { background: var(--accent); color: #14281b; border-color: var(--accent); }
 
   /* 세션 선택 칩 / 운영 행 */
+  .member-subnav { display: flex; gap: 6px; margin: 2px 0 16px; background: #16291c; border: 1px solid var(--line); border-radius: 12px; padding: 4px; }
+  .member-subnav .msub { flex: 1; font-family: inherit; font-size: 13px; font-weight: 600; padding: 9px 6px; border-radius: 9px; border: none; background: transparent; color: var(--muted); cursor: pointer; }
+  .member-subnav .msub.on { background: var(--accent); color: #14281b; font-weight: 800; }
   .sess-tabs { display: flex; gap: 8px; flex-wrap: nowrap; overflow-x: auto; -webkit-overflow-scrolling: touch; scrollbar-width: none; margin-bottom: 12px; }
   .sess-tabs::-webkit-scrollbar { display: none; }
   .sess-chip { flex-shrink: 0; padding: 8px 13px; border-radius: 20px; border: none; background: transparent; color: var(--muted); font-weight: 600; font-size: 13px; cursor: pointer; font-family: inherit; }
@@ -770,6 +773,12 @@
 
   <div class="demo-note hidden" id="demoNote">데모 모드 — 데이터가 이 브라우저에만 저장돼요. (Supabase 키를 넣으면 실제 공유됩니다)</div>
 
+  <div id="memberSubnav" class="member-subnav hidden">
+    <button class="msub" data-sub="squad" onclick="switchTab('squad')">멤버 현황</button>
+    <button class="msub" data-sub="list" onclick="switchTab('list')">카풀</button>
+    <button class="msub" data-sub="potm" onclick="switchTab('potm')">투표</button>
+  </div>
+
   <div id="tab-home" class="hidden"><div id="homeContent"></div></div>
   <div id="tab-more" class="hidden"><div id="moreContent"></div></div>
   <div id="tab-mine" class="hidden"><div id="mineContent"></div></div>
@@ -850,8 +859,7 @@
 <nav class="bottomnav" id="bottomNav">
   <button class="bnav-item active" data-tab="home" onclick="switchTab('home')"><span class="bn-ico">⌂</span>홈</button>
   <button class="bnav-item" data-tab="att" onclick="switchTab('att')"><span class="bn-ico">◷</span>일정</button>
-  <button class="bnav-item" data-tab="list" onclick="switchTab('list')"><span class="bn-ico">⇄</span>카풀</button>
-  <button class="bnav-item" data-tab="potm" onclick="switchTab('potm')"><span class="bn-ico">★</span>투표</button>
+  <button class="bnav-item" data-tab="member" onclick="switchTab('squad')"><span class="bn-ico">▦</span>멤버</button>
   <button class="bnav-item" data-tab="more" onclick="switchTab('more')"><span class="bn-ico">≡</span>더보기</button>
 </nav>
 
@@ -997,13 +1005,19 @@ async function deleteRide(id) {
 const ALL_TABS = ['home','att','dues','list','potm','rank','more','mine','faq','squad','ops'];
 function switchTab(tab, mode) {
   if (tab === 'ops' && !isAdmin()) tab = 'home';   // 운영진 전용 탭은 비운영진 직접 접근 차단
-  const navPrimary = ['home','att','list','potm'];
-  const navActive = navPrimary.includes(tab) ? tab : 'more';
+  const memberTabs = ['squad','list','potm'];   // 멤버 탭 묶음(멤버현황·카풀·투표)
+  const navActive = memberTabs.includes(tab) ? 'member' : (['home','att'].includes(tab) ? tab : 'more');
   document.querySelectorAll('.bnav-item').forEach(b => b.classList.toggle('active', b.dataset.tab === navActive));
   ALL_TABS.forEach(t => {
     const el = document.getElementById('tab-' + t);
     if (el) el.classList.toggle('hidden', t !== tab);
   });
+  // 멤버 서브탭 바 표시/활성
+  const msub = document.getElementById('memberSubnav');
+  if (msub) {
+    msub.classList.toggle('hidden', !memberTabs.includes(tab));
+    msub.querySelectorAll('.msub').forEach(b => b.classList.toggle('on', b.dataset.sub === tab));
+  }
   // 히스토리: 기본은 pushState(탭마다 항목 → 뒤로가기로 탭 이동). 'replace'=초기/대체, 'none'=뒤로가기 처리 중(조작 안 함)
   if (mode !== 'none' && location.hash.slice(1) !== tab) {
     try {
@@ -1969,7 +1983,7 @@ function noticeDateLabel(iso) {
 function noticeWhenLabel(n) {
   if (n && n.hide_at) {
     const d = new Date(n.hide_at);
-    if (!isNaN(d)) return `${d.getMonth()+1}/${d.getDate()} 마감`;
+    if (!isNaN(d)) return `${d.getMonth()+1}/${d.getDate()}까지`;
   }
   return noticeDateLabel(n && n.created_at);
 }
@@ -2020,7 +2034,6 @@ function renderMore() {
   const admin = isAdmin();
   const memberItems = [
     ['rank', '랭킹', '출석 · 모범 랭킹'],
-    ['squad', '팀 현황', '활동 · 휴면 인원 · 스쿼드'],
   ];
   // 운영진 메뉴 = 옛 운영진 탭의 내부 기능들을 개별 항목으로(공지·세션·회비·투표·설정 + 팀빌더)
   const adminItems = [

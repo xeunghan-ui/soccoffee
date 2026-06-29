@@ -102,7 +102,7 @@
   .fx{color:#15281b;}
   .fx:nth-child(even){background:#1e3526; color:#ece6d2;}
   .fx-row{display:grid; grid-template-columns:1fr 1fr 1fr; align-items:center; gap:16px; padding:15px 18px;}
-  .fx-row.no-wk{grid-template-columns:1fr auto;}
+  .fx-row.no-wk{grid-template-columns:auto 1fr;}
   .fx-end{display:flex; align-items:center; gap:16px; min-width:0;}
   .fx.has-detail .fx-row{cursor:pointer;}
   .fx .more{display:none;}
@@ -112,9 +112,9 @@
   .fx-detail{display:none; padding:0 18px 15px; font-size:13px; line-height:1.6; white-space:pre-wrap; word-break:break-word;}
   .fx.open .fx-detail{display:block;}
   .fx .wk{font-weight:600; font-size:14px; letter-spacing:.5px; justify-self:start; opacity:.85;}
-  .fx .loc{display:flex; align-items:center; gap:8px; font-weight:600; font-size:15px; justify-self:start; min-width:0; max-width:100%;}
+  .fx .loc{display:flex; align-items:center; justify-content:flex-end; gap:8px; font-weight:600; font-size:15px; justify-self:end; text-align:right; min-width:0; max-width:100%;}
   .fx .loc .loc-t{overflow:hidden; text-overflow:ellipsis; white-space:nowrap; min-width:0;}
-  .fx .when{justify-self:end; padding-left:14px; text-align:right; letter-spacing:.2px; line-height:1.2;}
+  .fx .when{justify-self:start; padding-right:14px; text-align:left; letter-spacing:.2px; line-height:1.2;}
   .fx .when .d{font-size:15px; font-weight:600;}
   .fx .when .wd{font-size:11px; opacity:.6; margin-left:6px; letter-spacing:1px;}
   .fx .when .t{font-size:12px; opacity:.75; display:block;}
@@ -343,9 +343,9 @@
         return '<div class="fx'+(hasDetail?' has-detail':'')+'">'
           +'<div class="fx-row'+(hasLabel?'':' no-wk')+'"'+rowAttr+'>'
           +(hasLabel?'<span class="wk">'+label+'</span>':'')
-          +'<span class="loc"><span class="loc-t">'+locInner+'</span>'+(hasDetail?'<span class="more"></span>':'')+'</span>'
           +'<span class="when"><span class="d">'+md+(wd?'<span class="wd">'+wd+'</span>':'')+'</span>'
-          +(time?'<span class="t">'+timerange+'</span>':'')+'</span></div>'
+          +(time?'<span class="t">'+timerange+'</span>':'')+'</span>'
+          +'<span class="loc"><span class="loc-t">'+locInner+'</span>'+(hasDetail?'<span class="more"></span>':'')+'</span></div>'
           +(hasDetail?'<div class="fx-detail">'+linkify(s.desc)+'</div>':'')
           +(glink?'<div class="fx-guest"><a href="'+esc(gurl)+'" target="_blank" rel="noopener" onclick="event.stopPropagation()">게스트 신청 →</a></div>':'')
           +'</div>';

@@ -2437,13 +2437,13 @@ async function renderAtt() {
     const hint = segDisabled
       ? `신청이 마감됐어요 (마감 ${deadlineLabel(dl)}). 변경은 운영진에 문의해 주세요.`
       : (closed
-          ? `마감됐지만 운영진은 변경할 수 있어요 (마감 ${deadlineLabel(dl)}).`
+          ? ``   // 마감 후(운영진) 안내 노출 안 함
           : `신청 마감 ${deadlineLabel(dl)} · 언제든 다시 누르면 변경돼요.`);
     html += `
       <div class="card">
         <h2>${segDisabled ? '참석 신청 마감' : '참석하시나요?'}</h2>
         <div class="att-seg">${seg}</div>
-        <p class="hint">${hint}</p>
+        ${hint ? `<p class="hint">${hint}</p>` : ''}
       </div>`;
   }
 

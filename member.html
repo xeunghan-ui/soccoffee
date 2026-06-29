@@ -2115,9 +2115,13 @@ async function refreshAttBadge(){
   const b = document.getElementById('attBadge'); if (!b) return;
   const me = getMe(); let cnt = 0;
   try{
+    const meP = me != null ? PLAYERS.find(x=>x.id===me) : null;
     if (me != null && Array.isArray(sessions) && sessions.length && activeMembers(potmMonth()).some(m=>m.id===me)){
       const arr = await Promise.all(sessions.map(s=>fetchAttendance(s.id)));
-      sessions.forEach((s,i)=>{ const a=(arr[i]||[]).find(x=>x.member_id===me); const st=a?a.status:'none'; if(st==='none'||st==='maybe') cnt++; });
+      sessions.forEach((s,i)=>{
+        if (meP && isDormantFor(meP, (s.date||'').slice(0,7))) return;   // 휴면 달 제외
+        const a=(arr[i]||[]).find(x=>x.member_id===me); const st=a?a.status:'none'; if(st==='none'||st==='maybe') cnt++;
+      });
     }
   }catch(e){}
   b.textContent = cnt>0 ? String(cnt) : '';
@@ -2230,7 +2234,11 @@ async function renderHome() {
   const myPaid = myDues.some(d => d.member_id === me && d.paid);
   const mySkills = meActive ? await getMemberSkills(me) : [];
   const myStatusOf = sid => { const a = (attBySess[sid]||[]).find(x=>x.member_id===me); return a ? a.status : 'none'; };
-  const pending = meActive ? sessions.filter(s => { const st = myStatusOf(s.id); return st === 'none' || st === 'maybe'; }) : [];
+  const meP0 = me != null ? PLAYERS.find(x => x.id === me) : null;
+  const pending = meActive ? sessions.filter(s => {
+    if (meP0 && isDormantFor(meP0, (s.date||'').slice(0,7))) return false;   // 휴면 달 일정은 미응답에서 제외
+    const st = myStatusOf(s.id); return st === 'none' || st === 'maybe';
+  }) : [];
   const nextSess = sessions[0];
   let dash = '';
   if (meActive) {

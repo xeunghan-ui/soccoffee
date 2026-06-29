@@ -995,7 +995,7 @@ async function deleteRide(id) {
 
 /* ---------- UI ---------- */
 const ALL_TABS = ['home','att','dues','list','potm','rank','more','mine','faq','squad','ops'];
-function switchTab(tab) {
+function switchTab(tab, mode) {
   if (tab === 'ops' && !isAdmin()) tab = 'home';   // 운영진 전용 탭은 비운영진 직접 접근 차단
   const navPrimary = ['home','att','list','potm'];
   const navActive = navPrimary.includes(tab) ? tab : 'more';
@@ -1004,7 +1004,13 @@ function switchTab(tab) {
     const el = document.getElementById('tab-' + t);
     if (el) el.classList.toggle('hidden', t !== tab);
   });
-  if (location.hash.slice(1) !== tab) { try { history.replaceState(null, '', '#' + tab); } catch(e){ location.hash = tab; } }
+  // 히스토리: 기본은 pushState(탭마다 항목 → 뒤로가기로 탭 이동). 'replace'=초기/대체, 'none'=뒤로가기 처리 중(조작 안 함)
+  if (mode !== 'none' && location.hash.slice(1) !== tab) {
+    try {
+      if (mode === 'replace') history.replaceState(null, '', '#' + tab);
+      else history.pushState(null, '', '#' + tab);
+    } catch(e){ location.hash = tab; }
+  }
   if (tab === 'home') renderHome();
   if (tab === 'att')  renderAtt();
   if (tab === 'dues') renderDues();
@@ -3304,12 +3310,13 @@ async function initApp() {
   updateAdminBtn();
   const start = (location.hash.slice(1) || 'home');
   const ok = ALL_TABS.includes(start) && (start !== 'ops' || isAdmin());
-  switchTab(ok ? start : 'home');
+  switchTab(ok ? start : 'home', 'replace');   // 초기 진입은 히스토리 대체(중복 항목 방지)
   render();  // 카풀 데이터 미리 로드(실시간 구독 대비)
 }
+// 뒤로/앞으로 가기(해시 변경) → 해당 탭으로(히스토리 조작 없이)
 window.addEventListener('hashchange', () => {
-  const t = location.hash.slice(1);
-  if (ALL_TABS.includes(t) && (t !== 'ops' || isAdmin())) switchTab(t);
+  const t = location.hash.slice(1) || 'home';
+  if (ALL_TABS.includes(t) && (t !== 'ops' || isAdmin())) switchTab(t, 'none');
 });
 initApp();
 </script>

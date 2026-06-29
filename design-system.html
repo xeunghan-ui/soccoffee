@@ -16,13 +16,13 @@
   /* 뉴트럴 — 크림/샌드 */
   --cream:#ece6d2; --sand:#ddd6b6; --sand-2:#d6cfb4;
   --muted:#a4b39a;            /* 현재 #95a083 → 대비 개선 */
-  /* 에너지 액센트 — 레트로 골드 (NEW) */
-  --gold:#e6a92e; --gold-bright:#f5c95c; --gold-dim:#9c7a2a;
-  --gold-bg:rgba(230,169,46,.12);
-  /* 상태 */
-  --win:#46b381;             /* 참석·납부 (NEW, 선명한 피치그린) */
-  --alert:#dc5238;           /* 미납·에러·컷오프 (NEW, 빈티지 레드) */
-  --alert-bg:rgba(220,82,56,.12); --win-bg:rgba(70,179,129,.13);
+  /* 액센트 — 골드는 폐기, 샌드/크림으로 흡수(v0.2, 멤버 페이지 기준). 별칭만 유지 */
+  --gold:#ddd6b6; --gold-bright:#ece6d2; --gold-dim:#4a6450;
+  --gold-bg:rgba(221,214,182,.07);
+  /* 상태 — 톤다운(메인 베이지·녹색을 가리지 않게) */
+  --win:#5a9277;             /* 참석·납부 (톤다운 그린) */
+  --alert:#bd6452;           /* 미납·불참·컷오프 (톤다운 레드) */
+  --alert-bg:rgba(189,100,82,.12); --win-bg:rgba(90,146,119,.13);
   --mono:ui-monospace,"SF Mono",Menlo,Consolas,monospace;
   --disp:"Anton",sans-serif;
 }
@@ -234,12 +234,11 @@ table.cmp td.k{font-family:var(--mono);color:var(--cream)}
 
   <h3>굵기 — Weight</h3>
   <div>
-    <div class="wt-row"><span class="tk">--fw-regular 400</span><span class="sample" style="font-weight:400">본문 기본 — 평소 텍스트는 여기</span></div>
-    <div class="wt-row"><span class="tk">--fw-medium 500</span><span class="sample" style="font-weight:500">약한 강조·활성 라벨</span></div>
-    <div class="wt-row"><span class="tk">--fw-bold 700</span><span class="sample" style="font-weight:700">라벨·소제목·강조</span></div>
-    <div class="wt-row"><span class="tk">--fw-extra 800</span><span class="sample" style="font-weight:800">히어로·디스플레이 보조</span></div>
+    <div class="wt-row"><span class="tk">--fw-regular 400</span><span class="sample" style="font-weight:400">본문 기본 — 평소 텍스트</span></div>
+    <div class="wt-row"><span class="tk">--fw-medium 600</span><span class="sample" style="font-weight:600">라벨·이름·부제·활성</span></div>
+    <div class="wt-row"><span class="tk">--fw-bold 800</span><span class="sample" style="font-weight:800">제목·섹션·등번호·최상위 강조</span></div>
   </div>
-  <div class="note"><b>위계 복구.</b> 현재 700·800·900이 86곳 — 다 굵으니 강조가 안 산다. 본문을 400/500으로 내리고 700은 진짜 라벨/제목에, 800은 최상위에만. <b>900(20곳)은 폐기 → 800</b>, 600은 700에 흡수. 굵기 5→4단.</div>
+  <div class="note"><b>위계 복구(적용 완료).</b> 멤버·소개 페이지 모두 <b>400 / 600 / 800 3단</b>으로 통일했다. 매핑: 700→600, 900→800. 본문 400, 라벨·이름·부제 600, 제목·섹션·등번호 800. (디스플레이 Anton은 자체 400)</div>
 </section>
 
 <!-- 03 radius -->

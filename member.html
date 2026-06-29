@@ -342,7 +342,7 @@
   .att-seg button.yes.on { background: var(--green); border-color: var(--green); color: #fff; }
   .att-seg button.no.on { background: var(--red); border-color: var(--red); color: #fff; }
   .att-seg button.maybe.on { background: var(--accent); border-color: var(--accent); color: #fff; }
-  .att-counts { display: flex; gap: 10px; margin: 14px 0 4px; }
+  .att-counts { display: flex; gap: 10px; margin: 12px 0; }
   .att-cnt { flex: 1; text-align: center; background: #fbf6ee; border-radius: 12px; padding: 12px 6px; }
   .att-cnt .num { font-size: 26px; font-weight: 400; font-family: var(--disp); letter-spacing: .01em; }
   .att-cnt .cap { font-size: 12px; color: var(--muted); font-weight: 600; }
@@ -656,9 +656,10 @@
   .vote-cat.on { background: var(--accent); color: #14281b; border-color: var(--accent); }
 
   /* 세션 선택 칩 / 운영 행 */
-  .sess-tabs { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 12px; }
-  .sess-chip { padding: 8px 13px; border-radius: 20px; border: 1px solid var(--line); background: #1e3526; color: #ece6d2; font-weight: 600; font-size: 13px; cursor: pointer; font-family: inherit; }
-  .sess-chip.on { background: var(--accent); color: #14281b; border-color: var(--accent); }
+  .sess-tabs { display: flex; gap: 8px; flex-wrap: nowrap; overflow-x: auto; -webkit-overflow-scrolling: touch; scrollbar-width: none; margin-bottom: 12px; }
+  .sess-tabs::-webkit-scrollbar { display: none; }
+  .sess-chip { flex-shrink: 0; padding: 8px 13px; border-radius: 20px; border: none; background: transparent; color: var(--muted); font-weight: 600; font-size: 13px; cursor: pointer; font-family: inherit; }
+  .sess-chip.on { background: var(--accent); color: #14281b; font-weight: 800; }
   .ops-row { display: flex; justify-content: space-between; align-items: center; gap: 10px; padding: 11px 0; border-top: 1px solid var(--line); font-size: 14px; }
   .ops-row:first-child { border-top: none; }
 
@@ -1952,6 +1953,14 @@ function noticeDateLabel(iso) {
   const d = new Date(iso); if (isNaN(d)) return '';
   return `${d.getMonth()+1}/${d.getDate()}`;
 }
+// 공지 표시 날짜: 마감일(hide_at)이 있으면 'M/D 마감'을 우선 표시, 없으면 게시일
+function noticeWhenLabel(n) {
+  if (n && n.hide_at) {
+    const d = new Date(n.hide_at);
+    if (!isNaN(d)) return `${d.getMonth()+1}/${d.getDate()} 마감`;
+  }
+  return noticeDateLabel(n && n.created_at);
+}
 
 // 팀 구분 안 하는 달 — 전체 팀원 단일 리스트
 function fullSquadBlock(members) {
@@ -2222,7 +2231,7 @@ async function renderHome() {
         return `<div class="notice ${n.pinned?'pinned':''} has-link" onclick="noticeGo('${esc(link)}')">
           <div class="n-top">
             <div class="n-title">${n.pinned?'<span class="pin-tag">고정</span>':''}${esc(n.title)}</div>
-            <div class="n-date">${noticeDateLabel(n.created_at)}</div>
+            <div class="n-date">${noticeWhenLabel(n)}</div>
           </div>
           ${hasBody?`<div class="n-body" style="display:block">${linkify(n.body)}</div>`:''}
         </div>`;
@@ -2230,7 +2239,7 @@ async function renderHome() {
       return `<div class="notice ${n.pinned?'pinned':''}${hasBody?' has-body':''}">
         <div class="n-top"${hasBody?` onclick="this.parentNode.classList.toggle('open')"`:''}>
           <div class="n-title">${n.pinned?'<span class="pin-tag">고정</span>':''}${esc(n.title)}</div>
-          <div class="n-date">${noticeDateLabel(n.created_at)}</div>
+          <div class="n-date">${noticeWhenLabel(n)}</div>
         </div>
         ${hasBody?`<div class="n-body">${linkify(n.body)}</div>`:''}
       </div>`;
@@ -2810,7 +2819,7 @@ async function renderOps() {
         else if (n.hide_at && new Date(n.hide_at) < _now) badge = `<span class="pin-tag" style="background:#5b5b5b;color:#fff">노출종료</span> `;
         else if (n.publish_at || n.hide_at) badge = `<span class="pin-tag" style="background:#3b6b46;color:#fff">노출 ${n.publish_at?mdLabel(n.publish_at):''}~${n.hide_at?mdLabel(n.hide_at):''}</span> `;
         return `<div class="notice ${n.pinned?'pinned':''}">
-          <div class="n-top"><div class="n-title">${n.pinned?'<span class="pin-tag">고정</span>':''}${badge}${esc(n.title)}</div><div class="n-date">${noticeDateLabel(n.created_at)}</div></div>
+          <div class="n-top"><div class="n-title">${n.pinned?'<span class="pin-tag">고정</span>':''}${badge}${esc(n.title)}</div><div class="n-date">${noticeWhenLabel(n)}</div></div>
           ${n.body?`<div class="n-body">${linkify(n.body)}</div>`:''}
           <div class="n-actions">
             <button class="btn ghost sm" onclick="opsEditNotice('${n.id}')">수정</button>

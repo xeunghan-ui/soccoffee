@@ -102,16 +102,18 @@
   .fx{color:#15281b;}
   .fx:nth-child(even){background:#1e3526; color:#ece6d2;}
   .fx-row{display:grid; grid-template-columns:1fr 1fr 1fr; align-items:center; gap:16px; padding:15px 18px;}
+  .fx-row.no-wk{grid-template-columns:1fr auto;}
   .fx-end{display:flex; align-items:center; gap:16px; min-width:0;}
   .fx.has-detail .fx-row{cursor:pointer;}
   .fx .more{display:none;}
-  .fx.has-detail .more{display:block; font-size:9px; font-weight:400; letter-spacing:1px; opacity:.6; margin-top:3px;}
+  .fx.has-detail .more{display:inline; font-size:9px; font-weight:400; letter-spacing:1px; opacity:.6; flex-shrink:0;}
   .fx.has-detail .more::before{content:'＋ 자세히';}
   .fx.open .more::before{content:'－ 닫기';}
   .fx-detail{display:none; padding:0 18px 15px; font-size:13px; line-height:1.6; white-space:pre-wrap; word-break:break-word;}
   .fx.open .fx-detail{display:block;}
   .fx .wk{font-weight:600; font-size:14px; letter-spacing:.5px; justify-self:start; opacity:.85;}
-  .fx .loc{font-weight:600; font-size:15px; text-align:left; justify-self:start; min-width:0; max-width:100%; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;}
+  .fx .loc{display:flex; align-items:center; gap:8px; font-weight:600; font-size:15px; justify-self:start; min-width:0; max-width:100%;}
+  .fx .loc .loc-t{overflow:hidden; text-overflow:ellipsis; white-space:nowrap; min-width:0;}
   .fx .when{justify-self:end; padding-left:14px; text-align:right; letter-spacing:.2px; line-height:1.2;}
   .fx .when .d{font-size:15px; font-weight:600;}
   .fx .when .wd{font-size:11px; opacity:.6; margin-left:6px; letter-spacing:1px;}
@@ -319,7 +321,6 @@
       if(!sessions.length){ box.innerHTML='<p class="muted" style="font-size:13px">예정된 경기가 아직 없어요.</p>'; return; }
       var m=parseInt((sessions[0].date||'').split('-')[1],10);
       if(m) document.getElementById('matchMonth').textContent=m+'월 경기일정';
-      var wn=0;
       box.innerHTML=sessions.map(function(s){
         var p=(s.date||'').split('-');
         var md = p.length===3 ? p[1]+'.'+p[2] : (s.date||'');
@@ -328,17 +329,21 @@
         var time=esc(s.time||'');
         var endt=esc(s.endTime||'');
         var timerange=time+(endt?' - '+endt:'');
-        var label = s.label ? esc(s.label) : ('WEEK '+(++wn));
         var oatly = /오틀리|oatly/i.test((s.place||'')+' '+(s.label||''));
+        var hasLabel = !!(s.label && String(s.label).trim());
+        var label = hasLabel ? esc(s.label) : '';
         var purl=(s.placeUrl||'').trim(); var plink=/^https?:\/\//i.test(purl);
         var gurl=(s.guestUrl||'').trim(); var glink=/^https?:\/\//i.test(gurl);
         var hasDetail = !!(s.desc && String(s.desc).trim()) && !oatly;
         var rowAttr = oatly ? ' onclick="location.href=\'oatly/\'" style="cursor:pointer"'
                     : (hasDetail ? ' onclick="this.parentNode.classList.toggle(\'open\')"' : '');
+        var locInner = plink
+          ? '<a href="'+esc(purl)+'" target="_blank" rel="noopener" onclick="event.stopPropagation()" style="color:inherit;text-decoration:underline">'+place+' <span style="font-size:11px;opacity:.6">↗</span></a>'
+          : place+(oatly?' <span style="font-size:11px;opacity:.6">↗</span>':'');
         return '<div class="fx'+(hasDetail?' has-detail':'')+'">'
-          +'<div class="fx-row"'+rowAttr+'>'
-          +'<span class="wk">'+label+'<span class="more"></span></span>'
-          +'<span class="loc">'+(plink?'<a href="'+esc(purl)+'" target="_blank" rel="noopener" onclick="event.stopPropagation()" style="color:inherit;text-decoration:underline">'+place+' <span style="font-size:11px;opacity:.6">↗</span></a>':place+(oatly?' <span style="font-size:11px;opacity:.6">↗</span>':''))+'</span>'
+          +'<div class="fx-row'+(hasLabel?'':' no-wk')+'"'+rowAttr+'>'
+          +(hasLabel?'<span class="wk">'+label+'</span>':'')
+          +'<span class="loc"><span class="loc-t">'+locInner+'</span>'+(hasDetail?'<span class="more"></span>':'')+'</span>'
           +'<span class="when"><span class="d">'+md+(wd?'<span class="wd">'+wd+'</span>':'')+'</span>'
           +(time?'<span class="t">'+timerange+'</span>':'')+'</span></div>'
           +(hasDetail?'<div class="fx-detail">'+linkify(s.desc)+'</div>':'')

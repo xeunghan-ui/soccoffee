@@ -5,17 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>싸커피</title>
 <meta name="description" content="싸커피 — 카페 풋살 리그">
-<meta property="og:type" content="website">
-<meta property="og:title" content="싸커피">
-<meta property="og:description" content="싸커피 — 카페 풋살 리그">
-<meta property="og:url" content="https://xeunghan-ui.github.io/soccoffee/">
-<meta property="og:image" content="https://xeunghan-ui.github.io/soccoffee/cover-soccoffee.jpg">
-<meta property="og:image:width" content="1200">
-<meta property="og:image:height" content="750">
-<meta name="twitter:card" content="summary_large_image">
-<meta name="twitter:title" content="싸커피">
-<meta name="twitter:description" content="싸커피 — 카페 풋살 리그">
-<meta name="twitter:image" content="https://xeunghan-ui.github.io/soccoffee/cover-soccoffee.jpg">
+<meta name="robots" content="noindex">
 <link rel="stylesheet" as="style" crossorigin href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Anton&display=swap" rel="stylesheet">
@@ -715,6 +705,8 @@
   .more-item:hover { border-color: var(--gold-dim); }
   .more-item .mi-name { font-size: 15px; font-weight: 800; color: #ece6d2; }
   .more-item .mi-desc { font-size: 12px; color: var(--muted); margin-top: 2px; }
+  .more-sec-title { font-size: 11px; font-weight: 800; letter-spacing: .06em; color: var(--muted); text-transform: uppercase; margin: 20px 4px 10px; padding-top: 14px; border-top: 1px solid var(--line); }
+  .more-sec-title:first-child { margin-top: 4px; padding-top: 0; border-top: none; }
   /* FAQ / 마이페이지 */
   .faq-q { background: #1e3526; border: 1px solid var(--line); border-radius: 12px; padding: 14px 16px; margin-bottom: 8px; }
   .faq-q h4 { margin: 0 0 6px; font-size: 14px; font-weight: 800; color: var(--gold-bright); }
@@ -735,11 +727,11 @@
   .pc-right { flex: 1; min-width: 0; display: flex; flex-direction: column; justify-content: center; gap: 10px; }
   .pc-stat { display: flex; align-items: center; justify-content: space-between; gap: 8px; font-size: 13px; line-height: 1.3; width: 100%; }
   .pc-stat .lbl { color: var(--muted); font-weight: 600; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-  .pc-badge { font-size: 11px; font-weight: 800; padding: 2px 10px; border-radius: 999px; flex-shrink: 0; white-space: nowrap; }
-  .pc-badge.done { background: var(--win-bg); color: var(--win); border: 1px solid rgba(70,179,129,.4); }
-  .pc-badge.no { background: var(--alert-bg); color: var(--alert); }
-  .pc-badge.wait { background: var(--alert-bg); color: var(--alert); }
-  .pc-badge.neutral { background: #2a3d30; color: var(--sand-2); }
+  .pc-badge { font-size: 12px; font-weight: 800; padding: 5px 13px; border-radius: 999px; flex-shrink: 0; white-space: nowrap; box-shadow: 0 1px 4px rgba(0,0,0,.25); }
+  .pc-badge.done { background: #46b381; color: #0a1810; }
+  .pc-badge.no { background: #d9614a; color: #fff; }
+  .pc-badge.wait { background: #d9614a; color: #fff; }
+  .pc-badge.neutral { background: #56685b; color: #f3eed9; }
   .act-toggle { display: flex; gap: 4px; flex-shrink: 0; }
   .act-toggle button { font-family: inherit; font-size: 11px; font-weight: 800; padding: 3px 11px; border-radius: 999px; border: 1px solid var(--line); background: transparent; color: var(--muted); cursor: pointer; }
   .act-toggle button.on { background: var(--accent); color: #14281b; border-color: var(--accent); }
@@ -1003,6 +995,7 @@ async function deleteRide(id) {
 /* ---------- UI ---------- */
 const ALL_TABS = ['home','att','dues','list','potm','rank','more','mine','faq','squad','ops'];
 function switchTab(tab) {
+  if (tab === 'ops' && !isAdmin()) tab = 'home';   // 운영진 전용 탭은 비운영진 직접 접근 차단
   const navPrimary = ['home','att','list','potm'];
   const navActive = navPrimary.includes(tab) ? tab : 'more';
   document.querySelectorAll('.bnav-item').forEach(b => b.classList.toggle('active', b.dataset.tab === navActive));
@@ -2004,20 +1997,27 @@ function squadBlock(members, team) {
 function renderMore() {
   const el = document.getElementById('moreContent');
   const admin = isAdmin();
-  const items = [
+  const memberItems = [
     ['rank', '랭킹', '출석 · 모범 랭킹'],
     ['squad', '팀 현황', '활동 · 휴면 인원 · 스쿼드'],
   ];
+  const adminItems = [
+    ['dues', '회비', '이번 달 납부 현황'],
+    ['ops', '운영진', '공지 · 세션 · 회비 · 설정'],
+  ];
+  const btn = ([t, name, desc]) =>
+    `<button class="more-item" onclick="switchTab('${t}')"><div class="mi-name">${name}</div><div class="mi-desc">${desc}</div></button>`;
+  const teamLink = `<a class="more-item" href="team/" target="_blank" rel="noopener"><div class="mi-name">팀빌더 ↗</div><div class="mi-desc">명단 · 등번호 · 휴면 · 팀 배분</div></a>`;
+  let html = '';
   if (admin) {
-    items.unshift(['dues', '회비', '이번 달 납부 현황']);
-    items.push(['ops', '운영진', '공지 · 세션 · 회비 · 설정']);
+    // 운영진: 회원 메뉴 / 운영진 메뉴 두 구역으로 구분
+    html += `<div class="more-sec-title">회원 메뉴</div>`;
+    html += `<div class="more-grid">` + memberItems.map(btn).join('') + `</div>`;
+    html += `<div class="more-sec-title">운영진 메뉴</div>`;
+    html += `<div class="more-grid">` + adminItems.map(btn).join('') + teamLink + `</div>`;
+  } else {
+    html += `<div class="more-grid">` + memberItems.map(btn).join('') + `</div>`;
   }
-  let html = `<div class="more-grid">` +
-    items.map(([t, name, desc]) =>
-      `<button class="more-item" onclick="switchTab('${t}')"><div class="mi-name">${name}</div><div class="mi-desc">${desc}</div></button>`
-    ).join('');
-  if (admin) html += `<a class="more-item" href="team/" target="_blank" rel="noopener"><div class="mi-name">팀빌더 ↗</div><div class="mi-desc">명단 · 등번호 · 휴면 · 팀 배분</div></a>`;
-  html += `</div>`;
   el.innerHTML = html;
 }
 
@@ -2172,7 +2172,7 @@ async function renderHome() {
       </div>`) : ''}
       ${myYes.length ? `<div style="margin-top:12px;padding-top:12px;border-top:1px solid var(--line)">
         <div style="font-size:11px;color:var(--muted);font-weight:800;letter-spacing:.04em;margin-bottom:4px">참석 예정 ${myYes.length}개</div>
-        ${myYes.map(s => `<div style="padding:5px 0;font-size:13px;color:var(--cream)"><div style="display:flex;align-items:center;gap:8px"><span style="color:var(--win);font-size:9px">●</span><span style="min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(sessChipLabel(s))}</span><span style="margin-left:auto;flex-shrink:0;color:var(--muted);font-size:12px">${esc((s.time||'').slice(0,5))}${s.endTime?'–'+esc(s.endTime.slice(0,5)):''}</span></div>${s.place ? `<div style="margin-left:17px;color:var(--muted);font-size:12px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(s.place)}</div>` : ''}</div>`).join('')}
+        ${myYes.map(s => `<div style="padding:5px 0;font-size:13px;color:var(--cream)"><div style="display:flex;align-items:center;gap:8px"><span style="color:var(--cream);font-size:7px;opacity:.7">●</span><span style="min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(sessChipLabel(s))}</span><span style="margin-left:auto;flex-shrink:0;color:var(--muted);font-size:12px">${esc((s.time||'').slice(0,5))}${s.endTime?'–'+esc(s.endTime.slice(0,5)):''}</span></div>${s.place ? `<div style="margin-left:17px;color:var(--muted);font-size:12px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(s.place)}</div>` : ''}</div>`).join('')}
       </div>` : ''}
     </div>`;
     if (pending.length) {

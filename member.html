@@ -2140,7 +2140,9 @@ function squadBlock(members, team) {
 function renderMore() {
   const el = document.getElementById('moreContent');
   const admin = isAdmin();
-  const memberItems = [];   // 랭킹은 멤버 탭 서브탭으로 이동
+  const memberItems = [
+    ['faq', '이용 가이드 / FAQ', '자주 묻는 질문 · 이용 방법'],
+  ];
   // 운영진 메뉴 = 옛 운영진 탭의 내부 기능들을 개별 항목으로(공지·세션·회비·투표·설정 + 팀빌더)
   const adminItems = [
     ['notice',  '공지',   '공지 작성 · 노출 기간', 'ops'],
@@ -2158,15 +2160,19 @@ function renderMore() {
   const teamLink = `<a class="more-item" href="team/" target="_blank" rel="noopener"><div class="mi-name">팀빌더 ↗</div><div class="mi-desc">명단 · 등번호 · 휴면 · 팀 배분</div></a>`;
   const guideBtn = `<button class="more-item" onclick="showAddHomeGuide()"><div class="mi-name">홈 화면에 추가</div><div class="mi-desc">앱처럼 바로 열기 (설치 가이드)</div></button>`;
   const introLink = `<a class="more-item" href="index.html"><div class="mi-name">싸커피 소개</div><div class="mi-desc">소개(랜딩) 페이지로 이동 · 로그인 유지</div></a>`;
+  const bankBtn = `<button class="more-item" onclick="showBankInfo()"><div class="mi-name">회비 계좌 안내</div><div class="mi-desc">입금 계좌 확인 · 복사</div></button>`;
+  const pinBtn = `<button class="more-item" onclick="changeMyPin()"><div class="mi-name">내 PIN 변경</div><div class="mi-desc">로그인 PIN 4자리 바꾸기</div></button>`;
+  const logoutBtn = `<button class="more-item" style="border-color:rgba(189,100,82,.45)" onclick="logout()"><div class="mi-name" style="color:#e08a76">로그아웃</div><div class="mi-desc">이 기기에서 로그아웃</div></button>`;
+  const memberGrid = memberItems.map(btn).join('') + bankBtn + pinBtn + introLink + guideBtn + logoutBtn;
   let html = '';
   if (admin) {
     // 운영진: 회원 메뉴 / 운영진 메뉴 두 구역으로 구분
     html += `<div class="more-sec-title">회원 메뉴</div>`;
-    html += `<div class="more-grid">` + memberItems.map(btn).join('') + introLink + guideBtn + `</div>`;
+    html += `<div class="more-grid">` + memberGrid + `</div>`;
     html += `<div class="more-sec-title">운영진 메뉴</div>`;
     html += `<div class="more-grid">` + adminItems.map(adminBtn).join('') + teamLink + `</div>`;
   } else {
-    html += `<div class="more-grid">` + memberItems.map(btn).join('') + introLink + guideBtn + `</div>`;
+    html += `<div class="more-grid">` + memberGrid + `</div>`;
   }
   el.innerHTML = html;
 }
@@ -2627,6 +2633,7 @@ function setMe(id){ localStorage.setItem(ME_KEY, String(id)); }
 
 // ===== PIN 로그인 (등번호 대체) — PIN은 해시로만 저장(평문 미저장) =====
 let CLUB_PINS = {};                      // { memberId: sha256hex }
+let BANK = null;                         // { bank, number, holder } — 회비 계좌
 const PIN_SALT = 'scf-pin-v1';
 async function hashPin(id, pin){
   const data = new TextEncoder().encode(PIN_SALT + ':' + id + ':' + pin);
@@ -2653,6 +2660,53 @@ async function resetPin(id){
   else { CLUB_PINS[id] = bak; toast('초기화 중 오류가 났어요.'); }
 }
 
+// 본인 PIN 변경 (현재 PIN 확인 후 새 PIN)
+async function changeMyPin(){
+  const me = getMe(); if (me == null) { toast('로그인이 필요해요'); return; }
+  if (CLUB_PINS[me]) {
+    const cur = prompt('현재 PIN 4자리'); if (cur == null) return;
+    if (await hashPin(me, cur.trim()) !== CLUB_PINS[me]) { toast('현재 PIN이 일치하지 않아요'); return; }
+  }
+  const np = prompt('새 PIN 4자리'); if (np == null) return;
+  const v = np.trim(); if (!/^\d{4}$/.test(v)) { toast('PIN은 숫자 4자리예요'); return; }
+  const np2 = prompt('새 PIN 4자리 확인'); if (np2 == null) return;
+  if (np2.trim() !== v) { toast('새 PIN이 서로 달라요'); return; }
+  const bak = CLUB_PINS[me];
+  CLUB_PINS[me] = await hashPin(me, v);
+  const ok = await saveSettings({ pins: CLUB_PINS });
+  if (ok) toast('PIN을 변경했어요'); else { CLUB_PINS[me] = bak; toast('변경 중 오류가 났어요'); }
+}
+// 회비 계좌 안내 모달
+function showBankInfo(){
+  let h = document.getElementById('mmHost'); if(!h){ h=document.createElement('div'); h.id='mmHost'; document.body.appendChild(h); }
+  const admin = isAdmin();
+  let body;
+  if (BANK && BANK.number) {
+    const full = `${BANK.bank||''} ${BANK.number}`.trim();
+    body = `<div style="font-size:13px;color:var(--muted);line-height:1.9">
+        <div>은행 <b style="color:#ece6d2;float:right">${esc(BANK.bank||'-')}</b></div>
+        <div>계좌 <b style="color:#ece6d2;float:right">${esc(BANK.number)}</b></div>
+        <div>예금주 <b style="color:#ece6d2;float:right">${esc(BANK.holder||'-')}</b></div>
+      </div>
+      <button class="btn accent" style="width:100%;margin-top:14px" onclick="copyText('${esc(full)}')">계좌 복사</button>
+      ${admin?`<button class="btn ghost sm" style="width:100%;margin-top:6px" onclick="setBankInfo()">계좌 수정</button>`:''}`;
+  } else {
+    body = `<div class="empty" style="font-size:13px">운영진이 아직 계좌를 등록하지 않았어요.</div>
+      ${admin?`<button class="btn accent" style="width:100%;margin-top:12px" onclick="setBankInfo()">계좌 등록</button>`:''}`;
+  }
+  h.innerHTML = `<div class="mm-back" onclick="if(event.target===this)closeMemberCard()"><div class="mm-box"><div class="mm-head"><div class="mm-name">회비 계좌</div><button class="mm-x" onclick="closeMemberCard()">×</button></div>${body}</div></div>`;
+}
+function copyText(t){ try{ navigator.clipboard.writeText(t); toast('복사했어요'); }catch(e){ toast('복사 실패 — 길게 눌러 복사해 주세요'); } }
+async function setBankInfo(){
+  if(!isAdmin()) return;
+  const bank = prompt('은행명', BANK?BANK.bank||'':''); if(bank==null) return;
+  const number = prompt('계좌번호', BANK?BANK.number||'':''); if(number==null) return;
+  const holder = prompt('예금주', BANK?BANK.holder||'':''); if(holder==null) return;
+  const val = { bank:bank.trim(), number:number.trim(), holder:holder.trim() };
+  const bak = BANK; BANK = val;
+  const ok = await saveSettings({ bank: val });
+  if(ok){ toast('계좌를 저장했어요'); showBankInfo(); } else { BANK=bak; toast('저장 중 오류가 났어요'); }
+}
 async function fetchAttendance(sessionId) {
   if (!sessionId) sessionId = (await nearestSession()).id;
   if (USE_DB) {
@@ -3662,7 +3716,7 @@ async function initApp() {
   updateAdminBtn();
   try { const r = await fetchRoster(); if (r) applyPlayers(r); } catch (e) {}
   await mergeTbMembers();   // 팀빌더에만 있는 멤버도 로그인 가능하게 병합
-  try { const s = await fetchSettings(); teamSplitOn = s.teamSplit !== false; CLUB_PINS = s.pins || {}; } catch (e) {}
+  try { const s = await fetchSettings(); teamSplitOn = s.teamSplit !== false; CLUB_PINS = s.pins || {}; BANK = s.bank || null; } catch (e) {}
   await loadTbDormant();
   await rolloverDormancyIfNeeded();   // 15일 이후 다음 달 휴면 자동 롤오버(월 1회) — 누가 앱을 열든 자동
   // 로컬 미리보기: 첫 활동 회원으로 자동 로그인

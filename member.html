@@ -741,7 +741,7 @@
   .pc-name { font-size: 15px; font-weight: 800; color: var(--cream); margin-top: 8px; }
   .pc-team { font-size: 11px; color: var(--muted); margin-top: 2px; }
   .win-badge { font-size: 10px; font-weight: 800; padding: 1px 6px; border-radius: 5px; vertical-align: middle; white-space: nowrap; }
-  .win-badge.mvp { background: var(--accent); color: #14281b; }
+  .win-badge.mvp { background: #e0a530; color: #3a2600; }
   .win-badge.grow { background: var(--win); color: #fff; }
   .team-pill { font-size: 11px; font-weight: 800; padding: 2px 9px; border-radius: 5px; vertical-align: middle; letter-spacing: .5px; white-space: nowrap; }
   .team-pill.white { background: #ddd6b6; color: #14281b; }
@@ -2588,9 +2588,9 @@ function drawWinPills(x, cx, cy, wins){
   let xx = cx - total/2;
   wins.forEach((t,i)=>{
     const w=ws[i], yy=cy-h/2, r=h/2;
-    x.fillStyle = (t==='MVP') ? '#ddd6b6' : '#5a9277';
+    x.fillStyle = (t==='MVP') ? '#e0a530' : '#5a9277';
     x.beginPath(); x.moveTo(xx+r,yy); x.arcTo(xx+w,yy,xx+w,yy+h,r); x.arcTo(xx+w,yy+h,xx,yy+h,r); x.arcTo(xx,yy+h,xx,yy,r); x.arcTo(xx,yy,xx+w,yy,r); x.closePath(); x.fill();
-    x.fillStyle = (t==='MVP') ? '#14281b' : '#ffffff';
+    x.fillStyle = (t==='MVP') ? '#3a2600' : '#ffffff';
     x.fillText(t, xx+w/2, cy+6);
     xx += w + gap;
   });

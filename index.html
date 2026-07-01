@@ -376,7 +376,7 @@
         var dorm=(p.status==='dormant')?' dorm':'';
         var no=(p.jersey!=null)?p.jersey:'-';
         var badge='';
-        if(p.id===mvpId) badge+=' <span style="'+BST+'background:var(--gold);color:#14281b">MVP</span>';
+        if(p.id===mvpId) badge+=' <span style="'+BST+'background:#e0a530;color:#3a2600">MVP</span>';
         if(p.id===growthId) badge+=' <span style="'+BST+'background:var(--win);color:#fff">성장</span>';
         return '<div class="pl'+dorm+'"><span class="no">'+no+'</span><span class="nm">'+esc(p.name)+badge+'</span></div>';
       }).join('');

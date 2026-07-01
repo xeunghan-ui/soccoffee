@@ -1,5 +1,4 @@
 <!DOCTYPE html>
-<!-- ⚠️ 이 파일은 '팀빌더'입니다 (team/index.html, 운영진 전용). 소개 페이지가 아님! 소개는 루트 index.html. 이 내용을 루트 index.html로 복사하지 마세요. -->
 <script type="application/json" id="cowork-artifact-meta">
 {
   "name": "Soccoffee Team Builder",
@@ -429,7 +428,6 @@ body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; b
         </div>
       </div>
       <div class="form-group"><label>등번호</label><input type="number" id="inputJersey" placeholder="선택" min="0" max="999"/></div>
-      <div class="form-group"><label>가입일</label><input type="date" id="inputJoinDate"/></div>
       <div class="form-group"><label style="visibility:hidden">등록</label><button class="btn btn-primary" onclick="addPlayer()">+ 추가</button></div>
     </div>
     <div class="legend">
@@ -750,6 +748,20 @@ body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; b
   </div>
 </div>
 
+<div id="siteImportModal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.4);z-index:10000;align-items:center;justify-content:center">
+  <div style="background:#fff;border-radius:14px;max-width:520px;width:92%;max-height:80vh;display:flex;flex-direction:column;box-shadow:0 8px 32px rgba(0,0,0,0.18)">
+    <div style="display:flex;align-items:center;justify-content:space-between;padding:16px 18px 10px;border-bottom:1px solid #e2e8f0">
+      <span style="font-size:15px;font-weight:800;color:#1a202c">🔄 사이트 출석 가져오기</span>
+      <button onclick="document.getElementById('siteImportModal').style.display='none'" style="background:none;border:none;font-size:20px;cursor:pointer;color:#718096;line-height:1">×</button>
+    </div>
+    <div id="siteImportBody" style="padding:14px 18px;overflow-y:auto;flex:1"></div>
+    <div style="padding:12px 18px;border-top:1px solid #e2e8f0;background:#fff;display:flex;gap:8px;justify-content:flex-end">
+      <button onclick="document.getElementById('siteImportModal').style.display='none'" style="font-size:13px;padding:8px 16px;border-radius:8px;border:1px solid #e2e8f0;background:#fff;color:#4a5568;cursor:pointer;font-weight:700">취소</button>
+      <button onclick="confirmSiteImport()" style="font-size:13px;padding:8px 16px;border-radius:8px;border:none;background:#2f855a;color:#fff;cursor:pointer;font-weight:700">가져오기</button>
+    </div>
+  </div>
+</div>
+
 <script>
 const STRENGTH = {1:4,2:3,3:2,4:1};
 const TCOLOR   = {1:'#f59e0b',2:'#10b981',3:'#6366f1',4:'#94a3b8'};
@@ -873,29 +885,7 @@ const TB_SUPA_KEY = "sb_publishable_K7TsALmaFyb2pPOZO-2i2w_UeirVr8l";
 let tbSb = null;
 try { if (window.supabase) tbSb = window.supabase.createClient(TB_SUPA_URL, TB_SUPA_KEY); } catch(e){}
 function setCloudLabel(t){ const el=document.getElementById('cloudLabel'); if(el) el.textContent=t; }
-let dormRollover = null; // 마지막으로 '다음 달 휴면 자동추가'를 처리한 월(YYYY-MM). 월 1회만 실행.
-function tbCloudState(){ return { players, teams, sessions, teamHistory, supplies, matches, dormRollover }; }
-// ─ 다음 달 휴면 자동추가(롤오버) ─
-// 매월 15일 이후, 이번 달 휴면(또는 영구휴면) 회원의 dormantMonths에 '다음 달'을 1회 추가.
-// → 멤버앱 상태창에서 다음 달이 '휴면'으로 기본 노출. 멤버가 '활동'으로 바꾸면 다음 달이 제거되고,
-//   이 함수는 월 1회(dormRollover 마커)만 돌아 멤버의 선택을 다시 덮어쓰지 않음.
-function autoRolloverDormancy(){
-  const now = new Date();
-  if (now < new Date('2026-07-15T00:00:00')) return false;   // 기능 시작: 2026-07-15
-  if (now.getDate() < 15) return false;
-  let ny = now.getFullYear(), nm = now.getMonth() + 1; if (nm > 11) { nm = 0; ny += 1; }
-  const nextMonth = `${ny}-${String(nm + 1).padStart(2, '0')}`;
-  if (dormRollover === nextMonth) return false; // 이번 롤오버 이미 처리
-  const curMonth = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
-  (players || []).forEach(p => {
-    if ((p.status || 'active') === 'former') return;
-    const dm = p.dormantMonths || [];
-    const curDorm = dm.includes(curMonth) || (p.status || 'active') === 'dormant';
-    if (curDorm && !dm.includes(nextMonth)) { dm.push(nextMonth); p.dormantMonths = dm; }
-  });
-  dormRollover = nextMonth;
-  return true; // 마커가 갱신됐으니 저장 필요
-}
+function tbCloudState(){ return { players, teams, sessions, teamHistory, supplies, matches }; }
 let _tbCloudTimer=null;
 function cloudSavePush(){
   if(!tbSb || !appReady) return;
@@ -923,8 +913,6 @@ async function cloudInit(){
       if(Array.isArray(d.supplies)) supplies = d.supplies;
       if(Array.isArray(d.matches)) matches = d.matches;
       players.forEach(p=>{ if(p.status===undefined)p.status=p.dormant?'dormant':'active'; if(p.inBalance===undefined)p.inBalance=(p.status||'active')!=='former'; if(p.engName===undefined)p.engName=''; });
-      if(typeof d.dormRollover==='string') dormRollover=d.dormRollover;
-      const _rolled = autoRolloverDormancy();   // 다음 달 휴면 자동추가(15일 이후, 월 1회)
       try{ recalcAttendance(); }catch(e){}
       try{
         localStorage.setItem('sc5_players',JSON.stringify(players));
@@ -935,8 +923,7 @@ async function cloudInit(){
         localStorage.setItem('sc5_matches',JSON.stringify(matches));
       }catch(e){}
       renderAll();
-      if(_rolled){ cloudSavePush(); }   // 롤오버로 바뀐 휴면·마커를 클라우드에 반영
-      else setCloudLabel('☁ 동기화됨');
+      setCloudLabel('☁ 동기화됨');
     } else {
       // 클라우드에 아직 없음 → 지금 로컬 데이터를 올림(최초 1회)
       cloudSavePush();
@@ -948,7 +935,6 @@ async function cloudInit(){
 // 사이트의 세션 + 참석(yes) 신청자를 빌더 세션 초안으로 가져옴. 이미 있는 날짜는 보존.
 async function importFromSite(){
   if(!tbSb){ alert('클라우드 연결이 없어요.'); return; }
-  if(!confirm('사이트의 세션과 참석 신청자를 가져올까요?\n\n· 이미 같은 날짜 세션이 있으면 건드리지 않아요(확정본 보호).\n· 가져온 참석자는 "신청" 기준 초안이니, 세션 후 실제 출석을 확정해 주세요.')) return;
   setCloudLabel('사이트 불러오는 중…');
   try{
     const [csRes, attRes] = await Promise.all([
@@ -960,26 +946,56 @@ async function importFromSite(){
     const siteRoster = Array.isArray(site.roster) ? site.roster : [];
     if(!siteSessions.length){ setCloudLabel('☁ 동기화됨'); alert('사이트에 등록된 세션이 없어요.'); return; }
     const idName = {}; siteRoster.forEach(p=>{ idName[p.id]=p.name; });
-    const nameId = {}; players.forEach(p=>{ nameId[p.name]=p.id; });
     const yesBy = {}; (attRes.data||[]).forEach(a=>{ if(a.status==='yes'){ (yesBy[a.session_id]=yesBy[a.session_id]||[]).push(a.member_id); } });
     const existingDates = new Set(sessions.map(s=>s.date));
-    let added=0, skipped=0; const unmatched=new Set();
-    [...siteSessions].sort((a,b)=>(a.date||'').localeCompare(b.date||'')).forEach(s=>{
-      if(!s.date){ return; }
-      if(existingDates.has(s.date)){ skipped++; return; }
-      const attendees=[];
-      (yesBy[s.id]||[]).forEach(mid=>{ const nm=idName[mid]; const bid=nm?nameId[nm]:undefined; if(bid!=null) attendees.push(bid); else if(nm) unmatched.add(nm); });
-      sessions.unshift({ id:Date.now()+Math.floor(Math.random()*100000), date:s.date, type:(s.label||'정기'), notes:'', guests:0, extraNames:[], attendees, lastMinuteAbsentIds:[] });
-      existingDates.add(s.date); added++;
-    });
-    sessions.sort((a,b)=>b.date.localeCompare(a.date));
-    recalcAttendance(); save(); renderAll();
-    let msg = `세션 ${added}개 가져왔어요` + (skipped?` (이미 있는 ${skipped}개는 건너뜀)`:'') + '.';
-    if(unmatched.size) msg += `\n\n빌더 명단에 없어 제외된 이름: ${[...unmatched].join(', ')}`;
-    msg += '\n\n가져온 참석자는 "신청" 기준 초안이에요. 세션별로 실제 출석을 확정해 주세요.';
+    window._siteImport = { siteSessions, idName, yesBy };
+    const sorted = [...siteSessions].filter(s=>s.date).sort((a,b)=>(b.date||'').localeCompare(a.date||''));
+    const selectable = sorted.filter(s=>!existingDates.has(s.date)).length;
+    const rows = sorted.map(s=>{
+      const cnt = (yesBy[s.id]||[]).length;
+      const exists = existingDates.has(s.date);
+      const label = s.label||'정기';
+      return `<label style="display:flex;align-items:center;gap:10px;padding:10px 12px;border:1px solid #e2e8f0;border-radius:10px;margin-bottom:8px;${exists?'opacity:0.5;cursor:not-allowed':'cursor:pointer'}">`
+        + `<input type="checkbox" class="siteImportChk" value="${s.id}" ${exists?'disabled':'checked'} style="width:16px;height:16px;flex-shrink:0">`
+        + `<div style="flex:1;min-width:0">`
+        + `<div style="font-size:14px;font-weight:700;color:#1a202c">${s.date} · ${label}</div>`
+        + `<div style="font-size:12px;color:#718096">신청 ${cnt}명${exists?' · 이미 빌더에 있음':''}</div>`
+        + `</div></label>`;
+    }).join('');
+    const head = `<div style="font-size:12px;color:#718096;margin-bottom:10px">가져올 세션을 선택하세요. 이미 빌더에 있는 날짜는 확정본 보호를 위해 제외됩니다.<br>가져온 참석자는 "신청" 기준 초안이니, 세션 후 실제 출석을 확정해 주세요.</div>`
+      + (selectable ? `<label style="display:flex;align-items:center;gap:8px;font-size:12px;color:#4a5568;margin-bottom:8px;font-weight:700;cursor:pointer"><input type="checkbox" id="siteImportAll" checked onclick="document.querySelectorAll('.siteImportChk:not(:disabled)').forEach(c=>c.checked=this.checked)"> 전체 선택</label>` : '');
+    document.getElementById('siteImportBody').innerHTML = head + (rows || '<div style="text-align:center;color:#a0aec0;padding:20px">세션이 없어요</div>');
     setCloudLabel('☁ 동기화됨');
-    alert(msg);
+    const modal=document.getElementById('siteImportModal'); modal.style.display='flex';
+    modal.onclick=function(e){ if(e.target===this) this.style.display='none'; };
   }catch(e){ setCloudLabel('가져오기 실패'); alert('가져오기 실패: '+(e.message||e)); }
+}
+
+function confirmSiteImport(){
+  const store = window._siteImport; if(!store){ return; }
+  const checked = [...document.querySelectorAll('.siteImportChk:checked')].map(c=>c.value);
+  if(!checked.length){ alert('가져올 세션을 선택해 주세요.'); return; }
+  const { siteSessions, idName, yesBy } = store;
+  const nameId = {}; players.forEach(p=>{ nameId[p.name]=p.id; });
+  const existingDates = new Set(sessions.map(s=>s.date));
+  let added=0, skipped=0; const unmatched=new Set();
+  checked.forEach(sid=>{
+    const s = siteSessions.find(x=>String(x.id)===String(sid));
+    if(!s || !s.date){ return; }
+    if(existingDates.has(s.date)){ skipped++; return; }
+    const attendees=[];
+    (yesBy[s.id]||[]).forEach(mid=>{ const nm=idName[mid]; const bid=nm?nameId[nm]:undefined; if(bid!=null) attendees.push(bid); else if(nm) unmatched.add(nm); });
+    sessions.unshift({ id:Date.now()+Math.floor(Math.random()*100000), date:s.date, type:(s.label||'정기'), notes:'', guests:0, extraNames:[], attendees, lastMinuteAbsentIds:[] });
+    existingDates.add(s.date); added++;
+  });
+  sessions.sort((a,b)=>b.date.localeCompare(a.date));
+  recalcAttendance(); save(); renderAll();
+  document.getElementById('siteImportModal').style.display='none';
+  let msg = `세션 ${added}개 가져왔어요` + (skipped?` (이미 있는 ${skipped}개는 건너뜀)`:'') + '.';
+  if(unmatched.size) msg += `\n\n빌더 명단에 없어 제외된 이름: ${[...unmatched].join(', ')}`;
+  msg += '\n\n가져온 참석자는 "신청" 기준 초안이에요. 세션별로 실제 출석을 확정해 주세요.';
+  setCloudLabel('☁ 동기화됨');
+  alert(msg);
 }
 
 // ─ 6/17·6/24 출석 일괄 입력 (구글시트 기록 기준, 이름 매칭) ─
@@ -2399,8 +2415,6 @@ function toggleAddPlayerForm(){
   const showing=body.style.display!=='none';
   body.style.display=showing?'none':'';
   arrow.textContent=showing?'▶':'▼';
-  // 가입일 기본값 = 오늘
-  if(!showing){ const ji=document.getElementById('inputJoinDate'); if(ji&&!ji.value) ji.value=new Date().toISOString().slice(0,10); }
 }
 function addPlayer(){
   const n=document.getElementById('inputName'); const a=document.getElementById('inputAtt'); const j=document.getElementById('inputJersey');
@@ -2409,10 +2423,8 @@ function addPlayer(){
   if(!sel.gender){alert('성별을 선택해주세요');return;}
   if(!sel.tier){alert('티어를 선택해주세요');return;}
   const jersey=j.value!==''?parseInt(j.value):null;
-  const jd=document.getElementById('inputJoinDate');
-  const joinDate=(jd&&jd.value)?jd.value:new Date().toISOString().slice(0,10);
-  players.push({id:Date.now(),name,gender:sel.gender,tier:parseInt(sel.tier),attendance:0,jersey,status:'active',joinDate});
-  n.value='';j.value='';if(jd)jd.value='';
+  players.push({id:Date.now(),name,gender:sel.gender,tier:parseInt(sel.tier),attendance:0,jersey,status:'active'});
+  n.value='';j.value='';
   teams=null;save();renderSummary();applyFilters();renderTeams();
 }
 const playerCharts={};
@@ -2547,8 +2559,6 @@ function openSettingsPopup(id,btn,e){
       <div class="psp-divider"></div>
       <div class="psp-item" onclick="showJerseyEdit(${id})">🔢 등번호 변경 (현재 ${p.jersey!=null?p.jersey:'-'}) ▶</div>
       <div class="psp-divider"></div>
-      <div class="psp-item" onclick="showJoinDateEdit(${id})">📆 가입일 설정 ${p.joinDate?'('+p.joinDate+')':'(없음)'} ▶</div>
-      <div class="psp-divider"></div>
       <div class="psp-item" onclick="showDormantMonths(${id})">📅 휴면 월 관리${dormBadge} ▶</div>
       <div class="psp-divider"></div>
       <div class="psp-item" onclick="showDormantReasons(${id})">💤 휴면 상태로 전환 ▶</div>
@@ -2568,8 +2578,6 @@ function openSettingsPopup(id,btn,e){
       <div class="psp-divider"></div>
       <div class="psp-item" onclick="showJerseyEdit(${id})">🔢 등번호 변경 (현재 ${p.jersey!=null?p.jersey:'-'}) ▶</div>
       <div class="psp-divider"></div>
-      <div class="psp-item" onclick="showJoinDateEdit(${id})">📆 가입일 설정 ${p.joinDate?'('+p.joinDate+')':'(없음)'} ▶</div>
-      <div class="psp-divider"></div>
       <div class="psp-item psp-success" onclick="applyStatus(${id},'active')">✅ 복귀</div>
       <div class="psp-divider"></div>
       <div class="psp-item" onclick="showDormantMonths(${id})">📅 휴면 월 관리${dormBadge} ▶</div>
@@ -2586,8 +2594,6 @@ function openSettingsPopup(id,btn,e){
       <div class="psp-item" onclick="showEngNameEdit(${id})">🔤 영문명 설정 ▶</div>
       <div class="psp-divider"></div>
       <div class="psp-item" onclick="showJerseyEdit(${id})">🔢 등번호 변경 (현재 ${p.jersey!=null?p.jersey:'-'}) ▶</div>
-      <div class="psp-divider"></div>
-      <div class="psp-item" onclick="showJoinDateEdit(${id})">📆 가입일 설정 ${p.joinDate?'('+p.joinDate+')':'(없음)'} ▶</div>
       <div class="psp-divider"></div>
       <div class="psp-item psp-success" onclick="applyStatus(${id},'active')">✅ 멤버로 복귀</div>
       <div class="psp-divider"></div>
@@ -2627,31 +2633,6 @@ function saveEngName(id){
   applyFilters();
   closSettingsPopup();
   showToast('✅ 영문명 저장됨');
-}
-function showJoinDateEdit(id){
-  const p=players.find(x=>x.id===id);
-  if(!p)return;
-  const popup=document.getElementById('playerSettingsPopup');
-  popup.innerHTML=`
-    <div class="psp-header">📆 가입일 설정 — ${p.name}</div>
-    <div style="padding:8px 10px 6px;display:flex;gap:6px;align-items:center">
-      <input id="joinDateInput" type="date" value="${p.joinDate||''}"
-        style="flex:1;font-size:13px;padding:5px 8px;border:1.5px solid #e2e8f0;border-radius:6px;outline:none;font-family:inherit"/>
-      <button onclick="saveJoinDate(${id})" style="padding:5px 10px;background:#0e1f0e;color:#fff;border:none;border-radius:6px;font-size:12px;font-weight:700;cursor:pointer">저장</button>
-    </div>
-    <div style="padding:0 12px 10px;font-size:10px;color:#a0aec0">가입일이 속한 달부터 사이트 참석·회비에 잡혀요. 비우면 제외됩니다.</div>`;
-  popup.onclick=ev=>ev.stopPropagation();
-  setTimeout(()=>document.getElementById('joinDateInput')?.focus(),50);
-}
-function saveJoinDate(id){
-  const p=players.find(x=>x.id===id);
-  if(!p)return;
-  const val=(document.getElementById('joinDateInput')||{}).value||'';
-  p.joinDate=val;
-  save();
-  applyFilters();
-  closSettingsPopup();
-  showToast('✅ 가입일 저장됨');
 }
 function showJerseyEdit(id){
   const p=players.find(x=>x.id===id);
@@ -2811,29 +2792,14 @@ function closSettingsPopup(){
 }
 function positionPopup(popup,btn){
   const rect=btn.getBoundingClientRect();
-  // 측정용으로 잠깐 표시
-  popup.style.maxHeight='';
-  popup.style.overflowY='';
+  popup.style.top=(rect.bottom+4)+'px';
   popup.style.left='0px';
-  popup.style.top='0px';
   popup.style.display='block';
   const pw=popup.offsetWidth;
-  let ph=popup.offsetHeight;
-  // 팝업이 화면보다 크면 스크롤 허용
-  const maxH=window.innerHeight-8;
-  if(ph>maxH){ popup.style.maxHeight=maxH+'px'; popup.style.overflowY='auto'; ph=maxH; }
-  // 가로: 버튼 오른쪽 기준, viewport 안으로 클램프
   let left=rect.right-pw;
   if(left<4) left=4;
   if(left+pw>window.innerWidth-4) left=window.innerWidth-pw-4;
   popup.style.left=left+'px';
-  // 세로: 기본은 버튼 아래. 아래 공간 부족하면 버튼 위로, 둘 다 부족하면 화면 안으로 클램프
-  let top=rect.bottom+4;
-  if(top+ph>window.innerHeight-4){
-    const above=rect.top-4-ph;
-    top=(above>=4)?above:Math.max(4, window.innerHeight-ph-4);
-  }
-  popup.style.top=top+'px';
   popup.style.display='none';
 }
 

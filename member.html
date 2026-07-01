@@ -783,6 +783,9 @@
   .sk-lv button { width: 22px; height: 26px; border-radius: 6px; border: 1px solid var(--line); background: transparent; color: var(--muted); font-family: inherit; font-weight: 800; font-size: 12px; cursor: pointer; }
   .sk-lv button.on { background: var(--accent); color: #14281b; border-color: var(--accent); }
   .sk-del { background: none; border: none; color: var(--alert); font-size: 18px; cursor: pointer; flex-shrink: 0; }
+  .sk-mvs { display: flex; flex-direction: column; gap: 2px; flex-shrink: 0; }
+  .sk-mv { width: 22px; height: 14px; line-height: 1; padding: 0; border-radius: 4px; border: 1px solid var(--line); background: transparent; color: var(--muted); font-size: 9px; cursor: pointer; }
+  .sk-mv:disabled { opacity: .3; cursor: default; }
 </style>
 </head>
 <body>
@@ -2491,6 +2494,7 @@ function mmAddSkill(){ if(mmState){ mmState.skills.push({name:'',level:3}); rend
 function mmDelSkill(i){ if(mmState){ mmState.skills.splice(i,1); renderMemberCard(); } }
 function mmSetLevel(i,lv){ if(mmState){ mmState.skills[i].level=lv; renderMemberCard(); } }
 function mmSetName(i,v){ if(mmState && mmState.skills[i]) mmState.skills[i].name=v; }
+function mmMoveSkill(i,dir){ if(!mmState) return; const a=mmState.skills, j=i+dir; if(j<0||j>=a.length) return; const t=a[i]; a[i]=a[j]; a[j]=t; renderMemberCard(); }
 async function mmSave(){
   if(!mmState) return;
   const arr = mmState.skills.map(s=>({name:(s.name||'').trim(), level:Math.max(1,Math.min(5,s.level||3))})).filter(s=>s.name);
@@ -2587,7 +2591,7 @@ function renderMemberCard(){
   const winHtml = (s.wins && s.wins.length) ? ' ' + s.wins.map(t=>`<span class="win-badge ${t==='MVP'?'mvp':'grow'}">${t}</span>`).join(' ') : '';
   let body;
   if(s.edit){
-    body = `<div class="hint" style="margin-bottom:8px;font-size:11px">스킬명은 최대 5자 · 레벨 1~5</div>` + s.skills.map((sk,i)=>`<div class="sk-row"><input type="text" maxlength="5" value="${esc(sk.name)}" placeholder="스킬명 (5자)" oninput="mmSetName(${i},this.value)"><span class="sk-lv">${[1,2,3,4,5].map(lv=>`<button class="${sk.level===lv?'on':''}" onclick="mmSetLevel(${i},${lv})">${lv}</button>`).join('')}</span><button class="sk-del" onclick="mmDelSkill(${i})">×</button></div>`).join('')
+    body = `<div class="hint" style="margin-bottom:8px;font-size:11px">스킬명은 최대 5자 · 레벨 1~5 · ▲▼로 순서 이동</div>` + s.skills.map((sk,i)=>`<div class="sk-row"><span class="sk-mvs"><button class="sk-mv" onclick="mmMoveSkill(${i},-1)" ${i===0?'disabled':''} title="위로">▲</button><button class="sk-mv" onclick="mmMoveSkill(${i},1)" ${i===s.skills.length-1?'disabled':''} title="아래로">▼</button></span><input type="text" maxlength="5" value="${esc(sk.name)}" placeholder="스킬명 (5자)" oninput="mmSetName(${i},this.value)"><span class="sk-lv">${[1,2,3,4,5].map(lv=>`<button class="${sk.level===lv?'on':''}" onclick="mmSetLevel(${i},${lv})">${lv}</button>`).join('')}</span><button class="sk-del" onclick="mmDelSkill(${i})">×</button></div>`).join('')
       + `<button class="btn ghost sm" onclick="mmAddSkill()" style="margin-top:4px">＋ 스킬 추가</button><div style="display:flex;gap:8px;margin-top:14px"><button class="btn accent sm" onclick="mmSave()" style="flex:1">저장</button><button class="btn ghost sm" onclick="mmEdit(false)">취소</button></div>`;
   } else {
     const radar = radarSvg(s.skills);

@@ -2533,7 +2533,7 @@ async function saveMyCard(){
   const W=640,H=1000, c=document.createElement('canvas'); c.width=W; c.height=H; const x=c.getContext('2d');
   try{ await document.fonts.ready; }catch(e){}
   const loadImg = src => new Promise(r=>{ const im=new Image(); im.onload=()=>r(im); im.onerror=()=>r(null); im.src=src; });
-  const [bgImg, logoImg] = await Promise.all([loadImg('scf_bg.png'), loadImg('scf_logo.png')]);
+  const [bgImg, logoImg] = await Promise.all([loadImg('scf_bg.png'), loadImg('img/scf_logo_preview.png')]);
   // 잔디 배경(cover) + 어두운 오버레이
   x.fillStyle='#15281b'; x.fillRect(0,0,W,H);
   if(bgImg){ const s=Math.max(W/bgImg.naturalWidth, H/bgImg.naturalHeight), dw=bgImg.naturalWidth*s, dh=bgImg.naturalHeight*s; x.drawImage(bgImg,(W-dw)/2,(H-dh)/2,dw,dh); x.fillStyle='rgba(18,32,22,0.82)'; x.fillRect(0,0,W,H); }
@@ -2555,7 +2555,7 @@ async function saveMyCard(){
   let radarBottom;
   if(skills.length>=3){ const rcy=dy2+188, R=148; drawRadarCanvas(x, W/2, rcy, R, skills); radarBottom=rcy+R+22; }
   else { x.fillStyle='#a4b39a'; x.textAlign='center'; x.font='400 18px "Pretendard",sans-serif'; x.fillText(skills.length?('스킬 '+skills.length+'개'):'스킬 미설정', W/2, dy2+70); radarBottom=dy2+90; }
-  if(logoImg){ const lw=118, lh=lw*logoImg.naturalHeight/logoImg.naturalWidth; x.drawImage(logoImg,(W-lw)/2, radarBottom+14, lw, lh); }
+  if(logoImg){ const lw=142, lh=lw*logoImg.naturalHeight/logoImg.naturalWidth; x.drawImage(logoImg,(W-lw)/2, radarBottom+12, lw, lh); }
   let url; try{ url=c.toDataURL('image/png'); }catch(e){ toast('이미지 생성 실패'); return; }
   showCardPreview(url, name||'card');
 }

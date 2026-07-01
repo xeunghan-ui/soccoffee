@@ -2539,7 +2539,7 @@ async function saveMyCard(){
   if(bgImg){ const s=Math.max(W/bgImg.naturalWidth, H/bgImg.naturalHeight), dw=bgImg.naturalWidth*s, dh=bgImg.naturalHeight*s; x.drawImage(bgImg,(W-dw)/2,(H-dh)/2,dw,dh); x.fillStyle='rgba(18,32,22,0.82)'; x.fillRect(0,0,W,H); }
   x.strokeStyle='#33492f'; x.lineWidth=2; x.strokeRect(16,16,W-32,H-32);
   x.textAlign='center';
-  x.fillStyle='#ece6d2'; x.font='118px "Anton","Pretendard",sans-serif'; x.fillText(String(jersey), W/2, 175);
+  x.fillStyle='#ece6d2'; x.font='98px "Anton","Pretendard",sans-serif'; x.fillText(String(jersey), W/2, 168);
   x.font='800 36px "Pretendard",sans-serif'; x.fillText(name, W/2, 227);
   const wins = myWinTitles(me, await getPrevWinners());
   if(wins.length) drawWinPills(x, W/2, 261, wins);

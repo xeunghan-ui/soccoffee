@@ -739,6 +739,9 @@
   .win-badge { font-size: 10px; font-weight: 800; padding: 1px 6px; border-radius: 5px; vertical-align: middle; white-space: nowrap; }
   .win-badge.mvp { background: var(--accent); color: #14281b; }
   .win-badge.grow { background: var(--win); color: #fff; }
+  .pc-mini { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin-top: 12px; padding-top: 12px; border-top: 1px solid var(--line); text-align: center; }
+  .pc-mini .v { font-size: 15px; font-weight: 800; color: var(--cream); white-space: nowrap; }
+  .pc-mini .k { font-size: 11px; color: var(--muted); margin-top: 3px; }
   .pc-right { flex: 1; min-width: 0; display: flex; flex-direction: column; justify-content: center; gap: 10px; }
   .pc-stat { display: flex; align-items: center; justify-content: space-between; gap: 8px; font-size: 13px; line-height: 1.3; width: 100%; }
   .pc-stat .lbl { color: var(--muted); font-weight: 600; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
@@ -2265,6 +2268,7 @@ async function renderHome() {
   const myPaid = myDues.some(d => d.member_id === me && d.paid);
   const mySkills = meActive ? await getMemberSkills(me) : [];
   const myWins = meActive ? myWinTitles(me, await getPrevWinners()) : [];
+  const myAttended = meActive ? await fetchAttendedCount(me) : 0;
   const myStatusOf = sid => { const a = (attBySess[sid]||[]).find(x=>x.member_id===me); return a ? a.status : 'none'; };
   const meP0 = me != null ? PLAYERS.find(x => x.id === me) : null;
   const pending = meActive ? sessions.filter(s => {
@@ -2311,12 +2315,21 @@ async function renderHome() {
             ? `<div style="margin-top:8px">${mySkills.map(sk=>`<div style="display:flex;justify-content:space-between;font-size:13px;color:var(--cream);padding:3px 0"><span>${esc(sk.name)}</span><span style="color:var(--accent);font-weight:800">${sk.level}/5</span></div>`).join('')}</div>`
             : `<div class="hint" style="margin-top:6px">스파이더 차트로 내 스킬을 표시해 보세요.</div>`);
     // 카드 ① 신원 + 스킬
+    const joinFmt = meP.joinDate ? meP.joinDate.replace(/-/g,'.') : '—';
+    const monthsTogether = monthsSince(meP.joinDate);
+    const monthsLabel = monthsTogether > 0 ? `${monthsTogether}개월` : '이번 달';
+    const miniHtml = `<div class="pc-mini">
+        <div><div class="v">${joinFmt}</div><div class="k">가입일</div></div>
+        <div><div class="v">${monthsLabel}</div><div class="k">함께한 기간</div></div>
+        <div><div class="v">${myAttended}</div><div class="k">참여 세션</div></div>
+      </div>`;
     dash += `<div class="card" style="padding:16px;margin-bottom:12px">
       <div style="display:flex;align-items:center;gap:14px">
         <div class="pc-jersey" style="font-size:38px">${jersey}</div>
         <div style="min-width:0;flex:1"><div class="pc-name" style="margin:0">${esc(meName())}${myWins.map(t=>` <span class="win-badge ${t==='MVP'?'mvp':'grow'}">${t}</span>`).join('')}</div><div class="pc-team">${subline}</div></div>
         <button class="btn ghost sm" style="flex-shrink:0" onclick="openMemberCard(${me})">${mySkills.length?'스킬 편집':'스킬 추가'}</button>
       </div>
+      ${miniHtml}
       ${skillHtml}
       <button class="btn ghost sm" onclick="saveMyCard()" style="width:100%;margin-top:12px">사진으로 저장</button>
     </div>`;
@@ -2583,6 +2596,26 @@ async function fetchAttendance(sessionId) {
   }
   let a=[]; try { a = JSON.parse(localStorage.getItem(ATT_STORE)) || []; } catch(e){}
   return a.filter(x=>x.session_id===sessionId);
+}
+// 특정 멤버가 '참석(yes)'한 세션 수 (전체 이력)
+async function fetchAttendedCount(memberId) {
+  if (memberId == null) return 0;
+  if (USE_DB) {
+    const { data, error } = await sb.from('attendance').select('session_id').eq('member_id', memberId).eq('status', 'yes');
+    if (error) return 0;
+    return (data || []).length;
+  }
+  let a = []; try { a = JSON.parse(localStorage.getItem(ATT_STORE)) || []; } catch(e){}
+  return a.filter(x => x.member_id === memberId && x.status === 'yes').length;
+}
+// 가입일로부터 함께한 개월 수
+function monthsSince(iso) {
+  if (!iso) return 0;
+  const j = new Date(iso); if (isNaN(j)) return 0;
+  const n = new Date();
+  let m = (n.getFullYear() - j.getFullYear()) * 12 + (n.getMonth() - j.getMonth());
+  if (n.getDate() < j.getDate()) m -= 1;
+  return Math.max(0, m);
 }
 async function setAttendance(sessionId, memberId, status) {
   if (USE_DB) {

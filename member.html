@@ -1849,6 +1849,8 @@ function syncVoteBtn() {
 }
 async function submitVote() {
   if (!potmVoterId) return;
+  // 수상 월(potmMonth) 활동 회원만 투표 가능 — UI 우회·명단 변동 대비 제출 시 재검증
+  if (!activeMembers(potmMonth()).some(m => m.id === potmVoterId)) { toast('이번 달 활동 회원만 투표할 수 있어요'); return renderPotm(); }
   if (!potmPick.mvp || !potmPick.growth) return toast('두 부문 모두 선택해 주세요');
   if (!isVotingOpen() && !isAdmin()) { toast(`투표는 ${fmtOpenTime(votingOpensAt())}부터 가능해요`); return renderPotm(); }
   const pm = ROSTER.find(m => m.id === potmPick.mvp), pg = ROSTER.find(m => m.id === potmPick.growth);

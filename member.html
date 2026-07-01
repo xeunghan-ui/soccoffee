@@ -2353,7 +2353,7 @@ async function renderHome() {
       <div style="display:flex;align-items:center;gap:14px">
         <div class="pc-jersey" style="font-size:38px">${jersey}</div>
         <div style="min-width:0;flex:1"><div class="pc-name" style="margin:0">${esc(meName())}${myWins.map(t=>` <span class="win-badge ${t==='MVP'?'mvp':'grow'}">${t}</span>`).join('')}</div><div class="pc-team">${subline}</div></div>
-        <button class="btn ghost sm" style="flex-shrink:0" onclick="openMemberCard(${me})">${mySkills.length?'스킬 편집':'스킬 추가'}</button>
+        <button class="btn ghost sm" style="flex-shrink:0" onclick="openMemberCard(${me}, true)">${mySkills.length?'스킬 편집':'스킬 추가'}</button>
       </div>
       ${miniHtml}
       ${skillHtml}
@@ -2465,14 +2465,18 @@ async function renderSquad() {
 
 /* ===== 멤버 카드 모달 (역할 + 스파이더 차트) ===== */
 let mmState = null;
-async function openMemberCard(id){
+async function openMemberCard(id, startEdit){
   let p = (typeof PLAYERS!=='undefined'?PLAYERS:[]).find(x=>x.id===id);
   if(!p){ try{ const tb=await fetchTeamBuilder(); p=(tb&&tb.players||[]).find(x=>x.id===id); }catch(e){} }
   if(!p) return;
   const skills = await getMemberSkills(id);
   const wins = myWinTitles(id, await getPrevWinners());
+  const own = (getMe()===id);
+  let sk = skills.map(s=>({name:s.name,level:s.level}));
+  const edit = !!startEdit && own;
+  if (edit && !sk.length) sk = [{name:'',level:3}];   // 편집 진입 시 빈 스킬 1개 시드
   mmState = { id, name:p.name, jersey:(p.jersey!=null?p.jersey:null), role:(MEMBER_ROLES[p.name]||null),
-    wins, skills:skills.map(s=>({name:s.name,level:s.level})), edit:false, own:(getMe()===id) };
+    wins, skills:sk, edit, own };
   renderMemberCard();
 }
 function closeMemberCard(){ mmState=null; const h=document.getElementById('mmHost'); if(h) h.innerHTML=''; }
@@ -2530,13 +2534,13 @@ async function saveMyCard(){
   x.fillStyle='#15281b'; x.fillRect(0,0,W,H);
   x.strokeStyle='#33492f'; x.lineWidth=2; x.strokeRect(16,16,W-32,H-32);
   try{ await document.fonts.ready; }catch(e){}
-  await new Promise(r=>{ const img=new Image(); img.onload=()=>{ const lw=148, lh=lw*img.naturalHeight/img.naturalWidth; x.drawImage(img,(W-lw)/2,58,lw,lh); r(); }; img.onerror=r; img.src='scf_logo.png'; });
+  await new Promise(r=>{ const img=new Image(); img.onload=()=>{ const lw=118, lh=lw*img.naturalHeight/img.naturalWidth; x.drawImage(img,(W-lw)/2, H-lh-46, lw, lh); r(); }; img.onerror=r; img.src='scf_logo.png'; });
   x.textAlign='center';
-  x.fillStyle='#ece6d2'; x.font='118px "Anton","Pretendard",sans-serif'; x.fillText(String(jersey), W/2, 300);
-  x.font='800 36px "Pretendard",sans-serif'; x.fillText(name, W/2, 352);
+  x.fillStyle='#ece6d2'; x.font='118px "Anton","Pretendard",sans-serif'; x.fillText(String(jersey), W/2, 158);
+  x.font='800 36px "Pretendard",sans-serif'; x.fillText(name, W/2, 210);
   const wins = myWinTitles(me, await getPrevWinners());
-  if(wins.length) drawWinPills(x, W/2, 386, wins);
-  const dy = wins.length ? 414 : 400;
+  if(wins.length) drawWinPills(x, W/2, 244, wins);
+  const dy = wins.length ? 272 : 258;
   x.strokeStyle='#33492f'; x.lineWidth=1; x.beginPath(); x.moveTo(90, dy); x.lineTo(W-90, dy); x.stroke();
   // 스탯 그리드 (3열 x 2행)
   const colX=[W/6, W/2, W*5/6], r0=dy+48, r1=r0+70;

@@ -2415,7 +2415,13 @@ async function renderSquad() {
   let skillsMap = {};
   try { skillsMap = (await fetchSettings()).skills || {}; } catch(e) {}
   const hasSkill = id => Array.isArray(skillsMap[id]) && skillsMap[id].length > 0;
-  const chip = p => { const r = MEMBER_ROLES[p.name]; const rc = r ? (r.type==='admin'?' role-admin':' role-other') : ''; const sk = hasSkill(p.id) ? ' has-skill' : ''; return `<button class="sq-chip${rc}${sk}" onclick="openMemberCard(${p.id})"><span class="sq-no">${p.jersey!=null?p.jersey:'–'}</span><span class="sq-nm">${esc(p.name)}</span><span class="sq-dot" title="${hasSkill(p.id)?'스킬 입력함':'스킬 미입력'}"></span></button>`; };
+  const w = await getPrevWinners();
+  const chip = p => {
+    const r = MEMBER_ROLES[p.name]; const rc = r ? (r.type==='admin'?' role-admin':' role-other') : '';
+    const sk = hasSkill(p.id) ? ' has-skill' : '';
+    const wb = `${p.id===w.mvp?'<span class="win-badge mvp" style="flex-shrink:0">MVP</span>':''}${p.id===w.growth?'<span class="win-badge grow" style="flex-shrink:0">성장</span>':''}`;
+    return `<button class="sq-chip${rc}${sk}" onclick="openMemberCard(${p.id})"><span class="sq-no">${p.jersey!=null?p.jersey:'–'}</span><span class="sq-nm">${esc(p.name)}</span>${wb}<span class="sq-dot" title="${hasSkill(p.id)?'스킬 입력함':'스킬 미입력'}"></span></button>`;
+  };
   const grp = (title, arr, dim) => arr.length ? `<div class="sq-grp-h"><span>${title}</span><span>${arr.length}명</span></div><div class="sq-grid${dim?' dim':''}">${arr.map(chip).join('')}</div>` : '';
   el.innerHTML = `<div class="section-title">${potmMonthLabel(month)} 팀 현황</div>
     <div class="att-counts" style="margin:6px 0 8px">
@@ -2438,8 +2444,9 @@ async function openMemberCard(id){
   if(!p){ try{ const tb=await fetchTeamBuilder(); p=(tb&&tb.players||[]).find(x=>x.id===id); }catch(e){} }
   if(!p) return;
   const skills = await getMemberSkills(id);
+  const wins = myWinTitles(id, await getPrevWinners());
   mmState = { id, name:p.name, jersey:(p.jersey!=null?p.jersey:null), role:(MEMBER_ROLES[p.name]||null),
-    skills:skills.map(s=>({name:s.name,level:s.level})), edit:false, own:(getMe()===id) };
+    wins, skills:skills.map(s=>({name:s.name,level:s.level})), edit:false, own:(getMe()===id) };
   renderMemberCard();
 }
 function closeMemberCard(){ mmState=null; const h=document.getElementById('mmHost'); if(h) h.innerHTML=''; }
@@ -2537,6 +2544,7 @@ function renderMemberCard(){
   if(!mmState){ h.innerHTML=''; return; }
   const s=mmState;
   const roleHtml = s.role ? `<span class="mm-role ${s.role.type==='admin'?'admin':'other'}">${esc(s.role.role)}</span>` : '';
+  const winHtml = (s.wins && s.wins.length) ? ' ' + s.wins.map(t=>`<span class="win-badge ${t==='MVP'?'mvp':'grow'}">${t}</span>`).join(' ') : '';
   let body;
   if(s.edit){
     body = `<div class="hint" style="margin-bottom:8px;font-size:11px">스킬명은 최대 5자 · 레벨 1~5</div>` + s.skills.map((sk,i)=>`<div class="sk-row"><input type="text" maxlength="5" value="${esc(sk.name)}" placeholder="스킬명 (5자)" oninput="mmSetName(${i},this.value)"><span class="sk-lv">${[1,2,3,4,5].map(lv=>`<button class="${sk.level===lv?'on':''}" onclick="mmSetLevel(${i},${lv})">${lv}</button>`).join('')}</span><button class="sk-del" onclick="mmDelSkill(${i})">×</button></div>`).join('')
@@ -2548,7 +2556,7 @@ function renderMemberCard(){
       : `<div class="empty" style="font-size:13px">${s.own?'아직 스킬이 없어요. 추가해보세요.':'아직 스킬 미설정'}</div>`;
     if(s.own) body += `<button class="btn ghost sm" onclick="mmEdit(true)" style="margin-top:12px;width:100%">스킬 편집</button>`;
   }
-  h.innerHTML = `<div class="mm-back" onclick="if(event.target===this)closeMemberCard()"><div class="mm-box"><div class="mm-head"><span class="mm-no">${s.jersey!=null?s.jersey:'–'}</span><div><div class="mm-name">${esc(s.name)}</div>${roleHtml}</div><button class="mm-x" onclick="closeMemberCard()">×</button></div><div class="mm-sec">스킬</div>${body}</div></div>`;
+  h.innerHTML = `<div class="mm-back" onclick="if(event.target===this)closeMemberCard()"><div class="mm-box"><div class="mm-head"><span class="mm-no">${s.jersey!=null?s.jersey:'–'}</span><div><div class="mm-name">${esc(s.name)}${winHtml}</div>${roleHtml}</div><button class="mm-x" onclick="closeMemberCard()">×</button></div><div class="mm-sec">스킬</div>${body}</div></div>`;
 }
 
 /* ============================================================

@@ -592,7 +592,7 @@ body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; b
           </div>
           <!-- 당일 불참 -->
           <div id="sfLMASection" style="display:none;margin-top:10px;padding-top:8px;border-top:1px dashed #fed7aa">
-            <span style="font-size:11px;font-weight:700;color:#d97706">⚡ 당일 불참 <span style="font-weight:400;color:#a0aec0;font-size:10px">불참 중 당일 취소한 선수 선택</span></span>
+            <span style="font-size:11px;font-weight:700;color:#d97706">⚡ 당일 불참 <span style="font-weight:400;color:#a0aec0;font-size:10px">참석자 중 당일 취소한 선수 선택 (선택 시 참석에서 제외)</span></span>
             <div id="sfLMAGrid" style="display:flex;flex-wrap:wrap;gap:5px;margin-top:6px"></div>
           </div>
           <!-- 기타 참석자 (비등록) -->
@@ -3066,15 +3066,16 @@ function renderLMAGrid(){
   const grid=document.getElementById('sfLMAGrid');
   if(!section||!grid)return;
   const dateVal=document.getElementById('sfDate').value;
-  const absentees=players.filter(p=>{
-    if((p.status||'active')!=='active')return false;
-    if(sfChecked.has(p.id))return false;
+  // 후보 = 참석(신청)자 ∪ 이미 당일불참으로 표시된 사람. 당일 불참은 "오기로 한 사람"이 취소한 것이므로 참석자 풀에서 고른다.
+  const poolIds=new Set([...sfChecked,...sfLMAIds]);
+  const cand=players.filter(p=>{
+    if(!poolIds.has(p.id))return false;
     if(dateVal&&!isInPool(p,dateVal))return false;
     return true;
   });
-  if(!absentees.length){section.style.display='none';return;}
+  if(!cand.length){section.style.display='none';return;}
   section.style.display='';
-  grid.innerHTML=absentees.map(p=>{
+  grid.innerHTML=cand.map(p=>{
     const sel=sfLMAIds.has(p.id);
     const gc=p.gender==='남'?'#3b82f6':'#ec4899';
     return`<span onclick="toggleLMA(${p.id})" style="display:inline-flex;align-items:center;gap:5px;padding:4px 10px;border-radius:20px;cursor:pointer;font-size:12px;font-weight:600;border:1.5px solid ${sel?'#f59e0b':'#e2e8f0'};background:${sel?'#fef3c7':'#f9fafb'};color:${sel?'#92400e':'#9ca3af'};user-select:none;transition:all 0.12s">
@@ -3084,8 +3085,11 @@ function renderLMAGrid(){
   }).join('');
 }
 function toggleLMA(id){
-  if(sfLMAIds.has(id))sfLMAIds.delete(id);else sfLMAIds.add(id);
-  renderLMAGrid();
+  // 당일 불참 선택 = 참석에서 빼고 불참 명단에 추가 / 해제 = 다시 참석으로
+  if(sfLMAIds.has(id)){sfLMAIds.delete(id);sfChecked.add(id);}
+  else{sfLMAIds.add(id);sfChecked.delete(id);}
+  renderAttendeeGrid();
+  updateAttCount();
 }
 
 

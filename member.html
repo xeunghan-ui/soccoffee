@@ -2344,7 +2344,7 @@ async function renderHome() {
     const miniHtml = `<div class="pc-mini">
         <div><div class="v">${joinFmt}</div><div class="k">가입월</div></div>
         <div><div class="v">${monthsLabel}</div><div class="k">함께한 기간</div></div>
-        <div><div class="v">${myAttended}</div><div class="k">참여 세션</div></div>
+        <div><div class="v">${myAttended}회</div><div class="k">참여 세션</div></div>
         <div><div class="v">${myAttRate!=null?Math.round(myAttRate)+'%':'—'}</div><div class="k">전체 출석률</div></div>
         <div><div class="v">${myRecent3!=null?myRecent3+'%':'—'}</div><div class="k">최근 3개월</div></div>
         <div><div class="v">${myWinCount}회</div><div class="k">수상 횟수</div></div>
@@ -2529,28 +2529,33 @@ async function saveMyCard(){
   const winCount=(await getWinCounts())[me]||0;
   const joinFmt=p.joinDate?p.joinDate.slice(0,7).replace('-','.'):'—';
   const _mT=monthsSince(p.joinDate); const monthsLabel=_mT>0?_mT+'개월':'이번 달';
-  const stats=[['가입월',joinFmt],['함께한 기간',monthsLabel],['참여 세션',String(attCountAll)],['전체 출석률',attRate!=null?Math.round(attRate)+'%':'—'],['최근 3개월',recent3!=null?recent3+'%':'—'],['수상 횟수',winCount+'회']];
-  const W=640,H=1060, c=document.createElement('canvas'); c.width=W; c.height=H; const x=c.getContext('2d');
-  x.fillStyle='#15281b'; x.fillRect(0,0,W,H);
-  x.strokeStyle='#33492f'; x.lineWidth=2; x.strokeRect(16,16,W-32,H-32);
+  const stats=[['가입월',joinFmt],['함께한 기간',monthsLabel],['참여 세션',attCountAll+'회'],['전체 출석률',attRate!=null?Math.round(attRate)+'%':'—'],['최근 3개월',recent3!=null?recent3+'%':'—'],['수상 횟수',winCount+'회']];
+  const W=640,H=1000, c=document.createElement('canvas'); c.width=W; c.height=H; const x=c.getContext('2d');
   try{ await document.fonts.ready; }catch(e){}
-  await new Promise(r=>{ const img=new Image(); img.onload=()=>{ const lw=118, lh=lw*img.naturalHeight/img.naturalWidth; x.drawImage(img,(W-lw)/2, H-lh-46, lw, lh); r(); }; img.onerror=r; img.src='scf_logo.png'; });
+  const loadImg = src => new Promise(r=>{ const im=new Image(); im.onload=()=>r(im); im.onerror=()=>r(null); im.src=src; });
+  const [bgImg, logoImg] = await Promise.all([loadImg('scf_bg.png'), loadImg('scf_logo.png')]);
+  // 잔디 배경(cover) + 어두운 오버레이
+  x.fillStyle='#15281b'; x.fillRect(0,0,W,H);
+  if(bgImg){ const s=Math.max(W/bgImg.naturalWidth, H/bgImg.naturalHeight), dw=bgImg.naturalWidth*s, dh=bgImg.naturalHeight*s; x.drawImage(bgImg,(W-dw)/2,(H-dh)/2,dw,dh); x.fillStyle='rgba(18,32,22,0.82)'; x.fillRect(0,0,W,H); }
+  x.strokeStyle='#33492f'; x.lineWidth=2; x.strokeRect(16,16,W-32,H-32);
+  // 로고 상단
+  if(logoImg){ const lw=132, lh=lw*logoImg.naturalHeight/logoImg.naturalWidth; x.drawImage(logoImg,(W-lw)/2, 48, lw, lh); }
   x.textAlign='center';
-  x.fillStyle='#ece6d2'; x.font='118px "Anton","Pretendard",sans-serif'; x.fillText(String(jersey), W/2, 158);
-  x.font='800 36px "Pretendard",sans-serif'; x.fillText(name, W/2, 210);
+  x.fillStyle='#ece6d2'; x.font='118px "Anton","Pretendard",sans-serif'; x.fillText(String(jersey), W/2, 288);
+  x.font='800 36px "Pretendard",sans-serif'; x.fillText(name, W/2, 340);
   const wins = myWinTitles(me, await getPrevWinners());
-  if(wins.length) drawWinPills(x, W/2, 244, wins);
-  const dy = wins.length ? 272 : 258;
+  if(wins.length) drawWinPills(x, W/2, 374, wins);
+  const dy = wins.length ? 402 : 388;
   x.strokeStyle='#33492f'; x.lineWidth=1; x.beginPath(); x.moveTo(90, dy); x.lineTo(W-90, dy); x.stroke();
   // 스탯 그리드 (3열 x 2행)
-  const colX=[W/6, W/2, W*5/6], r0=dy+48, r1=r0+70;
+  const colX=[W/6, W/2, W*5/6], r0=dy+52, r1=r0+72;
   stats.forEach((s,i)=>{ const cx=colX[i%3], cy=(i<3)?r0:r1;
     x.textAlign='center'; x.fillStyle='#ece6d2'; x.font='800 27px "Pretendard",sans-serif'; x.fillText(s[1], cx, cy);
     x.fillStyle='#a4b39a'; x.font='400 15px "Pretendard",sans-serif'; x.fillText(s[0], cx, cy+23); });
-  const dy2 = r1+44;
+  const dy2 = r1+50;
   x.strokeStyle='#33492f'; x.lineWidth=1; x.beginPath(); x.moveTo(90, dy2); x.lineTo(W-90, dy2); x.stroke();
-  if(skills.length>=3){ drawRadarCanvas(x, W/2, dy2+215, 150, skills); }
-  else { x.fillStyle='#a4b39a'; x.textAlign='center'; x.font='400 18px "Pretendard",sans-serif'; x.fillText(skills.length?('스킬 '+skills.length+'개'):'스킬 미설정', W/2, dy2+80); }
+  if(skills.length>=3){ drawRadarCanvas(x, W/2, dy2+188, 148, skills); }
+  else { x.fillStyle='#a4b39a'; x.textAlign='center'; x.font='400 18px "Pretendard",sans-serif'; x.fillText(skills.length?('스킬 '+skills.length+'개'):'스킬 미설정', W/2, dy2+70); }
   let url; try{ url=c.toDataURL('image/png'); }catch(e){ toast('이미지 생성 실패'); return; }
   showCardPreview(url, name||'card');
 }

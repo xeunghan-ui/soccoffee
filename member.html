@@ -739,7 +739,7 @@
   .win-badge { font-size: 10px; font-weight: 800; padding: 1px 6px; border-radius: 5px; vertical-align: middle; white-space: nowrap; }
   .win-badge.mvp { background: var(--accent); color: #14281b; }
   .win-badge.grow { background: var(--win); color: #fff; }
-  .pc-mini { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin-top: 12px; padding-top: 12px; border-top: 1px solid var(--line); text-align: center; }
+  .pc-mini { display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px 8px; margin-top: 12px; padding-top: 12px; border-top: 1px solid var(--line); text-align: center; }
   .pc-mini .v { font-size: 15px; font-weight: 800; color: var(--cream); white-space: nowrap; }
   .pc-mini .k { font-size: 11px; color: var(--muted); margin-top: 3px; }
   .pc-right { flex: 1; min-width: 0; display: flex; flex-direction: column; justify-content: center; gap: 10px; }
@@ -1590,6 +1590,23 @@ async function getPrevWinners(){
 }
 function myWinTitles(id, w){ return [(id!=null&&id===w.mvp)?'MVP':'', (id!=null&&id===w.growth)?'성장':''].filter(Boolean); }
 
+// 전체 월 누적 MVP·성장 수상 횟수 (memberId -> 합계). 캐시.
+let _winCounts = null;
+async function getWinCounts(){
+  if (_winCounts) return _winCounts;
+  let rows = [];
+  try {
+    if (typeof USE_DB !== 'undefined' && USE_DB) { const { data } = await sb.from('potm_votes').select('month,category,candidate_id'); rows = data || []; }
+    else { rows = JSON.parse(localStorage.getItem(POTM_STORE)) || []; }
+  } catch(e) {}
+  const top = (m,c) => { const t={}; rows.filter(v=>v.month===m&&v.category===c).forEach(v=>{ t[v.candidate_id]=(t[v.candidate_id]||0)+1; }); let b=null,bc=0; for(const k in t){ if(t[k]>bc){bc=t[k]; b=Number(k);} } return b; };
+  const months = [...new Set(rows.map(v=>v.month))];
+  const map = {};
+  months.forEach(m => ['mvp','growth'].forEach(c => { const w = top(m,c); if (w!=null) map[w] = (map[w]||0)+1; }));
+  _winCounts = map;
+  return map;
+}
+
 // 해당 월 활동 회원 (team-builder 월별 현황과 동일 로직)
 // 휴면은 팀빌더에서 읽어 반영 (이름 기준). 팀빌더에 없으면 사이트 명단의 값 사용
 let TB_DORMANT = {};
@@ -2268,9 +2285,10 @@ async function renderHome() {
   const myPaid = myDues.some(d => d.member_id === me && d.paid);
   const mySkills = meActive ? await getMemberSkills(me) : [];
   const myWins = meActive ? myWinTitles(me, await getPrevWinners()) : [];
-  // 참여 세션 수: 팀빌더의 누적 출석 집계(attCountAll)에서 가져옴 (사이트 attendance 테이블은 최근분만 있음)
-  let myAttended = 0;
-  if (meActive) { try { const _tb = await fetchTeamBuilder(); const _tp = (_tb && _tb.players || []).find(x => x.id === me); if (_tp) myAttended = _tp.attCountAll ?? _tp.attCount ?? 0; } catch(e){} }
+  // 참여 세션·출석률·최근3개월·수상: 팀빌더 데이터 기반 (사이트 attendance 테이블은 최근분만 있음)
+  let myAttended = 0, myAttRate = null, myRecent3 = null;
+  if (meActive) { try { const _tb = await fetchTeamBuilder(); const _tp = (_tb && _tb.players || []).find(x => x.id === me); if (_tp) { myAttended = _tp.attCountAll ?? _tp.attCount ?? 0; myAttRate = _tp.attendanceAll ?? _tp.attendance ?? null; myRecent3 = recent3Rate(_tp, _tb.sessions); } } catch(e){} }
+  const myWinCount = meActive ? ((await getWinCounts())[me] || 0) : 0;
   const myStatusOf = sid => { const a = (attBySess[sid]||[]).find(x=>x.member_id===me); return a ? a.status : 'none'; };
   const meP0 = me != null ? PLAYERS.find(x => x.id === me) : null;
   const pending = meActive ? sessions.filter(s => {
@@ -2310,20 +2328,23 @@ async function renderHome() {
       ? `<div style="margin-top:14px;padding-top:14px;border-top:1px solid var(--line);font-size:12px;color:var(--muted);line-height:1.6">이번 달 휴면이라 참석 신청 대상이 아니에요.<br>게스트 참여를 원하는 경우 운영진에게 문의 부탁드립니다.</div>`
       : `<div style="margin-top:14px;padding-top:14px;border-top:1px solid var(--line)"><div style="font-size:11px;color:var(--muted);font-weight:800;letter-spacing:.04em;margin-bottom:9px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${sessLabel} 참석</div><div style="display:flex;gap:6px">${qbtn('yes','참석','var(--win)','var(--cream)')}${qbtn('no','불참','var(--alert)','var(--cream)')}${qbtn('maybe','미정','var(--accent)','#14281b')}</div></div>`) : '';
     const upcomingHtml = myYes.length ? `<div style="margin-top:12px;padding-top:12px;border-top:1px solid var(--line)"><div style="font-size:11px;color:var(--muted);font-weight:800;letter-spacing:.04em;margin-bottom:4px">참석 예정 ${myYes.length}개</div>${myYes.map(s => `<div style="padding:5px 0;font-size:13px;color:var(--cream)"><div style="display:flex;align-items:center;gap:8px"><span style="color:var(--cream);font-size:7px;opacity:.7">●</span><span style="min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(sessChipLabel(s))}</span><span style="margin-left:auto;flex-shrink:0;color:var(--muted);font-size:12px">${esc((s.time||'').slice(0,5))}${s.endTime?'–'+esc(s.endTime.slice(0,5)):''}</span></div>${s.place ? `<div style="margin-left:17px;color:var(--muted);font-size:12px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(s.place)}</div>` : ''}</div>`).join('')}</div>` : '';
-    const pendingHtml = pending.length ? `<div style="margin-top:12px;padding-top:12px;border-top:1px solid var(--line)"><button onclick="switchTab('att')" style="width:100%;text-align:left;cursor:pointer;font-family:inherit;border:none;background:transparent;padding:0;display:flex;align-items:center;justify-content:space-between;gap:10px"><span style="font-size:13px;font-weight:600;color:#ece6d2">미응답한 일정 ${pending.length}개</span><span style="font-size:12px;font-weight:800;color:var(--accent)">응답하기 →</span></button></div>` : '';
+    const pendingHtml = pending.length ? `<div style="margin-top:12px;padding-top:12px;border-top:1px solid var(--line)"><button onclick="openAtt('${pending[0].id}')" style="width:100%;text-align:left;cursor:pointer;font-family:inherit;border:none;background:transparent;padding:0;display:flex;align-items:center;justify-content:space-between;gap:10px"><span style="font-size:13px;font-weight:600;color:#ece6d2">미응답한 일정 ${pending.length}개</span><span style="font-size:12px;font-weight:800;color:var(--accent)">응답하기 →</span></button></div>` : '';
     const skillHtml = mySkills.length>=3
         ? radarSvg(mySkills)
         : (mySkills.length
             ? `<div style="margin-top:8px">${mySkills.map(sk=>`<div style="display:flex;justify-content:space-between;font-size:13px;color:var(--cream);padding:3px 0"><span>${esc(sk.name)}</span><span style="color:var(--accent);font-weight:800">${sk.level}/5</span></div>`).join('')}</div>`
             : `<div class="hint" style="margin-top:6px">스파이더 차트로 내 스킬을 표시해 보세요.</div>`);
     // 카드 ① 신원 + 스킬
-    const joinFmt = meP.joinDate ? meP.joinDate.replace(/-/g,'.') : '—';
+    const joinFmt = meP.joinDate ? meP.joinDate.slice(0,7).replace('-','.') : '—';
     const monthsTogether = monthsSince(meP.joinDate);
     const monthsLabel = monthsTogether > 0 ? `${monthsTogether}개월` : '이번 달';
     const miniHtml = `<div class="pc-mini">
-        <div><div class="v">${joinFmt}</div><div class="k">가입일</div></div>
+        <div><div class="v">${joinFmt}</div><div class="k">가입월</div></div>
         <div><div class="v">${monthsLabel}</div><div class="k">함께한 기간</div></div>
         <div><div class="v">${myAttended}</div><div class="k">참여 세션</div></div>
+        <div><div class="v">${myAttRate!=null?Math.round(myAttRate)+'%':'—'}</div><div class="k">전체 출석률</div></div>
+        <div><div class="v">${myRecent3!=null?myRecent3+'%':'—'}</div><div class="k">최근 3개월</div></div>
+        <div><div class="v">${myWinCount}회</div><div class="k">수상 횟수</div></div>
       </div>`;
     dash += `<div class="card" style="padding:16px;margin-bottom:12px">
       <div style="display:flex;align-items:center;gap:14px">
@@ -2606,6 +2627,23 @@ async function fetchAttendance(sessionId) {
   }
   let a=[]; try { a = JSON.parse(localStorage.getItem(ATT_STORE)) || []; } catch(e){}
   return a.filter(x=>x.session_id===sessionId);
+}
+// 최근 3개월 출석률(%): 팀빌더 sessions(과거 경기 기록) 기준. 가입 전·휴면 달은 분모에서 제외.
+function recent3Rate(tp, sessions) {
+  if (!tp || !Array.isArray(sessions)) return null;
+  const cut = new Date(); cut.setMonth(cut.getMonth() - 3);
+  const cutStr = cut.toISOString().slice(0, 10);
+  const jd = tp.joinDate || '';
+  const dorm = new Set(tp.dormantMonths || []);
+  let den = 0, num = 0;
+  sessions.forEach(s => {
+    const d = s.date || ''; if (!d || d < cutStr) return;
+    if (jd && d < jd) return;                 // 가입 전 제외
+    if (dorm.has(d.slice(0, 7))) return;      // 휴면 달 제외
+    den++;
+    if (Array.isArray(s.attendees) && s.attendees.includes(tp.id)) num++;
+  });
+  return den ? Math.round(num / den * 100) : null;
 }
 // 가입일로부터 함께한 개월 수
 function monthsSince(iso) {

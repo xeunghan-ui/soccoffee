@@ -2510,22 +2510,39 @@ function radarSvg(skills){
 // 내 카드 이미지 저장 (SCF 로고 + 등번호·이름·역할 + 스킬 레이더)
 async function saveMyCard(){
   const me=getMe(); if(me==null) return;
-  const p=(typeof PLAYERS!=='undefined'?PLAYERS:[]).find(x=>x.id===me)||{};
+  const p=(typeof PLAYERS!=='undefined'?PLAYERS:[]).find(z=>z.id===me)||{};
   const skills=await getMemberSkills(me);
-  const name=meName(); const jersey=(p.jersey!=null)?p.jersey:'–'; const role=MEMBER_ROLES[name];
-  const W=640,H=940, c=document.createElement('canvas'); c.width=W; c.height=H; const x=c.getContext('2d');
+  const name=meName();
+  const meT=(typeof TEAM_SHEET!=='undefined'?TEAM_SHEET[p.name]:null)||{};
+  const jersey=(p.jersey!=null)?p.jersey:((meT.jersey!=null)?meT.jersey:'–');
+  // 개인 스탯 (홈 카드와 동일 계산)
+  let attCountAll=0, attRate=null, recent3=null;
+  try{ const tb=await fetchTeamBuilder(); const tp=(tb&&tb.players||[]).find(z=>z.id===me); if(tp){ attCountAll=tp.attCountAll??tp.attCount??0; attRate=tp.attendanceAll??tp.attendance??null; recent3=recent3Rate(tp, tb.sessions);} }catch(e){}
+  const winCount=(await getWinCounts())[me]||0;
+  const joinFmt=p.joinDate?p.joinDate.slice(0,7).replace('-','.'):'—';
+  const _mT=monthsSince(p.joinDate); const monthsLabel=_mT>0?_mT+'개월':'이번 달';
+  const stats=[['가입월',joinFmt],['함께한 기간',monthsLabel],['참여 세션',String(attCountAll)],['전체 출석률',attRate!=null?Math.round(attRate)+'%':'—'],['최근 3개월',recent3!=null?recent3+'%':'—'],['수상 횟수',winCount+'회']];
+  const W=640,H=1060, c=document.createElement('canvas'); c.width=W; c.height=H; const x=c.getContext('2d');
   x.fillStyle='#15281b'; x.fillRect(0,0,W,H);
   x.strokeStyle='#33492f'; x.lineWidth=2; x.strokeRect(16,16,W-32,H-32);
   try{ await document.fonts.ready; }catch(e){}
   await new Promise(r=>{ const img=new Image(); img.onload=()=>{ const lw=148, lh=lw*img.naturalHeight/img.naturalWidth; x.drawImage(img,(W-lw)/2,58,lw,lh); r(); }; img.onerror=r; img.src='scf_logo.png'; });
   x.textAlign='center';
-  x.fillStyle='#ece6d2'; x.font='600 126px "Oswald","Pretendard",sans-serif'; x.fillText(String(jersey), W/2, 312);
-  x.font='800 36px "Pretendard",sans-serif'; x.fillText(name, W/2, 366);
+  x.fillStyle='#ece6d2'; x.font='118px "Anton","Pretendard",sans-serif'; x.fillText(String(jersey), W/2, 300);
+  x.font='800 36px "Pretendard",sans-serif'; x.fillText(name, W/2, 352);
   const wins = myWinTitles(me, await getPrevWinners());
-  if(wins.length) drawWinPills(x, W/2, 400, wins);
-  x.strokeStyle='#33492f'; x.lineWidth=1; x.beginPath(); x.moveTo(90, 432); x.lineTo(W-90, 432); x.stroke();
-  if(skills.length>=3){ drawRadarCanvas(x, W/2, 692, 158, skills); }
-  else { x.fillStyle='#a4b39a'; x.textAlign='center'; x.font='400 18px "Pretendard",sans-serif'; x.fillText(skills.length?('스킬 '+skills.length+'개'):'스킬 미설정', W/2, 632); }
+  if(wins.length) drawWinPills(x, W/2, 386, wins);
+  const dy = wins.length ? 414 : 400;
+  x.strokeStyle='#33492f'; x.lineWidth=1; x.beginPath(); x.moveTo(90, dy); x.lineTo(W-90, dy); x.stroke();
+  // 스탯 그리드 (3열 x 2행)
+  const colX=[W/6, W/2, W*5/6], r0=dy+48, r1=r0+70;
+  stats.forEach((s,i)=>{ const cx=colX[i%3], cy=(i<3)?r0:r1;
+    x.textAlign='center'; x.fillStyle='#ece6d2'; x.font='800 27px "Pretendard",sans-serif'; x.fillText(s[1], cx, cy);
+    x.fillStyle='#a4b39a'; x.font='400 15px "Pretendard",sans-serif'; x.fillText(s[0], cx, cy+23); });
+  const dy2 = r1+44;
+  x.strokeStyle='#33492f'; x.lineWidth=1; x.beginPath(); x.moveTo(90, dy2); x.lineTo(W-90, dy2); x.stroke();
+  if(skills.length>=3){ drawRadarCanvas(x, W/2, dy2+215, 150, skills); }
+  else { x.fillStyle='#a4b39a'; x.textAlign='center'; x.font='400 18px "Pretendard",sans-serif'; x.fillText(skills.length?('스킬 '+skills.length+'개'):'스킬 미설정', W/2, dy2+80); }
   let url; try{ url=c.toDataURL('image/png'); }catch(e){ toast('이미지 생성 실패'); return; }
   showCardPreview(url, name||'card');
 }

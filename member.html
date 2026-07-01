@@ -2268,10 +2268,9 @@ async function renderHome() {
   const myPaid = myDues.some(d => d.member_id === me && d.paid);
   const mySkills = meActive ? await getMemberSkills(me) : [];
   const myWins = meActive ? myWinTitles(me, await getPrevWinners()) : [];
-  // 참여 세션: 이미 끝났고 실존하는 세션만 (미래 예정·삭제된 세션 제외)
-  const _allSess = await getSessions();
-  const _endedIds = new Set((_allSess || []).filter(s => sessionEnded(s)).map(s => String(s.id)));
-  const myAttended = meActive ? await fetchAttendedCount(me, _endedIds) : 0;
+  // 참여 세션 수: 팀빌더의 누적 출석 집계(attCountAll)에서 가져옴 (사이트 attendance 테이블은 최근분만 있음)
+  let myAttended = 0;
+  if (meActive) { try { const _tb = await fetchTeamBuilder(); const _tp = (_tb && _tb.players || []).find(x => x.id === me); if (_tp) myAttended = _tp.attCountAll ?? _tp.attCount ?? 0; } catch(e){} }
   const myStatusOf = sid => { const a = (attBySess[sid]||[]).find(x=>x.member_id===me); return a ? a.status : 'none'; };
   const meP0 = me != null ? PLAYERS.find(x => x.id === me) : null;
   const pending = meActive ? sessions.filter(s => {
@@ -2607,19 +2606,6 @@ async function fetchAttendance(sessionId) {
   }
   let a=[]; try { a = JSON.parse(localStorage.getItem(ATT_STORE)) || []; } catch(e){}
   return a.filter(x=>x.session_id===sessionId);
-}
-// 특정 멤버가 '참석(yes)'한 세션 수 — 이미 끝났고 실존하는 세션만 집계
-// validIds: 집계 대상 세션 id 집합(Set, 문자열). 삭제된 세션·미래(미개최) 세션 제외용.
-async function fetchAttendedCount(memberId, validIds) {
-  if (memberId == null) return 0;
-  const ok = r => validIds ? validIds.has(String(r.session_id)) : true;
-  if (USE_DB) {
-    const { data, error } = await sb.from('attendance').select('session_id').eq('member_id', memberId).eq('status', 'yes');
-    if (error) return 0;
-    return (data || []).filter(ok).length;
-  }
-  let a = []; try { a = JSON.parse(localStorage.getItem(ATT_STORE)) || []; } catch(e){}
-  return a.filter(x => x.member_id === memberId && x.status === 'yes').filter(ok).length;
 }
 // 가입일로부터 함께한 개월 수
 function monthsSince(iso) {

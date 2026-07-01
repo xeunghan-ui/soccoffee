@@ -2555,7 +2555,7 @@ async function saveMyCard(){
   let radarBottom;
   if(skills.length>=3){ const rcy=dy2+195, R=146; drawRadarCanvas(x, W/2, rcy, R, skills); radarBottom=rcy+R+22; }
   else { x.fillStyle='#a4b39a'; x.textAlign='center'; x.font='400 18px "Pretendard",sans-serif'; x.fillText(skills.length?('스킬 '+skills.length+'개'):'스킬 미설정', W/2, dy2+70); radarBottom=dy2+90; }
-  if(logoImg){ const lw=104, lh=lw*logoImg.naturalHeight/logoImg.naturalWidth; x.drawImage(logoImg,(W-lw)/2, radarBottom+40, lw, lh); }
+  if(logoImg){ const lw=88, lh=lw*logoImg.naturalHeight/logoImg.naturalWidth; x.drawImage(logoImg,(W-lw)/2, radarBottom+40, lw, lh); }
   let url; try{ url=c.toDataURL('image/png'); }catch(e){ toast('이미지 생성 실패'); return; }
   showCardPreview(url, name||'card');
 }

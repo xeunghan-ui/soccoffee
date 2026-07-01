@@ -2150,15 +2150,16 @@ function renderMore() {
   };
   const teamLink = `<a class="more-item" href="team/" target="_blank" rel="noopener"><div class="mi-name">팀빌더 ↗</div><div class="mi-desc">명단 · 등번호 · 휴면 · 팀 배분</div></a>`;
   const guideBtn = `<button class="more-item" onclick="showAddHomeGuide()"><div class="mi-name">홈 화면에 추가</div><div class="mi-desc">앱처럼 바로 열기 (설치 가이드)</div></button>`;
+  const introLink = `<a class="more-item" href="index.html"><div class="mi-name">싸커피 소개</div><div class="mi-desc">소개(랜딩) 페이지로 이동 · 로그인 유지</div></a>`;
   let html = '';
   if (admin) {
     // 운영진: 회원 메뉴 / 운영진 메뉴 두 구역으로 구분
     html += `<div class="more-sec-title">회원 메뉴</div>`;
-    html += `<div class="more-grid">` + memberItems.map(btn).join('') + guideBtn + `</div>`;
+    html += `<div class="more-grid">` + memberItems.map(btn).join('') + introLink + guideBtn + `</div>`;
     html += `<div class="more-sec-title">운영진 메뉴</div>`;
     html += `<div class="more-grid">` + adminItems.map(adminBtn).join('') + teamLink + `</div>`;
   } else {
-    html += `<div class="more-grid">` + memberItems.map(btn).join('') + guideBtn + `</div>`;
+    html += `<div class="more-grid">` + memberItems.map(btn).join('') + introLink + guideBtn + `</div>`;
   }
   el.innerHTML = html;
 }
@@ -2391,13 +2392,9 @@ async function renderHome() {
        </div>`
     : sessCards.join('');
 
-  html += `
-    <div class="section-title">공지사항</div>`;
-
   const vnotices = notices.filter(noticeVisible);
-  if (vnotices.length === 0) {
-    html += `<div class="card"><div class="empty">아직 공지가 없어요.</div></div>`;
-  } else {
+  if (vnotices.length > 0) {
+    html += `<div class="section-title">공지사항</div>`;
     html += vnotices.map(n => {
       const hasBody = !!(n.body && String(n.body).trim());
       const link = n.link || '';

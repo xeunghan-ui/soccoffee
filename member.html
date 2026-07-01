@@ -625,9 +625,13 @@
   /* 참석 팀별 그룹 헤더 */
   .att-grp-h { display: flex; justify-content: space-between; align-items: center;
     font-weight: 800; color: #ece6d2; font-size: 13px; letter-spacing: 1px; text-transform: uppercase;
-    margin: 14px 0 4px; padding-top: 9px; border-top: 1px solid var(--line); }
-  .att-grp-h:first-child { border-top: none; padding-top: 0; margin-top: 0; }
+    margin: 14px 0 4px; padding-top: 9px; border-top: 1px solid var(--line); cursor: pointer; }
+  .att-grp:first-child .att-grp-h { border-top: none; padding-top: 0; margin-top: 0; }
   .att-grp-h span { font-size: 12px; font-weight: 600; color: #95a083; letter-spacing: 0; text-transform: none; }
+  .att-grp-h .grp-caret { margin-left: auto; padding-left: 10px; }
+  .att-grp-h .grp-caret::before { content: '▾'; font-size: 11px; }
+  .att-grp.collapsed .att-grp-h .grp-caret::before { content: '▸'; }
+  .att-grp.collapsed .att-grp-body { display: none; }
 
   /* 랭킹 */
   .rk-tabs { display: flex; gap: 6px; margin-bottom: 12px; overflow-x: auto; scrollbar-width: none; }
@@ -739,6 +743,9 @@
   .win-badge { font-size: 10px; font-weight: 800; padding: 1px 6px; border-radius: 5px; vertical-align: middle; white-space: nowrap; }
   .win-badge.mvp { background: var(--accent); color: #14281b; }
   .win-badge.grow { background: var(--win); color: #fff; }
+  .team-pill { font-size: 11px; font-weight: 800; padding: 2px 9px; border-radius: 5px; vertical-align: middle; letter-spacing: .5px; white-space: nowrap; }
+  .team-pill.white { background: #ddd6b6; color: #14281b; }
+  .team-pill.black { background: #0f1f15; color: #ddd6b6; border: 1px solid #5a6b5e; }
   .pc-mini { display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px 8px; margin-top: 12px; padding-top: 12px; border-top: 1px solid var(--line); text-align: center; }
   .pc-mini .v { font-size: 15px; font-weight: 800; color: var(--cream); white-space: nowrap; }
   .pc-mini .k { font-size: 11px; color: var(--muted); margin-top: 3px; }
@@ -2308,8 +2315,9 @@ async function renderHome() {
     // 박스는 '해당 월'만 본다(isDormantFor의 이번달 고정 규칙 제외) — 다음 달 토글이 작동하도록
     const dormStatus = ((meP.status||'active')==='dormant') || dormantMonthsOf(meP).includes(dMonth);
     const confirmPhase = dormFeatureOn() && new Date().getDate() >= 15;   // 2026-07-15부터, 매월 15일 이후 다음 달 활동/휴면 확인
-    const teamLabel = (teamSplitOn && meT.team && meT.team !== '기타') ? meT.team + ' 팀' : '';
-    const subline = [meP.status === 'friends' ? '싸커피 친구' : '', teamLabel, isAdmin() ? '운영진' : ''].filter(Boolean).join(' · ') || '멤버';
+    const myTeam = (teamSplitOn && (meT.team === 'WHITE' || meT.team === 'BLACK')) ? meT.team : null;
+    const teamPill = myTeam ? ` <span class="team-pill ${myTeam.toLowerCase()}">${myTeam}</span>` : '';
+    const subline = [meP.status === 'friends' ? '싸커피 친구' : '', isAdmin() ? '운영진' : ''].filter(Boolean).join(' · ') || '멤버';
     const targetSess = sessions.find(s => { const dl = sessionDeadline(s); return !(dl && new Date() > dl); }) || nextSess;
     const targetDorm = targetSess ? isDormantFor(meP, (targetSess.date||'').slice(0,7)) : false;
     const ns = targetSess ? myStatusOf(targetSess.id) : 'none';
@@ -2353,7 +2361,7 @@ async function renderHome() {
     dash += `<div class="card" style="padding:16px;margin-bottom:12px">
       <div style="display:flex;align-items:center;gap:14px">
         <div class="pc-jersey" style="font-size:38px">${jersey}</div>
-        <div style="min-width:0;flex:1"><div class="pc-name" style="margin:0">${esc(meName())}${myWins.map(t=>` <span class="win-badge ${t==='MVP'?'mvp':'grow'}">${t}</span>`).join('')}</div><div class="pc-team">${subline}</div></div>
+        <div style="min-width:0;flex:1"><div class="pc-name" style="margin:0">${esc(meName())}${myWins.map(t=>` <span class="win-badge ${t==='MVP'?'mvp':'grow'}">${t}</span>`).join('')}${teamPill}</div><div class="pc-team">${subline}</div></div>
         <button class="btn ghost sm" style="flex-shrink:0" onclick="openMemberCard(${me}, true)">${mySkills.length?'스킬 편집':'스킬 추가'}</button>
       </div>
       ${miniHtml}
@@ -2728,6 +2736,8 @@ function deadlineLabel(dl){
 // 운영진 일괄 수정용 드래프트 (출석) — 클릭은 로컬에만 반영, 저장 시 일괄 DB 반영
 let attDraft = {};      // memberId -> 'yes'|'no'|'maybe'|'none'
 let attMapDB = {};      // 현재 DB 상태 스냅샷
+let attCollapsed = {};  // 명단 그룹 접힘 상태 (key -> true=접힘)
+function toggleAttGrp(k, btn){ attCollapsed[k] = !attCollapsed[k]; if(btn && btn.parentNode) btn.parentNode.classList.toggle('collapsed', attCollapsed[k]); }
 async function renderAtt() {
   const el = document.getElementById('attContent');
   el.innerHTML = `<div class="empty">불러오는 중...</div>`;
@@ -2811,13 +2821,13 @@ async function renderAtt() {
       const gm = sortedM.filter(m=>(m.team||'기타')===key);
       if (!gm.length) return '';
       const gy = gm.filter(m=>eff(m.id)==='yes').length;
-      return `<div class="att-grp-h">${label} <span>참석 ${gy} / ${gm.length}명</span></div>${gm.map(rosterRow).join('')}`;
+      return `<div class="att-grp${attCollapsed[key]?' collapsed':''}"><div class="att-grp-h" onclick="toggleAttGrp('${key}',this)">${label} <span>참석 ${gy} / ${gm.length}명</span><span class="grp-caret"></span></div><div class="att-grp-body">${gm.map(rosterRow).join('')}</div></div>`;
     }).join('');
   } else {
     listHtml = [['yes','참석'],['no','불참'],['maybe','미정'],['none','미응답']].map(([key,label])=>{
       const gm = sortedM.filter(m=>eff(m.id)===key);
       if (!gm.length) return '';
-      return `<div class="att-grp-h">${label} <span>${gm.length}명</span></div>${gm.map(rosterRow).join('')}`;
+      return `<div class="att-grp${attCollapsed[key]?' collapsed':''}"><div class="att-grp-h" onclick="toggleAttGrp('${key}',this)">${label} <span>${gm.length}명</span><span class="grp-caret"></span></div><div class="att-grp-body">${gm.map(rosterRow).join('')}</div></div>`;
     }).join('');
   }
 

@@ -2548,8 +2548,8 @@ async function saveMyCard(){
   // 스탯 그리드 (3열 x 2행)
   const colX=[W/2-150, W/2, W/2+150], r0=dy+58, r1=r0+76;
   stats.forEach((s,i)=>{ const cx=colX[i%3], cy=(i<3)?r0:r1;
-    x.textAlign='center'; x.fillStyle='#ece6d2'; x.font='800 27px "Pretendard",sans-serif'; x.fillText(s[1], cx, cy);
-    x.fillStyle='#a4b39a'; x.font='400 15px "Pretendard",sans-serif'; x.fillText(s[0], cx, cy+23); });
+    x.textAlign='center'; x.fillStyle='#ece6d2'; x.font='800 24px "Pretendard",sans-serif'; x.fillText(s[1], cx, cy);
+    x.fillStyle='#a4b39a'; x.font='400 14px "Pretendard",sans-serif'; x.fillText(s[0], cx, cy+21); });
   const dy2 = r1+72;
   x.strokeStyle='#33492f'; x.lineWidth=1; x.beginPath(); x.moveTo(90, dy2); x.lineTo(W-90, dy2); x.stroke();
   let radarBottom;

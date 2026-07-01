@@ -985,7 +985,7 @@ function confirmSiteImport(){
     if(existingDates.has(s.date)){ skipped++; return; }
     const attendees=[];
     (yesBy[s.id]||[]).forEach(mid=>{ const nm=idName[mid]; const bid=nm?nameId[nm]:undefined; if(bid!=null) attendees.push(bid); else if(nm) unmatched.add(nm); });
-    sessions.unshift({ id:Date.now()+Math.floor(Math.random()*100000), date:s.date, type:(s.label||'정기'), notes:'', guests:0, extraNames:[], attendees, lastMinuteAbsentIds:[] });
+    sessions.unshift({ id:Date.now()+Math.floor(Math.random()*100000), date:s.date, type:(s.type||s.label||'기타'), notes:(s.desc||''), guests:0, extraNames:[], attendees, lastMinuteAbsentIds:[] });
     existingDates.add(s.date); added++;
   });
   sessions.sort((a,b)=>b.date.localeCompare(a.date));

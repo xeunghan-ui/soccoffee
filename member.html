@@ -1672,6 +1672,20 @@ function activeMembers(monthStr) {
                                  a.name.localeCompare(b.name, 'ko'));
 }
 
+// 투표 대상: 가입한 회원 전체(휴면 포함), 탈퇴·싸커피 친구 제외
+function votingMembers(monthStr) {
+  const [yN, moN] = monthStr.split('-').map(Number);
+  const monthEnd = new Date(yN, moN, 0);
+  const TEAM_ORDER = { 'WHITE': 0, 'BLACK': 1, '기타': 2 };
+  return ROSTER.filter(p => {
+      const st = p.status || 'active';
+      if (st === 'former' || st === 'friends') return false;
+      return p.joinDate && new Date(p.joinDate) <= monthEnd;
+    })
+    .map(p => { const t = TEAM_SHEET[p.name] || { team: '기타' }; return { ...p, jersey: t.jersey, eng: t.eng || '', team: t.team, cap: !!t.cap }; })
+    .sort((a, b) => (TEAM_ORDER[a.team] - TEAM_ORDER[b.team]) || ((a.jersey ?? 999) - (b.jersey ?? 999)) || a.name.localeCompare(b.name, 'ko'));
+}
+
 /* ---------- 투표 데이터 계층 (Supabase 또는 로컬) — 부문(category)별 ---------- */
 const VOTE_CATS = [
   { key:'mvp',    label:'이달의 선수',     pick:'이달의 선수를 골라주세요',      sub:'가장 좋았던 한 명을 선택하세요. (본인 제외)' },
@@ -1728,14 +1742,14 @@ function refreshPotmIfOpen() {
 async function renderPotm() {
   const el = document.getElementById('potmContent');
   const month = potmMonth();
-  const members = activeMembers(month);
+  const members = votingMembers(month);   // 투표 대상: 휴면 포함, 친구·탈퇴 제외
   potmVoterId = getMe();   // 로그인한 본인
 
   // 1~14일(현재 달 투표 잠금 기간) → 전 달 확정 결과를 모두에게 노출 (투표 없음)
   if (!isVotingOpen()) {
     const d = new Date(); d.setDate(1); d.setMonth(d.getMonth() - 1);
     const pMonth = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
-    const pMembers = activeMembers(pMonth);
+    const pMembers = votingMembers(pMonth);
     el.innerHTML = `<div class="empty">불러오는 중...</div>`;
     const [pMvp, pGrowth] = await Promise.all([fetchVotes(pMonth, 'mvp'), fetchVotes(pMonth, 'growth')]);
     const adminP = isAdmin();
@@ -1758,7 +1772,7 @@ async function renderPotm() {
   let body = `
     <div class="potm-hero">
       <h2>이달의 투표</h2>
-      <div class="month">${potmMonthLabel(month)} · 활동 회원 ${total}명</div>
+      <div class="month">${potmMonthLabel(month)} · 투표 대상 ${total}명</div>
       <div class="turnout"><b>${votesMvp.length}</b>명 참여 · 매월 1일 새 투표</div>
     </div>`;
 
@@ -1886,8 +1900,8 @@ function syncVoteBtn() {
 }
 async function submitVote() {
   if (!potmVoterId) return;
-  // 수상 월(potmMonth) 활동 회원만 투표 가능 — UI 우회·명단 변동 대비 제출 시 재검증
-  if (!activeMembers(potmMonth()).some(m => m.id === potmVoterId)) { toast('이번 달 활동 회원만 투표할 수 있어요'); return renderPotm(); }
+  // 투표 대상(가입 회원, 휴면 포함·친구 제외)만 투표 가능 — UI 우회·명단 변동 대비 제출 시 재검증
+  if (!votingMembers(potmMonth()).some(m => m.id === potmVoterId)) { toast('투표 대상이 아니에요'); return renderPotm(); }
   if (!potmPick.mvp || !potmPick.growth) return toast('두 부문 모두 선택해 주세요');
   if (!isVotingOpen() && !isAdmin()) { toast(`투표는 ${fmtOpenTime(votingOpensAt())}부터 가능해요`); return renderPotm(); }
   const pm = ROSTER.find(m => m.id === potmPick.mvp), pg = ROSTER.find(m => m.id === potmPick.growth);

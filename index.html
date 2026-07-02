@@ -437,6 +437,11 @@
         applyMore();
         if(!expanded){ var sec=document.getElementById('moments'); if(sec) sec.scrollIntoView({behavior:'smooth', block:'start'}); }
       });
+      // 가려진 이미지 미리 받아두기 — 초기 로드 완료 후 idle 시점에 캐시 워밍(클릭 시 즉시 표시)
+      window.addEventListener('load', function(){
+        var warm=function(){ imgs.slice(shown).forEach(function(im){ var p=new Image(); p.decoding='async'; p.src=im.src; }); };
+        if('requestIdleCallback' in window){ requestIdleCallback(warm,{timeout:2500}); } else { setTimeout(warm,700); }
+      });
     }
   }
 })();

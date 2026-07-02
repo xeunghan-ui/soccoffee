@@ -111,9 +111,9 @@
   .fx.open .more::before{content:'－ 닫기';}
   .fx-detail{display:none; padding:0 18px 15px; font-size:13px; line-height:1.6; white-space:pre-wrap; word-break:break-word;}
   .fx.open .fx-detail{display:block;}
-  .fx .meta{justify-self:start; display:flex; flex-direction:column; align-items:flex-start; gap:4px; min-width:0; max-width:100%;}
-  .fx .type{font-size:10px; font-weight:700; letter-spacing:.6px; padding:2px 9px; border-radius:999px; border:1px solid currentColor; opacity:.7; white-space:nowrap; max-width:100%; overflow:hidden; text-overflow:ellipsis;}
-  .fx .wk{font-weight:600; font-size:13px; letter-spacing:.4px; opacity:.85; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; max-width:100%;}
+  .fx .meta{justify-self:center; display:flex; flex-direction:column; align-items:center; gap:2px; min-width:0; max-width:100%; text-align:center;}
+  .fx .type{font-size:13px; font-weight:600; letter-spacing:.3px; opacity:.85; white-space:nowrap; max-width:100%; overflow:hidden; text-overflow:ellipsis;}
+  .fx .wk{font-size:11px; font-weight:600; letter-spacing:.3px; opacity:.6; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; max-width:100%;}
   .fx .loc{display:flex; align-items:center; justify-content:flex-end; gap:8px; font-weight:600; font-size:15px; justify-self:end; text-align:right; min-width:0; max-width:100%;}
   .fx .loc .loc-t{overflow:hidden; text-overflow:ellipsis; white-space:nowrap; min-width:0;}
   .fx .when{justify-self:start; padding-right:14px; text-align:left; letter-spacing:.2px; line-height:1.2;}
@@ -350,9 +350,9 @@
           : place+(oatly?' <span style="font-size:11px;opacity:.6">↗</span>':'');
         return '<div class="fx'+(hasDetail?' has-detail':'')+'">'
           +'<div class="fx-row"'+rowAttr+'>'
-          +metaHtml
           +'<span class="when"><span class="d">'+md+(wd?'<span class="wd">'+wd+'</span>':'')+'</span>'
           +(time?'<span class="t">'+timerange+'</span>':'')+'</span>'
+          +metaHtml
           +'<span class="loc"><span class="loc-t">'+locInner+'</span>'+(hasDetail?'<span class="more"></span>':'')+'</span></div>'
           +(hasDetail?'<div class="fx-detail">'+linkify(s.desc)+'</div>':'')
           +(glink?'<div class="fx-guest"><a href="'+esc(gurl)+'" target="_blank" rel="noopener" onclick="event.stopPropagation()">게스트 신청 →</a></div>':'')

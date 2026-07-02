@@ -2741,9 +2741,9 @@ function showSurvey(){
     const inner = q.type==='choice'
       ? (q.options||[]).map(opt=>`<label class="sv-opt"><input type="radio" name="sv_${q.id}" value="${esc(opt)}" ${surveyAns[q.id]===opt?'checked':''} onchange="surveyAnswer('${q.id}',this.value)"> ${esc(opt)}</label>`).join('')
       : `<input type="text" class="sv-text" value="${esc(surveyAns[q.id]||'')}" oninput="surveyAnswer('${q.id}',this.value)" placeholder="답변 입력" maxlength="200">`;
-    return `<div class="sv-q"><div class="sv-qt">${i+1}. ${esc(q.q)}</div>${inner}</div>`;
+    return `<div class="sv-q"><div class="sv-qt">${i+1}. ${esc(q.q)}</div>${q.image?`<img src="${esc(q.image)}" style="width:100%;border-radius:8px;margin:6px 0;display:block">`:''}${inner}</div>`;
   }).join('');
-  let body = `<p class="sub" style="margin:0 0 12px">${esc(SURVEY.title||'설문')}</p>${qHtml}
+  let body = `<p class="sub" style="margin:0 0 12px">${esc(SURVEY.title||'설문')}</p>${(SURVEY.images||[]).map(u=>`<img src="${esc(u)}" style="width:100%;border-radius:10px;margin-bottom:12px;display:block">`).join('')}${qHtml}
     <button class="btn accent" style="width:100%;margin-top:6px" onclick="submitSurvey()">${resp?'응답 수정':'제출'}</button>
     ${resp?`<p class="hint" style="margin-top:6px;text-align:center">이미 응답했어요 · 수정 가능</p>`:''}`;
   if(admin) body += `<div style="display:flex;gap:8px;margin-top:12px;border-top:1px solid var(--line);padding-top:12px"><button class="btn ghost sm" style="flex:1" onclick="surveyResults()">결과 보기</button><button class="btn ghost sm" style="flex:1" onclick="surveyBuilder()">편집</button></div>`;
@@ -2761,7 +2761,7 @@ async function submitSurvey(){
 }
 function surveyBuilder(){
   if(!isAdmin()) return;
-  if(!surveyDraft) surveyDraft = SURVEY ? JSON.parse(JSON.stringify({title:SURVEY.title||'', questions:SURVEY.questions||[]})) : { title:'', questions:[] };
+  if(!surveyDraft) surveyDraft = SURVEY ? JSON.parse(JSON.stringify({title:SURVEY.title||'', images:SURVEY.images||[], questions:SURVEY.questions||[]})) : { title:'', images:[], questions:[] };
   renderSurveyBuilder();
 }
 function renderSurveyBuilder(){
@@ -2774,9 +2774,11 @@ function renderSurveyBuilder(){
       <div style="display:flex;gap:6px;align-items:center;margin-bottom:6px"><input type="text" class="sv-text" style="flex:1" value="${esc(q.q)}" placeholder="질문 ${i+1}" oninput="svbQ(${i},this.value)"><button class="sk-del" onclick="svbDel(${i})">×</button></div>
       <div style="display:flex;gap:6px;margin-bottom:6px"><button class="btn ghost sm" style="flex:1;${q.type==='choice'?'border-color:var(--accent);color:#ece6d2':''}" onclick="svbType(${i},'choice')">객관식</button><button class="btn ghost sm" style="flex:1;${q.type==='text'?'border-color:var(--accent);color:#ece6d2':''}" onclick="svbType(${i},'text')">주관식</button></div>
       ${opts}
+      <input type="text" class="sv-text" style="margin-top:6px" value="${esc(q.image||'')}" placeholder="이 질문 이미지 (URL/경로, 선택 — 예: 사이즈표)" oninput="svbQImg(${i},this.value)">
     </div>`;
   }).join('');
   const body = `<input type="text" class="sv-text" value="${esc(d.title)}" placeholder="설문 제목" oninput="svbTitle(this.value)" style="margin-bottom:10px">
+    <textarea class="sv-text" rows="2" placeholder="상단 이미지 (URL/경로, 줄바꿈으로 여러 개 — 예: 유니폼)" oninput="svbImages(this.value)" style="margin-bottom:12px">${esc((d.images||[]).join('\n'))}</textarea>
     ${qHtml}
     <button class="btn ghost sm" style="width:100%;margin-top:4px" onclick="svbAdd()">＋ 질문 추가</button>
     <div style="display:flex;gap:8px;margin-top:14px"><button class="btn accent sm" style="flex:1" onclick="svbSave()">저장</button><button class="btn ghost sm" onclick="svbCancel()">취소</button></div>
@@ -2786,6 +2788,8 @@ function renderSurveyBuilder(){
 function svbTitle(v){ surveyDraft.title = v; }
 function svbQ(i,v){ surveyDraft.questions[i].q = v; }
 function svbOpts(i,v){ surveyDraft.questions[i].options = v.split('\n').map(s=>s.trim()).filter(Boolean); }
+function svbImages(v){ surveyDraft.images = v.split('\n').map(s=>s.trim()).filter(Boolean); }
+function svbQImg(i,v){ surveyDraft.questions[i].image = v.trim(); }
 function svbType(i,t){ const q=surveyDraft.questions[i]; q.type=t; if(t==='choice'&&!q.options) q.options=[]; renderSurveyBuilder(); }
 function svbAdd(){ surveyDraft.questions.push({ id:'q'+Date.now().toString(36)+Math.random().toString(36).slice(2,5), q:'', type:'choice', options:[] }); renderSurveyBuilder(); }
 function svbDel(i){ surveyDraft.questions.splice(i,1); renderSurveyBuilder(); }
@@ -2795,7 +2799,7 @@ async function svbSave(){
   const qs = (d.questions||[]).filter(q=>q.q && q.q.trim());
   if(!qs.length){ toast('질문을 1개 이상 입력해 주세요'); return; }
   for(const q of qs){ if(q.type==='choice' && (!q.options||!q.options.length)){ toast('객관식엔 선택지가 필요해요'); return; } }
-  const next = { title:(d.title||'').trim(), questions:qs, responses:(SURVEY&&SURVEY.responses)||{} };
+  const next = { title:(d.title||'').trim(), images:(d.images||[]), questions:qs, responses:(SURVEY&&SURVEY.responses)||{} };
   const bak = SURVEY; SURVEY = next; surveyDraft = null;
   const ok = await saveSettings({ survey: next });
   if(ok){ toast('설문을 저장했어요'); showSurvey(); } else { SURVEY = bak; toast('저장 중 오류가 났어요'); }

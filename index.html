@@ -111,7 +111,9 @@
   .fx.open .more::before{content:'－ 닫기';}
   .fx-detail{display:none; padding:0 18px 15px; font-size:13px; line-height:1.6; white-space:pre-wrap; word-break:break-word;}
   .fx.open .fx-detail{display:block;}
-  .fx .wk{font-weight:600; font-size:14px; letter-spacing:.5px; justify-self:start; opacity:.85;}
+  .fx .meta{justify-self:start; display:flex; flex-direction:column; align-items:flex-start; gap:4px; min-width:0; max-width:100%;}
+  .fx .type{font-size:10px; font-weight:700; letter-spacing:.6px; padding:2px 9px; border-radius:999px; border:1px solid currentColor; opacity:.7; white-space:nowrap; max-width:100%; overflow:hidden; text-overflow:ellipsis;}
+  .fx .wk{font-weight:600; font-size:13px; letter-spacing:.4px; opacity:.85; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; max-width:100%;}
   .fx .loc{display:flex; align-items:center; justify-content:flex-end; gap:8px; font-weight:600; font-size:15px; justify-self:end; text-align:right; min-width:0; max-width:100%;}
   .fx .loc .loc-t{overflow:hidden; text-overflow:ellipsis; white-space:nowrap; min-width:0;}
   .fx .when{justify-self:start; padding-right:14px; text-align:left; letter-spacing:.2px; line-height:1.2;}
@@ -332,6 +334,12 @@
         var oatly = /오틀리|oatly/i.test((s.place||'')+' '+(s.label||''));
         var hasLabel = !!(s.label && String(s.label).trim());
         var label = hasLabel ? esc(s.label) : '';
+        var typeVal = (s.type && String(s.type).trim()) ? String(s.type).trim() : '풋살';
+        var isEtc = typeVal === '기타';
+        var typeText = isEtc ? (hasLabel ? label : '기타') : esc(typeVal);
+        var metaHtml = '<span class="meta"><span class="type">'+typeText+'</span>'
+                     + ((!isEtc && hasLabel) ? '<span class="wk">'+label+'</span>' : '')
+                     + '</span>';
         var purl=(s.placeUrl||'').trim(); var plink=/^https?:\/\//i.test(purl);
         var gurl=(s.guestUrl||'').trim(); var glink=/^https?:\/\//i.test(gurl);
         var hasDetail = !!(s.desc && String(s.desc).trim()) && !oatly;
@@ -341,8 +349,8 @@
           ? '<a href="'+esc(purl)+'" target="_blank" rel="noopener" onclick="event.stopPropagation()" style="color:inherit;text-decoration:underline">'+place+' <span style="font-size:11px;opacity:.6">↗</span></a>'
           : place+(oatly?' <span style="font-size:11px;opacity:.6">↗</span>':'');
         return '<div class="fx'+(hasDetail?' has-detail':'')+'">'
-          +'<div class="fx-row'+(hasLabel?'':' no-wk')+'"'+rowAttr+'>'
-          +(hasLabel?'<span class="wk">'+label+'</span>':'')
+          +'<div class="fx-row"'+rowAttr+'>'
+          +metaHtml
           +'<span class="when"><span class="d">'+md+(wd?'<span class="wd">'+wd+'</span>':'')+'</span>'
           +(time?'<span class="t">'+timerange+'</span>':'')+'</span>'
           +'<span class="loc"><span class="loc-t">'+locInner+'</span>'+(hasDetail?'<span class="more"></span>':'')+'</span></div>'

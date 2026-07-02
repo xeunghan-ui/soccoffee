@@ -3266,7 +3266,7 @@ async function renderOps() {
   const secSession = `
     ${opsEditSessionId ? '' : (opsAddSessionOpen ? `
     <div class="row"><div class="field"><label>날짜</label><input id="opsSessDate" type="date" value="${defDate}" onchange="opsSyncDeadline()"></div><div class="field"><label>시작</label><input id="opsSessTime" type="time" value="21:00" onchange="endPlus2('opsSessTime','opsSessEnd')"></div><div class="field"><label>종료 <span style="color:var(--muted);font-weight:400">(시작+2시간 기본)</span></label><input id="opsSessEnd" type="time" value="23:00"></div></div>
-    <div class="field"><label>유형 <span style="color:var(--muted);font-weight:400">(팀빌더 통계 유형)</span></label><select id="opsSessType">${['풋살','축구','회식','야유회','기타'].map(t=>`<option${t==='풋살'?' selected':''}>${t}</option>`).join('')}</select></div>
+    <div class="field"><label>유형 <span style="color:var(--muted);font-weight:400">(팀빌더 통계 유형)</span></label><select id="opsSessType">${[['풋살','풋살 경기'],['축구','축구 경기'],['회식','회식'],['야유회','야유회'],['기타','기타']].map(([v,l])=>`<option value="${v}"${v==='풋살'?' selected':''}>${l}</option>`).join('')}</select></div>
     <div class="field"><label>장소</label><input id="opsSessPlace" value="상암 풋살장" maxlength="40"></div>
     <div class="field"><label>장소 링크 <span style="color:var(--muted);font-weight:400">(지도 URL · 선택)</span></label><input id="opsSessPlaceUrl" placeholder="https://naver.me/..." maxlength="300"></div>
     <div class="field"><label>게스트 신청 링크 <span style="color:var(--muted);font-weight:400">(선택 · 소개 페이지에 '게스트 신청' 버튼 노출)</span></label><input id="opsSessGuestUrl" placeholder="https://forms.gle/..." maxlength="300"></div>
@@ -3280,7 +3280,7 @@ async function renderOps() {
         if (String(s.id)===opsEditSessionId) {
           return `<div class="ops-row" style="flex-direction:column;align-items:stretch;gap:0">
             <div class="row"><div class="field"><label>날짜</label><input id="esD" type="date" value="${s.date||''}"></div><div class="field"><label>시작</label><input id="esT" type="time" value="${s.time||'21:00'}" onchange="endPlus2('esT','esTe')"></div><div class="field"><label>종료 <span style="color:var(--muted);font-weight:400">(시작+2시간 기본)</span></label><input id="esTe" type="time" value="${s.endTime||''}"></div></div>
-            <div class="field"><label>유형</label><select id="esType">${['풋살','축구','회식','야유회','기타'].map(t=>`<option${(s.type||'풋살')===t?' selected':''}>${t}</option>`).join('')}</select></div>
+            <div class="field"><label>유형</label><select id="esType">${[['풋살','풋살 경기'],['축구','축구 경기'],['회식','회식'],['야유회','야유회'],['기타','기타']].map(([v,l])=>`<option value="${v}"${(s.type||'풋살')===v?' selected':''}>${l}</option>`).join('')}</select></div>
             <div class="field"><label>장소</label><input id="esP" value="${esc(s.place||'')}" maxlength="40"></div>
             <div class="field"><label>장소 링크 <span style="color:var(--muted);font-weight:400">(선택)</span></label><input id="esPu" value="${esc(s.placeUrl||'')}" placeholder="https://naver.me/..." maxlength="300"></div>
             <div class="field"><label>게스트 신청 링크 <span style="color:var(--muted);font-weight:400">(선택 · 소개 페이지 버튼)</span></label><input id="esGu" value="${esc(s.guestUrl||'')}" placeholder="https://forms.gle/..." maxlength="300"></div>

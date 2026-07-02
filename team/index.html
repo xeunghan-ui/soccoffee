@@ -534,8 +534,8 @@ body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; b
       </select>
       <select class="att-select" id="sfType" onchange="renderSessions(true)">
         <option value="all">전체 유형</option>
-        <option value="풋살">풋살</option>
-        <option value="축구">축구</option>
+        <option value="풋살">풋살 경기</option>
+        <option value="축구">축구 경기</option>
         <option value="회식">회식</option>
         <option value="야유회">야유회</option>
         <option value="기타">기타</option>
@@ -555,8 +555,8 @@ body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; b
           <div class="form-group">
             <label>유형</label>
             <div class="radio-group" id="sfTypeGroup">
-              <button class="type-radio-btn" data-stype="풋살" onclick="selType(this)">풋살</button>
-              <button class="type-radio-btn" data-stype="축구" onclick="selType(this)">축구</button>
+              <button class="type-radio-btn" data-stype="풋살" onclick="selType(this)">풋살 경기</button>
+              <button class="type-radio-btn" data-stype="축구" onclick="selType(this)">축구 경기</button>
               <button class="type-radio-btn" data-stype="회식" onclick="selType(this)">회식</button>
               <button class="type-radio-btn" data-stype="야유회" onclick="selType(this)">야유회</button>
               <button class="type-radio-btn" data-stype="기타" onclick="selType(this)">기타</button>
@@ -2844,6 +2844,8 @@ function openEditSession(id,e){
   panel.scrollIntoView({behavior:'smooth',block:'start'});
 }
 
+// 유형 표시 라벨 (저장값은 '풋살'/'축구' 유지, 화면 표기만 '경기' 붙임)
+function typeLabel(t){ return t==='풋살'?'풋살 경기':t==='축구'?'축구 경기':t; }
 function selType(btn){
   selType_val=btn.dataset.stype;
   document.querySelectorAll('[data-stype]').forEach(b=>{
@@ -3154,7 +3156,7 @@ function renderSessions(resetLimit){
     const detailHtml=`<tr class="session-detail" id="detail-${s.id}" style="display:${isExpanded?'':'none'}">
       <td colspan="6">
         <div class="session-detail-inner">
-          <div style="font-size:11px;font-weight:700;color:#4a5568;margin-bottom:6px">${s.date} · ${s.type} · 멤버 ${cnt}명${guestStr}${totalStr} / 당시 멤버 ${denom}명</div>
+          <div style="font-size:11px;font-weight:700;color:#4a5568;margin-bottom:6px">${s.date} · ${typeLabel(s.type)} · 멤버 ${cnt}명${guestStr}${totalStr} / 당시 멤버 ${denom}명</div>
           <div style="font-size:11px;font-weight:600;color:#059669;margin-bottom:4px">✅ 참석 (${presentList.length}명${(s.extraNames&&s.extraNames.length)?` + 기타 ${s.extraNames.length}명`:''})</div>
           <div class="detail-attendee-grid">
             ${presentList.map(p=>{const isFmr=(p.status||'active')==='former';return`
@@ -3200,7 +3202,7 @@ function renderSessions(resetLimit){
     return`<tr class="session-main${isExpanded?' expanded':''}" onclick="toggleExpand(${s.id})">
       <td style="padding-left:14px;font-weight:700;color:#2d3748;white-space:nowrap">${s.date}</td>
       <td><span class="day-badge${isWed?' wed':''}">${dow}요일</span></td>
-      <td><span class="type-badge type-${s.type}">${s.type}</span></td>
+      <td><span class="type-badge type-${s.type}">${typeLabel(s.type)}</span></td>
       <td><span class="att-ratio"><span class="present">${cnt}</span><span class="total"> / ${denom}명</span></span>${guests>0?`<span style="font-size:10px;color:#7c3aed;margin-left:4px">+${guests}게스트</span>`:''}</td>
       <td style="color:#718096;font-size:11px">${s.notes||'-'}</td>
       <td style="padding-right:14px;white-space:nowrap">

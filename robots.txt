@@ -1,0 +1,4 @@
+User-agent: *
+Allow: /
+
+Sitemap: https://xeunghan-ui.github.io/soccoffee/sitemap.xml

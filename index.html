@@ -368,7 +368,8 @@
         var label = hasLabel ? esc(s.label) : '';
         var typeVal = (s.type && String(s.type).trim()) ? String(s.type).trim() : '풋살';
         var isEtc = typeVal === '기타';
-        var typeText = isEtc ? (hasLabel ? label : '기타') : esc(typeVal);
+        var TYPE_LABEL = {'풋살':'풋살 경기','축구':'축구 경기'};
+        var typeText = isEtc ? (hasLabel ? label : '기타') : esc(TYPE_LABEL[typeVal]||typeVal);
         var metaHtml = '<span class="meta"><span class="type">'+typeText+'</span>'
                      + ((!isEtc && hasLabel) ? '<span class="wk">'+label+'</span>' : '')
                      + '</span>';

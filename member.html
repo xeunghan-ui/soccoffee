@@ -2182,10 +2182,11 @@ function renderMore() {
   const guideBtn = `<button class="more-item" onclick="showAddHomeGuide()"><div class="mi-name">홈 화면에 추가</div><div class="mi-desc">앱처럼 바로 열기 (설치 가이드)</div></button>`;
   const introLink = `<a class="more-item" href="index.html"><div class="mi-name">싸커피 소개</div><div class="mi-desc">소개(랜딩) 페이지로 이동 · 로그인 유지</div></a>`;
   const surveyLink = `<button class="more-item" onclick="showSurvey()"><div class="mi-name">설문조사</div><div class="mi-desc">설문 참여 · 완료 표시</div></button>`;
+  const uniformBtn = `<button class="more-item" onclick="showUniform()"><div class="mi-name">유니폼 사이즈 조사</div><div class="mi-desc">SS 유니폼 · 내 사이즈 입력·수정</div></button>`;
   const bankBtn = `<button class="more-item" onclick="showBankInfo()"><div class="mi-name">회비 계좌 안내</div><div class="mi-desc">입금 계좌 확인 · 복사</div></button>`;
   const pinBtn = `<button class="more-item" onclick="changeMyPin()"><div class="mi-name">내 PIN 변경</div><div class="mi-desc">로그인 PIN 4자리 바꾸기</div></button>`;
   const logoutBtn = `<button class="more-item" style="border-color:rgba(189,100,82,.45)" onclick="logout()"><div class="mi-name" style="color:#e08a76">로그아웃</div><div class="mi-desc">이 기기에서 로그아웃</div></button>`;
-  const memberGrid = memberItems.map(btn).join('') + surveyLink + bankBtn + pinBtn + introLink + guideBtn + logoutBtn;
+  const memberGrid = memberItems.map(btn).join('') + uniformBtn + surveyLink + bankBtn + pinBtn + introLink + guideBtn + logoutBtn;
   let html = '';
   if (admin) {
     // 운영진: 회원 메뉴 / 운영진 메뉴 두 구역으로 구분
@@ -2662,6 +2663,17 @@ let BANK = null;                         // { bank, number, holder } — 회비 
 let SURVEY = null;                        // { title, link, done:[memberId] } — 설문(링크 + 완료 자기보고)
 const SURVEY_DEFAULT = { title:'클럽 설문', link:'', done:[] };
 function curSurvey(){ return SURVEY ? SURVEY : Object.assign({}, SURVEY_DEFAULT); }
+// SS 유니폼 사이즈 조사
+let UNIFORM = null;                       // { sizes: { memberId: '120' } }
+const UNIFORM_SIZES = ['65','70','75','80','85','90','95','100','105','110','115','120'];
+const UNIFORM_SEED = { '박승한':'115','장세영':'120','박우성':'105','정희범':'115','최승호':'105','안재영':'110','마상현':'115','김유솔':'80','정하림':'100','정은용':'90','홍순인':'120','이일웅':'100','조수경':'100','조수연':'95','신동헌':'105','정민주':'110','이희성':'110','이민국':'105','심지수':'105','김재유':'100','한승재':'110','허은혜':'90','박원주':'100','함지상':'115','김이연':'105' };
+function uniformSizeOf(m){ const s=(UNIFORM&&UNIFORM.sizes)||{}; return (s[m.id]!=null) ? s[m.id] : (UNIFORM_SEED[m.name]||null); }
+// 유니폼 조사 대상: 전체 회원(탈퇴 제외 · 휴면·친구 포함)
+function uniformRoster(){
+  return ROSTER.filter(p => (p.status||'active')!=='former')
+    .map(p => { const t=TEAM_SHEET[p.name]||{team:'기타'}; return {...p, jersey:t.jersey, eng:t.eng||'', team:t.team, cap:!!t.cap}; })
+    .sort((a,b)=>((a.jersey==null?999:a.jersey)-(b.jersey==null?999:b.jersey)) || a.name.localeCompare(b.name,'ko'));
+}
 const PIN_SALT = 'scf-pin-v1';
 async function hashPin(id, pin){
   const data = new TextEncoder().encode(PIN_SALT + ':' + id + ':' + pin);
@@ -2774,6 +2786,51 @@ async function setSurvey(){
   const bak = SURVEY; SURVEY = next;
   const ok = await saveSettings({ survey: next });
   if(ok){ toast('설문을 저장했어요'); showSurvey(); } else { SURVEY = bak; toast('저장 중 오류가 났어요'); }
+}
+// SS 유니폼 사이즈 조사 (앱 내 입력·수정 · 미응답 추적)
+function _umBox(title, body){
+  let h=document.getElementById('mmHost'); if(!h){h=document.createElement('div');h.id='mmHost';document.body.appendChild(h);}
+  h.innerHTML = `<div class="mm-back" onclick="if(event.target===this)closeMemberCard()"><div class="mm-box"><div class="mm-head"><div class="mm-name">${title}</div><button class="mm-x" onclick="closeMemberCard()">×</button></div>${body}</div></div>`;
+}
+function showUniform(){
+  const me=getMe(); const admin=isAdmin();
+  const roster=uniformRoster();
+  const meM = me!=null ? roster.find(x=>x.id===me) : null;
+  const mySize = meM ? uniformSizeOf(meM) : null;
+  let body = `<p class="sub" style="margin:0 0 12px">SS 유니폼 사이즈를 골라주세요. (단위 cm · 상의)</p>`;
+  if(meM){
+    body += `<div class="field"><label>내 사이즈 <span style="color:var(--muted);font-weight:400">등번호 ${meM.jersey!=null?meM.jersey:'-'}</span></label>
+      <select id="unifSel" class="sv-text">${['<option value="">사이즈 선택</option>'].concat(UNIFORM_SIZES.map(s=>`<option value="${s}" ${mySize===s?'selected':''}>${s}</option>`)).join('')}</select></div>
+      <button class="btn accent" style="width:100%;margin-top:8px" onclick="saveMyUniform()">${mySize?'수정 저장':'제출'}</button>
+      ${mySize?`<p class="hint" style="margin-top:6px;text-align:center">현재 <b style="color:#ece6d2">${esc(mySize)}</b> · 언제든 수정 가능</p>`:''}`;
+  } else {
+    body += `<div class="empty" style="font-size:13px">조사 대상이 아니에요.</div>`;
+  }
+  const doneCount = roster.filter(m=>uniformSizeOf(m)).length;
+  body += `<p class="hint" style="margin-top:10px">응답 <b style="color:#ece6d2">${doneCount}</b> / ${roster.length}명</p>`;
+  if(admin){
+    const undone = roster.filter(m=>!uniformSizeOf(m));
+    body += `<div style="margin-top:8px;border-top:1px solid var(--line);padding-top:10px">
+      <div style="font-size:12px;font-weight:800;color:var(--red);margin-bottom:6px">미응답 ${undone.length}명</div>
+      <div style="font-size:13px;color:var(--muted);line-height:1.8">${undone.map(m=>esc(m.name)).join(', ')||'모두 완료!'}</div>
+      <button class="btn ghost sm" style="width:100%;margin-top:12px" onclick="showUniformAll()">전체 응답 보기</button></div>`;
+  }
+  _umBox('유니폼 사이즈 조사', body);
+}
+async function saveMyUniform(){
+  const me=getMe(); if(me==null){ toast('로그인이 필요해요'); return; }
+  const sel=document.getElementById('unifSel'); const v=sel?sel.value:'';
+  if(!v){ toast('사이즈를 선택해 주세요'); return; }
+  const sizes=Object.assign({}, (UNIFORM&&UNIFORM.sizes)||{}); sizes[me]=v;
+  const next={sizes}; const bak=UNIFORM; UNIFORM=next;
+  const ok=await saveSettings({uniform:next});
+  if(ok){ toast('저장했어요'); showUniform(); } else { UNIFORM=bak; toast('저장 중 오류가 났어요'); }
+}
+function showUniformAll(){
+  if(!isAdmin()) return;
+  const roster=uniformRoster();
+  const rows=roster.map(m=>{ const sz=uniformSizeOf(m); return `<div style="display:flex;justify-content:space-between;font-size:13px;padding:6px 0;border-bottom:1px solid var(--line)"><span style="color:var(--cream)">${m.jersey!=null?`<span style="color:var(--muted)">${m.jersey}</span> `:''}${esc(m.name)}</span><span style="color:${sz?'var(--accent)':'var(--muted)'};font-weight:800">${sz||'미응답'}</span></div>`; }).join('');
+  _umBox('유니폼 전체 응답', `<p class="hint" style="margin:0 0 8px">등번호 · 이름 · 사이즈</p>${rows}<button class="btn ghost sm" style="width:100%;margin-top:12px" onclick="showUniform()">← 돌아가기</button>`);
 }
 async function fetchAttendance(sessionId) {
   if (!sessionId) sessionId = (await nearestSession()).id;
@@ -3784,7 +3841,7 @@ async function initApp() {
   updateAdminBtn();
   try { const r = await fetchRoster(); if (r) applyPlayers(r); } catch (e) {}
   await mergeTbMembers();   // 팀빌더에만 있는 멤버도 로그인 가능하게 병합
-  try { const s = await fetchSettings(); teamSplitOn = s.teamSplit !== false; CLUB_PINS = s.pins || {}; BANK = s.bank || null; SURVEY = s.survey || null; } catch (e) {}
+  try { const s = await fetchSettings(); teamSplitOn = s.teamSplit !== false; CLUB_PINS = s.pins || {}; BANK = s.bank || null; SURVEY = s.survey || null; UNIFORM = s.uniform || null; } catch (e) {}
   await loadTbDormant();
   await rolloverDormancyIfNeeded();   // 15일 이후 다음 달 휴면 자동 롤오버(월 1회) — 누가 앱을 열든 자동
   // 로컬 미리보기: 첫 활동 회원으로 자동 로그인

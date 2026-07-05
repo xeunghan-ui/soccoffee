@@ -2181,12 +2181,11 @@ function renderMore() {
   const teamLink = `<a class="more-item" href="team/" target="_blank" rel="noopener"><div class="mi-name">팀빌더 ↗</div><div class="mi-desc">명단 · 등번호 · 휴면 · 팀 배분</div></a>`;
   const guideBtn = `<button class="more-item" onclick="showAddHomeGuide()"><div class="mi-name">홈 화면에 추가</div><div class="mi-desc">앱처럼 바로 열기 (설치 가이드)</div></button>`;
   const introLink = `<a class="more-item" href="index.html"><div class="mi-name">싸커피 소개</div><div class="mi-desc">소개(랜딩) 페이지로 이동 · 로그인 유지</div></a>`;
-  const surveyLink = `<button class="more-item" onclick="showSurvey()"><div class="mi-name">설문조사</div><div class="mi-desc">설문 참여 · 완료 표시</div></button>`;
   const uniformBtn = `<button class="more-item" onclick="showUniform()"><div class="mi-name">유니폼 사이즈 조사</div><div class="mi-desc">SS 유니폼 · 내 사이즈 입력·수정</div></button>`;
   const bankBtn = `<button class="more-item" onclick="showBankInfo()"><div class="mi-name">회비 계좌 안내</div><div class="mi-desc">입금 계좌 확인 · 복사</div></button>`;
   const pinBtn = `<button class="more-item" onclick="changeMyPin()"><div class="mi-name">내 PIN 변경</div><div class="mi-desc">로그인 PIN 4자리 바꾸기</div></button>`;
   const logoutBtn = `<button class="more-item" style="border-color:rgba(189,100,82,.45)" onclick="logout()"><div class="mi-name" style="color:#e08a76">로그아웃</div><div class="mi-desc">이 기기에서 로그아웃</div></button>`;
-  const memberGrid = memberItems.map(btn).join('') + uniformBtn + surveyLink + bankBtn + pinBtn + introLink + guideBtn + logoutBtn;
+  const memberGrid = memberItems.map(btn).join('') + uniformBtn + bankBtn + pinBtn + introLink + guideBtn + logoutBtn;
   let html = '';
   if (admin) {
     // 운영진: 회원 메뉴 / 운영진 메뉴 두 구역으로 구분

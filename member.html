@@ -730,6 +730,9 @@
   .faq-q { background: #1e3526; border: 1px solid var(--line); border-radius: 12px; padding: 14px 16px; margin-bottom: 8px; }
   .faq-q h4 { margin: 0 0 6px; font-size: 14px; font-weight: 800; color: var(--gold-bright); }
   .faq-q p { margin: 0; font-size: 13px; color: #d6cfb4; line-height: 1.6; }
+  .faq-q ul.faq-ul { margin: 2px 0 0; padding-left: 16px; }
+  .faq-q ul.faq-ul li { font-size: 13px; color: #d6cfb4; line-height: 1.6; margin-bottom: 4px; }
+  .faq-q ul.faq-ul li b { color: var(--gold-bright); font-weight: 800; }
   .mine-hero { background: #1e3526; border: 1px solid var(--line); border-top: 3px solid var(--gold); border-radius: 12px; padding: 18px 16px; text-align: center; margin-bottom: 12px; }
   .mine-hero .num { font-family: var(--disp); font-size: 40px; line-height: 1; color: var(--gold-bright); }
   .mine-hero .nm { font-size: 16px; font-weight: 800; margin-top: 6px; }
@@ -2249,18 +2252,18 @@ async function renderMine() {
 function renderFaq() {
   const el = document.getElementById('faqContent');
   const qs = [
-    ['로그인은 어떻게 하나요?', '이름을 선택하고 4자리 PIN을 입력해요. 첫 로그인 때 PIN이 등록되고 이후 같은 PIN으로 들어와요. PIN을 바꾸려면 더보기 > 내 PIN 변경, 잊었으면 운영진에게 초기화를 요청하세요.'],
-    ['회비는 언제, 어떻게 내나요?', '매월 25일부터 다음 달 회비가 표시돼요. 입금 계좌는 더보기 > 회비 계좌 안내에서 확인하고, 입금 후 회비 화면의 내 회비에서 직접 납부로 표시하면 돼요. 전체 걷힌 금액은 공개하지 않고 납부·미납 인원과 미납 명단만 보여요.'],
-    ['참석 신청은 언제까지인가요?', '매치일 직전 일요일 23:59에 마감돼요. 마감 뒤에는 일반 멤버는 바꿀 수 없고 운영진에게 문의해야 해요(운영진은 마감 후에도 변경 가능). 홈에서 아직 응답하지 않은 일정 개수를 알려줘요.'],
-    ['이달의 선수·성장 투표는 언제 하나요?', '매월 15일부터 말일까지 그 달의 이달의 선수와 가장 성장한 선수를 뽑아요. 1~14일에는 지난달 확정 결과가 표시돼요. 그 달 활동 회원만 두 부문에 1표씩 투표할 수 있고, 제출 후에는 바꿀 수 없어요.'],
-    ['휴면이 뭔가요?', '한 달 단위로 활동을 쉬는 거예요. 매월 15일부터 홈에서 다음 달 활동/휴면을 직접 정할 수 있고, 운영진이 대신 설정할 수도 있어요. 휴면인 달은 회비·참석·명단·투표에서 자동으로 빠져요.'],
-    ['WHITE / BLACK 팀은 뭔가요?', '경기 밸런스를 위해 두 팀으로 나눠요. 팀 구분을 켠 달에는 이름 옆에 소속 팀(WHITE·BLACK)이 표시돼요.'],
-    ['카풀은 어떻게 쓰나요?', '카풀 탭에서 운전자가 출발지와 좌석 수를 등록하고, 탑승자는 빈 좌석을 눌러 신청해요. 매치가 끝난 카풀은 접혀서 정리돼요.'],
-    ['내 프로필·기록은 어디서 보나요?', '홈에서 가입월, 함께한 기간, 참여 세션, 출석률(전체·최근 3개월), 수상 횟수를 볼 수 있어요. 스킬(스파이더 차트)은 본인이 직접 편집하고 사진으로 저장해 공유할 수 있어요.'],
-    ['운영진은 누구인가요?', '홍순인·박승한·원재식·정희범·최승호 님이에요. 공지, 세션(일정), 회비, 투표, 설정을 관리해요.'],
+    ['로그인 / PIN', ['이름 선택 + <b>PIN 4자리</b>', '첫 로그인 때 PIN 등록', '변경: 더보기 → 내 PIN 변경', '잊으면 운영진에 초기화 요청']],
+    ['회비', ['매월 <b>25일</b>부터 다음 달 회비 표시', '계좌: 더보기 → 회비 계좌 안내', '입금 후 회비 화면에서 <b>직접 납부 표시</b>', '전체 금액 비공개 · 납부/미납 인원만 공개']],
+    ['참석 신청', ['<b>매치 직전 일요일 23:59</b> 마감', '마감 후 변경은 운영진 문의', '홈에서 미응답 일정 개수 알림']],
+    ['MVP · 성장 투표', ['매월 <b>15일~말일</b> 진행', '1~14일: 지난달 결과 표시', '대상: 가입 회원(휴면 포함) · <b>친구 제외</b>', '두 부문 1표씩 · 제출 후 변경 불가']],
+    ['휴면', ['한 달 단위로 활동 쉬기', '매월 <b>15일</b>부터 홈에서 다음 달 신청', '휴면 달은 회비 · 참석 · 명단 · 투표 제외']],
+    ['WHITE / BLACK 팀', ['경기 밸런스용 두 팀', '팀 구분 켠 달엔 이름 옆 팀 표시']],
+    ['카풀', ['운전자가 출발지 · 좌석 등록', '탑승자는 빈 좌석 눌러 신청', '지난 카풀은 접혀서 정리']],
+    ['내 프로필 · 기록', ['홈에서 가입월 · 기간 · 참여 · 출석률 · 수상 확인', '스킬(스파이더 차트) 직접 편집', '<b>사진으로 저장</b>해 공유']],
+    ['운영진', ['홍순인 · 박승한 · 원재식 · 정희범 · 최승호', '공지 · 일정 · 회비 · 투표 · 설정 관리']],
   ];
   el.innerHTML = `<div class="section-title">회칙 · 안내</div>` +
-    qs.map(([q, a]) => `<div class="faq-q"><h4>${q}</h4><p>${a}</p></div>`).join('') +
+    qs.map(([q, pts]) => `<div class="faq-q"><h4>${q}</h4><ul class="faq-ul">${pts.map(p=>`<li>${p}</li>`).join('')}</ul></div>`).join('') +
     `<p class="hint" style="text-align:center;margin-top:12px">더 궁금한 건 인스타 <b style="color:var(--gold)">@soccoffee__</b> 또는 운영진에게 물어봐 주세요.</p>`;
 }
 

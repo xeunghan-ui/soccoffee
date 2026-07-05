@@ -2811,8 +2811,8 @@ function showUniform(){
   if(admin){
     const undone = roster.filter(m=>!uniformSizeOf(m));
     body += `<div style="margin-top:8px;border-top:1px solid var(--line);padding-top:10px">
-      <div style="font-size:12px;font-weight:800;color:var(--red);margin-bottom:6px">미응답 ${undone.length}명</div>
-      <div style="font-size:13px;color:var(--muted);line-height:1.8">${undone.map(m=>esc(m.name)).join(', ')||'모두 완료!'}</div>
+      <div style="font-size:12px;font-weight:800;color:var(--red);margin-bottom:6px">미응답 ${undone.length}명 <span style="color:var(--muted);font-weight:400">· 이름 눌러 대리 입력</span></div>
+      <div style="line-height:2.1">${undone.length?undone.map(m=>`<button onclick="pickUniformFor(${m.id})" style="background:none;border:1px solid var(--line);border-radius:6px;color:var(--cream);font-family:inherit;font-size:12px;padding:3px 9px;margin:2px 4px 2px 0;cursor:pointer">${esc(m.name)}</button>`).join(''):'<span style="font-size:13px;color:var(--muted)">모두 완료!</span>'}</div>
       <button class="btn ghost sm" style="width:100%;margin-top:12px" onclick="showUniformAll()">전체 응답 보기</button></div>`;
   }
   _umBox('유니폼 사이즈 조사', body);
@@ -2829,8 +2829,26 @@ async function saveMyUniform(){
 function showUniformAll(){
   if(!isAdmin()) return;
   const roster=uniformRoster();
-  const rows=roster.map(m=>{ const sz=uniformSizeOf(m); return `<div style="display:flex;justify-content:space-between;font-size:13px;padding:6px 0;border-bottom:1px solid var(--line)"><span style="color:var(--cream)">${m.jersey!=null?`<span style="color:var(--muted)">${m.jersey}</span> `:''}${esc(m.name)}</span><span style="color:${sz?'var(--accent)':'var(--muted)'};font-weight:800">${sz||'미응답'}</span></div>`; }).join('');
-  _umBox('유니폼 전체 응답', `<p class="hint" style="margin:0 0 8px">등번호 · 이름 · 사이즈</p>${rows}<button class="btn ghost sm" style="width:100%;margin-top:12px" onclick="showUniform()">← 돌아가기</button>`);
+  const rows=roster.map(m=>{ const sz=uniformSizeOf(m); return `<div onclick="pickUniformFor(${m.id})" style="display:flex;justify-content:space-between;font-size:13px;padding:8px 0;border-bottom:1px solid var(--line);cursor:pointer"><span style="color:var(--cream)">${m.jersey!=null?`<span style="color:var(--muted)">${m.jersey}</span> `:''}${esc(m.name)}</span><span style="color:${sz?'var(--accent)':'var(--muted)'};font-weight:800">${sz||'미응답'} ›</span></div>`; }).join('');
+  _umBox('유니폼 전체 응답', `<p class="hint" style="margin:0 0 8px">이름 눌러 수정 · 등번호 · 이름 · 사이즈</p>${rows}<button class="btn ghost sm" style="width:100%;margin-top:12px" onclick="showUniform()">← 돌아가기</button>`);
+}
+function pickUniformFor(id){
+  if(!isAdmin()) return;
+  const m = uniformRoster().find(x=>x.id===id); if(!m) return;
+  const cur = uniformSizeOf(m);
+  _umBox('사이즈 대리 입력', `<p class="sub" style="margin:0 0 12px">${esc(m.name)} <span style="color:var(--muted)">등번호 ${m.jersey!=null?m.jersey:'-'}</span></p>
+    <select id="unifSelA" class="sv-text">${['<option value="">사이즈 선택</option>'].concat(UNIFORM_SIZES.map(s=>`<option value="${s}" ${cur===s?'selected':''}>${s}</option>`)).join('')}</select>
+    <button class="btn accent" style="width:100%;margin-top:10px" onclick="saveUniformFor(${id})">저장</button>
+    <button class="btn ghost sm" style="width:100%;margin-top:6px" onclick="showUniform()">← 돌아가기</button>`);
+}
+async function saveUniformFor(id){
+  if(!isAdmin()) return;
+  const sel=document.getElementById('unifSelA'); const v=sel?sel.value:'';
+  if(!v){ toast('사이즈를 선택해 주세요'); return; }
+  const sizes=Object.assign({}, (UNIFORM&&UNIFORM.sizes)||{}); sizes[id]=v;
+  const next={sizes}; const bak=UNIFORM; UNIFORM=next;
+  const ok=await saveSettings({uniform:next});
+  if(ok){ toast('저장했어요'); showUniform(); } else { UNIFORM=bak; toast('저장 중 오류가 났어요'); }
 }
 async function fetchAttendance(sessionId) {
   if (!sessionId) sessionId = (await nearestSession()).id;

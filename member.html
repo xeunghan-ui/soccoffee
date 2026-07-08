@@ -1018,11 +1018,12 @@ async function removeRiderByIndex(rideId, index, target) {
 const ADMIN_NAMES = ['박승한'];
 // 멤버 역할(표시용). type:'admin'=운영진 색, 'role'=그외 역할 색
 const MEMBER_ROLES = {
-  '박승한':{role:'팀 운영 · 경기장 예약',type:'admin'},
+  '박승한':{role:'구장 예약 및 총괄',type:'admin'},
   '원재식':{role:'총무',type:'admin'},
-  '홍순인':{role:'경기 및 리그 운영',type:'admin'},
+  '홍순인':{role:'경기 및 팀 운영',type:'admin'},
   '정희범':{role:'사진',type:'admin'},
   '최승호':{role:'장비',type:'admin'},
+  '김이연':{role:'사진',type:'role'},
   '조은애':{role:'브랜드 및 디자인',type:'role'},
   '김균원':{role:'MD',type:'role'},
 };
@@ -2296,7 +2297,7 @@ function renderFaq() {
     ['내 프로필 · 기록', ['홈에서 가입월 · 기간 · 참여 · 출석률 · 수상 확인', '스킬(스파이더 차트) 직접 편집', '<b>사진으로 저장</b>해 공유']],
     ['멤버 모집', ['현재 <b>신규 회원은 모집하지 않는 중</b>']],
     ['운영진', ['<b>박승한</b> · 팀 운영 · 경기장 예약', '<b>홍순인</b> · 경기 및 리그 운영', '<b>원재식</b> · 총무', '<b>최승호</b> · 장비', '<b>정희범</b> · 사진']],
-    ['운영진 외', ['<b>조은애</b> · 브랜드 및 디자인', '<b>김균원</b> · MD']],
+    ['운영진 외', ['<b>조은애</b> · 브랜드 및 디자인', '<b>김균원</b> · MD', '<b>김이연</b> · 사진']],
   ];
   el.innerHTML = `<div class="section-title">회칙 · 안내</div>` +
     qs.map(([q, pts]) => `<div class="faq-q"><h4>${q}</h4><ul class="faq-ul">${pts.map(p=>`<li>${p}</li>`).join('')}</ul></div>`).join('') +

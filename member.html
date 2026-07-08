@@ -3775,8 +3775,8 @@ async function renderRank(){
   const el = document.getElementById('rankContent');
   el.innerHTML = `<div class="empty">불러오는 중...</div>`;
   const tb = await fetchTeamBuilder();
-  if (!['att','model','bad'].includes(rankTab)) rankTab='att';
-  const tabsHtml = `<div class="rk-tabs">${[['att','출석율'],['model','모범생'],['bad','불량배']].map(([k,l])=>`<button class="rk-tab ${k===rankTab?'on':''}" onclick="switchRankTab('${k}')">${l}</button>`).join('')}</div>`;
+  if (!['att','model','lma','dorm'].includes(rankTab)) rankTab='att';
+  const tabsHtml = `<div class="rk-tabs">${[['att','출석율'],['model','모범생'],['lma','당일 불참'],['dorm','휴면율']].map(([k,l])=>`<button class="rk-tab ${k===rankTab?'on':''}" onclick="switchRankTab('${k}')">${l}</button>`).join('')}</div>`;
   const hero = `<div class="potm-hero"><h2>랭킹</h2><div class="month">팀빌더 출석 기록 기준</div></div>`;
   if (!tb || !Array.isArray(tb.sessions) || !tb.sessions.length){
     el.innerHTML = hero + tabsHtml + `<div class="card"><div class="empty">아직 집계할 출석 데이터가 없어요.<br>팀빌더에서 세션 출석을 기록하면 여기에 랭킹이 나와요.</div></div>`;
@@ -3797,20 +3797,16 @@ async function renderRank(){
     ranks = rkRanks(data,x=>x._a+'/'+x._t);
     valFn=x=>x._r+'%'; subFn=x=>`${x._a}/${x._t}세션`; pctFn=x=>x._r;
     note=`${yearLabel} · ${data.length}명 · 출석율 (${min}세션↑)`;
-  } else if (rankTab==='bad'){
-    data = elig.map(p=>{
-      const pool=sess.filter(s=>rkInPool(p,s.date)&&!rkDormant(p,s.date.slice(0,7)));
-      const lmaCnt=pool.filter(s=>(s.lastMinuteAbsentIds||[]).includes(p.id)).length;
-      const lmaRate=pool.length>0?Math.round(lmaCnt/pool.length*1000)/10:0;
-      const pm=new Set(sess.filter(s=>rkInPool(p,s.date)).map(s=>s.date.slice(0,7)));
-      const dm=new Set((p.dormantMonths||[]).filter(mo=>pm.has(mo)));
-      const dr=pm.size>0?Math.round(dm.size/pm.size*1000)/10:0;
-      return {p,_lma:lmaRate,_dr:dr,_c:lmaCnt,_s:Math.round((lmaRate*2+dr)*10)/10};
-    }).filter(x=>x._s>0).sort((a,b)=>b._s-a._s);
-    ranks = rkRanks(data,x=>String(x._s));
-    const maxs = data.length?(data[0]._s||1):1;
-    valFn=x=>x._s+'점'; subFn=x=>`당일불참 ${x._lma}% · 휴면 ${x._dr}%`; pctFn=x=>Math.round(x._s/maxs*100);
-    note=`${yearLabel} · ${data.length}명 · 당일불참율×2+휴면율 (높을수록 불량)`;
+  } else if (rankTab==='lma'){
+    data = elig.map(p=>{ const pool=sess.filter(s=>rkInPool(p,s.date)&&!rkDormant(p,s.date.slice(0,7))); const cnt=pool.filter(s=>(s.lastMinuteAbsentIds||[]).includes(p.id)).length; const rate=pool.length>0?Math.round(cnt/pool.length*1000)/10:0; return {p,_c:cnt,_r:rate,_t:pool.length}; }).filter(x=>x._c>0).sort((a,b)=>b._r-a._r||b._c-a._c);
+    ranks = rkRanks(data,x=>x._c+'/'+x._t);
+    valFn=x=>x._r+'%'; subFn=x=>`${x._c}회`; pctFn=x=>Math.round(x._r);
+    note=`${yearLabel} · ${data.length}명 · 당일 불참율`;
+  } else if (rankTab==='dorm'){
+    data = elig.map(p=>{ const pm=new Set(sess.filter(s=>rkInPool(p,s.date)).map(s=>s.date.slice(0,7))); const dm=new Set((p.dormantMonths||[]).filter(mo=>pm.has(mo))); const rate=pm.size>0?Math.round(dm.size/pm.size*1000)/10:0; return {p,_r:rate,_d:dm.size,_m:pm.size}; }).filter(x=>x._r>0).sort((a,b)=>b._r-a._r);
+    ranks = rkRanks(data,x=>x._d+'/'+x._m);
+    valFn=x=>x._r+'%'; subFn=x=>`${x._d}/${x._m}개월`; pctFn=x=>x._r;
+    note=`${yearLabel} · ${data.length}명 · 휴면율`;
   } else {
     const tot=sess.length, min=Math.ceil(tot*0.5);
     // 투표 참여(월별) — 미투표는 감점 (투표 있었던 달 중 몇 달 투표했나)

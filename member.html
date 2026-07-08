@@ -1018,13 +1018,12 @@ async function removeRiderByIndex(rideId, index, target) {
 const ADMIN_NAMES = ['박승한'];
 // 멤버 역할(표시용). type:'admin'=운영진 색, 'role'=그외 역할 색
 const MEMBER_ROLES = {
-  '박승한':{role:'구장 예약 및 총괄',type:'admin'},
+  '박승한':{role:'팀 운영 · 경기장 예약',type:'admin'},
   '원재식':{role:'총무',type:'admin'},
-  '홍순인':{role:'경기 및 팀 운영',type:'admin'},
+  '홍순인':{role:'경기 및 리그 운영',type:'admin'},
   '정희범':{role:'사진',type:'admin'},
-  '최승호':{role:'물품 및 장비',type:'admin'},
-  '김이연':{role:'사진',type:'role'},
-  '조은애':{role:'디자인',type:'role'},
+  '최승호':{role:'장비',type:'admin'},
+  '조은애':{role:'브랜드 및 디자인',type:'role'},
   '김균원':{role:'MD',type:'role'},
 };
 // 멤버 스킬(스파이더 차트) — club_settings.current.skills[memberId] = [{name,level(1~5)}]

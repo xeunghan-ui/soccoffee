@@ -671,7 +671,10 @@
 
   /* 세션 선택 칩 / 운영 행 */
   .member-subnav { display: flex; gap: 6px; margin: 2px 0 16px; background: #16291c; border: 1px solid var(--line); border-radius: 12px; padding: 4px; }
-  .member-subnav .msub { flex: 1; font-family: inherit; font-size: 13px; font-weight: 600; padding: 9px 6px; border-radius: 9px; border: none; background: transparent; color: var(--muted); cursor: pointer; }
+  .member-subnav .msub { position: relative; flex: 1; font-family: inherit; font-size: 13px; font-weight: 600; padding: 9px 6px; border-radius: 9px; border: none; background: transparent; color: var(--muted); cursor: pointer; }
+  .nav-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--alert); box-shadow: 0 0 0 2px rgba(0,0,0,.2); }
+  .member-subnav .msub .nav-dot { position: absolute; top: 6px; right: 10px; }
+  .bnav-item .nav-dot { position: absolute; top: 4px; left: calc(50% + 6px); }
   .member-subnav .msub.on { background: var(--accent); color: #14281b; font-weight: 800; }
   .sess-tabs { display: flex; gap: 8px; flex-wrap: nowrap; overflow-x: auto; -webkit-overflow-scrolling: touch; scrollbar-width: none; margin-bottom: 12px; }
   .sess-tabs::-webkit-scrollbar { display: none; }
@@ -832,8 +835,8 @@
   <div id="memberSubnav" class="member-subnav hidden">
     <button class="msub" data-sub="squad" onclick="switchTab('squad')">멤버 현황</button>
     <button class="msub" data-sub="rank" onclick="switchTab('rank')">랭킹</button>
-    <button class="msub" data-sub="list" onclick="switchTab('list')">카풀</button>
-    <button class="msub" data-sub="potm" onclick="switchTab('potm')">투표</button>
+    <button class="msub" data-sub="list" onclick="switchTab('list')">카풀<span class="nav-dot" id="dotList" style="display:none"></span></button>
+    <button class="msub" data-sub="potm" onclick="switchTab('potm')">투표<span class="nav-dot" id="dotPotm" style="display:none"></span></button>
   </div>
 
   <div id="tab-home" class="hidden"><div id="homeContent"></div></div>
@@ -916,7 +919,7 @@
 <nav class="bottomnav" id="bottomNav">
   <button class="bnav-item active" data-tab="home" onclick="switchTab('home')"><span class="bn-ico">⌂</span>홈</button>
   <button class="bnav-item" data-tab="att" onclick="switchTab('att')"><span class="bn-ico">◷</span>일정<span class="bn-badge" id="attBadge" style="display:none"></span></button>
-  <button class="bnav-item" data-tab="member" onclick="switchTab('squad')"><span class="bn-ico">▦</span>멤버</button>
+  <button class="bnav-item" data-tab="member" onclick="switchTab('squad')"><span class="bn-ico">▦</span>멤버<span class="nav-dot" id="memberDot" style="display:none"></span></button>
   <button class="bnav-item" data-tab="more" onclick="switchTab('more')"><span class="bn-ico">≡</span>더보기</button>
 </nav>
 
@@ -1255,6 +1258,9 @@ async function render() {
   const pastList = document.getElementById('pastList');
   list.innerHTML = `<div class="empty">불러오는 중...</div>`;
   const rides = await fetchRides();
+  const _lt = document.getElementById('tab-list');
+  if (_lt && !_lt.classList.contains('hidden')) markRidesSeen(rides);  // 카풀 탭이 실제로 열려 있을 때만 신규 점 해제
+  else refreshNewBadges();
   const now = Date.now();
   const active = rides.filter(r => departureMs(r) >= now);
   const past = rides.filter(r => departureMs(r) < now).sort((a, b) => departureMs(b) - departureMs(a));
@@ -1916,6 +1922,7 @@ async function submitVote() {
   const r2 = await castVote(m, 'growth', potmVoterId, potmPick.growth);
   potmPick = { mvp:null, growth:null };
   await rerender(renderPotm);
+  refreshNewBadges();
   toast((r1 === 'dup' || r2 === 'dup') ? '이미 이번 달 투표를 하셨어요' : '투표 완료!');
 }
 async function adminResetPotm() {
@@ -2218,6 +2225,33 @@ async function refreshAttBadge(){
   }catch(e){}
   b.textContent = cnt>0 ? String(cnt) : '';
   b.style.display = cnt>0 ? '' : 'none';
+}
+
+// 신규 콘텐츠 점(dot): 카풀(새 글) · 투표(투표 가능·미투표) → 멤버 탭/서브탭에 표시
+async function refreshNewBadges(){
+  const me = getMe();
+  let ridesNew = false, potmNew = false;
+  try {
+    const rides = await fetchRides();
+    const newest = (rides[0] && rides[0].created_at) || '';
+    const seen = localStorage.getItem('seen_rides') || '';
+    ridesNew = !!newest && newest > seen;
+  } catch(e){}
+  try {
+    if (me != null && isVotingOpen() && votingMembers(potmMonth()).some(m=>m.id===me)) {
+      const mo = potmMonth();
+      const [vm, vg] = await Promise.all([fetchVotes(mo,'mvp'), fetchVotes(mo,'growth')]);
+      potmNew = !(vm.some(v=>v.voter_id===me) && vg.some(v=>v.voter_id===me));
+    }
+  } catch(e){}
+  const set = (id,on)=>{ const e=document.getElementById(id); if(e) e.style.display = on ? 'block' : 'none'; };
+  set('dotList', ridesNew); set('dotPotm', potmNew); set('memberDot', ridesNew || potmNew);
+}
+function markRidesSeen(rides){
+  const newest = (rides && rides[0] && rides[0].created_at) || new Date().toISOString();
+  localStorage.setItem('seen_rides', newest);
+  const e = document.getElementById('dotList'); if(e) e.style.display='none';
+  refreshNewBadges();
 }
 
 /* ===== 마이페이지 ===== */
@@ -3879,6 +3913,7 @@ async function initApp() {
   switchTab(ok ? start : 'home', 'replace');   // 초기 진입은 히스토리 대체(중복 항목 방지)
   render();  // 카풀 데이터 미리 로드(실시간 구독 대비)
   refreshAttBadge();   // 일정 탭 미응답 배지
+  refreshNewBadges();  // 신규 콘텐츠 점(카풀·투표)
 }
 // 뒤로/앞으로 가기(해시 변경) → 해당 탭으로(히스토리 조작 없이)
 window.addEventListener('hashchange', () => {

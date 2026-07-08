@@ -1261,6 +1261,10 @@ function renderMatches(){
       const winner=m.blackScore>m.whiteScore?'black':m.whiteScore>m.blackScore?'white':'draw';
       const wLabel=winner==='black'?'🖤 블랙 승':winner==='white'?'🤍 화이트 승':'🤝 무승부';
       const wClass=winner==='black'?'winner-black':winner==='white'?'winner-white':'winner-draw';
+      const rosterHtml=(m.blackNames&&m.blackNames.length)?`<div class="match-roster">
+        <div class="roster-col black"><div class="roster-label">🖤 블랙</div><div class="roster-names">${m.blackNames.join(', ')||'—'}</div></div>
+        <div class="roster-col white"><div class="roster-label">🤍 화이트</div><div class="roster-names">${(m.whiteNames||[]).join(', ')||'—'}</div></div>
+      </div>`:'';
       return `<div class="match-card">
         <div class="match-card-header">
           <div class="match-card-date">${m.date.slice(5).replace('-','/')}</div>
@@ -1268,6 +1272,7 @@ function renderMatches(){
           <div class="match-card-winner ${wClass}">${wLabel}</div>
           <button class="match-del-btn" onclick="deleteMatch('${m.id}')" title="삭제">✕</button>
         </div>
+        ${rosterHtml}
         ${potmHtml}
       </div>`;
     }
@@ -1304,27 +1309,18 @@ function renderMatches(){
       <h3>➕ 매치 기록</h3>
       <div class="match-row"><label>날짜</label><input type="date" id="mDate" value="${new Date().toISOString().slice(0,10)}"></div>
       <div class="match-game-section">
-        <div class="match-game-title">🖤 블랙팀 A/B 배정 <button onclick="resetMatchRoster()" style="float:right;background:none;border:none;font-size:10px;color:#94a3b8;cursor:pointer;">↺ 초기화</button></div>
-        <div style="padding:6px 8px;">${allBlack.map(n=>`<span class="player-ab-chip ${bA.includes(n)?'is-a':'is-b'}" onclick="toggleAB('black','${n}')"><span class="ab-badge">${bA.includes(n)?'A':'B'}</span>${n}</span>`).join('')}</div>
-      </div>
-      <div class="match-game-section">
-        <div class="match-game-title">🤍 화이트팀 A/B 배정</div>
-        <div style="padding:6px 8px;">${allWhite.map(n=>`<span class="player-ab-chip ${wA.includes(n)?'is-a':'is-b'}" onclick="toggleAB('white','${n}')"><span class="ab-badge">${wA.includes(n)?'A':'B'}</span>${n}</span>`).join('')}</div>
-      </div>
-      <div class="match-game-section">
-        <div class="match-game-title">A경기 <span class="mg-roster-preview">(블랙A ${bA.length}명 vs 화이트A ${wA.length}명)</span></div>
-        <div class="match-score-row">
-          <div class="score-team black"><label>🖤 블랙A</label><input class="score-input" type="number" id="mBlackA" min="0" max="99" value="0"></div>
-          <div class="score-vs">vs</div>
-          <div class="score-team white"><label>🤍 화이트A</label><input class="score-input" type="number" id="mWhiteA" min="0" max="99" value="0"></div>
+        <div class="match-game-title">🖤 블랙 ${allBlack.length}명 · 🤍 화이트 ${allWhite.length}명 <span class="mg-roster-preview">(팀 배분 기준)</span></div>
+        <div class="match-roster">
+          <div class="roster-col black"><div class="roster-label">🖤 블랙</div><div class="roster-names">${allBlack.join(', ')||'—'}</div></div>
+          <div class="roster-col white"><div class="roster-label">🤍 화이트</div><div class="roster-names">${allWhite.join(', ')||'—'}</div></div>
         </div>
       </div>
       <div class="match-game-section">
-        <div class="match-game-title">B경기 <span class="mg-roster-preview">(블랙B ${bB.length}명 vs 화이트B ${wB.length}명)</span></div>
+        <div class="match-game-title">스코어</div>
         <div class="match-score-row">
-          <div class="score-team black"><label>🖤 블랙B</label><input class="score-input" type="number" id="mBlackB" min="0" max="99" value="0"></div>
+          <div class="score-team black"><label>🖤 블랙</label><input class="score-input" type="number" id="mBlack" min="0" max="99" value="0"></div>
           <div class="score-vs">vs</div>
-          <div class="score-team white"><label>🤍 화이트B</label><input class="score-input" type="number" id="mWhiteB" min="0" max="99" value="0"></div>
+          <div class="score-team white"><label>🤍 화이트</label><input class="score-input" type="number" id="mWhite" min="0" max="99" value="0"></div>
         </div>
       </div>
       <div class="match-row"><label>POTM</label><select id="mPotm"><option value="">— 선택 안 함 —</option>${potmOpts}</select></div>
@@ -1340,11 +1336,16 @@ function renderMatches(){
 function addMatch(){
   const date=document.getElementById('mDate').value;
   if(!date){ alert('날짜를 입력해주세요'); return; }
-  const gameA={ blackScore:parseInt(document.getElementById('mBlackA').value)||0, whiteScore:parseInt(document.getElementById('mWhiteA').value)||0 };
-  const gameB={ blackScore:parseInt(document.getElementById('mBlackB').value)||0, whiteScore:parseInt(document.getElementById('mWhiteB').value)||0 };
+  const blackScore=parseInt(document.getElementById('mBlack').value)||0;
+  const whiteScore=parseInt(document.getElementById('mWhite').value)||0;
   const potm=document.getElementById('mPotm').value||null;
-  const {blackA:bA,blackB:bB,whiteA:wA,whiteB:wB}=matchRoster;
-  matches.push({ id:Date.now().toString(), date, gameA, gameB, potm, blackTeamA:[...bA], blackTeamB:[...bB], whiteTeamA:[...wA], whiteTeamB:[...wB] });
+  // 명단은 현재 팀 배분(블랙=teamA / 화이트=teamB)에서 id·이름 함께 저장 (멤버 페이지 승점 계산용)
+  const src=teams||(teamHistory.length?teamHistory[0]:null);
+  const black=src&&src.teamA?src.teamA.map(p=>p.id):[];
+  const white=src&&src.teamB?src.teamB.map(p=>p.id):[];
+  const blackNames=src&&src.teamA?src.teamA.map(p=>p.name):[];
+  const whiteNames=src&&src.teamB?src.teamB.map(p=>p.name):[];
+  matches.push({ id:Date.now().toString(), date, blackScore, whiteScore, potm, black, white, blackNames, whiteNames });
   save();
   renderMatches();
 }

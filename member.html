@@ -1616,6 +1616,35 @@ async function getPrevWinners(){
 }
 function myWinTitles(id, w){ return [(id!=null&&id===w.mvp)?'MVP':'', (id!=null&&id===w.growth)?'성장':''].filter(Boolean); }
 
+// 올해 모범생 랭킹 등수 (renderRank model과 동일 계산) — {rank,total} 또는 null
+async function getModelRank(memberId){
+  try{
+    const tb = await fetchTeamBuilder();
+    if(!tb || !Array.isArray(tb.sessions) || !tb.sessions.length) return null;
+    const year = String(new Date().getFullYear());
+    const sess = tb.sessions.filter(s=>(s.date||'').startsWith(year));
+    if(!sess.length) return null;
+    const players = (tb.players||[]).filter(p=>{ const st=p.status||'active'; return st!=='former'&&st!=='friends'; });
+    const min = Math.ceil(sess.length*0.5);
+    let vMonths=[], vByMonth={};
+    try{
+      let vr=[]; if(typeof USE_DB!=='undefined'&&USE_DB){ const {data:vd}=await sb.from('potm_votes').select('voter_id,month'); vr=vd||[]; } else { vr=JSON.parse(localStorage.getItem(POTM_STORE))||[]; }
+      vr=vr.filter(v=>String(v.month||'').startsWith(year));
+      vr.forEach(v=>{ (vByMonth[v.month]=vByMonth[v.month]||new Set()).add(v.voter_id); });
+      vMonths=Object.keys(vByMonth);
+    }catch(e){}
+    const voteRate = p => { if(!vMonths.length) return 1; const c=vMonths.filter(mo=>vByMonth[mo].has(p.id)).length; return c/vMonths.length; };
+    let raw = players.map(p=>{ const r=rkAtt(p,sess); if(r.counted<min) return null; const pm=new Set(sess.filter(s=>rkInPool(p,s.date)).map(s=>s.date.slice(0,7))); const dm=new Set((p.dormantMonths||[]).filter(mo=>pm.has(mo))); const dr=pm.size>0?Math.round(dm.size/pm.size*1000)/10:0; return {id:p.id,_ar:r.rate,_a:r.attended,_vr:voteRate(p),_base:r.rate*(1-dr/100)}; }).filter(Boolean);
+    if(!raw.length) return null;
+    const maxAtt=Math.max(...raw.map(x=>x._a),1);
+    const data = raw.map(x=>({...x,_s:Math.round(x._base*(0.75+0.25*(x._a/maxAtt))*(0.8+0.2*x._vr)*10)/10})).sort((a,b)=>b._s-a._s||b._ar-a._ar);
+    const ranks = rkRanks(data, x=>String(x._s));
+    const idx = data.findIndex(x=>x.id===memberId);
+    if(idx<0) return null;
+    return { rank: ranks[idx], total: data.length };
+  }catch(e){ return null; }
+}
+
 // 전체 월 누적 MVP·성장 수상 횟수 (memberId -> 합계). 캐시.
 let _winCounts = null;
 async function getWinCounts(){

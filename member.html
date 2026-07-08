@@ -1626,18 +1626,12 @@ async function getModelRank(memberId){
     if(!sess.length) return null;
     const players = (tb.players||[]).filter(p=>{ const st=p.status||'active'; return st!=='former'&&st!=='friends'; });
     const min = Math.ceil(sess.length*0.5);
-    let vMonths=[], vByMonth={};
-    try{
-      let vr=[]; if(typeof USE_DB!=='undefined'&&USE_DB){ const {data:vd}=await sb.from('potm_votes').select('voter_id,month'); vr=vd||[]; } else { vr=JSON.parse(localStorage.getItem(POTM_STORE))||[]; }
-      vr=vr.filter(v=>String(v.month||'').startsWith(year));
-      vr.forEach(v=>{ (vByMonth[v.month]=vByMonth[v.month]||new Set()).add(v.voter_id); });
-      vMonths=Object.keys(vByMonth);
-    }catch(e){}
-    const voteRate = p => { if(!vMonths.length) return 1; const c=vMonths.filter(mo=>vByMonth[mo].has(p.id)).length; return c/vMonths.length; };
-    let raw = players.map(p=>{ const r=rkAtt(p,sess); if(r.counted<min) return null; const pm=new Set(sess.filter(s=>rkInPool(p,s.date)).map(s=>s.date.slice(0,7))); const dm=new Set((p.dormantMonths||[]).filter(mo=>pm.has(mo))); const dr=pm.size>0?Math.round(dm.size/pm.size*1000)/10:0; return {id:p.id,_ar:r.rate,_a:r.attended,_vr:voteRate(p),_base:r.rate*(1-dr/100)}; }).filter(Boolean);
+    const vs = await getVoteStats(year);
+    const voteRate = p => { if(!vs.voteMonths.length) return 1; const c=vs.voteMonths.filter(mo=>vs.voterByMonth[mo].has(p.id)).length; return c/vs.voteMonths.length; };
+    let raw = players.map(p=>{ const r=rkAtt(p,sess); if(r.counted<min) return null; const pm=new Set(sess.filter(s=>rkInPool(p,s.date)).map(s=>s.date.slice(0,7))); const dm=new Set((p.dormantMonths||[]).filter(mo=>pm.has(mo))); const dr=pm.size>0?Math.round(dm.size/pm.size*1000)/10:0; const poolS=sess.filter(s=>rkInPool(p,s.date)&&!rkDormant(p,s.date.slice(0,7))); const lmaCnt=poolS.filter(s=>(s.lastMinuteAbsentIds||[]).includes(p.id)).length; const lmaRate=poolS.length>0?Math.round(lmaCnt/poolS.length*1000)/10:0; return {id:p.id,_ar:r.rate,_a:r.attended,_vr:voteRate(p),_win:vs.winsByMember[p.id]||0,_lma:lmaRate,_base:r.rate*(1-dr/100)}; }).filter(Boolean);
     if(!raw.length) return null;
     const maxAtt=Math.max(...raw.map(x=>x._a),1);
-    const data = raw.map(x=>({...x,_s:Math.round(x._base*(0.75+0.25*(x._a/maxAtt))*(0.8+0.2*x._vr)*10)/10})).sort((a,b)=>b._s-a._s||b._ar-a._ar);
+    const data = raw.map(x=>({...x,_s:Math.round(Math.max(0, x._base*(0.75+0.25*(x._a/maxAtt))*(0.8+0.2*x._vr) + x._win*MODEL_WIN_BONUS - x._lma*MODEL_LMA_PENALTY)*10)/10})).sort((a,b)=>b._s-a._s||b._ar-a._ar);
     const ranks = rkRanks(data, x=>String(x._s));
     const idx = data.findIndex(x=>x.id===memberId);
     if(idx<0) return null;
@@ -1660,6 +1654,26 @@ async function getWinCounts(){
   months.forEach(m => ['mvp','growth'].forEach(c => { const w = top(m,c); if (w!=null) map[w] = (map[w]||0)+1; }));
   _winCounts = map;
   return map;
+}
+const MODEL_WIN_BONUS = 3;    // 모범생: MVP·성장 수상 1회당 +점수
+const MODEL_LMA_PENALTY = 0.5; // 모범생: 당일불참율 1%당 −점수
+// 투표 통계 (연도 접두어 필터): 투표 참여 월/투표자 + 월별 수상자 집계
+async function getVoteStats(yearPrefix){
+  let rows = [];
+  try {
+    if (typeof USE_DB !== 'undefined' && USE_DB) { const { data } = await sb.from('potm_votes').select('voter_id,candidate_id,month,category'); rows = data || []; }
+    else { rows = JSON.parse(localStorage.getItem(POTM_STORE)) || []; }
+  } catch(e) {}
+  if (yearPrefix) rows = rows.filter(v => String(v.month||'').startsWith(yearPrefix));
+  const voterByMonth = {}, byMC = {};
+  rows.forEach(v => {
+    (voterByMonth[v.month] = voterByMonth[v.month] || new Set()).add(v.voter_id);
+    const key = v.month + '|' + (v.category||'mvp');
+    (byMC[key] = byMC[key] || {}); byMC[key][v.candidate_id] = (byMC[key][v.candidate_id]||0) + 1;
+  });
+  const winsByMember = {};
+  Object.keys(byMC).forEach(key => { const t=byMC[key]; let b=null,bc=0; for(const k in t){ if(t[k]>bc){bc=t[k]; b=Number(k);} } if(b!=null) winsByMember[b]=(winsByMember[b]||0)+1; });
+  return { voteMonths: Object.keys(voterByMonth), voterByMonth, winsByMember };
 }
 
 // 해당 월 활동 회원 (team-builder 월별 현황과 동일 로직)
@@ -3854,22 +3868,15 @@ async function renderRank(){
     note=`${yearLabel} · ${data.length}명 · 당일불참율×2+휴면율 (나만 보기)`;
   } else {
     const tot=sess.length, min=Math.ceil(tot*0.5);
-    // 투표 참여(월별) — 미투표는 감점 (투표 있었던 달 중 몇 달 투표했나)
-    let vMonths=[], vByMonth={};
-    try {
-      let vr=[]; if (typeof USE_DB!=='undefined' && USE_DB){ const {data:vd}=await sb.from('potm_votes').select('voter_id,month'); vr=vd||[]; } else { vr=JSON.parse(localStorage.getItem(POTM_STORE))||[]; }
-      if (rankYear) vr = vr.filter(v=>String(v.month||'').startsWith(rankYear));
-      vr.forEach(v=>{ (vByMonth[v.month]=vByMonth[v.month]||new Set()).add(v.voter_id); });
-      vMonths = Object.keys(vByMonth);
-    } catch(e){}
-    const voteRate = p => { if(!vMonths.length) return 1; const c=vMonths.filter(mo=>vByMonth[mo].has(p.id)).length; return c/vMonths.length; };
-    let raw = elig.map(p=>{ const r=rkAtt(p,sess); if(r.counted<min) return null; const pm=new Set(sess.filter(s=>rkInPool(p,s.date)).map(s=>s.date.slice(0,7))); const dm=new Set((p.dormantMonths||[]).filter(mo=>pm.has(mo))); const dr=pm.size>0?Math.round(dm.size/pm.size*1000)/10:0; return {p,_ar:r.rate,_a:r.attended,_t:r.counted,_dr:dr,_vr:voteRate(p),_base:r.rate*(1-dr/100)}; }).filter(Boolean);
+    const vs = await getVoteStats(rankYear);   // 투표 참여 + 수상 집계
+    const voteRate = p => { if(!vs.voteMonths.length) return 1; const c=vs.voteMonths.filter(mo=>vs.voterByMonth[mo].has(p.id)).length; return c/vs.voteMonths.length; };
+    let raw = elig.map(p=>{ const r=rkAtt(p,sess); if(r.counted<min) return null; const pm=new Set(sess.filter(s=>rkInPool(p,s.date)).map(s=>s.date.slice(0,7))); const dm=new Set((p.dormantMonths||[]).filter(mo=>pm.has(mo))); const dr=pm.size>0?Math.round(dm.size/pm.size*1000)/10:0; const poolS=sess.filter(s=>rkInPool(p,s.date)&&!rkDormant(p,s.date.slice(0,7))); const lmaCnt=poolS.filter(s=>(s.lastMinuteAbsentIds||[]).includes(p.id)).length; const lmaRate=poolS.length>0?Math.round(lmaCnt/poolS.length*1000)/10:0; return {p,_ar:r.rate,_a:r.attended,_t:r.counted,_dr:dr,_vr:voteRate(p),_win:vs.winsByMember[p.id]||0,_lma:lmaRate,_base:r.rate*(1-dr/100)}; }).filter(Boolean);
     const maxAtt=Math.max(...raw.map(x=>x._a),1);
-    data = raw.map(x=>{ const lon=0.75+0.25*(x._a/maxAtt); const vf=0.8+0.2*x._vr; return {...x,_s:Math.round(x._base*lon*vf*10)/10}; }).sort((a,b)=>b._s-a._s||b._ar-a._ar);
+    data = raw.map(x=>{ const lon=0.75+0.25*(x._a/maxAtt); const vf=0.8+0.2*x._vr; return {...x,_s:Math.round(Math.max(0, x._base*lon*vf + x._win*MODEL_WIN_BONUS - x._lma*MODEL_LMA_PENALTY)*10)/10}; }).sort((a,b)=>b._s-a._s||b._ar-a._ar);
     ranks = rkRanks(data,x=>String(x._s));
     const maxs = data.length?(data[0]._s||1):1;
-    valFn=x=>x._s+'점'; subFn=x=>`출석 ${x._ar}% · 투표 ${Math.round(x._vr*100)}%`; pctFn=x=>Math.round(x._s/maxs*100);
-    note=`${yearLabel} · ${data.length}명 · 출석×(1−휴면)×기간×투표 (${min}세션↑)`;
+    valFn=x=>x._s+'점'; subFn=x=>`출석 ${x._ar}%${x._lma?` · 불참 ${x._lma}%`:''}${x._win?` · 수상 ${x._win}`:''}`; pctFn=x=>Math.round(x._s/maxs*100);
+    note=`${yearLabel} · ${data.length}명 · 출석×(1−휴면)×기간×투표 + 수상 − 당일불참 (${min}세션↑)`;
   }
 
   let html = hero + tabsHtml;

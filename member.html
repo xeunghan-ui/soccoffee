@@ -3805,12 +3805,12 @@ async function renderRank(){
       const pm=new Set(sess.filter(s=>rkInPool(p,s.date)).map(s=>s.date.slice(0,7)));
       const dm=new Set((p.dormantMonths||[]).filter(mo=>pm.has(mo)));
       const dr=pm.size>0?Math.round(dm.size/pm.size*1000)/10:0;
-      return {p,_lma:lmaRate,_dr:dr,_c:lmaCnt,_s:Math.round((lmaRate+dr)*10)/10};
+      return {p,_lma:lmaRate,_dr:dr,_c:lmaCnt,_s:Math.round((lmaRate*2+dr)*10)/10};
     }).filter(x=>x._s>0).sort((a,b)=>b._s-a._s);
     ranks = rkRanks(data,x=>String(x._s));
     const maxs = data.length?(data[0]._s||1):1;
     valFn=x=>x._s+'점'; subFn=x=>`당일불참 ${x._lma}% · 휴면 ${x._dr}%`; pctFn=x=>Math.round(x._s/maxs*100);
-    note=`${yearLabel} · ${data.length}명 · 당일불참율+휴면율 (높을수록 불량)`;
+    note=`${yearLabel} · ${data.length}명 · 당일불참율×2+휴면율 (높을수록 불량)`;
   } else {
     const tot=sess.length, min=Math.ceil(tot*0.5);
     // 투표 참여(월별) — 미투표는 감점 (투표 있었던 달 중 몇 달 투표했나)

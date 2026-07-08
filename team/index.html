@@ -395,6 +395,7 @@ body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; b
   <button class="tab-btn" id="tbtn-players" onclick="switchTab('players')"><span class="tab-icon">👥</span><span class="tab-label">선수 명단</span></button>
   <button class="tab-btn" id="tbtn-attendance" onclick="switchTab('attendance')"><span class="tab-icon">📋</span><span class="tab-label">출석부</span></button>
   <button class="tab-btn" id="tbtn-teams" onclick="switchTab('teams')"><span class="tab-icon">⚡</span><span class="tab-label">팀 배분</span></button>
+  <button class="tab-btn" id="tbtn-matches" onclick="switchTab('matches')"><span class="tab-icon">🏆</span><span class="tab-label">매치</span></button>
   <button class="tab-btn" id="tbtn-tier" onclick="switchTab('tier')"><span class="tab-icon">🎖</span><span class="tab-label">티어</span></button>
   <button class="tab-btn" id="tbtn-monthly" onclick="switchTab('monthly')"><span class="tab-icon">📅</span><span class="tab-label">월별 현황</span></button>
   <button class="tab-btn" id="tbtn-supplies" onclick="switchTab('supplies')"><span class="tab-icon">🛒</span><span class="tab-label">물품</span></button>
@@ -1105,10 +1106,10 @@ function showToast(msg){
 }
 
 /* ─ Tab ─ */
-const ALL_TABS=['players','attendance','teams','tier','monthly','ranking','supplies','fee'];
+const ALL_TABS=['players','attendance','teams','matches','tier','monthly','ranking','supplies','fee'];
 const TAB_GROUPS={
   '선수':['players','tier','ranking'],
-  '경기':['attendance','teams','monthly'],
+  '경기':['attendance','teams','matches','monthly'],
   '운영':['supplies','fee']
 };
 let activeCategory='선수';
@@ -1140,6 +1141,7 @@ function switchTab(tab){
   if(activeBtn){ activeBtn.classList.add('active'); activeBtn.scrollIntoView({behavior:'smooth',block:'nearest',inline:'center'}); }
   if(tab==='attendance'){ renderAttStats(); renderSessions(); updateChartPlayerSel(); renderChart(); }
   if(tab==='teams'){ renderBalPlayerGrid(); renderTeams(); renderTeamHistory(); }
+  if(tab==='matches'){ renderMatches(); }
   if(tab==='tier'){ renderTierTab(); }
   if(tab==='monthly'){ renderMonthlyStatus(); }
   if(tab==='ranking'){ renderRanking(); }

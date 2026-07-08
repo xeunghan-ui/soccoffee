@@ -653,15 +653,15 @@
   .rk-card .rknm { font-size: 13px; font-weight: 800; color: #ece6d2; margin: 3px 0; }
   .rk-card .rkval { font-size: 22px; font-weight: 400; font-family: var(--disp); color: var(--gold-bright); }
   .rk-card .rksub { font-size: 10px; color: #95a083; margin-top: 2px; }
-  .rk-row { display: flex; align-items: center; gap: 10px; padding: 9px 12px; background: #1e3526;
+  .rk-row { display: flex; flex-direction: column; gap: 5px; padding: 10px 12px; background: #1e3526;
     border: 1px solid var(--line); border-radius: 10px; margin-bottom: 6px; }
-  .rk-row .rkr { font-size: 12px; font-weight: 800; color: #95a083; min-width: 30px; text-align: center; }
-  .rk-row .rkn { flex: 1; font-size: 14px; font-weight: 600; color: #ece6d2; min-width: 0; }
-  .rk-row .rkbar { flex: 1.4; height: 6px; background: #2a3d30; border-radius: 4px; overflow: hidden; }
+  .rk-main { display: flex; align-items: center; gap: 10px; }
+  .rk-row .rkr { font-size: 12px; font-weight: 800; color: #95a083; min-width: 26px; text-align: center; }
+  .rk-row .rkn { flex: 1; font-size: 14px; font-weight: 600; color: #ece6d2; min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .rk-row .rkbar { flex: 1.2; height: 6px; background: #2a3d30; border-radius: 4px; overflow: hidden; }
   .rk-row .rkbar > div { height: 100%; background: var(--gold); }
-  .rk-row .rkv { text-align: right; min-width: 56px; }
-  .rk-row .rkv b { font-size: 14px; font-weight: 800; color: var(--gold-bright); display: block; }
-  .rk-row .rkv span { font-size: 10px; color: #95a083; }
+  .rk-row .rkv { font-size: 15px; font-weight: 800; color: var(--gold-bright); min-width: 50px; text-align: right; white-space: nowrap; }
+  .rk-sub { font-size: 11px; color: #95a083; padding-left: 36px; }
 
   /* 투표 부문 탭 */
   .vote-cats { display: flex; gap: 8px; margin-bottom: 14px; }
@@ -2242,8 +2242,9 @@ function renderMore() {
     // 운영진: 회원 메뉴 / 운영진 메뉴 두 구역으로 구분
     html += `<div class="more-sec-title">회원 메뉴</div>`;
     html += `<div class="more-grid">` + memberGrid + `</div>`;
+    const resultsBtn = `<button class="more-item" onclick="showResults()"><div class="mi-name">경기 결과</div><div class="mi-desc">월별 승/패 · 승률 반영</div></button>`;
     html += `<div class="more-sec-title">운영진 메뉴</div>`;
-    html += `<div class="more-grid">` + adminItems.map(adminBtn).join('') + teamLink + `</div>`;
+    html += `<div class="more-grid">` + adminItems.map(adminBtn).join('') + resultsBtn + teamLink + `</div>`;
   } else {
     html += `<div class="more-grid">` + memberGrid + `</div>`;
   }
@@ -2466,6 +2467,7 @@ async function renderHome() {
     const joinFmt = meP.joinDate ? meP.joinDate.slice(0,7).replace('-','.') : '—';
     const monthsTogether = monthsSince(meP.joinDate);
     const monthsLabel = monthsTogether > 0 ? `${monthsTogether}개월` : '이번 달';
+    const myWR = winRateOf((meT||{}).team);
     const miniHtml = `<div class="pc-mini">
         <div><div class="v">${joinFmt}</div><div class="k">가입월</div></div>
         <div><div class="v">${monthsLabel}</div><div class="k">함께한 기간</div></div>
@@ -2473,6 +2475,7 @@ async function renderHome() {
         <div><div class="v">${myAttRate!=null?Math.round(myAttRate)+'%':'—'}</div><div class="k">전체 출석률</div></div>
         <div><div class="v">${myRecent3!=null?myRecent3+'%':'—'}</div><div class="k">최근 3개월</div></div>
         <div><div class="v">${myModelRank?myModelRank.rank+'위':'—'}</div><div class="k">올해 모범생</div></div>
+        <div><div class="v">${myWR?myWR.rate+'%':'—'}</div><div class="k">팀 승률</div></div>
       </div>`;
     dash += `<div class="card" style="padding:16px;margin-bottom:12px">
       <div style="display:flex;align-items:center;gap:14px">
@@ -2758,6 +2761,18 @@ function uniformRoster(){
     .map(p => { const t=TEAM_SHEET[p.name]||{team:'기타'}; return {...p, jersey:t.jersey, eng:t.eng||'', team:t.team, cap:!!t.cap}; })
     .sort((a,b)=>((a.jersey==null?999:a.jersey)-(b.jersey==null?999:b.jersey)) || a.name.localeCompare(b.name,'ko'));
 }
+// 경기 결과(월별 승리 팀) — 운영진 입력. 멤버의 현재 팀(WHITE/BLACK) 기준으로 승률 계산.
+let RESULTS = null;                       // { 'YYYY-MM': 'WHITE'|'BLACK'|'draw' }
+const RESULTS_SEED = { '2026-06': 'BLACK' };
+function curResults(){ return Object.assign({}, RESULTS_SEED, (RESULTS||{})); }
+function winRateOf(team){
+  if (team!=='WHITE' && team!=='BLACK') return null;
+  const res = curResults();
+  const decided = Object.keys(res).filter(mo => res[mo]==='WHITE' || res[mo]==='BLACK');
+  if (!decided.length) return null;
+  const wins = decided.filter(mo => res[mo]===team).length;
+  return { rate: Math.round(wins/decided.length*100), wins, total: decided.length };
+}
 const PIN_SALT = 'scf-pin-v1';
 async function hashPin(id, pin){
   const data = new TextEncoder().encode(PIN_SALT + ':' + id + ':' + pin);
@@ -2933,6 +2948,26 @@ async function saveUniformFor(id){
   const next={sizes}; const bak=UNIFORM; UNIFORM=next;
   const ok=await saveSettings({uniform:next});
   if(ok){ toast('저장했어요'); showUniform(); } else { UNIFORM=bak; toast('저장 중 오류가 났어요'); }
+}
+// 경기 결과 관리 (운영진)
+function showResults(){
+  if(!isAdmin()) return;
+  const res = curResults();
+  const months = Object.keys(res).sort().reverse();
+  const rows = months.map(mo=>{ const w=res[mo]; const col=w==='BLACK'?'#ece6d2':(w==='WHITE'?'#ddd6b6':'var(--muted)'); const lbl=w==='draw'?'무승부':w+' 승'; return `<div style="display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-bottom:1px solid var(--line)"><span style="color:var(--cream);font-size:13px">${potmMonthLabel(mo)}</span><span style="color:${col};font-weight:800;font-size:13px">${lbl}</span></div>`; }).join('');
+  _umBox('경기 결과', `<p class="hint" style="margin:0 0 8px">월별 승리 팀</p>${rows||'<div class="empty" style="font-size:13px">기록이 없어요.</div>'}<button class="btn accent sm" style="width:100%;margin-top:12px" onclick="setResult()">결과 입력 / 수정</button>`);
+}
+async function setResult(){
+  if(!isAdmin()) return;
+  const mo = prompt('월 (YYYY-MM)', potmMonth()); if(mo==null) return;
+  if(!/^\d{4}-\d{2}$/.test(mo.trim())){ toast('YYYY-MM 형식으로 입력해 주세요'); return; }
+  const w = prompt('승리 팀 (WHITE / BLACK / draw)', 'BLACK'); if(w==null) return;
+  const u = w.trim().toUpperCase(); const val = (u==='WHITE'||u==='BLACK') ? u : (w.trim().toLowerCase()==='draw' ? 'draw' : null);
+  if(!val){ toast('WHITE / BLACK / draw 중 입력해 주세요'); return; }
+  const results = Object.assign({}, curResults()); results[mo.trim()] = val;
+  const bak = RESULTS; RESULTS = results;
+  const ok = await saveSettings({ results });
+  if(ok){ toast('저장했어요'); showResults(); } else { RESULTS = bak; toast('저장 중 오류가 났어요'); }
 }
 async function fetchAttendance(sessionId) {
   if (!sessionId) sessionId = (await nearestSession()).id;
@@ -3890,10 +3925,13 @@ async function renderRank(){
   if (data.length>3){
     html += data.slice(3).map((x,i)=>`
       <div class="rk-row">
-        <span class="rkr">${ranks[i+3]}</span>
-        <span class="rkn">${esc(x.p.name)}</span>
-        <span class="rkbar"><div style="width:${Math.max(2,Math.min(100,pctFn(x)))}%"></div></span>
-        <span class="rkv"><b>${valFn(x)}</b><span>${subFn(x)}</span></span>
+        <div class="rk-main">
+          <span class="rkr">${ranks[i+3]}</span>
+          <span class="rkn">${esc(x.p.name)}</span>
+          <span class="rkbar"><div style="width:${Math.max(2,Math.min(100,pctFn(x)))}%"></div></span>
+          <span class="rkv">${valFn(x)}</span>
+        </div>
+        <div class="rk-sub">${subFn(x)}</div>
       </div>`).join('');
   }
   el.innerHTML = html;
@@ -3959,7 +3997,7 @@ async function initApp() {
   updateAdminBtn();
   try { const r = await fetchRoster(); if (r) applyPlayers(r); } catch (e) {}
   await mergeTbMembers();   // 팀빌더에만 있는 멤버도 로그인 가능하게 병합
-  try { const s = await fetchSettings(); teamSplitOn = s.teamSplit !== false; CLUB_PINS = s.pins || {}; BANK = s.bank || null; SURVEY = s.survey || null; UNIFORM = s.uniform || null; } catch (e) {}
+  try { const s = await fetchSettings(); teamSplitOn = s.teamSplit !== false; CLUB_PINS = s.pins || {}; BANK = s.bank || null; SURVEY = s.survey || null; UNIFORM = s.uniform || null; RESULTS = s.results || null; } catch (e) {}
   await loadTbDormant();
   await rolloverDormancyIfNeeded();   // 15일 이후 다음 달 휴면 자동 롤오버(월 1회) — 누가 앱을 열든 자동
   // 로컬 미리보기: 첫 활동 회원으로 자동 로그인

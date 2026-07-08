@@ -2242,9 +2242,8 @@ function renderMore() {
     // 운영진: 회원 메뉴 / 운영진 메뉴 두 구역으로 구분
     html += `<div class="more-sec-title">회원 메뉴</div>`;
     html += `<div class="more-grid">` + memberGrid + `</div>`;
-    const resultsBtn = `<button class="more-item" onclick="showResults()"><div class="mi-name">경기 결과</div><div class="mi-desc">월별 승/패 · 승률 반영</div></button>`;
     html += `<div class="more-sec-title">운영진 메뉴</div>`;
-    html += `<div class="more-grid">` + adminItems.map(adminBtn).join('') + resultsBtn + teamLink + `</div>`;
+    html += `<div class="more-grid">` + adminItems.map(adminBtn).join('') + teamLink + `</div>`;
   } else {
     html += `<div class="more-grid">` + memberGrid + `</div>`;
   }
@@ -2414,8 +2413,8 @@ async function renderHome() {
   const mySkills = meActive ? await getMemberSkills(me) : [];
   const myWins = meActive ? myWinTitles(me, await getPrevWinners()) : [];
   // 참여 세션·출석률·최근3개월·수상: 팀빌더 데이터 기반 (사이트 attendance 테이블은 최근분만 있음)
-  let myAttended = 0, myAttRate = null, myRecent3 = null;
-  if (meActive) { try { const _tb = await fetchTeamBuilder(); const _tp = (_tb && _tb.players || []).find(x => x.id === me); if (_tp) { myAttended = _tp.attCountAll ?? _tp.attCount ?? 0; myAttRate = _tp.attendanceAll ?? _tp.attendance ?? null; myRecent3 = recent3Rate(_tp, _tb.sessions); } } catch(e){} }
+  let myAttended = 0, myAttRate = null, myRecent3 = null, myWinPct = null;
+  if (meActive) { try { const _tb = await fetchTeamBuilder(); const _tp = (_tb && _tb.players || []).find(x => x.id === me); if (_tp) { myAttended = _tp.attCountAll ?? _tp.attCount ?? 0; myAttRate = _tp.attendanceAll ?? _tp.attendance ?? null; myRecent3 = recent3Rate(_tp, _tb.sessions); } const _mw = computeWinStats(_tb && _tb.matches)[me]; if (_mw && _mw.played) myWinPct = Math.round(_mw.w/_mw.played*100); } catch(e){} }
   const myStatusOf = sid => { const a = (attBySess[sid]||[]).find(x=>x.member_id===me); return a ? a.status : 'none'; };
   const meP0 = me != null ? PLAYERS.find(x => x.id === me) : null;
   const pending = meActive ? sessions.filter(s => {
@@ -2466,14 +2465,13 @@ async function renderHome() {
     const joinFmt = meP.joinDate ? meP.joinDate.slice(0,7).replace('-','.') : '—';
     const monthsTogether = monthsSince(meP.joinDate);
     const monthsLabel = monthsTogether > 0 ? `${monthsTogether}개월` : '이번 달';
-    const myWR = winRateOf((meT||{}).team);
     const miniHtml = `<div class="pc-mini">
         <div><div class="v">${joinFmt}</div><div class="k">가입월</div></div>
         <div><div class="v">${monthsLabel}</div><div class="k">함께한 기간</div></div>
         <div><div class="v">${myAttended}회</div><div class="k">참여 세션</div></div>
         <div><div class="v">${myAttRate!=null?Math.round(myAttRate)+'%':'—'}</div><div class="k">전체 출석률</div></div>
         <div><div class="v">${myRecent3!=null?myRecent3+'%':'—'}</div><div class="k">최근 3개월</div></div>
-        <div><div class="v">${myWR?myWR.rate+'%':'—'}</div><div class="k">팀 승률</div></div>
+        <div><div class="v">${myWinPct!=null?myWinPct+'%':'—'}</div><div class="k">승률</div></div>
       </div>`;
     dash += `<div class="card" style="padding:16px;margin-bottom:12px">
       <div style="display:flex;align-items:center;gap:14px">
@@ -2770,6 +2768,18 @@ function winRateOf(team){
   if (!decided.length) return null;
   const wins = decided.filter(mo => res[mo]===team).length;
   return { rate: Math.round(wins/decided.length*100), wins, total: decided.length };
+}
+// 팀빌더 matches로 멤버별 승/패 집계 → {id:{w,l,d,played}}
+function computeWinStats(matches){
+  const map = {};
+  (matches||[]).forEach(m=>{
+    const bs=Number(m.blackScore), ws=Number(m.whiteScore);
+    if(isNaN(bs)||isNaN(ws)) return;
+    const res = bs>ws ? ['w','l'] : (ws>bs ? ['l','w'] : ['d','d']);
+    (m.black||[]).forEach(id=>{ const e=map[id]=map[id]||{w:0,l:0,d:0,played:0}; e[res[0]]++; e.played++; });
+    (m.white||[]).forEach(id=>{ const e=map[id]=map[id]||{w:0,l:0,d:0,played:0}; e[res[1]]++; e.played++; });
+  });
+  return map;
 }
 const PIN_SALT = 'scf-pin-v1';
 async function hashPin(id, pin){
@@ -3849,7 +3859,7 @@ async function renderRank(){
   const el = document.getElementById('rankContent');
   el.innerHTML = `<div class="empty">불러오는 중...</div>`;
   const tb = await fetchTeamBuilder();
-  const _rkTabs = [['att','출석율'],['model','모범생'],['lma','당일 불참'],['dorm','휴면율']];
+  const _rkTabs = [['att','출석율'],['winrate','승률'],['model','모범생'],['lma','당일 불참'],['dorm','휴면율']];
   if (meName()==='박승한') _rkTabs.push(['bad','불량배']);   // 불량배는 나만 보기
   if (!_rkTabs.some(t=>t[0]===rankTab)) rankTab='att';
   const tabsHtml = `<div class="rk-tabs">${_rkTabs.map(([k,l])=>`<button class="rk-tab ${k===rankTab?'on':''}" onclick="switchRankTab('${k}')">${l}</button>`).join('')}</div>`;
@@ -3873,6 +3883,13 @@ async function renderRank(){
     ranks = rkRanks(data,x=>x._a+'/'+x._t);
     valFn=x=>x._r+'%'; subFn=x=>`${x._a}/${x._t}세션`; pctFn=x=>x._r;
     note=`${yearLabel} · ${data.length}명 · 출석율 (${min}세션↑)`;
+  } else if (rankTab==='winrate'){
+    const ym = rankYear ? (tb.matches||[]).filter(m=>(m.date||'').startsWith(rankYear)) : (tb.matches||[]);
+    const ws = computeWinStats(ym);
+    data = elig.map(p=>{ const w=ws[p.id]; if(!w||!w.played) return null; return {p,_w:w.w,_l:w.l,_d:w.d,_pl:w.played,_r:Math.round(w.w/w.played*100)}; }).filter(Boolean).sort((a,b)=>b._r-a._r||b._pl-a._pl);
+    ranks = rkRanks(data,x=>x._r+'/'+x._pl);
+    valFn=x=>x._r+'%'; subFn=x=>`${x._pl}전 ${x._w}승 ${x._l}패${x._d?` ${x._d}무`:''}`; pctFn=x=>x._r;
+    note=`${yearLabel} · ${data.length}명 · 승률 (경기 참여 기준)`;
   } else if (rankTab==='lma'){
     data = elig.map(p=>{ const pool=sess.filter(s=>rkInPool(p,s.date)&&!rkDormant(p,s.date.slice(0,7))); const cnt=pool.filter(s=>(s.lastMinuteAbsentIds||[]).includes(p.id)).length; const rate=pool.length>0?Math.round(cnt/pool.length*1000)/10:0; return {p,_c:cnt,_r:rate,_t:pool.length}; }).filter(x=>x._c>0).sort((a,b)=>b._r-a._r||b._c-a._c);
     ranks = rkRanks(data,x=>x._c+'/'+x._t);

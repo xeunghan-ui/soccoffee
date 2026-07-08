@@ -834,9 +834,9 @@
 
   <div id="memberSubnav" class="member-subnav hidden">
     <button class="msub" data-sub="squad" onclick="switchTab('squad')">멤버 현황</button>
-    <button class="msub" data-sub="rank" onclick="switchTab('rank')">랭킹</button>
     <button class="msub" data-sub="list" onclick="switchTab('list')">카풀<span class="nav-dot" id="dotList" style="display:none"></span></button>
     <button class="msub" data-sub="potm" onclick="switchTab('potm')">투표<span class="nav-dot" id="dotPotm" style="display:none"></span></button>
+    <button class="msub" data-sub="rank" onclick="switchTab('rank')">랭킹</button>
   </div>
 
   <div id="tab-home" class="hidden"><div id="homeContent"></div></div>
@@ -1084,7 +1084,7 @@ async function deleteRide(id) {
 const ALL_TABS = ['home','att','dues','list','potm','rank','more','mine','faq','squad','ops'];
 function switchTab(tab, mode) {
   if (tab === 'ops' && !isAdmin()) tab = 'home';   // 운영진 전용 탭은 비운영진 직접 접근 차단
-  const memberTabs = ['squad','rank','list','potm'];   // 멤버 탭 묶음(멤버현황·랭킹·카풀·투표)
+  const memberTabs = ['squad','list','potm','rank'];   // 멤버 탭 묶음(멤버현황·카풀·투표·랭킹)
   const navActive = memberTabs.includes(tab) ? 'member' : (['home','att'].includes(tab) ? tab : 'more');
   document.querySelectorAll('.bnav-item').forEach(b => b.classList.toggle('active', b.dataset.tab === navActive));
   ALL_TABS.forEach(t => {
@@ -3808,13 +3808,22 @@ async function renderRank(){
     note=`${yearLabel} · ${data.length}명 · 당일 불참율`;
   } else {
     const tot=sess.length, min=Math.ceil(tot*0.5);
-    let raw = elig.map(p=>{ const r=rkAtt(p,sess); if(r.counted<min) return null; const pm=new Set(sess.filter(s=>rkInPool(p,s.date)).map(s=>s.date.slice(0,7))); const dm=new Set((p.dormantMonths||[]).filter(mo=>pm.has(mo))); const dr=pm.size>0?Math.round(dm.size/pm.size*1000)/10:0; return {p,_ar:r.rate,_a:r.attended,_t:r.counted,_dr:dr,_base:r.rate*(1-dr/100)}; }).filter(Boolean);
+    // 투표 참여(월별) — 미투표는 감점 (투표 있었던 달 중 몇 달 투표했나)
+    let vMonths=[], vByMonth={};
+    try {
+      let vr=[]; if (typeof USE_DB!=='undefined' && USE_DB){ const {data:vd}=await sb.from('potm_votes').select('voter_id,month'); vr=vd||[]; } else { vr=JSON.parse(localStorage.getItem(POTM_STORE))||[]; }
+      if (rankYear) vr = vr.filter(v=>String(v.month||'').startsWith(rankYear));
+      vr.forEach(v=>{ (vByMonth[v.month]=vByMonth[v.month]||new Set()).add(v.voter_id); });
+      vMonths = Object.keys(vByMonth);
+    } catch(e){}
+    const voteRate = p => { if(!vMonths.length) return 1; const c=vMonths.filter(mo=>vByMonth[mo].has(p.id)).length; return c/vMonths.length; };
+    let raw = elig.map(p=>{ const r=rkAtt(p,sess); if(r.counted<min) return null; const pm=new Set(sess.filter(s=>rkInPool(p,s.date)).map(s=>s.date.slice(0,7))); const dm=new Set((p.dormantMonths||[]).filter(mo=>pm.has(mo))); const dr=pm.size>0?Math.round(dm.size/pm.size*1000)/10:0; return {p,_ar:r.rate,_a:r.attended,_t:r.counted,_dr:dr,_vr:voteRate(p),_base:r.rate*(1-dr/100)}; }).filter(Boolean);
     const maxAtt=Math.max(...raw.map(x=>x._a),1);
-    data = raw.map(x=>{ const lon=0.75+0.25*(x._a/maxAtt); return {...x,_s:Math.round(x._base*lon*10)/10}; }).sort((a,b)=>b._s-a._s||b._ar-a._ar);
+    data = raw.map(x=>{ const lon=0.75+0.25*(x._a/maxAtt); const vf=0.8+0.2*x._vr; return {...x,_s:Math.round(x._base*lon*vf*10)/10}; }).sort((a,b)=>b._s-a._s||b._ar-a._ar);
     ranks = rkRanks(data,x=>String(x._s));
     const maxs = data.length?(data[0]._s||1):1;
-    valFn=x=>x._s+'점'; subFn=x=>`출석 ${x._ar}% · 휴면 ${x._dr}%`; pctFn=x=>Math.round(x._s/maxs*100);
-    note=`${yearLabel} · ${data.length}명 · 출석율×(1−휴면율)×기간보정 (${min}세션↑)`;
+    valFn=x=>x._s+'점'; subFn=x=>`출석 ${x._ar}% · 투표 ${Math.round(x._vr*100)}%`; pctFn=x=>Math.round(x._s/maxs*100);
+    note=`${yearLabel} · ${data.length}명 · 출석×(1−휴면)×기간×투표 (${min}세션↑)`;
   }
 
   let html = hero + tabsHtml;

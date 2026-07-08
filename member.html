@@ -1628,10 +1628,8 @@ async function getModelRank(memberId){
     const min = Math.ceil(sess.length*0.5);
     const vs = await getVoteStats(year);
     const voteRate = p => { if(!vs.voteMonths.length) return 1; const c=vs.voteMonths.filter(mo=>vs.voterByMonth[mo].has(p.id)).length; return c/vs.voteMonths.length; };
-    let raw = players.map(p=>{ const r=rkAtt(p,sess); if(r.counted<min) return null; const pm=new Set(sess.filter(s=>rkInPool(p,s.date)).map(s=>s.date.slice(0,7))); const dm=new Set((p.dormantMonths||[]).filter(mo=>pm.has(mo))); const dr=pm.size>0?Math.round(dm.size/pm.size*1000)/10:0; const poolS=sess.filter(s=>rkInPool(p,s.date)&&!rkDormant(p,s.date.slice(0,7))); const lmaCnt=poolS.filter(s=>(s.lastMinuteAbsentIds||[]).includes(p.id)).length; const lmaRate=poolS.length>0?Math.round(lmaCnt/poolS.length*1000)/10:0; return {id:p.id,_ar:r.rate,_a:r.attended,_vr:voteRate(p),_win:vs.winsByMember[p.id]||0,_lma:lmaRate,_base:r.rate*(1-dr/100)}; }).filter(Boolean);
-    if(!raw.length) return null;
-    const maxAtt=Math.max(...raw.map(x=>x._a),1);
-    const data = raw.map(x=>({...x,_s:Math.round(Math.max(0, x._base*(0.75+0.25*(x._a/maxAtt))*(0.8+0.2*x._vr) + x._win*MODEL_WIN_BONUS - x._lma*MODEL_LMA_PENALTY)*10)/10})).sort((a,b)=>b._s-a._s||b._ar-a._ar);
+    const data = players.map(p=>{ const r=rkAtt(p,sess); if(r.counted<min) return null; const pm=new Set(sess.filter(s=>rkInPool(p,s.date)).map(s=>s.date.slice(0,7))); const dm=new Set((p.dormantMonths||[]).filter(mo=>pm.has(mo))); const dr=pm.size>0?Math.round(dm.size/pm.size*1000)/10:0; const poolS=sess.filter(s=>rkInPool(p,s.date)&&!rkDormant(p,s.date.slice(0,7))); const lmaCnt=poolS.filter(s=>(s.lastMinuteAbsentIds||[]).includes(p.id)).length; const lmaRate=poolS.length>0?Math.round(lmaCnt/poolS.length*1000)/10:0; const vr=voteRate(p); const win=vs.winsByMember[p.id]||0; const misV=Math.round((1-vr)*100); const s=Math.max(0,Math.round((r.rate - dr*0.3 - lmaRate*MODEL_LMA_PENALTY - misV*0.1 + win*MODEL_WIN_BONUS)*10)/10); return {id:p.id,_ar:r.rate,_s:s}; }).filter(Boolean).sort((a,b)=>b._s-a._s||b._ar-a._ar);
+    if(!data.length) return null;
     const ranks = rkRanks(data, x=>String(x._s));
     const idx = data.findIndex(x=>x.id===memberId);
     if(idx<0) return null;
@@ -1655,7 +1653,7 @@ async function getWinCounts(){
   _winCounts = map;
   return map;
 }
-const MODEL_WIN_BONUS = 3;    // 모범생: MVP·성장 수상 1회당 +점수
+const MODEL_WIN_BONUS = 2;    // 모범생: MVP·성장 수상 1회당 +점수(출석율 우선 위해 소폭)
 const MODEL_LMA_PENALTY = 0.5; // 모범생: 당일불참율 1%당 −점수
 // 투표 통계 (연도 접두어 필터): 투표 참여 월/투표자 + 월별 수상자 집계
 async function getVoteStats(yearPrefix){
@@ -3870,13 +3868,10 @@ async function renderRank(){
     const tot=sess.length, min=Math.ceil(tot*0.5);
     const vs = await getVoteStats(rankYear);   // 투표 참여 + 수상 집계
     const voteRate = p => { if(!vs.voteMonths.length) return 1; const c=vs.voteMonths.filter(mo=>vs.voterByMonth[mo].has(p.id)).length; return c/vs.voteMonths.length; };
-    let raw = elig.map(p=>{ const r=rkAtt(p,sess); if(r.counted<min) return null; const pm=new Set(sess.filter(s=>rkInPool(p,s.date)).map(s=>s.date.slice(0,7))); const dm=new Set((p.dormantMonths||[]).filter(mo=>pm.has(mo))); const dr=pm.size>0?Math.round(dm.size/pm.size*1000)/10:0; const poolS=sess.filter(s=>rkInPool(p,s.date)&&!rkDormant(p,s.date.slice(0,7))); const lmaCnt=poolS.filter(s=>(s.lastMinuteAbsentIds||[]).includes(p.id)).length; const lmaRate=poolS.length>0?Math.round(lmaCnt/poolS.length*1000)/10:0; return {p,_ar:r.rate,_a:r.attended,_t:r.counted,_dr:dr,_vr:voteRate(p),_win:vs.winsByMember[p.id]||0,_lma:lmaRate,_base:r.rate*(1-dr/100)}; }).filter(Boolean);
-    const maxAtt=Math.max(...raw.map(x=>x._a),1);
-    data = raw.map(x=>{ const lon=0.75+0.25*(x._a/maxAtt); const vf=0.8+0.2*x._vr; return {...x,_s:Math.round(Math.max(0, x._base*lon*vf + x._win*MODEL_WIN_BONUS - x._lma*MODEL_LMA_PENALTY)*10)/10}; }).sort((a,b)=>b._s-a._s||b._ar-a._ar);
+    data = elig.map(p=>{ const r=rkAtt(p,sess); if(r.counted<min) return null; const pm=new Set(sess.filter(s=>rkInPool(p,s.date)).map(s=>s.date.slice(0,7))); const dm=new Set((p.dormantMonths||[]).filter(mo=>pm.has(mo))); const dr=pm.size>0?Math.round(dm.size/pm.size*1000)/10:0; const poolS=sess.filter(s=>rkInPool(p,s.date)&&!rkDormant(p,s.date.slice(0,7))); const lmaCnt=poolS.filter(s=>(s.lastMinuteAbsentIds||[]).includes(p.id)).length; const lmaRate=poolS.length>0?Math.round(lmaCnt/poolS.length*1000)/10:0; const vr=voteRate(p); const win=vs.winsByMember[p.id]||0; const misV=Math.round((1-vr)*100); const s=Math.max(0,Math.round((r.rate - dr*0.3 - lmaRate*MODEL_LMA_PENALTY - misV*0.1 + win*MODEL_WIN_BONUS)*10)/10); return {p,_ar:r.rate,_a:r.attended,_t:r.counted,_dr:dr,_vr:vr,_win:win,_lma:lmaRate,_s:s}; }).filter(Boolean).sort((a,b)=>b._s-a._s||b._ar-a._ar);
     ranks = rkRanks(data,x=>String(x._s));
-    const maxs = data.length?(data[0]._s||1):1;
-    valFn=x=>x._s+'점'; subFn=x=>`출석 ${x._ar}%${x._lma?` · 불참 ${x._lma}%`:''}${x._win?` · 수상 ${x._win}`:''}`; pctFn=x=>Math.round(x._s/maxs*100);
-    note=`${yearLabel} · ${data.length}명 · 출석×(1−휴면)×기간×투표 + 수상 − 당일불참 (${min}세션↑)`;
+    valFn=x=>x._s+'점'; subFn=x=>`출석 ${x._ar}% · 휴면 ${x._dr}% · 투표 ${Math.round(x._vr*100)}%${x._lma?` · 불참 ${x._lma}%`:''}${x._win?` · 수상 ${x._win}`:''}`; pctFn=x=>Math.max(2,Math.min(100,Math.round(x._s)));
+    note=`${yearLabel} · ${data.length}명 · 출석 기준 − 휴면×0.3 − 불참×0.5 − 미투표×0.1 + 수상×2 (${min}세션↑)`;
   }
 
   let html = hero + tabsHtml;

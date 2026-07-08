@@ -2403,7 +2403,7 @@ async function renderHome() {
   // 참여 세션·출석률·최근3개월·수상: 팀빌더 데이터 기반 (사이트 attendance 테이블은 최근분만 있음)
   let myAttended = 0, myAttRate = null, myRecent3 = null;
   if (meActive) { try { const _tb = await fetchTeamBuilder(); const _tp = (_tb && _tb.players || []).find(x => x.id === me); if (_tp) { myAttended = _tp.attCountAll ?? _tp.attCount ?? 0; myAttRate = _tp.attendanceAll ?? _tp.attendance ?? null; myRecent3 = recent3Rate(_tp, _tb.sessions); } } catch(e){} }
-  const myWinCount = meActive ? ((await getWinCounts())[me] || 0) : 0;
+  const myModelRank = meActive ? await getModelRank(me) : null;
   const myStatusOf = sid => { const a = (attBySess[sid]||[]).find(x=>x.member_id===me); return a ? a.status : 'none'; };
   const meP0 = me != null ? PLAYERS.find(x => x.id === me) : null;
   const pending = meActive ? sessions.filter(s => {
@@ -2460,7 +2460,7 @@ async function renderHome() {
         <div><div class="v">${myAttended}회</div><div class="k">참여 세션</div></div>
         <div><div class="v">${myAttRate!=null?Math.round(myAttRate)+'%':'—'}</div><div class="k">전체 출석률</div></div>
         <div><div class="v">${myRecent3!=null?myRecent3+'%':'—'}</div><div class="k">최근 3개월</div></div>
-        <div><div class="v">${myWinCount}회</div><div class="k">수상 횟수</div></div>
+        <div><div class="v">${myModelRank?myModelRank.rank+'위':'—'}</div><div class="k">올해 모범생</div></div>
       </div>`;
     dash += `<div class="card" style="padding:16px;margin-bottom:12px">
       <div style="display:flex;align-items:center;gap:14px">

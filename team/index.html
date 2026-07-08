@@ -1206,13 +1206,6 @@ function renderMatches(){
   const wRate=totalGames?Math.round(wWins/totalGames*100):0;
   const dRate=totalGames?Math.round(draws/totalGames*100):0;
 
-  // POTM
-  const activePlayers=players.filter(p=>p.status==='active').sort((a,b)=>a.name.localeCompare(b.name,'ko'));
-  const potmOpts=activePlayers.map(p=>`<option value="${p.name}">${p.name}</option>`).join('');
-  const potmMap={};
-  matches.forEach(m=>{ if(m.potm){ potmMap[m.potm]=(potmMap[m.potm]||0)+1; }});
-  const topPotm=Object.entries(potmMap).sort((a,b)=>b[1]-a[1]).slice(0,3);
-
   // 팀 배분 소스
   const src=teams||(teamHistory.length?teamHistory[0]:null);
   if(!matchRosterInited&&src&&src.teamA){ initMatchRoster(src); }
@@ -1223,7 +1216,6 @@ function renderMatches(){
   // 매치 이력
   const sorted=[...matches].sort((a,b)=>b.date.localeCompare(a.date));
   const histHtml=sorted.map(m=>{
-    const potmHtml=m.potm?`<div class="match-card-potm">⭐ POTM · ${m.potm}</div>`:'';
     if(m.gameA){
       // 새 포맷
       const rA=matchGameResult(m.gameA.blackScore,m.gameA.whiteScore);
@@ -1254,7 +1246,6 @@ function renderMatches(){
           <span class="match-card-winner ${rB.cls}" style="font-size:10px;padding:2px 6px">${rB.label}</span>
         </div>
         ${roB}
-        ${potmHtml}
       </div>`;
     } else {
       // 구 포맷 호환
@@ -1273,19 +1264,9 @@ function renderMatches(){
           <button class="match-del-btn" onclick="deleteMatch('${m.id}')" title="삭제">✕</button>
         </div>
         ${rosterHtml}
-        ${potmHtml}
       </div>`;
     }
   }).join('');
-
-  const potmRankHtml=topPotm.length?`<div style="margin-bottom:14px;">
-    <div style="font-size:11px;font-weight:800;color:#4a5568;margin-bottom:6px;">⭐ POTM 랭킹</div>
-    ${topPotm.map((e,i)=>`<div style="display:flex;align-items:center;gap:6px;margin-bottom:4px;font-size:12px;">
-      <span style="font-size:14px">${['🥇','🥈','🥉'][i]}</span>
-      <span style="font-weight:700;">${e[0]}</span>
-      <span style="color:#94a3b8">${e[1]}회</span>
-    </div>`).join('')}
-  </div>`:'';
 
   const teamStatusHtml=(()=>{
     if(src&&src.teamA) return `<div style="font-size:11px;color:#38a169;background:#f0fff4;border:1px solid #9ae6b4;border-radius:6px;padding:6px 10px;margin-bottom:8px;">✅ ${teams?'현재':'최근 저장 ('+src.date+')'} 팀 배분 적용 — 블랙 ${src.teamA.length}명 / 화이트 ${src.teamB.length}명</div>`;
@@ -1304,7 +1285,6 @@ function renderMatches(){
       <div class="win-bar-white" style="width:${wRate}%"></div>
     </div>
     <div style="font-size:9px;color:#94a3b8;text-align:center;margin-bottom:12px;">${totalGames}경기 (${matches.length}회차)</div>`:''}
-    ${potmRankHtml}
     <div class="match-form">
       <h3>➕ 매치 기록</h3>
       <div class="match-row"><label>날짜</label><input type="date" id="mDate" value="${new Date().toISOString().slice(0,10)}"></div>
@@ -1323,7 +1303,6 @@ function renderMatches(){
           <div class="score-team white"><label>🤍 화이트</label><input class="score-input" type="number" id="mWhite" min="0" max="99" value="0"></div>
         </div>
       </div>
-      <div class="match-row"><label>POTM</label><select id="mPotm"><option value="">— 선택 안 함 —</option>${potmOpts}</select></div>
       ${teamStatusHtml}
       <button onclick="addMatch()" style="width:100%;padding:9px;background:#0e1f0e;color:#e8d9b5;border:none;border-radius:8px;font-size:13px;font-weight:700;cursor:pointer;font-family:inherit;">기록 저장</button>
     </div>
@@ -1338,14 +1317,13 @@ function addMatch(){
   if(!date){ alert('날짜를 입력해주세요'); return; }
   const blackScore=parseInt(document.getElementById('mBlack').value)||0;
   const whiteScore=parseInt(document.getElementById('mWhite').value)||0;
-  const potm=document.getElementById('mPotm').value||null;
   // 명단은 현재 팀 배분(블랙=teamA / 화이트=teamB)에서 id·이름 함께 저장 (멤버 페이지 승점 계산용)
   const src=teams||(teamHistory.length?teamHistory[0]:null);
   const black=src&&src.teamA?src.teamA.map(p=>p.id):[];
   const white=src&&src.teamB?src.teamB.map(p=>p.id):[];
   const blackNames=src&&src.teamA?src.teamA.map(p=>p.name):[];
   const whiteNames=src&&src.teamB?src.teamB.map(p=>p.name):[];
-  matches.push({ id:Date.now().toString(), date, blackScore, whiteScore, potm, black, white, blackNames, whiteNames });
+  matches.push({ id:Date.now().toString(), date, blackScore, whiteScore, black, white, blackNames, whiteNames });
   save();
   renderMatches();
 }

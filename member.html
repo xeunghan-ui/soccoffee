@@ -2943,6 +2943,12 @@ function showUniform(){
       <div style="line-height:2.1">${undone.length?undone.map(m=>`<button onclick="pickUniformFor(${m.id})" style="background:none;border:1px solid var(--line);border-radius:6px;color:var(--cream);font-family:inherit;font-size:12px;padding:3px 9px;margin:2px 4px 2px 0;cursor:pointer">${esc(m.name)}</button>`).join(''):'<span style="font-size:13px;color:var(--muted)">모두 완료!</span>'}</div>
       <button class="btn ghost sm" style="width:100%;margin-top:12px" onclick="showUniformAll()">전체 응답 보기</button>
       <button class="btn ${confirmed?'ghost':'accent'} sm" style="width:100%;margin-top:8px" onclick="confirmUniform()">${confirmed?'확정 해제':'사이즈 확정 (잠금)'}</button></div>`;
+    if(meName()==='박승한'){
+      const done = roster.filter(m=>uniformSizeOf(m));
+      body += `<div style="margin-top:8px;border-top:1px solid var(--line);padding-top:10px">
+        <div style="font-size:12px;font-weight:800;color:var(--win);margin-bottom:6px">확정(입력) ${done.length}명 <span style="color:var(--muted);font-weight:400">· 나만 보기</span></div>
+        <div style="font-size:13px;color:var(--muted);line-height:1.9">${done.length?done.map(m=>`${esc(m.name)} <b style="color:var(--accent)">${esc(uniformSizeOf(m))}</b>`).join(' · '):'아직 없음'}</div></div>`;
+    }
   }
   _umBox('유니폼 사이즈 조사', body);
 }

@@ -2763,7 +2763,7 @@ function curSurvey(){ return SURVEY ? SURVEY : Object.assign({}, SURVEY_DEFAULT)
 // 2026 SS 유니폼 사이즈 조사
 let UNIFORM = null;                       // { sizes: { memberId: '120' } }
 const UNIFORM_SIZES = ['65','70','75','80','85','90','95','100','105','110','115','120'];
-const UNIFORM_SEED = { '박승한':'115','장세영':'120','박우성':'105','정희범':'115','최승호':'105','안재영':'110','마상현':'115','김유솔':'80','정하림':'100','정은용':'90','홍순인':'120','이일웅':'100','조수경':'100','조수연':'95','신동헌':'105','정민주':'110','이희성':'110','이민국':'105','심지수':'105','김재유':'100','한승재':'110','허은혜':'90','박원주':'100','함지상':'115','김이연':'105' };
+const UNIFORM_SEED = {};   // 초기 시드 제거 — 실제 입력(확정)한 사람만 사이즈 표시, 나머지는 미정
 function uniformSizeOf(m){ const s=(UNIFORM&&UNIFORM.sizes)||{}; return (s[m.id]!=null) ? s[m.id] : (UNIFORM_SEED[m.name]||null); }
 // 유니폼 조사 대상: 전체 회원(탈퇴 제외 · 휴면·친구 포함)
 function uniformRoster(){

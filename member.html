@@ -1016,6 +1016,7 @@ async function removeRiderByIndex(rideId, index, target) {
 
 /* ---------- 운영진 권한 (로그인한 사람이 운영진 명단에 있으면 자동) ---------- */
 const ADMIN_NAMES = ['박승한'];
+const INJURED_NAMES = ['함지상'];   // 부상자 — 랭킹에서 제외
 // 멤버 역할(표시용). type:'admin'=운영진 색, 'role'=그외 역할 색
 const MEMBER_ROLES = {
   '박승한':{role:'구장 예약 및 총괄',type:'admin'},
@@ -2506,7 +2507,20 @@ async function renderHome() {
     </div>`;
   });
 
-  let html = dash + `<div class="section-title">다가오는 매치</div>`;
+  let uniHome = '';
+  if (meActive && me != null) {
+    const _um = uniformRoster().find(x=>x.id===me);
+    if (_um) {
+      const _sz = uniformSizeOf(_um);
+      const _conf = !!(UNIFORM && UNIFORM.confirmed);
+      const _rt = _sz ? `내 사이즈 <b style="color:var(--accent)">${esc(_sz)}</b>${_conf?' · 확정됨':' · 수정 가능'}` : '아직 입력 안 함 — 눌러서 입력';
+      uniHome = `<button class="card" style="width:100%;box-sizing:border-box;padding:14px 16px;margin-bottom:12px;display:flex;align-items:center;justify-content:space-between;gap:12px;cursor:pointer;font-family:inherit;text-align:left" onclick="showUniform()">
+        <span style="min-width:0"><span style="display:block;font-size:14px;font-weight:800;color:#ece6d2">SS 유니폼 사이즈</span><span style="display:block;font-size:12px;color:${_sz?'var(--muted)':'var(--accent)'};margin-top:2px">${_rt}</span></span>
+        <span style="font-size:12px;font-weight:800;color:var(--accent);white-space:nowrap">${_sz?(_conf?'확인':'수정'):'입력'} →</span>
+      </button>`;
+    }
+  }
+  let html = dash + uniHome + `<div class="section-title">다가오는 매치</div>`;
   html += sessions.length > 1
     ? `<div class="sess-carousel" id="sessCarousel" onscroll="updateSessDots()">${sessCards.join('')}</div>
        <div class="sess-dots">
@@ -2904,12 +2918,19 @@ function showUniform(){
   const roster=uniformRoster();
   const meM = me!=null ? roster.find(x=>x.id===me) : null;
   const mySize = meM ? uniformSizeOf(meM) : null;
+  const confirmed = !!(UNIFORM && UNIFORM.confirmed);
   let body = `<p class="sub" style="margin:0 0 12px">SS 유니폼 사이즈를 골라주세요. (단위 cm · 상의)</p>`;
+  if(confirmed) body += `<div style="background:var(--win-bg);color:var(--win);font-size:12px;font-weight:800;text-align:center;padding:8px;border-radius:8px;margin-bottom:10px">사이즈가 확정됐어요 (수정 불가)</div>`;
   if(meM){
-    body += `<div class="field"><label>내 사이즈 <span style="color:var(--muted);font-weight:400">등번호 ${meM.jersey!=null?meM.jersey:'-'}</span></label>
-      <select id="unifSel" class="sv-text">${['<option value="">사이즈 선택</option>'].concat(UNIFORM_SIZES.map(s=>`<option value="${s}" ${mySize===s?'selected':''}>${s}</option>`)).join('')}</select></div>
-      <button class="btn accent" style="width:100%;margin-top:8px" onclick="saveMyUniform()">${mySize?'수정 저장':'제출'}</button>
-      ${mySize?`<p class="hint" style="margin-top:6px;text-align:center">현재 <b style="color:#ece6d2">${esc(mySize)}</b> · 언제든 수정 가능</p>`:''}`;
+    if(confirmed){
+      body += `<div class="field"><label>내 사이즈 <span style="color:var(--muted);font-weight:400">등번호 ${meM.jersey!=null?meM.jersey:'-'}</span></label>
+        <div class="sv-text" style="opacity:.75">${mySize?esc(mySize):'미입력'}</div></div>`;
+    } else {
+      body += `<div class="field"><label>내 사이즈 <span style="color:var(--muted);font-weight:400">등번호 ${meM.jersey!=null?meM.jersey:'-'}</span></label>
+        <select id="unifSel" class="sv-text">${['<option value="">사이즈 선택</option>'].concat(UNIFORM_SIZES.map(s=>`<option value="${s}" ${mySize===s?'selected':''}>${s}</option>`)).join('')}</select></div>
+        <button class="btn accent" style="width:100%;margin-top:8px" onclick="saveMyUniform()">${mySize?'수정 저장':'제출'}</button>
+        ${mySize?`<p class="hint" style="margin-top:6px;text-align:center">현재 <b style="color:#ece6d2">${esc(mySize)}</b> · 언제든 수정 가능</p>`:''}`;
+    }
   } else {
     body += `<div class="empty" style="font-size:13px">조사 대상이 아니에요.</div>`;
   }
@@ -2920,18 +2941,29 @@ function showUniform(){
     body += `<div style="margin-top:8px;border-top:1px solid var(--line);padding-top:10px">
       <div style="font-size:12px;font-weight:800;color:var(--red);margin-bottom:6px">미응답 ${undone.length}명 <span style="color:var(--muted);font-weight:400">· 이름 눌러 대리 입력</span></div>
       <div style="line-height:2.1">${undone.length?undone.map(m=>`<button onclick="pickUniformFor(${m.id})" style="background:none;border:1px solid var(--line);border-radius:6px;color:var(--cream);font-family:inherit;font-size:12px;padding:3px 9px;margin:2px 4px 2px 0;cursor:pointer">${esc(m.name)}</button>`).join(''):'<span style="font-size:13px;color:var(--muted)">모두 완료!</span>'}</div>
-      <button class="btn ghost sm" style="width:100%;margin-top:12px" onclick="showUniformAll()">전체 응답 보기</button></div>`;
+      <button class="btn ghost sm" style="width:100%;margin-top:12px" onclick="showUniformAll()">전체 응답 보기</button>
+      <button class="btn ${confirmed?'ghost':'accent'} sm" style="width:100%;margin-top:8px" onclick="confirmUniform()">${confirmed?'확정 해제':'사이즈 확정 (잠금)'}</button></div>`;
   }
   _umBox('유니폼 사이즈 조사', body);
 }
 async function saveMyUniform(){
   const me=getMe(); if(me==null){ toast('로그인이 필요해요'); return; }
+  if(UNIFORM && UNIFORM.confirmed){ toast('사이즈가 확정돼 수정할 수 없어요'); return; }
   const sel=document.getElementById('unifSel'); const v=sel?sel.value:'';
   if(!v){ toast('사이즈를 선택해 주세요'); return; }
   const sizes=Object.assign({}, (UNIFORM&&UNIFORM.sizes)||{}); sizes[me]=v;
-  const next={sizes}; const bak=UNIFORM; UNIFORM=next;
+  const next=Object.assign({}, UNIFORM||{}, {sizes}); const bak=UNIFORM; UNIFORM=next;
   const ok=await saveSettings({uniform:next});
   if(ok){ toast('저장했어요'); showUniform(); } else { UNIFORM=bak; toast('저장 중 오류가 났어요'); }
+}
+async function confirmUniform(){
+  if(!isAdmin()) return;
+  const on = !(UNIFORM && UNIFORM.confirmed);
+  if(on && !confirm('사이즈를 확정할까요? 멤버는 더 이상 수정할 수 없어요.')) return;
+  const next=Object.assign({}, UNIFORM||{}, {sizes:(UNIFORM&&UNIFORM.sizes)||{}, confirmed:on});
+  const bak=UNIFORM; UNIFORM=next;
+  const ok=await saveSettings({uniform:next});
+  if(ok){ toast(on?'사이즈를 확정했어요':'확정을 해제했어요'); showUniform(); } else { UNIFORM=bak; toast('저장 중 오류가 났어요'); }
 }
 function showUniformAll(){
   if(!isAdmin()) return;
@@ -2961,7 +2993,7 @@ async function saveUniformFor(id){
   const sel=document.getElementById('unifSelA'); const v=sel?sel.value:'';
   if(!v){ toast('사이즈를 선택해 주세요'); return; }
   const sizes=Object.assign({}, (UNIFORM&&UNIFORM.sizes)||{}); sizes[id]=v;
-  const next={sizes}; const bak=UNIFORM; UNIFORM=next;
+  const next=Object.assign({}, UNIFORM||{}, {sizes}); const bak=UNIFORM; UNIFORM=next;
   const ok=await saveSettings({uniform:next});
   if(ok){ toast('저장했어요'); showUniform(); } else { UNIFORM=bak; toast('저장 중 오류가 났어요'); }
 }
@@ -3882,7 +3914,7 @@ async function renderRank(){
   if (rankYear && !years.includes(rankYear)) rankYear = '';
   const sess = rankYear ? allSess.filter(s=>(s.date||'').startsWith(rankYear)) : allSess;
   const yearLabel = rankYear ? `${rankYear}년` : '전체';
-  const elig = players.filter(p=>{ const st=p.status||'active'; return st!=='former' && st!=='friends'; });
+  const elig = players.filter(p=>{ const st=p.status||'active'; return st!=='former' && st!=='friends' && !INJURED_NAMES.includes(p.name); });
 
   let data, ranks, valFn, subFn, pctFn, note;
   if (rankTab==='att'){

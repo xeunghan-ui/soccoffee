@@ -2512,7 +2512,7 @@ async function renderHome() {
     const _um = uniformRoster().find(x=>x.id===me);
     if (_um) {
       const _sz = uniformSizeOf(_um);
-      const _conf = !!(UNIFORM && UNIFORM.confirmed);
+      const _conf = ((UNIFORM && UNIFORM.confirmedIds)||[]).includes(me);
       const _rt = _sz ? `내 사이즈 <b style="color:var(--accent)">${esc(_sz)}</b>${_conf?' · 확정됨':' · 수정 가능'}` : '아직 입력 안 함 — 눌러서 입력';
       uniHome = `<button class="card" style="width:100%;box-sizing:border-box;padding:14px 16px;margin-bottom:12px;display:flex;align-items:center;justify-content:space-between;gap:12px;cursor:pointer;font-family:inherit;text-align:left" onclick="showUniform()">
         <span style="min-width:0"><span style="display:block;font-size:14px;font-weight:800;color:#ece6d2">2026 SS 유니폼 사이즈</span><span style="display:block;font-size:12px;color:${_sz?'var(--muted)':'var(--accent)'};margin-top:2px">${_rt}</span></span>
@@ -2918,43 +2918,44 @@ function showUniform(){
   const roster=uniformRoster();
   const meM = me!=null ? roster.find(x=>x.id===me) : null;
   const mySize = meM ? uniformSizeOf(meM) : null;
-  const confirmed = !!(UNIFORM && UNIFORM.confirmed);
+  const confIds = (UNIFORM && UNIFORM.confirmedIds) || [];
+  const myConfirmed = me!=null && confIds.includes(me);
   let body = `<p class="sub" style="margin:0 0 12px">2026 SS 유니폼 사이즈를 골라주세요. (단위 cm · 상의)</p>`;
-  if(confirmed) body += `<div style="background:var(--win-bg);color:var(--win);font-size:12px;font-weight:800;text-align:center;padding:8px;border-radius:8px;margin-bottom:10px">사이즈가 확정됐어요 (수정 불가)</div>`;
   if(meM){
-    if(confirmed){
+    if(myConfirmed){
       body += `<div class="field"><label>내 사이즈 <span style="color:var(--muted);font-weight:400">등번호 ${meM.jersey!=null?meM.jersey:'-'}</span></label>
-        <div class="sv-text" style="opacity:.75">${mySize?esc(mySize):'미입력'}</div></div>`;
+        <div class="sv-text" style="opacity:.85">${mySize?esc(mySize):'미입력'} <span style="color:var(--win);font-size:12px;font-weight:800;margin-left:4px">확정됨</span></div></div>
+        <p class="hint" style="text-align:center;margin-top:6px">확정됐어요. 수정하려면 운영진(박승한)에게 문의해 주세요.</p>`;
     } else {
       body += `<div class="field"><label>내 사이즈 <span style="color:var(--muted);font-weight:400">등번호 ${meM.jersey!=null?meM.jersey:'-'}</span></label>
         <select id="unifSel" class="sv-text">${['<option value="">사이즈 선택</option>'].concat(UNIFORM_SIZES.map(s=>`<option value="${s}" ${mySize===s?'selected':''}>${s}</option>`)).join('')}</select></div>
         <button class="btn accent" style="width:100%;margin-top:8px" onclick="saveMyUniform()">${mySize?'수정 저장':'제출'}</button>
-        ${mySize?`<p class="hint" style="margin-top:6px;text-align:center">현재 <b style="color:#ece6d2">${esc(mySize)}</b> · 언제든 수정 가능</p>`:''}`;
+        ${mySize?`<button class="btn sm" style="width:100%;margin-top:6px;background:var(--win);color:#fff;border:none" onclick="confirmMyUniform()">사이즈 확정</button>`:''}`;
     }
   } else {
     body += `<div class="empty" style="font-size:13px">조사 대상이 아니에요.</div>`;
   }
   const doneCount = roster.filter(m=>uniformSizeOf(m)).length;
-  body += `<p class="hint" style="margin-top:10px">응답 <b style="color:#ece6d2">${doneCount}</b> / ${roster.length}명</p>`;
+  const confCount = roster.filter(m=>confIds.includes(m.id)).length;
+  body += `<p class="hint" style="margin-top:10px">응답 <b style="color:#ece6d2">${doneCount}</b> / ${roster.length}명 · 확정 <b style="color:var(--win)">${confCount}</b>명</p>`;
   if(admin){
     const undone = roster.filter(m=>!uniformSizeOf(m));
     body += `<div style="margin-top:8px;border-top:1px solid var(--line);padding-top:10px">
       <div style="font-size:12px;font-weight:800;color:var(--red);margin-bottom:6px">미응답 ${undone.length}명 <span style="color:var(--muted);font-weight:400">· 이름 눌러 대리 입력</span></div>
       <div style="line-height:2.1">${undone.length?undone.map(m=>`<button onclick="pickUniformFor(${m.id})" style="background:none;border:1px solid var(--line);border-radius:6px;color:var(--cream);font-family:inherit;font-size:12px;padding:3px 9px;margin:2px 4px 2px 0;cursor:pointer">${esc(m.name)}</button>`).join(''):'<span style="font-size:13px;color:var(--muted)">모두 완료!</span>'}</div>
-      <button class="btn ghost sm" style="width:100%;margin-top:12px" onclick="showUniformAll()">전체 응답 보기</button>
-      <button class="btn ${confirmed?'ghost':'accent'} sm" style="width:100%;margin-top:8px" onclick="confirmUniform()">${confirmed?'확정 해제':'사이즈 확정 (잠금)'}</button></div>`;
+      <button class="btn ghost sm" style="width:100%;margin-top:12px" onclick="showUniformAll()">전체 응답 보기</button></div>`;
     if(meName()==='박승한'){
-      const done = roster.filter(m=>uniformSizeOf(m));
+      const confList = roster.filter(m=>confIds.includes(m.id));
       body += `<div style="margin-top:8px;border-top:1px solid var(--line);padding-top:10px">
-        <div style="font-size:12px;font-weight:800;color:var(--win);margin-bottom:6px">확정(입력) ${done.length}명 <span style="color:var(--muted);font-weight:400">· 나만 보기</span></div>
-        <div style="font-size:13px;color:var(--muted);line-height:1.9">${done.length?done.map(m=>`${esc(m.name)} <b style="color:var(--accent)">${esc(uniformSizeOf(m))}</b>`).join(' · '):'아직 없음'}</div></div>`;
+        <div style="font-size:12px;font-weight:800;color:var(--win);margin-bottom:6px">확정 ${confList.length}명 <span style="color:var(--muted);font-weight:400">· 눌러서 확정 해제</span></div>
+        <div style="line-height:2.1">${confList.length?confList.map(m=>`<button onclick="unconfirmUniformFor(${m.id})" style="background:var(--win-bg);border:1px solid var(--win);border-radius:6px;color:var(--win);font-family:inherit;font-size:12px;font-weight:800;padding:3px 9px;margin:2px 4px 2px 0;cursor:pointer">${esc(m.name)} ${esc(uniformSizeOf(m))} ✕</button>`).join(''):'<span style="font-size:13px;color:var(--muted)">아직 없음</span>'}</div></div>`;
     }
   }
   _umBox('유니폼 사이즈 조사', body);
 }
 async function saveMyUniform(){
   const me=getMe(); if(me==null){ toast('로그인이 필요해요'); return; }
-  if(UNIFORM && UNIFORM.confirmed){ toast('사이즈가 확정돼 수정할 수 없어요'); return; }
+  if(((UNIFORM&&UNIFORM.confirmedIds)||[]).includes(me)){ toast('확정된 사이즈예요. 운영진(박승한)에게 문의해 주세요'); return; }
   const sel=document.getElementById('unifSel'); const v=sel?sel.value:'';
   if(!v){ toast('사이즈를 선택해 주세요'); return; }
   const sizes=Object.assign({}, (UNIFORM&&UNIFORM.sizes)||{}); sizes[me]=v;
@@ -2962,14 +2963,23 @@ async function saveMyUniform(){
   const ok=await saveSettings({uniform:next});
   if(ok){ toast('저장했어요'); showUniform(); } else { UNIFORM=bak; toast('저장 중 오류가 났어요'); }
 }
-async function confirmUniform(){
-  if(!isAdmin()) return;
-  const on = !(UNIFORM && UNIFORM.confirmed);
-  if(on && !confirm('사이즈를 확정할까요? 멤버는 더 이상 수정할 수 없어요.')) return;
-  const next=Object.assign({}, UNIFORM||{}, {sizes:(UNIFORM&&UNIFORM.sizes)||{}, confirmed:on});
+async function confirmMyUniform(){
+  const me=getMe(); if(me==null){ toast('로그인이 필요해요'); return; }
+  const sz = uniformSizeOf(uniformRoster().find(x=>x.id===me)||{});
+  if(!sz){ toast('먼저 사이즈를 선택·저장해 주세요'); return; }
+  const ids = new Set(((UNIFORM&&UNIFORM.confirmedIds)||[])); ids.add(me);
+  const next=Object.assign({}, UNIFORM||{}, {confirmedIds:[...ids]});
   const bak=UNIFORM; UNIFORM=next;
   const ok=await saveSettings({uniform:next});
-  if(ok){ toast(on?'사이즈를 확정했어요':'확정을 해제했어요'); showUniform(); } else { UNIFORM=bak; toast('저장 중 오류가 났어요'); }
+  if(ok){ toast('사이즈를 확정했어요'); showUniform(); } else { UNIFORM=bak; toast('저장 중 오류가 났어요'); }
+}
+async function unconfirmUniformFor(id){
+  if(meName()!=='박승한'){ toast('확정 해제는 박승한(운영진)만 가능해요'); return; }
+  const ids=((UNIFORM&&UNIFORM.confirmedIds)||[]).filter(x=>x!==id);
+  const next=Object.assign({}, UNIFORM||{}, {confirmedIds:ids});
+  const bak=UNIFORM; UNIFORM=next;
+  const ok=await saveSettings({uniform:next});
+  if(ok){ toast('확정을 해제했어요'); showUniform(); } else { UNIFORM=bak; toast('저장 중 오류가 났어요'); }
 }
 function showUniformAll(){
   if(!isAdmin()) return;

@@ -2233,7 +2233,7 @@ function renderMore() {
   const teamLink = `<a class="more-item" href="team/" target="_blank" rel="noopener"><div class="mi-name">팀빌더 ↗</div><div class="mi-desc">명단 · 등번호 · 휴면 · 팀 배분</div></a>`;
   const guideBtn = `<button class="more-item" onclick="showAddHomeGuide()"><div class="mi-name">홈 화면에 추가</div><div class="mi-desc">앱처럼 바로 열기 (설치 가이드)</div></button>`;
   const introLink = `<a class="more-item" href="index.html"><div class="mi-name">싸커피 소개</div><div class="mi-desc">소개(랜딩) 페이지로 이동 · 로그인 유지</div></a>`;
-  const uniformBtn = `<button class="more-item" onclick="showUniform()"><div class="mi-name">유니폼 사이즈 조사</div><div class="mi-desc">SS 유니폼 · 내 사이즈 입력·수정</div></button>`;
+  const uniformBtn = `<button class="more-item" onclick="showUniform()"><div class="mi-name">유니폼 사이즈 조사</div><div class="mi-desc">2026 SS 유니폼 · 내 사이즈 입력·수정</div></button>`;
   const bankBtn = `<button class="more-item" onclick="showBankInfo()"><div class="mi-name">회비 계좌 안내</div><div class="mi-desc">입금 계좌 확인 · 복사</div></button>`;
   const pinBtn = `<button class="more-item" onclick="changeMyPin()"><div class="mi-name">내 PIN 변경</div><div class="mi-desc">로그인 PIN 4자리 바꾸기</div></button>`;
   const logoutBtn = `<button class="more-item" style="border-color:rgba(189,100,82,.45)" onclick="logout()"><div class="mi-name" style="color:#e08a76">로그아웃</div><div class="mi-desc">이 기기에서 로그아웃</div></button>`;
@@ -2515,7 +2515,7 @@ async function renderHome() {
       const _conf = !!(UNIFORM && UNIFORM.confirmed);
       const _rt = _sz ? `내 사이즈 <b style="color:var(--accent)">${esc(_sz)}</b>${_conf?' · 확정됨':' · 수정 가능'}` : '아직 입력 안 함 — 눌러서 입력';
       uniHome = `<button class="card" style="width:100%;box-sizing:border-box;padding:14px 16px;margin-bottom:12px;display:flex;align-items:center;justify-content:space-between;gap:12px;cursor:pointer;font-family:inherit;text-align:left" onclick="showUniform()">
-        <span style="min-width:0"><span style="display:block;font-size:14px;font-weight:800;color:#ece6d2">SS 유니폼 사이즈</span><span style="display:block;font-size:12px;color:${_sz?'var(--muted)':'var(--accent)'};margin-top:2px">${_rt}</span></span>
+        <span style="min-width:0"><span style="display:block;font-size:14px;font-weight:800;color:#ece6d2">2026 SS 유니폼 사이즈</span><span style="display:block;font-size:12px;color:${_sz?'var(--muted)':'var(--accent)'};margin-top:2px">${_rt}</span></span>
         <span style="font-size:12px;font-weight:800;color:var(--accent);white-space:nowrap">${_sz?(_conf?'확인':'수정'):'입력'} →</span>
       </button>`;
     }
@@ -2760,7 +2760,7 @@ let BANK = null;                         // { bank, number, holder } — 회비 
 let SURVEY = null;                        // { title, link, done:[memberId] } — 설문(링크 + 완료 자기보고)
 const SURVEY_DEFAULT = { title:'클럽 설문', link:'', done:[] };
 function curSurvey(){ return SURVEY ? SURVEY : Object.assign({}, SURVEY_DEFAULT); }
-// SS 유니폼 사이즈 조사
+// 2026 SS 유니폼 사이즈 조사
 let UNIFORM = null;                       // { sizes: { memberId: '120' } }
 const UNIFORM_SIZES = ['65','70','75','80','85','90','95','100','105','110','115','120'];
 const UNIFORM_SEED = { '박승한':'115','장세영':'120','박우성':'105','정희범':'115','최승호':'105','안재영':'110','마상현':'115','김유솔':'80','정하림':'100','정은용':'90','홍순인':'120','이일웅':'100','조수경':'100','조수연':'95','신동헌':'105','정민주':'110','이희성':'110','이민국':'105','심지수':'105','김재유':'100','한승재':'110','허은혜':'90','박원주':'100','함지상':'115','김이연':'105' };
@@ -2908,7 +2908,7 @@ async function setSurvey(){
   const ok = await saveSettings({ survey: next });
   if(ok){ toast('설문을 저장했어요'); showSurvey(); } else { SURVEY = bak; toast('저장 중 오류가 났어요'); }
 }
-// SS 유니폼 사이즈 조사 (앱 내 입력·수정 · 미응답 추적)
+// 2026 SS 유니폼 사이즈 조사 (앱 내 입력·수정 · 미응답 추적)
 function _umBox(title, body){
   let h=document.getElementById('mmHost'); if(!h){h=document.createElement('div');h.id='mmHost';document.body.appendChild(h);}
   h.innerHTML = `<div class="mm-back" onclick="if(event.target===this)closeMemberCard()"><div class="mm-box"><div class="mm-head"><div class="mm-name">${title}</div><button class="mm-x" onclick="closeMemberCard()">×</button></div>${body}</div></div>`;
@@ -2919,7 +2919,7 @@ function showUniform(){
   const meM = me!=null ? roster.find(x=>x.id===me) : null;
   const mySize = meM ? uniformSizeOf(meM) : null;
   const confirmed = !!(UNIFORM && UNIFORM.confirmed);
-  let body = `<p class="sub" style="margin:0 0 12px">SS 유니폼 사이즈를 골라주세요. (단위 cm · 상의)</p>`;
+  let body = `<p class="sub" style="margin:0 0 12px">2026 SS 유니폼 사이즈를 골라주세요. (단위 cm · 상의)</p>`;
   if(confirmed) body += `<div style="background:var(--win-bg);color:var(--win);font-size:12px;font-weight:800;text-align:center;padding:8px;border-radius:8px;margin-bottom:10px">사이즈가 확정됐어요 (수정 불가)</div>`;
   if(meM){
     if(confirmed){

@@ -2936,8 +2936,16 @@ async function saveMyUniform(){
 function showUniformAll(){
   if(!isAdmin()) return;
   const roster=uniformRoster();
-  const rows=roster.map(m=>{ const sz=uniformSizeOf(m); return `<div onclick="pickUniformFor(${m.id})" style="display:flex;justify-content:space-between;font-size:13px;padding:8px 0;border-bottom:1px solid var(--line);cursor:pointer"><span style="color:var(--cream)">${m.jersey!=null?`<span style="color:var(--muted)">${m.jersey}</span> `:''}${esc(m.name)}</span><span style="color:${sz?'var(--accent)':'var(--muted)'};font-weight:800">${sz||'미응답'} ›</span></div>`; }).join('');
-  _umBox('유니폼 전체 응답', `<p class="hint" style="margin:0 0 8px">이름 눌러 수정 · 등번호 · 이름 · 사이즈</p>${rows}<button class="btn ghost sm" style="width:100%;margin-top:12px" onclick="showUniform()">← 돌아가기</button>`);
+  const savedMap = (UNIFORM&&UNIFORM.sizes)||{};
+  const rows=roster.map(m=>{
+    const sz=uniformSizeOf(m);
+    const seedSz=UNIFORM_SEED[m.name];
+    const changed = savedMap[m.id]!=null && seedSz!=null && String(savedMap[m.id])!==String(seedSz);
+    const tag = changed ? ` <span style="color:var(--win);font-size:11px;font-weight:800">변경</span> <span style="color:var(--muted);font-size:11px;font-weight:400">(${esc(seedSz)}→)</span>` : '';
+    return `<div onclick="pickUniformFor(${m.id})" style="display:flex;justify-content:space-between;align-items:center;font-size:13px;padding:8px 0;border-bottom:1px solid var(--line);cursor:pointer"><span style="color:var(--cream)">${m.jersey!=null?`<span style="color:var(--muted)">${m.jersey}</span> `:''}${esc(m.name)}</span><span style="color:${sz?'var(--accent)':'var(--muted)'};font-weight:800;white-space:nowrap">${tag}${sz||'미응답'} ›</span></div>`;
+  }).join('');
+  const changedCount = roster.filter(m=>{ const seedSz=UNIFORM_SEED[m.name]; return savedMap[m.id]!=null && seedSz!=null && String(savedMap[m.id])!==String(seedSz); }).length;
+  _umBox('유니폼 전체 응답', `<p class="hint" style="margin:0 0 8px">이름 눌러 수정 · 변경 ${changedCount}명</p>${rows}<button class="btn ghost sm" style="width:100%;margin-top:12px" onclick="showUniform()">← 돌아가기</button>`);
 }
 function pickUniformFor(id){
   if(!isAdmin()) return;

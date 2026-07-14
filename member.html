@@ -1724,7 +1724,7 @@ function activeMembers(monthStr) {
                                  a.name.localeCompare(b.name, 'ko'));
 }
 
-// 투표 대상: 가입한 회원 전체(휴면 포함), 탈퇴·싸커피 친구 제외
+// 투표 대상: 가입한 회원 중 해당 월 활동 회원. 탈퇴·싸커피 친구·해당 월 휴면 제외
 function votingMembers(monthStr) {
   const [yN, moN] = monthStr.split('-').map(Number);
   const monthEnd = new Date(yN, moN, 0);
@@ -1732,6 +1732,7 @@ function votingMembers(monthStr) {
   return ROSTER.filter(p => {
       const st = p.status || 'active';
       if (st === 'former' || st === 'friends') return false;
+      if (isDormantFor(p, monthStr)) return false;   // 휴면은 투표 불가(후보·투표자 모두 제외)
       return p.joinDate && new Date(p.joinDate) <= monthEnd;
     })
     .map(p => { const t = TEAM_SHEET[p.name] || { team: '기타' }; return { ...p, jersey: t.jersey, eng: t.eng || '', team: t.team, cap: !!t.cap }; })
@@ -1794,7 +1795,7 @@ function refreshPotmIfOpen() {
 async function renderPotm() {
   const el = document.getElementById('potmContent');
   const month = potmMonth();
-  const members = votingMembers(month);   // 투표 대상: 휴면 포함, 친구·탈퇴 제외
+  const members = votingMembers(month);   // 투표 대상: 그 달 활동 회원(친구·탈퇴·휴면 제외)
   potmVoterId = getMe();   // 로그인한 본인
 
   // 1~14일(현재 달 투표 잠금 기간) → 전 달 확정 결과를 모두에게 노출 (투표 없음)
@@ -1952,7 +1953,7 @@ function syncVoteBtn() {
 }
 async function submitVote() {
   if (!potmVoterId) return;
-  // 투표 대상(가입 회원, 휴면 포함·친구 제외)만 투표 가능 — UI 우회·명단 변동 대비 제출 시 재검증
+  // 투표 대상(그 달 활동 회원, 친구·휴면 제외)만 투표 가능 — UI 우회·명단 변동 대비 제출 시 재검증
   if (!votingMembers(potmMonth()).some(m => m.id === potmVoterId)) { toast('투표 대상이 아니에요'); return renderPotm(); }
   if (!potmPick.mvp || !potmPick.growth) return toast('두 부문 모두 선택해 주세요');
   if (!isVotingOpen() && !isAdmin()) { toast(`투표는 ${fmtOpenTime(votingOpensAt())}부터 가능해요`); return renderPotm(); }
@@ -2355,7 +2356,7 @@ function renderFaq() {
   const refs = [
     ['로그인 / PIN', ['이름 선택 + <b>PIN 4자리</b>', '첫 로그인 때 PIN 등록', '변경: 더보기 → 내 PIN 변경', '잊으면 운영진에 초기화 요청']],
     ['참석 · 일정', ['홈/일정 탭에서 참석·불참·미정 선택', '홈에서 <b>미응답 일정 개수</b> 알림']],
-    ['MVP · 성장 투표', ['매월 <b>15일~말일</b> 진행', '1~14일: 지난달 결과 표시', '대상: 가입 회원(휴면 포함) · <b>친구 제외</b>', '두 부문 1표씩 · 제출 후 변경 불가']],
+    ['MVP · 성장 투표', ['매월 <b>15일~말일</b> 진행', '1~14일: 지난달 결과 표시', '대상: 그 달 <b>활동 회원</b> · <b>친구·휴면 제외</b>', '두 부문 1표씩 · 제출 후 변경 불가']],
     ['WHITE / BLACK 팀', ['경기 밸런스용 두 팀', '팀 구분 켠 달엔 이름 옆 팀 표시']],
     ['카풀', ['운전자가 출발지 · 좌석 등록', '탑승자는 빈 좌석 눌러 신청', '지난 카풀은 접혀서 정리']],
     ['내 프로필 · 기록', ['홈에서 가입월 · 기간 · 참여 · 출석률 · 수상 확인', '스킬(스파이더 차트) 직접 편집', '<b>사진으로 저장</b>해 공유']],

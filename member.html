@@ -774,6 +774,7 @@
   .act-toggle { display: flex; gap: 4px; flex-shrink: 0; }
   .act-toggle button { font-family: inherit; font-size: 11px; font-weight: 800; padding: 3px 11px; border-radius: 999px; border: 1px solid var(--line); background: transparent; color: var(--muted); cursor: pointer; }
   .act-toggle button.on { background: var(--accent); color: #14281b; border-color: var(--accent); }
+  .mini-dot { display: inline-block; width: 7px; height: 7px; border-radius: 50%; background: var(--alert); vertical-align: middle; margin-left: 4px; box-shadow: 0 0 0 2px rgba(0,0,0,.15); }
   /* 팀 현황(팀빌더 명단) 2열 그리드 */
   .sq-grp-h { font-size: 12px; font-weight: 800; color: var(--muted); margin: 6px 0 8px; display: flex; justify-content: space-between; }
   .sq-grp-h span { font-weight: 600; }
@@ -920,7 +921,7 @@
   <button class="bnav-item active" data-tab="home" onclick="switchTab('home')"><span class="bn-ico">⌂</span>홈</button>
   <button class="bnav-item" data-tab="att" onclick="switchTab('att')"><span class="bn-ico">◷</span>일정<span class="bn-badge" id="attBadge" style="display:none"></span></button>
   <button class="bnav-item" data-tab="member" onclick="switchTab('squad')"><span class="bn-ico">▦</span>멤버<span class="nav-dot" id="memberDot" style="display:none"></span></button>
-  <button class="bnav-item" data-tab="more" onclick="switchTab('more')"><span class="bn-ico">≡</span>더보기</button>
+  <button class="bnav-item" data-tab="more" onclick="switchTab('more')"><span class="bn-ico">≡</span>더보기<span class="nav-dot" id="dotMore" style="display:none"></span></button>
 </nav>
 
 <div class="toast" id="toast"></div>
@@ -1569,11 +1570,11 @@ function potmMonthLabel(m) {
   const [y, mo] = m.split('-');
   return `${y}년 ${parseInt(mo)}월`;
 }
-// 회비 표시 월: 매월 25일부터는 다음 달 회비를 띄움
+// 회비 표시 월: 매월 15일부터 다음 달 회비를 띄움 (활동/휴면 확인·투표와 동일 기준)
 function duesMonth() {
   const d = new Date();
   let y = d.getFullYear(), m = d.getMonth(); // 0-indexed
-  if (d.getDate() >= 25) { m += 1; if (m > 11) { m = 0; y += 1; } }
+  if (d.getDate() >= 15) { m += 1; if (m > 11) { m = 0; y += 1; } }
   return `${y}-${String(m + 1).padStart(2, '0')}`;
 }
 // 홈 상태박스 기준월: 매월 15일부터 다음 달
@@ -2228,7 +2229,8 @@ function renderMore() {
     `<button class="more-item" onclick="switchTab('${t}')"><div class="mi-name">${name}</div><div class="mi-desc">${desc}</div></button>`;
   const adminBtn = ([key, name, desc, kind]) => {
     const click = kind === 'ops' ? `openOps('${key}')` : `switchTab('${key}')`;
-    return `<button class="more-item" onclick="${click}"><div class="mi-name">${name}</div><div class="mi-desc">${desc}</div></button>`;
+    const dot = (key === 'dues' && _duesUnpaidFlag) ? ' <span class="mini-dot"></span>' : '';
+    return `<button class="more-item" onclick="${click}"><div class="mi-name">${name}${dot}</div><div class="mi-desc">${desc}</div></button>`;
   };
   const teamLink = `<a class="more-item" href="team/" target="_blank" rel="noopener"><div class="mi-name">팀빌더 ↗</div><div class="mi-desc">명단 · 등번호 · 휴면 · 팀 배분</div></a>`;
   const guideBtn = `<button class="more-item" onclick="showAddHomeGuide()"><div class="mi-name">홈 화면에 추가</div><div class="mi-desc">앱처럼 바로 열기 (설치 가이드)</div></button>`;
@@ -2286,9 +2288,25 @@ async function refreshNewBadges(){
       potmNew = !(vm.some(v=>v.voter_id===me) && vg.some(v=>v.voter_id===me));
     }
   } catch(e){}
+  // 회비 미납 점: 이번(표시)달 활동 회원인데 아직 미납이면 표시
+  let duesUnpaid = false;
+  try {
+    if (me != null) {
+      const dm = duesMonth();
+      const meP = ROSTER.find(x=>x.id===me);
+      const st = meP ? (meP.status||'active') : 'former';
+      if (meP && st!=='former' && st!=='friends' && !isDormantFor(meP, dm)) {
+        const dd = await fetchDues(dm);
+        duesUnpaid = !dd.some(d=>d.member_id===me && d.paid);
+      }
+    }
+  } catch(e){}
+  _duesUnpaidFlag = duesUnpaid;
   const set = (id,on)=>{ const e=document.getElementById(id); if(e) e.style.display = on ? 'block' : 'none'; };
   set('dotList', ridesNew); set('dotPotm', potmNew); set('memberDot', ridesNew || potmNew);
+  set('dotMore', duesUnpaid && isAdmin());   // 더보기→회비는 운영진 경로. 일반 멤버는 홈 카드에 점 표시
 }
+let _duesUnpaidFlag = false;
 function markRidesSeen(rides){
   const newest = (rides && rides[0] && rides[0].created_at) || new Date().toISOString();
   localStorage.setItem('seen_rides', newest);
@@ -2365,14 +2383,15 @@ async function homeQuickAtt(sid, status){
   await rerender(renderHome);
   refreshAttBadge();
 }
-// 홈 상태박스: 본인 회비를 해당 월 납부로 표시
-async function homePayDue(memberId, month){
+// 홈 상태박스: 본인 회비를 해당 월 납부/미납으로 토글 표시 (활동/휴면과 동일한 버튼 방식)
+async function homeSetDue(memberId, month, paid){
   if (!getMe() || (memberId !== getMe() && !isAdmin())) return;
   const m = ROSTER.find(x=>x.id===memberId);
-  const ok = await setDuesPaid(month, memberId, true, dueAmount(m?m.name:''));
+  const ok = await setDuesPaid(month, memberId, paid, dueAmount(m?m.name:''));
   if (!ok) return;
-  toast('납부로 표시했어요');
+  toast(paid ? '납부로 표시했어요' : '미납으로 바꿨어요');
   await rerender(renderHome);
+  refreshNewBadges();
 }
 
 async function renderHome() {
@@ -2448,9 +2467,7 @@ async function renderHome() {
         ? `<div class="pc-stat"><span class="lbl">${moNum}월</span><span class="act-toggle"><button class="${!dormStatus?'on':''}" onclick="setMyDormancy(${me},'${dMonth}',false)">활동</button><button class="${dormStatus?'on':''}" onclick="setMyDormancy(${me},'${dMonth}',true)">휴면</button></span></div>`
         : `<div class="pc-stat"><span class="lbl">${moNum}월</span><span class="pc-badge ${dormStatus?'neutral':'done'}">${dormStatus?'휴면 중':'활동 중'}</span></div>`}
       ${!dormStatus
-        ? (myPaid
-            ? `<div class="pc-stat"><span class="lbl">${moNum}월 회비 납부</span><span class="pc-badge done">완료</span></div>`
-            : `<button class="pc-stat" style="background:none;border:none;cursor:pointer;font-family:inherit;width:100%;padding:0" onclick="homePayDue(${me},'${dMonth}')"><span class="lbl">${moNum}월 회비 납부</span><span class="pc-badge no">미납</span></button>`)
+        ? `<div class="pc-stat"><span class="lbl">${moNum}월 회비${myPaid?'':' <span class="mini-dot"></span>'}</span><span class="act-toggle"><button class="${myPaid?'on':''}" onclick="homeSetDue(${me},'${dMonth}',true)">완료</button><button class="${!myPaid?'on':''}" onclick="homeSetDue(${me},'${dMonth}',false)">미납</button></span></div>`
         : ''}`;
     const respondHtml = targetSess ? (targetDorm
       ? `<div style="margin-top:14px;padding-top:14px;border-top:1px solid var(--line);font-size:12px;color:var(--muted);line-height:1.6">이번 달 휴면이라 참석 신청 대상이 아니에요.<br>게스트 참여를 원하는 경우 운영진에게 문의 부탁드립니다.</div>`
@@ -2913,7 +2930,8 @@ function _umBox(title, body){
   let h=document.getElementById('mmHost'); if(!h){h=document.createElement('div');h.id='mmHost';document.body.appendChild(h);}
   h.innerHTML = `<div class="mm-back" onclick="if(event.target===this)closeMemberCard()"><div class="mm-box"><div class="mm-head"><div class="mm-name">${title}</div><button class="mm-x" onclick="closeMemberCard()">×</button></div>${body}</div></div>`;
 }
-function showUniform(){
+async function showUniform(){
+  try{ if(USE_DB){ const {data:row}=await sb.from('club_settings').select('data').eq('id','current').maybeSingle(); if(row&&row.data){ _settingsCache=row.data; UNIFORM=row.data.uniform||UNIFORM; } } }catch(e){}
   const me=getMe(); const admin=isAdmin();
   const roster=uniformRoster();
   const meM = me!=null ? roster.find(x=>x.id===me) : null;
@@ -2953,33 +2971,37 @@ function showUniform(){
   }
   _umBox('유니폼 사이즈 조사', body);
 }
+// 유니폼 저장: DB 최신값을 다시 읽어 delta만 적용(동시 확정/변경 유실 방지). patchFn이 false 반환 시 중단.
+async function saveUniformPatch(patchFn){
+  let cur = {};
+  try {
+    if (USE_DB){ const {data:row}=await sb.from('club_settings').select('data').eq('id','current').maybeSingle(); cur=(row&&row.data)||{}; _settingsCache=cur; }
+    else { cur = await fetchSettings(); }
+  } catch(e){ try{ cur = await fetchSettings(); }catch(_){ cur={}; } }
+  const uni = { sizes: Object.assign({}, (cur.uniform&&cur.uniform.sizes)||{}), confirmedIds: [...((cur.uniform&&cur.uniform.confirmedIds)||[])] };
+  if (patchFn(uni) === false) return 'abort';
+  UNIFORM = uni;
+  return await saveSettings({ uniform: uni });
+}
 async function saveMyUniform(){
   const me=getMe(); if(me==null){ toast('로그인이 필요해요'); return; }
-  if(((UNIFORM&&UNIFORM.confirmedIds)||[]).includes(me)){ toast('확정된 사이즈예요. 운영진(박승한)에게 문의해 주세요'); return; }
   const sel=document.getElementById('unifSel'); const v=sel?sel.value:'';
   if(!v){ toast('사이즈를 선택해 주세요'); return; }
-  const sizes=Object.assign({}, (UNIFORM&&UNIFORM.sizes)||{}); sizes[me]=v;
-  const next=Object.assign({}, UNIFORM||{}, {sizes}); const bak=UNIFORM; UNIFORM=next;
-  const ok=await saveSettings({uniform:next});
-  if(ok){ toast('저장했어요'); showUniform(); } else { UNIFORM=bak; toast('저장 중 오류가 났어요'); }
+  const res=await saveUniformPatch(u=>{ if(u.confirmedIds.includes(me)) return false; u.sizes[me]=v; });
+  if(res==='abort'){ toast('확정된 사이즈예요. 운영진(박승한)에게 문의해 주세요'); showUniform(); return; }
+  if(res){ toast('저장했어요'); showUniform(); } else { toast('저장 중 오류가 났어요'); }
 }
 async function confirmMyUniform(){
   const me=getMe(); if(me==null){ toast('로그인이 필요해요'); return; }
   const sz = uniformSizeOf(uniformRoster().find(x=>x.id===me)||{});
   if(!sz){ toast('먼저 사이즈를 선택·저장해 주세요'); return; }
-  const ids = new Set(((UNIFORM&&UNIFORM.confirmedIds)||[])); ids.add(me);
-  const next=Object.assign({}, UNIFORM||{}, {confirmedIds:[...ids]});
-  const bak=UNIFORM; UNIFORM=next;
-  const ok=await saveSettings({uniform:next});
-  if(ok){ toast('사이즈를 확정했어요'); showUniform(); } else { UNIFORM=bak; toast('저장 중 오류가 났어요'); }
+  const res=await saveUniformPatch(u=>{ if(!u.confirmedIds.includes(me)) u.confirmedIds.push(me); });
+  if(res && res!=='abort'){ toast('사이즈를 확정했어요'); showUniform(); } else if(res!=='abort'){ toast('저장 중 오류가 났어요'); }
 }
 async function unconfirmUniformFor(id){
   if(meName()!=='박승한'){ toast('확정 해제는 박승한(운영진)만 가능해요'); return; }
-  const ids=((UNIFORM&&UNIFORM.confirmedIds)||[]).filter(x=>x!==id);
-  const next=Object.assign({}, UNIFORM||{}, {confirmedIds:ids});
-  const bak=UNIFORM; UNIFORM=next;
-  const ok=await saveSettings({uniform:next});
-  if(ok){ toast('확정을 해제했어요'); showUniform(); } else { UNIFORM=bak; toast('저장 중 오류가 났어요'); }
+  const res=await saveUniformPatch(u=>{ u.confirmedIds=u.confirmedIds.filter(x=>x!==id); });
+  if(res && res!=='abort'){ toast('확정을 해제했어요'); showUniform(); } else if(res!=='abort'){ toast('저장 중 오류가 났어요'); }
 }
 function showUniformAll(){
   if(!isAdmin()) return;
@@ -3008,10 +3030,9 @@ async function saveUniformFor(id){
   if(!isAdmin()) return;
   const sel=document.getElementById('unifSelA'); const v=sel?sel.value:'';
   if(!v){ toast('사이즈를 선택해 주세요'); return; }
-  const sizes=Object.assign({}, (UNIFORM&&UNIFORM.sizes)||{}); sizes[id]=v;
-  const next=Object.assign({}, UNIFORM||{}, {sizes}); const bak=UNIFORM; UNIFORM=next;
-  const ok=await saveSettings({uniform:next});
-  if(ok){ toast('저장했어요'); showUniform(); } else { UNIFORM=bak; toast('저장 중 오류가 났어요'); }
+  const res=await saveUniformPatch(u=>{ if(u.confirmedIds.includes(id)) return false; u.sizes[id]=v; });
+  if(res==='abort'){ toast('확정된 사이즈예요. 확정 해제 후 변경해 주세요'); showUniform(); return; }
+  if(res){ toast('저장했어요'); showUniform(); } else { toast('저장 중 오류가 났어요'); }
 }
 // 경기 결과 관리 (운영진)
 function showResults(){

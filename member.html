@@ -1592,14 +1592,14 @@ function statusMonth() {
   return `${y}-${String(m + 1).padStart(2, '0')}`;
 }
 
-// 투표 오픈 시각: 그 달 15일 0시 (= 매월 15일부터 말일까지 그 달 MVP·성장 투표)
+// 투표 오픈 시각: 그 달 25일 0시 (= 매월 25일부터 말일까지 그 달 MVP·성장 투표)
 function votingOpensAt() {
   const d = new Date();
-  d.setDate(15);
+  d.setDate(25);
   d.setHours(0, 0, 0, 0);
   return d;
 }
-// 투표 가능: 매월 15일 0시 ~ 말일 끝(1~14일은 잠금). 다음 달 15일 전까지 닫혀 있어 "그 달까지만" 투표됨.
+// 투표 가능: 매월 25일 0시 ~ 말일 끝(1~24일은 잠금). 다음 달 25일 전까지 닫혀 있어 "그 달까지만" 투표됨.
 function isVotingOpen() { return Date.now() >= votingOpensAt().getTime(); }
 function fmtOpenTime(d) {
   const days = ['일', '월', '화', '수', '목', '금', '토'];
@@ -1830,7 +1830,7 @@ async function renderPotm() {
   const members = votingMembers(month);   // 투표 대상: 그 달 활동 회원(친구·탈퇴·휴면 제외)
   potmVoterId = getMe();   // 로그인한 본인
 
-  // 1~14일(현재 달 투표 잠금 기간) → 전 달 확정 결과를 모두에게 노출 (투표 없음)
+  // 1~24일(현재 달 투표 잠금 기간) → 전 달 확정 결과를 모두에게 노출 (투표 없음)
   if (!isVotingOpen()) {
     const d = new Date(); d.setDate(1); d.setMonth(d.getMonth() - 1);
     const pMonth = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
@@ -2373,7 +2373,7 @@ function renderFaq() {
   const refs = [
     ['로그인 / PIN', ['이름 선택 + <b>PIN 4자리</b>', '첫 로그인 때 PIN 등록', '변경: 더보기 → 내 PIN 변경', '잊으면 운영진에 초기화 요청']],
     ['참석 · 일정', ['홈/일정 탭에서 참석·불참·미정 선택', '홈에서 <b>미응답 일정 개수</b> 알림']],
-    ['MVP · 성장 투표', ['매월 <b>15일~말일</b> 진행', '1~14일: 지난달 결과 표시', '대상: 그 달 <b>활동 회원</b> · <b>친구·휴면 제외</b>', '두 부문 1표씩 · 제출 후 변경 불가']],
+    ['MVP · 성장 투표', ['매월 <b>25일~말일</b> 진행', '1~24일: 지난달 결과 표시', '대상: 그 달 <b>활동 회원</b> · <b>친구·휴면 제외</b>', '두 부문 1표씩 · 제출 후 변경 불가']],
     ['WHITE / BLACK 팀', ['경기 밸런스용 두 팀', '팀 구분 켠 달엔 이름 옆 팀 표시']],
     ['카풀', ['운전자가 출발지 · 좌석 등록', '탑승자는 빈 좌석 눌러 신청', '지난 카풀은 접혀서 정리']],
     ['내 프로필 · 기록', ['홈에서 가입월 · 기간 · 참여 · 출석률 · 수상 확인', '스킬(스파이더 차트) 직접 편집', '<b>사진으로 저장</b>해 공유']],

@@ -2289,14 +2289,16 @@ async function refreshNewBadges(){
       potmNew = !(vm.some(v=>v.voter_id===me) && vg.some(v=>v.voter_id===me));
     }
   } catch(e){}
-  // 회비 미납 점: 이번(표시)달 활동 회원인데 아직 미납이면 표시
+  // 회비 미납 점: 표시달(dm) 활동 회원인데 아직 미납이면 표시
+  // 홈 회비 행(dormStatus)과 동일하게 '그 달' 휴면만 본다(isDormantFor의 이번달 고정 규칙 제외) → 다음 달 활동 토글 반영
   let duesUnpaid = false;
   try {
     if (me != null) {
       const dm = duesMonth();
       const meP = ROSTER.find(x=>x.id===me);
       const st = meP ? (meP.status||'active') : 'former';
-      if (meP && st!=='former' && st!=='friends' && !isDormantFor(meP, dm)) {
+      const dmDormant = meP && (st==='dormant' || dormantMonthsOf(meP).includes(dm));
+      if (meP && st!=='former' && st!=='friends' && !dmDormant) {
         const dd = await fetchDues(dm);
         duesUnpaid = !dd.some(d=>d.member_id===me && d.paid);
       }

@@ -1224,7 +1224,7 @@ function rideCard(r, past) {
   return `
     <div class="ride ${(full && !past) ? 'full' : ''} ${past ? 'past' : ''}">
       <div class="ride-top">
-        <div class="driver"><span class="ico"></span>${esc(r.driver)} 님</div>
+        <div class="driver">${esc(r.driver)} 님</div>
         <div class="seats-badge ${past ? 'done' : (full ? 'full' : '')}">${past ? '종료' : (full ? '마감' : `잔여 ${left}석`)}</div>
       </div>
       <div class="ride-meta">

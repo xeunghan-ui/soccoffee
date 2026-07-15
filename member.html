@@ -774,6 +774,8 @@
   .act-toggle { display: flex; gap: 4px; flex-shrink: 0; }
   .act-toggle button { font-family: inherit; font-size: 11px; font-weight: 800; padding: 3px 11px; border-radius: 999px; border: 1px solid var(--line); background: transparent; color: var(--muted); cursor: pointer; }
   .act-toggle button.on { background: var(--accent); color: #14281b; border-color: var(--accent); }
+  .act-toggle.dues button.paid.on { background: linear-gradient(135deg,#54cd97,#3a9e73); color: #fff; border-color: transparent; }
+  .act-toggle.dues button.unpaid.on { background: linear-gradient(135deg,#e56c53,#c9452f); color: #fff; border-color: transparent; }
   .mini-dot { display: inline-block; width: 7px; height: 7px; border-radius: 50%; background: var(--alert); vertical-align: middle; margin-left: 4px; box-shadow: 0 0 0 2px rgba(0,0,0,.15); }
   /* 팀 현황(팀빌더 명단) 2열 그리드 */
   .sq-grp-h { font-size: 12px; font-weight: 800; color: var(--muted); margin: 6px 0 8px; display: flex; justify-content: space-between; }
@@ -1739,6 +1741,26 @@ function votingMembers(monthStr) {
     .sort((a, b) => (TEAM_ORDER[a.team] - TEAM_ORDER[b.team]) || ((a.jersey ?? 999) - (b.jersey ?? 999)) || a.name.localeCompare(b.name, 'ko'));
 }
 
+// 세션 참석 자격: 세션 속성 반영 — duesOnly(그 달 회비 납부자만) · allowDormant(휴면도 허용)
+// reason: former | friends | notjoined | dormant | unpaid (month 포함) | none
+async function sessAttEligible(sess, memberId){
+  const meP = ROSTER.find(x => x.id === memberId);
+  if (!meP) return { ok:false, reason:'none' };
+  const st = meP.status || 'active';
+  if (st === 'former') return { ok:false, reason:'former' };
+  if (st === 'friends') return { ok:false, reason:'friends' };
+  const sm = ((sess && sess.date) ? sess.date : '').slice(0,7);
+  const [yN, moN] = sm.split('-').map(Number);
+  const monthEnd = new Date(yN, moN, 0);
+  if (!(meP.joinDate && new Date(meP.joinDate) <= monthEnd)) return { ok:false, reason:'notjoined' };
+  if (!(sess && sess.allowDormant) && isDormantFor(meP, sm)) return { ok:false, reason:'dormant', month:sm };
+  if (sess && sess.duesOnly) {
+    const dd = await fetchDues(sm);
+    if (!dd.some(d => d.member_id === memberId && d.paid)) return { ok:false, reason:'unpaid', month:sm };
+  }
+  return { ok:true };
+}
+
 /* ---------- 투표 데이터 계층 (Supabase 또는 로컬) — 부문(category)별 ---------- */
 const VOTE_CATS = [
   { key:'mvp',    label:'이달의 선수',     pick:'이달의 선수를 골라주세요',      sub:'가장 좋았던 한 명을 선택하세요. (본인 제외)' },
@@ -2375,9 +2397,15 @@ function renderFaq() {
 async function homeQuickAtt(sid, status){
   const me = getMe(); if(!me || !sid) return;
   const sess = (await upcomingSessions()).find(s=>s.id===sid);
-  const meP = PLAYERS.find(x=>x.id===me);
-  const sMonth = (sess && sess.date) ? sess.date.slice(0,7) : potmMonth();
-  if (meP && isDormantFor(meP, sMonth) && !isAdmin()) { toast('이번 달 휴면이라 참석 신청 대상이 아니에요.'); return; }
+  if (!isAdmin()) {
+    const _el = await sessAttEligible(sess, me);
+    if (!_el.ok) {
+      toast(_el.reason==='unpaid' ? `${parseInt(_el.month.split('-')[1])}월 회비 납부 완료 후 참석 신청할 수 있어요.`
+          : _el.reason==='dormant' ? '이번 달 휴면이라 참석 신청 대상이 아니에요.'
+          : '참석 신청 대상이 아니에요.');
+      return;
+    }
+  }
   const dl = sess ? sessionDeadline(sess) : null;
   if (dl && new Date() > dl && !isAdmin()) { toast('신청이 마감됐어요. 운영진에 문의해 주세요.'); return; }
   const ok = await setAttendance(sid, me, status);
@@ -2457,7 +2485,12 @@ async function renderHome() {
     const teamPill = myTeam ? ` <span class="team-pill ${myTeam.toLowerCase()}">${myTeam}</span>` : '';
     const subline = [meP.status === 'friends' ? '싸커피 친구' : '', isAdmin() ? '운영진' : ''].filter(Boolean).join(' · ') || '멤버';
     const targetSess = sessions.find(s => { const dl = sessionDeadline(s); return !(dl && new Date() > dl); }) || nextSess;
-    const targetDorm = targetSess ? isDormantFor(meP, (targetSess.date||'').slice(0,7)) : false;
+    const targetSessMonth = targetSess ? (targetSess.date||'').slice(0,7) : null;
+    const targetBlockedDorm = targetSess ? (isDormantFor(meP, targetSessMonth) && !targetSess.allowDormant) : false;
+    let targetPaid = true;
+    if (targetSess && targetSess.duesOnly) { const _td = await fetchDues(targetSessMonth); targetPaid = _td.some(d => d.member_id === me && d.paid); }
+    const targetBlockedDues = targetSess ? (!!targetSess.duesOnly && !targetPaid && !targetBlockedDorm) : false;
+    const targetMoNum = targetSessMonth ? parseInt(targetSessMonth.split('-')[1], 10) : '';
     const ns = targetSess ? myStatusOf(targetSess.id) : 'none';
     const qbtn = (st, lbl, bg, fg) => `<button style="flex:1;border-radius:9px;padding:9px;border:1px solid ${ns===st?bg:'var(--line)'};cursor:pointer;font-family:inherit;font-weight:800;font-size:13px;background:${ns===st?bg:'transparent'};color:${ns===st?fg:'var(--muted)'}" onclick="homeQuickAtt('${targetSess?targetSess.id:''}','${st}')">${lbl}</button>`;
     const moNum = parseInt(dMonth.split('-')[1], 10);
@@ -2470,11 +2503,14 @@ async function renderHome() {
         ? `<div class="pc-stat"><span class="lbl">${moNum}월</span><span class="act-toggle"><button class="${!dormStatus?'on':''}" onclick="setMyDormancy(${me},'${dMonth}',false)">활동</button><button class="${dormStatus?'on':''}" onclick="setMyDormancy(${me},'${dMonth}',true)">휴면</button></span></div>`
         : `<div class="pc-stat"><span class="lbl">${moNum}월</span><span class="pc-badge ${dormStatus?'neutral':'done'}">${dormStatus?'휴면 중':'활동 중'}</span></div>`}
       ${!dormStatus
-        ? `<div class="pc-stat"><span class="lbl">${moNum}월 회비${myPaid?'':' <span class="mini-dot"></span>'}</span><span class="act-toggle"><button class="${myPaid?'on':''}" onclick="homeSetDue(${me},'${dMonth}',true)">완료</button><button class="${!myPaid?'on':''}" onclick="homeSetDue(${me},'${dMonth}',false)">미납</button></span></div>`
+        ? `<div class="pc-stat"><span class="lbl">${moNum}월 회비${myPaid?'':' <span class="mini-dot"></span>'}</span><span class="act-toggle dues"><button class="paid ${myPaid?'on':''}" onclick="homeSetDue(${me},'${dMonth}',true)">완료</button><button class="unpaid ${!myPaid?'on':''}" onclick="homeSetDue(${me},'${dMonth}',false)">미납</button></span></div>`
         : ''}`;
-    const respondHtml = targetSess ? (targetDorm
-      ? `<div style="margin-top:14px;padding-top:14px;border-top:1px solid var(--line);font-size:12px;color:var(--muted);line-height:1.6">이번 달 휴면이라 참석 신청 대상이 아니에요.<br>게스트 참여를 원하는 경우 운영진에게 문의 부탁드립니다.</div>`
-      : `<div style="margin-top:14px;padding-top:14px;border-top:1px solid var(--line)"><div style="font-size:11px;color:var(--muted);font-weight:800;letter-spacing:.04em;margin-bottom:9px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${sessLabel} 참석</div><div style="display:flex;gap:6px">${qbtn('yes','참석','var(--win)','var(--cream)')}${qbtn('no','불참','var(--alert)','var(--cream)')}${qbtn('maybe','미정','var(--accent)','#14281b')}</div></div>`) : '';
+    const respondHtml = targetSess ? (
+      targetBlockedDorm
+        ? `<div style="margin-top:14px;padding-top:14px;border-top:1px solid var(--line);font-size:12px;color:var(--muted);line-height:1.6">이번 달 휴면이라 참석 신청 대상이 아니에요.<br>게스트 참여를 원하는 경우 운영진에게 문의 부탁드립니다.</div>`
+      : targetBlockedDues
+        ? `<div style="margin-top:14px;padding-top:14px;border-top:1px solid var(--line)"><div style="font-size:11px;color:var(--muted);font-weight:800;letter-spacing:.04em;margin-bottom:9px">${sessLabel} 참석</div><div style="font-size:12px;color:var(--muted);line-height:1.6;margin-bottom:9px">${targetMoNum}월 회비를 납부해야 이 세션에 참석 신청할 수 있어요.</div><button class="btn accent" style="width:100%" onclick="switchTab('dues')">회비 납부하러 가기</button></div>`
+        : `<div style="margin-top:14px;padding-top:14px;border-top:1px solid var(--line)"><div style="font-size:11px;color:var(--muted);font-weight:800;letter-spacing:.04em;margin-bottom:9px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${sessLabel} 참석</div><div style="display:flex;gap:6px">${qbtn('yes','참석','var(--win)','var(--cream)')}${qbtn('no','불참','var(--alert)','var(--cream)')}${qbtn('maybe','미정','var(--accent)','#14281b')}</div></div>`) : '';
     const upcomingHtml = myYes.length ? `<div style="margin-top:12px;padding-top:12px;border-top:1px solid var(--line)"><div style="font-size:11px;color:var(--muted);font-weight:800;letter-spacing:.04em;margin-bottom:4px">참석 예정 ${myYes.length}개</div>${myYes.map(s => `<div style="padding:5px 0;font-size:13px;color:var(--cream)"><div style="display:flex;align-items:center;gap:8px"><span style="color:var(--cream);font-size:7px;opacity:.7">●</span><span style="min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(sessChipLabel(s))}</span><span style="margin-left:auto;flex-shrink:0;color:var(--muted);font-size:12px">${esc((s.time||'').slice(0,5))}${s.endTime?'–'+esc(s.endTime.slice(0,5)):''}</span></div>${s.place ? `<div style="margin-left:17px;color:var(--muted);font-size:12px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(s.place)}</div>` : ''}</div>`).join('')}</div>` : '';
     const pendingHtml = pending.length ? `<div style="margin-top:12px;padding-top:12px;border-top:1px solid var(--line)"><button onclick="openAtt('${pending[0].id}')" style="width:100%;text-align:left;cursor:pointer;font-family:inherit;border:none;background:transparent;padding:0;display:flex;align-items:center;justify-content:space-between;gap:10px"><span style="font-size:13px;font-weight:600;color:#ece6d2">미응답한 일정 ${pending.length}개</span><span style="font-size:12px;font-weight:800;color:var(--accent)">응답하기 →</span></button></div>` : '';
     const skillHtml = mySkills.length>=3
@@ -3152,9 +3188,24 @@ async function renderAtt() {
   const closed = dl ? (new Date() > dl) : false;
   const admin = isAdmin();
   const month = potmMonth();
-  // 휴면은 출석 명단에서 제외 (세션 월 기준, isDormantFor가 영구 휴면·이번 달 휴면도 포함)
+  // 참석 명단 = 세션 월 기준. 세션 속성 반영: allowDormant(휴면 포함) · duesOnly(회비 납부자만)
   const sessMonth = (sess.date||'').slice(0,7);
-  const members = activeMembers(month).filter(m => !isDormantFor(m, sessMonth));
+  const [smY, smM] = sessMonth.split('-').map(Number);
+  const sessMonthEnd = new Date(smY, smM, 0);
+  let members;
+  if (sess.allowDormant) {
+    // 싸커피 데이 등: 휴면 포함 전원(탈퇴·친구 제외, 가입월 이후)
+    members = ROSTER.filter(p => { const st = p.status||'active'; if (st==='former'||st==='friends') return false; return p.joinDate && new Date(p.joinDate) <= sessMonthEnd; })
+      .map(p => { const t = TEAM_SHEET[p.name] || { team:'기타' }; return { ...p, jersey:t.jersey, eng:t.eng||'', team:t.team, cap:!!t.cap }; });
+  } else {
+    members = activeMembers(sessMonth).filter(m => !isDormantFor(m, sessMonth));
+  }
+  let duesPaidSet = null;
+  if (sess.duesOnly) {
+    const _dd = await fetchDues(sessMonth);
+    duesPaidSet = new Set(_dd.filter(d => d.paid).map(d => d.member_id));
+    members = members.filter(m => duesPaidSet.has(m.id));
+  }
   attMe = getMe();
   const att = await fetchAttendance(sess.id);
   const map = {}; att.forEach(a=>{ map[a.member_id]=a.status; });
@@ -3183,7 +3234,14 @@ async function renderAtt() {
   if (!attMe) {
     html += `<div class="card"><div class="empty">로그인이 필요해요.</div></div>`;
   } else if (!meActive) {
-    html += `<div class="card"><h2>${esc(meName())} 님</h2><p class="sub">이번 달 활동 회원이 아니라 참석 체크 대상이 아니에요.</p></div>`;
+    const _meP = attMe != null ? ROSTER.find(x => x.id === attMe) : null;
+    const _st = _meP ? (_meP.status||'active') : 'former';
+    const _baseOK = _meP && _st!=='former' && _st!=='friends' && _meP.joinDate && new Date(_meP.joinDate) <= sessMonthEnd && (sess.allowDormant || !isDormantFor(_meP, sessMonth));
+    if (sess.duesOnly && _baseOK && duesPaidSet && !duesPaidSet.has(attMe)) {
+      html += `<div class="card"><h2>${esc(meName())} 님</h2><p class="sub">${smM}월 회비를 납부해야 참석 신청할 수 있어요.</p><button class="btn accent" style="margin-top:10px;width:100%" onclick="switchTab('dues')">회비 납부하러 가기</button></div>`;
+    } else {
+      html += `<div class="card"><h2>${esc(meName())} 님</h2><p class="sub">이번 달 활동 회원이 아니라 참석 체크 대상이 아니에요.</p></div>`;
+    }
   } else if (!closed) {
     const segDisabled = closed && !admin;
     const seg = ['yes','no','maybe'].map(k=>{
@@ -3316,6 +3374,15 @@ async function markAtt(status){
   const _sess = (await upcomingSessions()).find(s=>s.id===attSessionId);
   const _dl = sessionDeadline(_sess);
   if (_dl && new Date() > _dl && !isAdmin()) { toast('신청이 마감됐어요. 운영진에 문의해 주세요.'); return; }
+  if (!isAdmin()) {
+    const _el = await sessAttEligible(_sess, attMe);
+    if (!_el.ok) {
+      toast(_el.reason==='unpaid' ? `${parseInt(_el.month.split('-')[1])}월 회비 납부 완료 후 참석 신청할 수 있어요.`
+          : _el.reason==='dormant' ? '이번 달 휴면이라 참석 신청 대상이 아니에요.'
+          : '참석 신청 대상이 아니에요.');
+      return;
+    }
+  }
   const ok = await setAttendance(attSessionId, attMe, status);
   if(!ok) return;
   await rerender(renderAtt);
@@ -3623,6 +3690,9 @@ async function renderOps() {
     <div class="field"><label>참석 신청 마감 <span style="color:var(--muted);font-weight:400">(기본: 전주 일요일 23:59)</span></label><input id="opsSessDeadline" type="date" value="${autoDeadlineStr(defDate)}"></div>
     <div class="field"><label>이름/메모 <span style="color:var(--muted);font-weight:400">(선택, 예: EVENT, A매치)</span></label><input id="opsSessLabel" maxlength="30" placeholder="예: EVENT, A매치"></div>
     <div class="field"><label>세부내용 <span style="color:var(--muted);font-weight:400">(선택 · 소개 페이지에서 클릭하면 펼쳐짐 · 링크 자동연결)</span></label><textarea id="opsSessDesc" rows="2" placeholder="행사 안내, 준비물, 링크 등"></textarea></div>
+    <div class="field"><label>참석 조건 <span style="color:var(--muted);font-weight:400">(선택)</span></label>
+      <label style="display:flex;align-items:center;gap:7px;font-size:13px;color:var(--cream);margin-top:2px"><input type="checkbox" id="opsSessDuesOnly"> 회비 납부자만 참석</label>
+      <label style="display:flex;align-items:center;gap:7px;font-size:13px;color:var(--cream);margin-top:6px"><input type="checkbox" id="opsSessAllowDorm"> 휴면도 참석 가능</label></div>
     <div class="n-actions"><button class="btn accent sm" onclick="opsAddSession()">세션 추가</button><button class="btn ghost sm" onclick="opsCloseAddSession()">취소</button></div>` : `
     <button class="btn accent sm" onclick="opsOpenAddSession()">＋ 세션 추가</button>`)}
     <div style="margin-top:16px">
@@ -3637,6 +3707,9 @@ async function renderOps() {
             <div class="field"><label>참석 신청 마감</label><input id="esDl" type="date" value="${s.deadline||autoDeadlineStr(s.date)}"></div>
             <div class="field"><label>이름/메모 <span style="color:var(--muted);font-weight:400">(예: EVENT, A매치)</span></label><input id="esL" value="${esc(s.label||'')}" maxlength="30"></div>
             <div class="field"><label>세부내용 <span style="color:var(--muted);font-weight:400">(클릭 시 펼쳐짐)</span></label><textarea id="esDesc" rows="2">${esc(s.desc||'')}</textarea></div>
+            <div class="field"><label>참석 조건 <span style="color:var(--muted);font-weight:400">(선택)</span></label>
+              <label style="display:flex;align-items:center;gap:7px;font-size:13px;color:var(--cream);margin-top:2px"><input type="checkbox" id="esDuesOnly" ${s.duesOnly?'checked':''}> 회비 납부자만 참석</label>
+              <label style="display:flex;align-items:center;gap:7px;font-size:13px;color:var(--cream);margin-top:6px"><input type="checkbox" id="esAllowDorm" ${s.allowDormant?'checked':''}> 휴면도 참석 가능</label></div>
             <div class="n-actions"><button class="btn accent sm" onclick="opsSaveSession('${s.id}')">저장</button><button class="btn ghost sm" onclick="opsCancelSessionEdit()">취소</button></div>
           </div>`;
         }
@@ -3814,8 +3887,10 @@ async function opsAddSession() {
   const deadline = document.getElementById('opsSessDeadline').value || autoDeadlineStr(date);
   const label = document.getElementById('opsSessLabel').value.trim();
   const desc = document.getElementById('opsSessDesc').value.trim();
+  const duesOnly = document.getElementById('opsSessDuesOnly').checked;
+  const allowDormant = document.getElementById('opsSessAllowDorm').checked;
   const list = await getSessions();
-  list.push({ id:'s'+Date.now().toString(36)+Math.random().toString(36).slice(2,5), date, time, endTime, type, place, placeUrl, guestUrl, deadline, label, desc });
+  list.push({ id:'s'+Date.now().toString(36)+Math.random().toString(36).slice(2,5), date, time, endTime, type, place, placeUrl, guestUrl, deadline, label, desc, duesOnly, allowDormant });
   if (!(await saveSettings({ sessions: list }))) return;
   opsAddSessionOpen = false;
   await renderOps(); toast('세션을 추가했어요');
@@ -3844,6 +3919,8 @@ async function opsSaveSession(id) {
   s.deadline = document.getElementById('esDl').value || autoDeadlineStr(date);
   s.label = document.getElementById('esL').value.trim();
   s.desc = document.getElementById('esDesc').value.trim();
+  s.duesOnly = document.getElementById('esDuesOnly').checked;
+  s.allowDormant = document.getElementById('esAllowDorm').checked;
   if (!(await saveSettings({ sessions: list }))) return;
   opsEditSessionId = null;
   await renderOps(); toast('세션을 수정했어요');

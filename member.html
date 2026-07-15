@@ -3499,6 +3499,19 @@ async function renderDues() {
     return;
   }
 
+  // 다음 달(statusMonth) 활동/휴면 셀프 변경 감지 (운영진용)
+  const _sMon = statusMonth();
+  const _curM = nowMonthStr();
+  const _moLbl = parseInt(_sMon.split('-')[1], 10);
+  const toActive = ROSTER.filter(p => { const st = p.status||'active'; if (st==='former'||st==='friends') return false; return activeMonthsOf(p).includes(_sMon); });
+  const _toActiveIds = new Set(toActive.map(p=>p.id));
+  const toDormant = ROSTER.filter(p => { const st = p.status||'active'; if (st!=='active') return false; if (_toActiveIds.has(p.id)) return false; const dm = dormantMonthsOf(p); return dm.includes(_sMon) && !dm.includes(_curM); });
+  const transCard = (toActive.length || toDormant.length) ? `<div class="card" style="padding:12px 14px;margin-bottom:12px">
+      <div style="font-size:12px;font-weight:800;color:var(--coffee);margin-bottom:8px">${_moLbl}월 활동/휴면 변경 <span style="color:var(--muted);font-weight:600">· 멤버 셀프 신청</span></div>
+      ${toActive.length?`<div style="font-size:13px;line-height:1.7${toDormant.length?';margin-bottom:6px':''}"><span style="color:var(--win);font-weight:800">휴면→활동</span> <span style="color:var(--muted)">${toActive.length}명</span> · ${[...toActive].sort(byJersey).map(m=>esc(m.name)).join(', ')}</div>`:''}
+      ${toDormant.length?`<div style="font-size:13px;line-height:1.7"><span style="color:var(--alert);font-weight:800">활동→휴면</span> <span style="color:var(--muted)">${toDormant.length}명</span> · ${[...toDormant].sort(byJersey).map(m=>esc(m.name)).join(', ')}</div>`:''}
+    </div>` : '';
+
   let html = `
     <div class="potm-hero" style="background:linear-gradient(135deg,#2f7a4f,#245f3e)">
       <div class="trophy"></div>
@@ -3510,6 +3523,7 @@ async function renderDues() {
       <div class="dues-stat paid"><div class="num">${paidCount}</div><div class="cap">납부</div></div>
       <div class="dues-stat unpaid"><div class="num">${total-paidCount}</div><div class="cap">미납</div></div>
     </div>
+    ${transCard}
     ${myCard}
     ${(total-paidCount)>0 ? `<div class="card" style="padding:12px 14px;margin-bottom:12px">
       <div style="font-size:12px;font-weight:800;color:var(--red);margin-bottom:6px">미납 ${total-paidCount}명</div>

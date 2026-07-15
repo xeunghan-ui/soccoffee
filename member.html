@@ -2907,6 +2907,20 @@ function showBankInfo(){
   h.innerHTML = `<div class="mm-back" onclick="if(event.target===this)closeMemberCard()"><div class="mm-box"><div class="mm-head"><div class="mm-name">회비 계좌</div><button class="mm-x" onclick="closeMemberCard()">×</button></div>${body}</div></div>`;
 }
 function copyText(t){ try{ navigator.clipboard.writeText(t); toast('복사했어요'); }catch(e){ toast('복사 실패 — 길게 눌러 복사해 주세요'); } }
+// 회비 화면 인라인 계좌 카드(복사 버튼 포함)
+function bankInlineHtml(){
+  if (!(BANK && BANK.number)) return '';
+  const full = `${BANK.bank||''} ${BANK.number}`.trim();
+  return `<div class="card" style="padding:14px 16px;margin-bottom:12px">
+    <div style="font-size:12px;font-weight:800;color:var(--coffee);margin-bottom:8px">입금 계좌</div>
+    <div style="font-size:13px;color:var(--muted);line-height:1.9">
+      <div>은행 <b style="color:var(--cream);float:right">${esc(BANK.bank||'-')}</b></div>
+      <div>계좌 <b style="color:var(--cream);float:right">${esc(BANK.number)}</b></div>
+      <div>예금주 <b style="color:var(--cream);float:right">${esc(BANK.holder||'-')}</b></div>
+    </div>
+    <button class="btn accent" style="width:100%;margin-top:12px" onclick="copyText('${esc(full)}')">계좌 복사</button>
+  </div>`;
+}
 async function setBankInfo(){
   if(!isAdmin()) return;
   const bank = prompt('은행명', BANK?BANK.bank||'':''); if(bank==null) return;
@@ -3495,7 +3509,7 @@ async function renderDues() {
 
   // 멤버: 전체 납부현황 비공개 — 본인 회비만
   if (!admin) {
-    el.innerHTML = `<div class="section-title">${potmMonthLabel(month)} 회비</div>${myCard}<p class="hint" style="text-align:center;margin-top:8px">전체 납부 현황은 운영진이 관리해요. 위에서 본인 회비를 확인하고 직접 표시할 수 있어요.</p>`;
+    el.innerHTML = `<div class="section-title">${potmMonthLabel(month)} 회비</div>${myCard}${bankInlineHtml()}<p class="hint" style="text-align:center;margin-top:8px">전체 납부 현황은 운영진이 관리해요. 위에서 본인 회비를 확인하고 직접 표시할 수 있어요.</p>`;
     return;
   }
 

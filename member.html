@@ -1344,6 +1344,12 @@ function pickTreat(id, el, label) {
 async function applyRide(id) {
   const name = meName();
   if (!name) return toast('로그인이 필요해요');
+  // 1인 1신청: 아직 출발 안 한 카풀 중 이미 내 이름으로 신청된 게 있으면 차단(같은 카풀 중복 포함)
+  if (!isAdmin()) {
+    const _rides = await fetchRides();
+    const _dup = _rides.find(x => departureMs(x) > Date.now() && (x.riders||[]).some(rd => (rd.name||'').trim() === name.trim()));
+    if (_dup) { toast(`이미 '${_dup.driver} 님' 카풀에 신청돼 있어요. 바꾸려면 먼저 취소해 주세요.`); return; }
+  }
   let treat = treatPick[id] || '';
   if (treat === '__custom__') treat = document.getElementById('tcustom-' + id).value.trim();
 

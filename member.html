@@ -3503,7 +3503,13 @@ async function renderDues() {
   const _sMon = statusMonth();
   const _curM = nowMonthStr();
   const _moLbl = parseInt(_sMon.split('-')[1], 10);
-  const toActive = ROSTER.filter(p => { const st = p.status||'active'; if (st==='former'||st==='friends') return false; return activeMonthsOf(p).includes(_sMon); });
+  // 휴면→활동 = 실제로 휴면 중이던(영구 휴면 or 이번 달 휴면) 회원이 다음 달을 활동으로 되돌린 경우만
+  const toActive = ROSTER.filter(p => {
+    const st = p.status||'active';
+    if (st==='former'||st==='friends') return false;
+    if (!activeMonthsOf(p).includes(_sMon)) return false;
+    return st==='dormant' || dormantMonthsOf(p).includes(_curM);
+  });
   const _toActiveIds = new Set(toActive.map(p=>p.id));
   const toDormant = ROSTER.filter(p => { const st = p.status||'active'; if (st!=='active') return false; if (_toActiveIds.has(p.id)) return false; const dm = dormantMonthsOf(p); return dm.includes(_sMon) && !dm.includes(_curM); });
   const transCard = (toActive.length || toDormant.length) ? `<div class="card" style="padding:12px 14px;margin-bottom:12px">

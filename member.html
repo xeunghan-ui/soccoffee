@@ -680,6 +680,7 @@
   .sess-tabs::-webkit-scrollbar { display: none; }
   .sess-chip { flex-shrink: 0; padding: 8px 13px; border-radius: 20px; border: none; background: transparent; color: var(--muted); font-weight: 600; font-size: 13px; cursor: pointer; font-family: inherit; }
   .sess-chip.on { background: var(--accent); color: #14281b; font-weight: 800; }
+  .chip-dot { display: inline-block; width: 6px; height: 6px; border-radius: 50%; background: var(--alert); margin-left: 5px; vertical-align: middle; }
   .ops-row { display: flex; justify-content: space-between; align-items: center; gap: 10px; padding: 11px 0; border-top: 1px solid var(--line); font-size: 14px; }
   .ops-row:first-child { border-top: none; }
 
@@ -923,7 +924,7 @@
   <button class="bnav-item active" data-tab="home" onclick="switchTab('home')"><span class="bn-ico">⌂</span>홈</button>
   <button class="bnav-item" data-tab="att" onclick="switchTab('att')"><span class="bn-ico">◷</span>일정<span class="bn-badge" id="attBadge" style="display:none"></span></button>
   <button class="bnav-item" data-tab="member" onclick="switchTab('squad')"><span class="bn-ico">▦</span>멤버<span class="nav-dot" id="memberDot" style="display:none"></span></button>
-  <button class="bnav-item" data-tab="more" onclick="switchTab('more')"><span class="bn-ico">≡</span>더보기<span class="nav-dot" id="dotMore" style="display:none"></span></button>
+  <button class="bnav-item" data-tab="more" onclick="switchTab('more')"><span class="bn-ico">≡</span>더보기</button>
 </nav>
 
 <div class="toast" id="toast"></div>
@@ -1519,7 +1520,7 @@ function applyPlayers(players) {
   PLAYERS = players;
   ROSTER = players.map(p => {
     const o = { id:p.id, name:p.name, tier:p.tier, status:p.status||'active',
-      joinDate:p.joinDate||'', dormantMonths:(p.dormantMonths||[]).slice() };
+      joinDate:p.joinDate||'', dormantMonths:(p.dormantMonths||[]).slice(), activeMonths:(p.activeMonths||[]).slice() };
     if (p.friendsSince) o.friendsSince = p.friendsSince;
     return o;
   });
@@ -1545,7 +1546,7 @@ async function mergeTbMembers() {
     const t = TEAM_SHEET[tp.name] || {};               // 팀(WHITE/BLACK)은 사이트 배정 유지
     players.push({ id:tp.id, name:tp.name, tier:tp.tier, status:tp.status||'active',
       joinDate:tp.joinDate||'', friendsSince:tp.friendsSince||null,
-      dormantMonths:(tp.dormantMonths||[]).slice(),
+      dormantMonths:(tp.dormantMonths||[]).slice(), activeMonths:(tp.activeMonths||[]).slice(),
       jersey:(tp.jersey!=null?tp.jersey:null), eng:tp.engName||'',
       team:t.team||'기타', cap:!!t.cap });
   });
@@ -1681,25 +1682,34 @@ async function getVoteStats(yearPrefix){
 // 해당 월 활동 회원 (team-builder 월별 현황과 동일 로직)
 // 휴면은 팀빌더에서 읽어 반영 (이름 기준). 팀빌더에 없으면 사이트 명단의 값 사용
 let TB_DORMANT = {};
+let TB_ACTIVE = {};   // 월별 '활동' 예외(영구 휴면 회원이 특정 달만 활동으로 되돌림)
 function dormantMonthsOf(p){
   const tb = TB_DORMANT[p.name];
   const seed = p.dormantMonths || [];
   if (tb === undefined) return seed;
   return Array.from(new Set([...(tb||[]), ...seed]));
 }
+// 활동 예외 월: 이 달에는 (영구 휴면이라도) 활동으로 간주 — 홈 토글로 멤버가 직접 지정
+function activeMonthsOf(p){
+  const tb = TB_ACTIVE[p.name];
+  const seed = p.activeMonths || [];
+  if (tb === undefined) return seed;
+  return Array.from(new Set([...(tb||[]), ...seed]));
+}
 async function loadTbDormant(){
   try {
     const tb = await fetchTeamBuilder();
-    const m = {};
-    if (tb && Array.isArray(tb.players)) tb.players.forEach(p => { m[p.name] = p.dormantMonths || []; });
-    TB_DORMANT = m;
+    const m = {}, am = {};
+    if (tb && Array.isArray(tb.players)) tb.players.forEach(p => { m[p.name] = p.dormantMonths || []; am[p.name] = p.activeMonths || []; });
+    TB_DORMANT = m; TB_ACTIVE = am;
   } catch(e) {}
 }
 // 이번(현재) 달 'YYYY-MM'
 function nowMonthStr(){ const d=new Date(); return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}`; }
-// 휴면 판정(회비·출석 공용): ① 영구 휴면(status:'dormant') ② 대상 월 휴면 ③ 이번 달 휴면.
+// 휴면 판정(회비·출석 공용): ⓪ 활동 예외 월이면 활동 ① 영구 휴면(status:'dormant') ② 대상 월 휴면 ③ 이번 달 휴면.
 // ③은 팀빌더가 보통 이번 달까지만 휴면을 갱신하므로, 대상 월이 다음 달일 때 기존 휴면 회원이 누락되지 않게 함.
 function isDormantFor(p, monthStr){
+  if (activeMonthsOf(p).includes(monthStr)) return false;   // 멤버가 이 달을 '활동'으로 지정
   if ((p.status||'active')==='dormant') return true;
   const dm = dormantMonthsOf(p);
   return dm.includes(monthStr) || dm.includes(nowMonthStr());
@@ -2252,8 +2262,7 @@ function renderMore() {
     `<button class="more-item" onclick="switchTab('${t}')"><div class="mi-name">${name}</div><div class="mi-desc">${desc}</div></button>`;
   const adminBtn = ([key, name, desc, kind]) => {
     const click = kind === 'ops' ? `openOps('${key}')` : `switchTab('${key}')`;
-    const dot = (key === 'dues' && _duesUnpaidFlag) ? ' <span class="mini-dot"></span>' : '';
-    return `<button class="more-item" onclick="${click}"><div class="mi-name">${name}${dot}</div><div class="mi-desc">${desc}</div></button>`;
+    return `<button class="more-item" onclick="${click}"><div class="mi-name">${name}</div><div class="mi-desc">${desc}</div></button>`;
   };
   const teamLink = `<a class="more-item" href="team/" target="_blank" rel="noopener"><div class="mi-name">팀빌더 ↗</div><div class="mi-desc">명단 · 등번호 · 휴면 · 팀 배분</div></a>`;
   const guideBtn = `<button class="more-item" onclick="showAddHomeGuide()"><div class="mi-name">홈 화면에 추가</div><div class="mi-desc">앱처럼 바로 열기 (설치 가이드)</div></button>`;
@@ -2276,7 +2285,7 @@ function renderMore() {
   el.innerHTML = html;
 }
 
-// 일정 하단탭 배지: 내 미응답(미정 포함) 일정 개수
+// 일정 하단탭 배지: 내 미응답(none) 일정 개수 — 미정/참석/불참은 응답으로 간주
 async function refreshAttBadge(){
   const b = document.getElementById('attBadge'); if (!b) return;
   const me = getMe(); let cnt = 0;
@@ -2286,7 +2295,7 @@ async function refreshAttBadge(){
       const arr = await Promise.all(sessions.map(s=>fetchAttendance(s.id)));
       sessions.forEach((s,i)=>{
         if (meP && isDormantFor(meP, (s.date||'').slice(0,7))) return;   // 휴면 달 제외
-        const a=(arr[i]||[]).find(x=>x.member_id===me); const st=a?a.status:'none'; if(st==='none'||st==='maybe') cnt++;
+        const a=(arr[i]||[]).find(x=>x.member_id===me); const st=a?a.status:'none'; if(st==='none') cnt++;
       });
     }
   }catch(e){}
@@ -2313,25 +2322,9 @@ async function refreshNewBadges(){
   } catch(e){}
   // 회비 미납 점: 표시달(dm) 활동 회원인데 아직 미납이면 표시
   // 홈 회비 행(dormStatus)과 동일하게 '그 달' 휴면만 본다(isDormantFor의 이번달 고정 규칙 제외) → 다음 달 활동 토글 반영
-  let duesUnpaid = false;
-  try {
-    if (me != null) {
-      const dm = duesMonth();
-      const meP = ROSTER.find(x=>x.id===me);
-      const st = meP ? (meP.status||'active') : 'former';
-      const dmDormant = meP && (st==='dormant' || dormantMonthsOf(meP).includes(dm));
-      if (meP && st!=='former' && st!=='friends' && !dmDormant) {
-        const dd = await fetchDues(dm);
-        duesUnpaid = !dd.some(d=>d.member_id===me && d.paid);
-      }
-    }
-  } catch(e){}
-  _duesUnpaidFlag = duesUnpaid;
   const set = (id,on)=>{ const e=document.getElementById(id); if(e) e.style.display = on ? 'block' : 'none'; };
   set('dotList', ridesNew); set('dotPotm', potmNew); set('memberDot', ridesNew || potmNew);
-  set('dotMore', duesUnpaid && isAdmin());   // 더보기→회비는 운영진 경로. 일반 멤버는 홈 카드에 점 표시
 }
-let _duesUnpaidFlag = false;
 function markRidesSeen(rides){
   const newest = (rides && rides[0] && rides[0].created_at) || new Date().toISOString();
   localStorage.setItem('seen_rides', newest);
@@ -2470,7 +2463,7 @@ async function renderHome() {
   const meP0 = me != null ? PLAYERS.find(x => x.id === me) : null;
   const pending = meActive ? sessions.filter(s => {
     if (meP0 && isDormantFor(meP0, (s.date||'').slice(0,7))) return false;   // 휴면 달 일정은 미응답에서 제외
-    const st = myStatusOf(s.id); return st === 'none' || st === 'maybe';
+    const st = myStatusOf(s.id); return st === 'none';   // 미정/참석/불참은 응답으로 간주
   }) : [];
   const nextSess = sessions[0];
   let dash = '';
@@ -2479,7 +2472,7 @@ async function renderHome() {
     const meT = TEAM_SHEET[meP.name] || {};
     const jersey = (meP.jersey != null) ? meP.jersey : ((meT.jersey != null) ? meT.jersey : '–');
     // 박스는 '해당 월'만 본다(isDormantFor의 이번달 고정 규칙 제외) — 다음 달 토글이 작동하도록
-    const dormStatus = ((meP.status||'active')==='dormant') || dormantMonthsOf(meP).includes(dMonth);
+    const dormStatus = !activeMonthsOf(meP).includes(dMonth) && (((meP.status||'active')==='dormant') || dormantMonthsOf(meP).includes(dMonth));
     const confirmPhase = dormFeatureOn() && new Date().getDate() >= 15;   // 2026-07-15부터, 매월 15일 이후 다음 달 활동/휴면 확인
     const myTeam = (teamSplitOn && (meT.team === 'WHITE' || meT.team === 'BLACK')) ? meT.team : null;
     const teamPill = myTeam ? ` <span class="team-pill ${myTeam.toLowerCase()}">${myTeam}</span>` : '';
@@ -3219,9 +3212,27 @@ async function renderAtt() {
   const mine = attMe ? map[attMe] : null;
   const nDraft = admin ? Object.keys(attDraft).length : 0;
 
+  // 세션별 내 응답 상태 → 미응답(none)인 세션 칩에 빨간 점 (미정/참석/불참은 '응답함'으로 간주)
+  let sessNeedResp = {};
+  if (attMe != null) {
+    try {
+      const _all = await Promise.all(sessions.map(s => fetchAttendance(s.id)));
+      const _meP = ROSTER.find(x => x.id === attMe);
+      sessions.forEach((s, i) => {
+        const a = (_all[i]||[]).find(x => x.member_id === attMe);
+        if ((a ? a.status : 'none') !== 'none') return;               // 이미 응답함
+        const sm = (s.date||'').slice(0,7);
+        if (_meP && !s.allowDormant && isDormantFor(_meP, sm)) return;  // 참여 대상 아님
+        const _dl2 = sessionDeadline(s);
+        if (_dl2 && new Date() > _dl2 && !isAdmin()) return;            // 마감됨
+        sessNeedResp[s.id] = true;
+      });
+    } catch(e){}
+  }
+
   let html = '';
   if (sessions.length > 1) {
-    html += `<div class="sess-tabs">${sessions.map(s=>`<button class="sess-chip ${s.id===attSessionId?'on':''}" onclick="pickAttSession('${s.id}')">${esc(sessChipLabel(s))}</button>`).join('')}</div>`;
+    html += `<div class="sess-tabs">${sessions.map(s=>`<button class="sess-chip ${s.id===attSessionId?'on':''}" onclick="pickAttSession('${s.id}')">${esc(sessChipLabel(s))}${sessNeedResp[s.id]?'<span class="chip-dot"></span>':''}</button>`).join('')}</div>`;
   }
   html += `
     <div class="session-card">
@@ -3966,9 +3977,16 @@ async function setMyDormancy(memberId, month, dormant){
   const p = tb.players.find(x => x.id === memberId);
   if (!p) { toast('명단에서 찾을 수 없어요.'); return; }
   let dm = (p.dormantMonths || []).slice();
-  if (dormant) { if (!dm.includes(month)) dm.push(month); }
-  else { dm = dm.filter(x => x !== month); }
+  let am = (p.activeMonths || []).slice();
+  if (dormant) {
+    if (!dm.includes(month)) dm.push(month);
+    am = am.filter(x => x !== month);
+  } else {
+    dm = dm.filter(x => x !== month);
+    if (!am.includes(month)) am.push(month);   // 영구 휴면(status:'dormant')이어도 이 달만 활동으로 예외 처리
+  }
   p.dormantMonths = dm;
+  p.activeMonths = am;
   if (!(await saveTeamBuilder(tb))) { toast('저장 중 오류가 났어요.'); return; }
   await mergeTbMembers();
   await loadTbDormant();
@@ -3993,7 +4011,7 @@ async function rolloverDormancyIfNeeded(){
     if ((p.status || 'active') === 'former') return;
     const dm = p.dormantMonths || [];
     const curDorm = dm.includes(curMonth) || (p.status || 'active') === 'dormant';
-    if (curDorm && !dm.includes(nextMonth)) { dm.push(nextMonth); p.dormantMonths = dm; }
+    if (curDorm && !dm.includes(nextMonth) && !(p.activeMonths||[]).includes(nextMonth)) { dm.push(nextMonth); p.dormantMonths = dm; }
   });
   tb.dormRollover = nextMonth;
   if (await saveTeamBuilder(tb)) { await mergeTbMembers(); await loadTbDormant(); }

@@ -1156,7 +1156,11 @@ function switchTab(tab){
   if(tab==='monthly'){ renderMonthlyStatus(); }
   if(tab==='ranking'){ renderRanking(); }
   if(tab==='supplies'){ renderSupplies(); }
-  if(tab==='fee'){ renderFee(); }
+  if(tab==='fee'){
+    const fc=document.getElementById('feeContent');
+    if(fc && !feeLoaded) fc.innerHTML='<div style="text-align:center;color:#94a3b8;padding:30px">회비 불러오는 중…</div>';
+    loadFeeData().then(renderFee).catch(()=>renderFee());
+  }
 }
 
 
@@ -1396,7 +1400,7 @@ const FEE_SEED=[
   ['배성은','left',['-','-','-','-','-',3,3,3,3,3,3,3,3,3,'X','-','-','-','-','-']],
 ];
 
-let feeViewMonth=FEE_MONTHS[FEE_MONTHS.length-1]; // 가장 최근 월
+let feeViewMonth=null; // renderFee에서 최신 월(라이브 포함)로 자동 설정
 
 function feeVal(v){
   if(v===null) return null;
@@ -1415,9 +1419,54 @@ function feeStatus(v){
   return 'none';
 }
 
+// ── 라이브 회비(dues) 연동 ── 2026-07부터 dues 테이블, 그 이전은 위 FEE_SEED(과거 스냅샷) ──
+const FEE_MONTHS_BASE=FEE_MONTHS, FEE_SEED_BASE=FEE_SEED;
+const FEE_LIVE_START_Y=2026, FEE_LIVE_START_M=7;   // 2026-07부터 라이브
+let duesLive={};                                   // 'memberId|YYYY-MM' -> {paid,amount}
+let feeMonthsAll=null, feeRowsAll=null, feeLoaded=false;
+function ym2label(ym){ const [y,m]=ym.split('-'); return y.slice(2)+'.'+m; }   // '2026-07'->'26.07'
+function liveMonthsList(){
+  const out=[]; const now=new Date();
+  let endY=now.getFullYear(), endM=now.getMonth()+1;
+  if(now.getDate()>=15){ endM++; if(endM>12){endM=1;endY++;} }   // 15일부터 다음 달까지(멤버 페이지 duesMonth와 일치)
+  let y=FEE_LIVE_START_Y, m=FEE_LIVE_START_M;
+  while(y<endY || (y===endY && m<=endM)){ out.push(`${y}-${String(m).padStart(2,'0')}`); m++; if(m>12){m=1;y++;} }
+  return out;
+}
+// 라이브 월의 특정 회원 셀 값(FEE_SEED와 동일 인코딩: 숫자=납부액, 'H'=휴면, '-'=미가입, null=미납)
+function liveCell(name, ym){
+  const p=players.find(x=>x.name===name);
+  if(!p) return '-';
+  if(!isInPool(p, ym+'-15')) return '-';
+  if(isPlayerDormantInMonth(p.id, ym)) return 'H';
+  const rec=duesLive[p.id+'|'+ym];
+  if(rec && rec.paid) return (typeof rec.amount==='number'?rec.amount:10000);
+  return null;
+}
+async function loadFeeData(){
+  duesLive={};
+  if(typeof tbSb!=='undefined' && tbSb){
+    try{ const {data}=await tbSb.from('dues').select('member_id,month,paid,amount');
+      (data||[]).forEach(d=>{ duesLive[d.member_id+'|'+d.month]={paid:d.paid,amount:d.amount}; }); }catch(e){}
+  }
+  const liveM=liveMonthsList();
+  feeMonthsAll=FEE_MONTHS_BASE.concat(liveM.map(ym2label));
+  const seedNames=new Set(FEE_SEED_BASE.map(r=>r[0]));
+  const rows=FEE_SEED_BASE.map(([n,t,d])=>[n,t,d.concat(liveM.map(ym=>liveCell(n,ym)))]);
+  // 스냅샷에 없는 팀빌더 신규 활동 멤버 추가
+  (players||[]).filter(p=>{const st=p.status||'active'; return st!=='friends'&&st!=='former'&&!seedNames.has(p.name);})
+    .forEach(p=>{ rows.push([p.name,'active', Array(FEE_MONTHS_BASE.length).fill('-').concat(liveM.map(ym=>liveCell(p.name,ym)))]); });
+  feeRowsAll=rows; feeLoaded=true;
+}
+
 function renderFee(){
   const el=document.getElementById('feeContent');
   if(!el) return;
+
+  // 라이브 로드되면 그걸, 아니면 스냅샷을 사용(로컬 shadow → 아래 본문 그대로 동작)
+  const FEE_MONTHS = feeMonthsAll || FEE_MONTHS_BASE;
+  const FEE_SEED   = feeRowsAll   || FEE_SEED_BASE;
+  if(!FEE_MONTHS.includes(feeViewMonth)) feeViewMonth=FEE_MONTHS[FEE_MONTHS.length-1];
 
   const mIdx=FEE_MONTHS.indexOf(feeViewMonth);
   const activeMembers=FEE_SEED.filter(([n,t,d])=>{
@@ -1435,7 +1484,7 @@ function renderFee(){
     const v=d[mIdx];
     if(typeof v==='number') return s+feeVal(v);
     const prevPaid=d.slice().reverse().find(x=>typeof x==='number');
-    return s+(prevPaid===1?10000:30000);
+    return s+(feeVal(prevPaid)||10000);
   },0);
 
   const STATUS_COLOR={paid:'#16a34a',unpaid:'#dc2626',dormant:'#94a3b8',injured:'#f59e0b',left:'#94a3b8',none:'#e2e8f0',wedding:'#8b5cf6'};
@@ -1450,7 +1499,7 @@ function renderFee(){
   html+=`</div>`;
 
   // 요약 카드
-  const unpaidAmt=unpaid.reduce((s,[n,t,d])=>{const prev=d.slice().reverse().find(x=>typeof x==='number');return s+(prev===1?10000:30000);},0);
+  const unpaidAmt=unpaid.reduce((s,[n,t,d])=>{const prev=d.slice().reverse().find(x=>typeof x==='number');return s+(feeVal(prev)||10000);},0);
   html+=`<div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-bottom:16px">
     <div style="background:linear-gradient(135deg,#f5f0e4,#dcfce7);border-radius:12px;padding:12px;text-align:center">
       <div style="font-size:9px;font-weight:800;color:#4ade80;letter-spacing:0.5px;margin-bottom:4px">납부완료</div>
@@ -1475,7 +1524,7 @@ function renderFee(){
       <div style="display:flex;flex-wrap:wrap;gap:6px">`;
     unpaid.forEach(([n,t,d])=>{
       const prev=d.slice().reverse().find(x=>typeof x==='number');
-      const amt=prev===1?10000:30000;
+      const amt=feeVal(prev)||10000;
       html+=`<span style="padding:4px 10px;background:#fef2f2;border:1px solid #fecaca;border-radius:8px;font-size:12px;font-weight:700;color:#dc2626">${n} <span style="font-size:10px;font-weight:600">${amt.toLocaleString()}원</span></span>`;
     });
     html+=`</div></div>`;

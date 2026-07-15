@@ -1202,7 +1202,10 @@ function fmtDate(d, t) {
 
 function rideCard(r, past) {
   const taken = r.riders.length, left = r.seats - taken, full = left <= 0;
-  const owner = isMine(r.id) || isAdmin();
+  // 제작자 판별: 로그인 이름(=driver) 일치 or 등록한 기기(isMine). 운영진은 관리 권한으로 삭제 가능.
+  const _meNm = (typeof meName==='function') ? (meName()||'') : '';
+  const isCreator = isMine(r.id) || (!!_meNm && !!r.driver && _meNm.trim() === String(r.driver).trim());
+  const owner = isCreator || isAdmin();
   const ridersHtml = taken === 0
     ? `<div class="empty-riders">${past ? '신청자가 없었어요.' : '아직 신청자가 없어요. 첫 탑승자가 되어보세요!'}</div>`
     : r.riders.map((rd, i) => {
@@ -1239,7 +1242,7 @@ function rideCard(r, past) {
       </div>
       <div class="ride-actions">${actions}</div>
       ${owner ? `<div class="manage-panel" id="manage-${r.id}">
-        <span class="manage-label">${isMine(r.id) ? '내가 등록한 카풀이에요' : '관리자 권한으로 삭제'}</span>
+        <span class="manage-label">${isCreator ? '내가 등록한 카풀이에요' : '관리자 권한으로 삭제'}</span>
         <button class="btn ghost sm" onclick="removeRide('${r.id}')" style="color:var(--red)">삭제하기</button>
       </div>` : ''}
       ${past ? '' : `<div class="apply-panel" id="apply-${r.id}">

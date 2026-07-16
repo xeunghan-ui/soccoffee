@@ -1270,8 +1270,11 @@ async function render() {
   if (_lt && !_lt.classList.contains('hidden')) markRidesSeen(rides);  // 카풀 탭이 실제로 열려 있을 때만 신규 점 해제
   else refreshNewBadges();
   const now = Date.now();
+  // 지난 카풀은 '전월 1일' 이후만 표시(그 이전은 자동 숨김). 데이터는 지우지 않음.
+  const _nd = new Date();
+  const _cut = `${new Date(_nd.getFullYear(), _nd.getMonth()-1, 1).getFullYear()}-${String(new Date(_nd.getFullYear(), _nd.getMonth()-1, 1).getMonth()+1).padStart(2,'0')}-01`;
   const active = rides.filter(r => departureMs(r) >= now);
-  const past = rides.filter(r => departureMs(r) < now).sort((a, b) => departureMs(b) - departureMs(a));
+  const past = rides.filter(r => departureMs(r) < now && (r.date||'') >= _cut).sort((a, b) => departureMs(b) - departureMs(a));
 
   list.innerHTML = active.length === 0
     ? `<div class="empty"><div class="big"></div><div>진행 중인 카풀이 없어요.<br>새 카풀을 등록해 보세요!</div></div>`

@@ -2095,7 +2095,14 @@ async function fetchSettings() {
   _settingsCache = data; return data;
 }
 async function saveSettings(patch) {
-  const cur = await fetchSettings();
+  // ⚠️ 저장 직전 DB 최신값을 다시 읽어 병합(오래된 캐시로 전체를 덮어써 유니폼 확정·사이즈 등이 리셋되던 버그 방지)
+  let cur = {};
+  if (USE_DB) {
+    try { const { data: row } = await sb.from('club_settings').select('data').eq('id','current').maybeSingle(); cur = (row && row.data) || {}; }
+    catch(e) { cur = _settingsCache || {}; }
+  } else {
+    try { cur = JSON.parse(localStorage.getItem(SETTINGS_STORE)) || {}; } catch(e) { cur = {}; }
+  }
   const next = { ...cur, ...patch };
   _settingsCache = next;
   if (USE_DB) {

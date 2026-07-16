@@ -982,10 +982,26 @@ async function importFromSite(){
   }catch(e){ setCloudLabel('가져오기 실패'); alert('가져오기 실패: '+(e.message||e)); }
 }
 
-function confirmSiteImport(){
+async function confirmSiteImport(){
   const store = window._siteImport; if(!store){ return; }
   const checked = [...document.querySelectorAll('.siteImportChk:checked')].map(c=>c.value);
   if(!checked.length){ alert('가져올 세션을 선택해 주세요.'); return; }
+  // ⚠️ 저장 직전 클라우드 최신 팀빌더 상태로 갱신 — 다른 기기/탭에서 설정한 값(예: 세션 guests)이
+  //    오래된 인메모리로 덮어써지는(stale overwrite) 문제 방지.
+  if(tbSb){
+    try{
+      const { data:fr } = await tbSb.from('club_settings').select('data').eq('id','teambuilder').maybeSingle();
+      const f = fr && fr.data;
+      if(f){
+        if(Array.isArray(f.sessions))    sessions    = f.sessions;
+        if(Array.isArray(f.players))     players     = f.players;
+        if(f.teams!==undefined)          teams       = f.teams;
+        if(Array.isArray(f.teamHistory)) teamHistory = f.teamHistory;
+        if(Array.isArray(f.supplies))    supplies    = f.supplies;
+        if(Array.isArray(f.matches))     matches     = f.matches;
+      }
+    }catch(e){}
+  }
   const { siteSessions, idName, yesBy } = store;
   const nameId = {}; players.forEach(p=>{ nameId[p.name]=p.id; });
   const existingDates = new Set(sessions.map(s=>s.date));

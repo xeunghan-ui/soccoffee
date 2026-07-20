@@ -2852,6 +2852,7 @@ const SURVEY_DEFAULT = { title:'클럽 설문', link:'', done:[] };
 function curSurvey(){ return SURVEY ? SURVEY : Object.assign({}, SURVEY_DEFAULT); }
 // 2026 SS 유니폼 사이즈 조사
 let UNIFORM = null;                       // { sizes: { memberId: '120' } }
+const UNIFORM_LOCKED = true;              // 주문 확정 → 사이즈 수정 잠금(읽기전용). 다시 열려면 false.
 const UNIFORM_SIZES = ['65','70','75','80','85','90','95','100','105','110','115','120'];
 const UNIFORM_SEED = { '손다희':'95','김이연':'105','장세영':'120','박광우':'115','신동헌':'105','한승재':'110','최승호':'105','함지상':'115','박승한':'115','홍순인':'120','정은용':'90','조수경':'100','마상현':'115','김우경':'90','조수연':'95','김균원':'120','임한':'100','정희범':'115','심소른':'90','이일웅':'100','안재영':'110','정하림':'100','심지수':'105','박원주':'100','박우성':'105','박지원':'95','정민주':'110','김두은':'95','이민국':'105','조지훈':'105','김유솔':'80','김재유':'100','한재욱':'105','도민환':'100','이희성':'110','허은혜':'90','조은애':'100','브루노':'105','원재식':'120','표승철':'105' };
 function uniformSizeOf(m){ const s=(UNIFORM&&UNIFORM.sizes)||{}; return (s[m.id]!=null) ? s[m.id] : (UNIFORM_SEED[m.name]||null); }
@@ -3080,9 +3081,13 @@ async function showUniform(){
   const mySize = meM ? uniformSizeOf(meM) : null;
   const confIds = (UNIFORM && UNIFORM.confirmedIds) || [];
   const myConfirmed = me!=null && confIds.includes(me);
-  let body = `<p class="sub" style="margin:0 0 12px">2026 SS 유니폼 사이즈를 골라주세요. (단위 cm · 상의)</p>`;
+  let body = `<p class="sub" style="margin:0 0 12px">2026 SS 유니폼 사이즈 ${UNIFORM_LOCKED?'— <b>주문 확정으로 마감</b>됨 (수정 불가)':'를 골라주세요. (단위 cm · 상의)'}</p>`;
   if(meM){
-    if(myConfirmed){
+    if(UNIFORM_LOCKED){
+      body += `<div class="field"><label>내 사이즈 <span style="color:var(--muted);font-weight:400">등번호 ${meM.jersey!=null?meM.jersey:'-'}</span></label>
+        <div class="sv-text" style="opacity:.85">${mySize?esc(mySize):'미입력'}</div></div>
+        <p class="hint" style="text-align:center;margin-top:6px">유니폼 주문이 확정되어 <b>수정할 수 없어요</b>. 변경이 필요하면 운영진(박승한)에게 문의해 주세요.</p>`;
+    } else if(myConfirmed){
       body += `<div class="field"><label>내 사이즈 <span style="color:var(--muted);font-weight:400">등번호 ${meM.jersey!=null?meM.jersey:'-'}</span></label>
         <div class="sv-text" style="opacity:.85">${mySize?esc(mySize):'미입력'} <span style="color:var(--win);font-size:12px;font-weight:800;margin-left:4px">확정됨</span></div></div>
         <p class="hint" style="text-align:center;margin-top:6px">확정됐어요. 수정하려면 운영진(박승한)에게 문의해 주세요.</p>`;
@@ -3098,7 +3103,9 @@ async function showUniform(){
   const doneCount = roster.filter(m=>uniformSizeOf(m)).length;
   const confCount = roster.filter(m=>confIds.includes(m.id)).length;
   body += `<p class="hint" style="margin-top:10px">응답 <b style="color:#ece6d2">${doneCount}</b> / ${roster.length}명 · 확정 <b style="color:var(--win)">${confCount}</b>명</p>`;
-  if(admin){
+  if(admin && UNIFORM_LOCKED){
+    body += `<div style="margin-top:8px;border-top:1px solid var(--line);padding-top:10px"><button class="btn ghost sm" style="width:100%" onclick="showUniformAll()">전체 응답 보기 (읽기전용)</button></div>`;
+  } else if(admin){
     const undone = roster.filter(m=>!uniformSizeOf(m));
     body += `<div style="margin-top:8px;border-top:1px solid var(--line);padding-top:10px">
       <div style="font-size:12px;font-weight:800;color:var(--red);margin-bottom:6px">미응답 ${undone.length}명 <span style="color:var(--muted);font-weight:400">· 이름 눌러 대리 입력</span></div>

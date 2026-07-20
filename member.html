@@ -2303,7 +2303,8 @@ function renderMore() {
   const bankBtn = `<button class="more-item" onclick="showBankInfo()"><div class="mi-name">회비 계좌 안내</div><div class="mi-desc">입금 계좌 확인 · 복사</div></button>`;
   const pinBtn = `<button class="more-item" onclick="changeMyPin()"><div class="mi-name">내 PIN 변경</div><div class="mi-desc">로그인 PIN 4자리 바꾸기</div></button>`;
   const logoutBtn = `<button class="more-item" style="border-color:rgba(189,100,82,.45)" onclick="logout()"><div class="mi-name" style="color:#e08a76">로그아웃</div><div class="mi-desc">이 기기에서 로그아웃</div></button>`;
-  const memberGrid = memberItems.map(btn).join('') + uniformBtn + bankBtn + pinBtn + introLink + guideBtn + logoutBtn;
+  const draftBtn = `<button class="more-item" onclick="openDraft()"><div class="mi-name">팀 뽑기 (드래프트)</div><div class="mi-desc">감독 2명이 번갈아 팀원 선발 · 팀 리그 현장용</div></button>`;
+  const memberGrid = memberItems.map(btn).join('') + draftBtn + uniformBtn + bankBtn + pinBtn + introLink + guideBtn + logoutBtn;
   let html = '';
   if (admin) {
     // 운영진: 회원 메뉴 / 운영진 메뉴 두 구역으로 구분
@@ -3015,6 +3016,61 @@ async function setSurvey(){
 function _umBox(title, body){
   let h=document.getElementById('mmHost'); if(!h){h=document.createElement('div');h.id='mmHost';document.body.appendChild(h);}
   h.innerHTML = `<div class="mm-back" onclick="if(event.target===this)closeMemberCard()"><div class="mm-box"><div class="mm-head"><div class="mm-name">${title}</div><button class="mm-x" onclick="closeMemberCard()">×</button></div>${body}</div></div>`;
+}
+
+/* ===== 팀 뽑기(드래프트) — 팀 리그 현장용. 감독 2명이 번갈아 뽑기 1/2/2/…/2/1 스네이크 ===== */
+let draftState = null;
+function openDraft(){
+  const mo = statusMonth();                 // 다음달 참여(활동) 회원 기준
+  // 전원 풀에 포함(감독·관전자만 제외). 구경만 할 사람은 셋업에서 탭으로 관전자로 뺀다.
+  draftState = { step:'setup', month:mo, all:activeMembers(mo), capA:null, capB:null, absent:new Set(), poolAll:[], turns:[], picks:[] };
+  draftRender();
+}
+function draftMemName(id){ const m=(draftState.all||[]).find(x=>x.id===id); if(!m) return String(id); return `${esc(m.name)}${m.jersey!=null?` <span style="color:var(--muted);font-size:11px">${m.jersey}</span>`:''}`; }
+function draftToggleCap(id){ const s=draftState; if(!s||s.step!=='setup')return; if(s.capA===id)s.capA=null; else if(s.capB===id)s.capB=null; else if(s.capA==null)s.capA=id; else if(s.capB==null)s.capB=id; else s.capB=id; s.absent.delete(id); draftRender(); }
+function draftTogglePresent(id){ const s=draftState; if(!s||s.step!=='setup')return; if(id===s.capA||id===s.capB)return; if(s.absent.has(id))s.absent.delete(id); else s.absent.add(id); draftRender(); }
+function buildDraftTurns(n){ const t=[]; let cap=0,rem=n; if(rem<=0)return t; t.push({cap:0,n:1}); rem--; cap=1; while(rem>0){ if(rem<=2){ t.push({cap,n:1}); rem--; if(rem>0){ cap=1-cap; t.push({cap,n:1}); rem--; } } else { t.push({cap,n:2}); rem-=2; cap=1-cap; } } return t; }
+function draftStart(){ const s=draftState; if(!s)return; if(s.capA==null||s.capB==null){ toast('감독 2명을 선택해 주세요'); return; } s.poolAll=s.all.filter(m=>m.id!==s.capA&&m.id!==s.capB&&!s.absent.has(m.id)).map(m=>m.id); if(!s.poolAll.length){ toast('뽑을 인원이 없어요'); return; } s.turns=buildDraftTurns(s.poolAll.length); s.picks=[]; s.step='draft'; draftRender(); }
+function draftCurTurn(){ const s=draftState; const k=s.picks.length; let acc=0; for(let i=0;i<s.turns.length;i++){ if(k<acc+s.turns[i].n) return {ti:i,inTurn:k-acc,turn:s.turns[i]}; acc+=s.turns[i].n; } return null; }
+function draftPick(id){ const s=draftState; if(!s||s.step!=='draft')return; const c=draftCurTurn(); if(!c)return; s.picks.push({id,cap:c.turn.cap}); draftRender(); }
+function draftUndo(){ const s=draftState; if(!s||!s.picks.length)return; s.picks.pop(); if(s.step==='done')s.step='draft'; draftRender(); }
+function draftBack(){ const s=draftState; if(!s)return; s.step='setup'; s.picks=[]; draftRender(); }
+function draftCopy(){ const s=draftState; if(!s)return; const nm=id=>{const m=s.all.find(x=>x.id===id);return m?m.name:id;}; const A=[s.capA,...s.picks.filter(p=>p.cap===0).map(p=>p.id)].map(nm); const B=[s.capB,...s.picks.filter(p=>p.cap===1).map(p=>p.id)].map(nm); copyText(`[팀 뽑기 · ${potmMonthLabel(s.month)}]\nA팀 (감독 ${nm(s.capA)}) ${A.length}명: ${A.join(', ')}\nB팀 (감독 ${nm(s.capB)}) ${B.length}명: ${B.join(', ')}`); }
+function draftRender(){
+  const s=draftState; if(!s)return;
+  if(s.step==='setup'){
+    const capChips = s.all.map(m=>{ const isA=s.capA===m.id,isB=s.capB===m.id; const bg=isA?'var(--win)':(isB?'#6d5db0':'transparent'); return `<button onclick="draftToggleCap(${m.id})" style="border:1px solid ${isA||isB?bg:'var(--line)'};background:${bg};color:${isA||isB?'#fff':'var(--cream)'};border-radius:999px;padding:5px 11px;margin:3px;font-family:inherit;font-size:13px;cursor:pointer">${esc(m.name)}${isA?' · A':isB?' · B':''}</button>`; }).join('');
+    const presentList = s.all.filter(m=>m.id!==s.capA&&m.id!==s.capB).map(m=>{ const ob=s.absent.has(m.id); return `<button onclick="draftTogglePresent(${m.id})" style="border:1px solid ${ob?'var(--line)':'var(--accent)'};background:${ob?'transparent':'rgba(224,165,48,.12)'};color:${ob?'var(--muted)':'var(--cream)'};border-radius:999px;padding:5px 11px;margin:3px;font-family:inherit;font-size:13px;cursor:pointer">${esc(m.name)}${ob?' <span style="font-size:10px;opacity:.85">관전</span>':''}</button>`; }).join('');
+    const nPresent = s.all.filter(m=>m.id!==s.capA&&m.id!==s.capB&&!s.absent.has(m.id)).length;
+    const nObs = s.all.filter(m=>m.id!==s.capA&&m.id!==s.capB&&s.absent.has(m.id)).length;
+    _umBox('팀 뽑기 · 준비', `
+      <p class="sub" style="margin:0 0 8px">${potmMonthLabel(s.month)} 활동 회원 기준. 감독 2명을 고르고, 경기 안 하고 <b>구경할 사람은 눌러서 관전자</b>로 빼세요. (감독이 1·2·2·…·2·1 순으로 번갈아 뽑아요)</p>
+      <div style="font-size:12px;font-weight:800;color:var(--coffee);margin:12px 0 4px">감독 2명 <span style="color:var(--muted);font-weight:600">${(s.capA?1:0)+(s.capB?1:0)}/2</span></div>
+      <div>${capChips}</div>
+      <div style="font-size:12px;font-weight:800;color:var(--coffee);margin:14px 0 4px">참여 인원 <span style="color:var(--muted);font-weight:600">${nPresent}명 · 관전 ${nObs}명 (탭하면 관전자)</span></div>
+      <div>${presentList||'<span class="hint">위에서 감독을 먼저 골라주세요</span>'}</div>
+      <button class="btn accent" style="width:100%;margin-top:14px" onclick="draftStart()">뽑기 시작 (${nPresent}명)</button>`);
+    return;
+  }
+  const teamA=[s.capA,...s.picks.filter(p=>p.cap===0).map(p=>p.id)];
+  const teamB=[s.capB,...s.picks.filter(p=>p.cap===1).map(p=>p.id)];
+  const picked=new Set(s.picks.map(p=>p.id));
+  const pool=s.poolAll.filter(id=>!picked.has(id));
+  const cur=draftCurTurn(); const done=!cur||!pool.length;
+  const teamCol=(title,ids,color)=>`<div style="flex:1;min-width:0"><div style="font-size:12px;font-weight:800;color:${color};margin-bottom:6px">${title} <span style="color:var(--muted)">${ids.length}명</span></div>${ids.map((id,i)=>`<div style="font-size:13px;color:var(--cream);padding:3px 0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${i===0?'<b style="color:'+color+'">[감독]</b> ':''}${draftMemName(id)}</div>`).join('')}</div>`;
+  let head;
+  if(done){ head=`<div style="text-align:center;padding:9px;background:rgba(224,165,48,.14);border-radius:10px;font-weight:800;color:var(--accent);margin-bottom:12px">뽑기 완료</div>`; }
+  else { const capId=(cur.turn.cap===0?s.capA:s.capB); const nm=(s.all.find(x=>x.id===capId)||{}).name||''; const left=cur.turn.n-cur.inTurn; head=`<div style="text-align:center;padding:9px;background:${cur.turn.cap===0?'rgba(70,179,129,.16)':'rgba(109,93,176,.18)'};border-radius:10px;margin-bottom:12px"><b style="color:${cur.turn.cap===0?'var(--win)':'#9a8ad6'}">${esc(nm)} 감독</b> 차례 · <b>${left}명</b> 뽑기 <span style="color:var(--muted);font-size:12px">(이번 턴 ${cur.turn.n}명)</span></div>`; }
+  const poolHtml = done? '' : `<div style="font-size:12px;font-weight:800;color:var(--coffee);margin:12px 0 4px">남은 인원 ${pool.length}</div><div>${pool.map(id=>`<button onclick="draftPick(${id})" style="border:1px solid var(--accent);background:rgba(224,165,48,.1);color:var(--cream);border-radius:999px;padding:6px 12px;margin:3px;font-family:inherit;font-size:13px;cursor:pointer">${draftMemName(id)}</button>`).join('')}</div>`;
+  _umBox('팀 뽑기', `
+    ${head}
+    <div style="display:flex;gap:14px;padding:10px 0;border-top:1px solid var(--line);border-bottom:1px solid var(--line)">${teamCol('A팀',teamA,'var(--win)')}${teamCol('B팀',teamB,'#9a8ad6')}</div>
+    ${poolHtml}
+    <div style="display:flex;gap:8px;margin-top:12px">
+      <button class="btn ghost sm" style="flex:1" onclick="draftUndo()" ${s.picks.length?'':'disabled'}>되돌리기</button>
+      ${done?`<button class="btn accent sm" style="flex:1" onclick="draftCopy()">결과 복사</button>`:''}
+      <button class="btn ghost sm" style="flex:1" onclick="draftBack()">처음부터</button>
+    </div>`);
 }
 async function showUniform(){
   try{ if(USE_DB){ const {data:row}=await sb.from('club_settings').select('data').eq('id','current').maybeSingle(); if(row&&row.data){ _settingsCache=row.data; UNIFORM=row.data.uniform||UNIFORM; } } }catch(e){}

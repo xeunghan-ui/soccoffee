@@ -1022,7 +1022,8 @@ async function removeRiderByIndex(rideId, index, target) {
 }
 
 /* ---------- 운영진 권한 (로그인한 사람이 운영진 명단에 있으면 자동) ---------- */
-const ADMIN_NAMES = ['박승한'];
+const ADMIN_NAMES = ['박승한'];                                  // 총괄관리자 — 전체 편집(최종 수정)
+const SUB_ADMIN_NAMES = ['원재식','홍순인','최승호','정희범'];    // 일반 관리자 — 회비 현황 확인(읽기전용)만
 const INJURED_NAMES = ['함지상'];   // 부상자 — 랭킹에서 제외
 // 멤버 역할(표시용). type:'admin'=운영진 색, 'role'=그외 역할 색
 const MEMBER_ROLES = {
@@ -1043,10 +1044,15 @@ async function saveMemberSkills(id, arr){
   if (arr && arr.length) skills[id] = arr; else delete skills[id];
   return await saveSettings({ skills });
 }
-function isAdmin() {
+function isAdmin() {   // 총괄관리자(전체 편집)
   const p = PLAYERS.find(x => x.id === getMe());
   return !!(p && ADMIN_NAMES.includes(p.name));
 }
+function isSubAdmin() {   // 일반 관리자 — 회비 현황 확인만
+  const p = PLAYERS.find(x => x.id === getMe());
+  return !!(p && SUB_ADMIN_NAMES.includes(p.name));
+}
+function isDuesViewer() { return isAdmin() || isSubAdmin(); }   // 회비 현황 열람 권한
 function updateAdminBtn() {
   const opsTab = document.getElementById('opsTab');
   if (opsTab) opsTab.classList.toggle('hidden', !isAdmin());
@@ -2319,10 +2325,14 @@ function renderMore() {
     </div>
     <div class="more-grid">${mt==='set'?setGrid:useGrid}</div>`;
   let html = '';
-  if (admin) {
+  if (admin) {   // 총괄관리자(박승한) — 전체 운영진 메뉴
     html += `<div class="more-sec-title">회원 메뉴</div>` + memberTabbed;
     html += `<div class="more-sec-title">운영진 메뉴</div>`;
     html += `<div class="more-grid">` + adminItems.map(adminBtn).join('') + teamLink + `</div>`;
+  } else if (isSubAdmin()) {   // 일반 관리자 — 회비 현황(읽기전용)만
+    html += memberTabbed;
+    html += `<div class="more-sec-title">운영진 메뉴</div>`;
+    html += `<div class="more-grid"><button class="more-item" onclick="switchTab('dues')"><div class="mi-name">회비 현황</div><div class="mi-desc">이번 달 납부 현황 · 읽기전용</div></button></div>`;
   } else {
     html += memberTabbed;
   }
@@ -2719,6 +2729,12 @@ async function openMemberCard(id, startEdit){
   renderMemberCard();
 }
 function closeMemberCard(){ mmState=null; const h=document.getElementById('mmHost'); if(h) h.innerHTML=''; }
+// 모달(mmHost)이 열려 있으면 배경(body) 스크롤 잠금 — 모든 모달에 일괄 적용
+(function(){
+  function sync(){ const h=document.getElementById('mmHost'); document.body.style.overflow = (h && h.innerHTML.trim()) ? 'hidden' : ''; }
+  function attach(){ let h=document.getElementById('mmHost'); if(!h){ h=document.createElement('div'); h.id='mmHost'; document.body.appendChild(h); } new MutationObserver(sync).observe(h,{childList:true}); sync(); }
+  if(document.readyState==='loading') document.addEventListener('DOMContentLoaded',attach); else attach();
+})();
 // 홈 화면에 추가 가이드(모달)
 function showAddHomeGuide(){
   let h=document.getElementById('mmHost'); if(!h){ h=document.createElement('div'); h.id='mmHost'; document.body.appendChild(h); }
@@ -3630,12 +3646,14 @@ async function renderDues() {
         <div style="font-size:12px;color:var(--muted);margin-top:2px">${myPaid ? '납부 완료로 표시됨' : '미납 상태예요'}${myDirty?' · 저장 전 (아래 저장 필요)':''}</div>
       </div>
       ${admin
-        ? `<span class="dues-badge ${myPaid?'paid':'unpaid'}" style="flex-shrink:0;font-weight:800">${myPaid?'납부':'미납'}</span>`
-        : `<button class="dues-badge toggle ${myPaid?'paid':'unpaid'}" style="flex-shrink:0" onclick="toggleDue(${me},${myPaid})">${myPaid ? '납부 취소' : '납부 표시'}</button>`}
+        ? `<button class="dues-badge toggle ${myPaid?'paid':'unpaid'}" style="flex-shrink:0" onclick="duesDraftCardToggle(${me})">${myPaid ? '납부 취소' : '납부 표시'}</button>`
+        : isSubAdmin()
+          ? `<span class="dues-badge ${myPaid?'paid':'unpaid'}" style="flex-shrink:0;font-weight:800">${myPaid?'납부':'미납'}</span>`
+          : `<button class="dues-badge toggle ${myPaid?'paid':'unpaid'}" style="flex-shrink:0" onclick="toggleDue(${me},${myPaid})">${myPaid ? '납부 취소' : '납부 표시'}</button>`}
     </div>` : '';
 
-  // 멤버: 전체 납부현황 비공개 — 본인 회비만
-  if (!admin) {
+  // 일반 멤버(총괄·일반관리자 아님): 전체 납부현황 비공개 — 본인 회비만
+  if (!isDuesViewer()) {
     el.innerHTML = `<div class="section-title">${potmMonthLabel(month)} 회비</div>${myCard}${bankInlineHtml()}<p class="hint" style="text-align:center;margin-top:8px">전체 납부 현황은 운영진이 관리해요. 위에서 본인 회비를 확인하고 직접 표시할 수 있어요.</p>`;
     return;
   }
@@ -3676,15 +3694,18 @@ async function renderDues() {
       <div style="font-size:12px;font-weight:800;color:var(--red);margin-bottom:6px">미납 ${total-paidCount}명</div>
       <div style="font-size:14px;line-height:1.7;color:var(--text)">${[...payMembers].filter(m=>effState(m.id)==='unpaid').sort(byJersey).map(m=>esc(m.name)).join(', ')}</div>
     </div>` : ''}
-    <div class="ops-note">읽기전용 현황 — 납부는 멤버가 홈에서 직접 표시해요. (수정 불가)</div>
+    <div class="ops-note">${admin ? '운영진 모드 — 납부 / 미납 / 휴면(다음달)을 직접 선택하고 아래 \'저장\'으로 반영돼요' : '읽기전용 현황 — 납부는 멤버가 홈에서 직접 표시해요.'}</div>
     <div class="card">
       <div class="att-list dues-grid">
         ${[...members].sort((a,b)=>{ const rk=s=>s==='unpaid'?0:(s==='paid'?1:2); return rk(effState(a.id))-rk(effState(b.id)) || byJersey(a,b); }).map(m=>{
           const stt = effState(m.id);
           const isMe = me===m.id;
-          return `<div class="dues-row ${isMe?'me':''}">
-            <span class="nm">${esc(m.name)}${isMe?' <span style="font-size:11px;color:var(--accent)">(나)</span>':''}</span>
-            <span style="flex-shrink:0;font-size:12px;font-weight:800;padding:4px 12px;border-radius:20px;background:${stt==='paid'?'rgba(70,179,129,.92)':'rgba(217,97,74,.92)'};color:#fff">${stt==='paid'?'납부':'미납'}</span>
+          const dirty = admin && (m.id in duesDraft);
+          return `<div class="dues-row ${isMe?'me':''}${dirty?' dirty':''}">
+            <span class="nm">${esc(m.name)}${isMe?' <span style="font-size:11px;color:var(--accent)">(나)</span>':''}${dirty?' <span class="dirty-dot">●</span>':''}</span>
+            ${admin
+              ? `<span class="st-set"><button class="st paid ${stt==='paid'?'on':''}" onclick="duesDraftSet(${m.id},'paid')">납부</button><button class="st unpaid ${stt==='unpaid'?'on':''}" onclick="duesDraftSet(${m.id},'unpaid')">미납</button><button class="st dormant ${stt==='dormant'?'on':''}" onclick="duesDraftSet(${m.id},'dormant')">휴면</button></span>`
+              : `<span style="flex-shrink:0;font-size:12px;font-weight:800;padding:4px 12px;border-radius:20px;background:${stt==='paid'?'rgba(70,179,129,.92)':'rgba(217,97,74,.92)'};color:#fff">${stt==='paid'?'납부':'미납'}</span>`}
           </div>`;
         }).join('')}
         ${dormantMembers.map(m=>{

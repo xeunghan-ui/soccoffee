@@ -26,7 +26,8 @@
 - **동시성 = last-write-wins.** 특히 `id='teambuilder'`는 **팀빌더(별도 앱/코웤)가 전체를 덮어씀** → 사이트가 쓴 `dormantMonths`/`activeMonths`가 팀빌더 저장에 리셋될 수 있음(미해결. 별도 저장소 분리 또는 양쪽 병합 합의 필요).
 
 ## 핵심 규칙
-- **로그인** = 이름 + PIN 4자리(SHA-256 해시 저장, `club_settings.current.pins`). 운영진 = `ADMIN_NAMES=['홍순인','박승한','원재식','최승호','정희범']`.
+- **로그인** = 이름 + PIN 4자리(SHA-256 해시 저장, `club_settings.current.pins`).
+- **권한 3단계**: 총괄관리자 `ADMIN_NAMES=['박승한']`(=`isAdmin()`, 전체 편집·모든 운영진 기능) / 일반 관리자 `SUB_ADMIN_NAMES=['원재식','홍순인','최승호','정희범']`(=`isSubAdmin()`, 더보기·회비 탭에서 **회비 현황 읽기전용만**) / 나머지 멤버(운영진 기능 없음). `isDuesViewer()`=총괄 or 일반관리자. 회비 편집(납부/미납 토글·저장)은 총괄만.
 - **이미지 추가 전 반드시 압축**: PIL로 1920px·quality 82, `exif_transpose`로 회전 보정. (원본 10~20MB 그대로 넣으면 안 됨.)
 - **휴면**(월 단위, '2026-07' 형식)은 팀빌더에서 관리 → 사이트의 회비·참석·명단에서 해당 월 자동 제외. 팀빌더는 휴면을 `status:'dormant'`(영구 플래그)로도 저장함.
 - **활동 예외(`activeMonths`)**: 영구 휴면(`status:'dormant'`) 회원이 홈 토글로 특정 달을 '활동'으로 되돌릴 수 있게, player에 `activeMonths[]`를 둠. `isDormantFor`/홈 `dormStatus`가 이 달을 최우선으로 '활동' 처리(=status를 안 건드림, 비파괴). 멤버앱(setMyDormancy)이 씀 → **팀빌더(별도 코웤)도 `activeMonths`를 존중해야 함**(참석 확정·표시).

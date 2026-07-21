@@ -722,6 +722,9 @@
   .bn-badge { position: absolute; top: 2px; left: calc(50% + 5px); min-width: 16px; height: 16px; padding: 0 4px; border-radius: 8px; background: var(--alert); color: #fff; font-size: 10px; font-weight: 800; line-height: 16px; text-align: center; box-sizing: border-box; }
   /* 더보기 메뉴 */
   .more-grid { display: grid; gap: 10px; }
+  .more-tabs { display: flex; gap: 8px; margin-bottom: 12px; }
+  .more-tab { flex: 1; padding: 9px; border-radius: 10px; border: 1px solid var(--line); background: transparent; color: var(--muted); font-weight: 800; font-size: 13px; font-family: inherit; cursor: pointer; }
+  .more-tab.on { background: var(--accent); color: #14281b; border-color: var(--accent); }
   .more-item { display: block; width: 100%; box-sizing: border-box; text-align: left; cursor: pointer; font-family: inherit;
     background: #1e3526; border: 1px solid var(--line); border-radius: 12px; padding: 14px 16px;
     text-decoration: none; margin: 0; }
@@ -2276,6 +2279,8 @@ function squadBlock(members, team) {
 }
 
 /* ===== 더보기 메뉴 ===== */
+let moreTab = 'use';   // 회원 메뉴 카테고리 탭: 'use'(이용) | 'set'(설정)
+function setMoreTab(t){ moreTab = t; renderMore(); }
 function renderMore() {
   const el = document.getElementById('moreContent');
   const admin = isAdmin();
@@ -2304,16 +2309,22 @@ function renderMore() {
   const pinBtn = `<button class="more-item" onclick="changeMyPin()"><div class="mi-name">내 PIN 변경</div><div class="mi-desc">로그인 PIN 4자리 바꾸기</div></button>`;
   const logoutBtn = `<button class="more-item" style="border-color:rgba(189,100,82,.45)" onclick="logout()"><div class="mi-name" style="color:#e08a76">로그아웃</div><div class="mi-desc">이 기기에서 로그아웃</div></button>`;
   const draftBtn = `<button class="more-item" onclick="openDraft()"><div class="mi-name">팀 뽑기 (드래프트)</div><div class="mi-desc">감독 2명이 번갈아 팀원 선발 · 팀 리그 현장용</div></button>`;
-  const memberGrid = memberItems.map(btn).join('') + draftBtn + bankBtn + pinBtn + introLink + guideBtn + logoutBtn;
+  // 회원 메뉴 = 카테고리 탭(이용 / 설정)
+  const useGrid = memberItems.map(btn).join('') + draftBtn + bankBtn + introLink;   // 이용: FAQ·팀뽑기·회비계좌·소개
+  const setGrid = pinBtn + guideBtn + logoutBtn;                                     // 설정: PIN·홈추가·로그아웃
+  const mt = (moreTab === 'set') ? 'set' : 'use';
+  const memberTabbed = `<div class="more-tabs">
+      <button class="more-tab ${mt==='use'?'on':''}" onclick="setMoreTab('use')">이용</button>
+      <button class="more-tab ${mt==='set'?'on':''}" onclick="setMoreTab('set')">설정</button>
+    </div>
+    <div class="more-grid">${mt==='set'?setGrid:useGrid}</div>`;
   let html = '';
   if (admin) {
-    // 운영진: 회원 메뉴 / 운영진 메뉴 두 구역으로 구분
-    html += `<div class="more-sec-title">회원 메뉴</div>`;
-    html += `<div class="more-grid">` + memberGrid + `</div>`;
+    html += `<div class="more-sec-title">회원 메뉴</div>` + memberTabbed;
     html += `<div class="more-sec-title">운영진 메뉴</div>`;
     html += `<div class="more-grid">` + adminItems.map(adminBtn).join('') + teamLink + `</div>`;
   } else {
-    html += `<div class="more-grid">` + memberGrid + `</div>`;
+    html += memberTabbed;
   }
   el.innerHTML = html;
 }

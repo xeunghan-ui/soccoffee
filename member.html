@@ -2563,7 +2563,7 @@ async function renderHome() {
         : ''}`;
     const respondHtml = targetSess ? (
       targetBlockedDorm
-        ? `<div style="margin-top:14px;padding-top:14px;border-top:1px solid var(--line);font-size:12px;color:var(--muted);line-height:1.6">이번 달 휴면이라 참석 신청 대상이 아니에요.<br>게스트 참여를 원하는 경우 운영진에게 문의 부탁드립니다.</div>`
+        ? `<div style="margin-top:14px;padding-top:14px;border-top:1px solid var(--line)"><div style="font-size:12px;color:var(--muted);line-height:1.6;margin-bottom:9px">이번 달 휴면이에요. 게스트로 참여하려면 일정에서 신청할 수 있어요.</div><button class="btn accent" style="width:100%" onclick="openAtt('${targetSess.id}')">게스트로 신청 →</button></div>`
       : targetBlockedDues
         ? `<div style="margin-top:14px;padding-top:14px;border-top:1px solid var(--line)"><div style="font-size:11px;color:var(--muted);font-weight:800;letter-spacing:.04em;margin-bottom:9px">${sessLabel} 참석</div><div style="font-size:12px;color:var(--muted);line-height:1.6;margin-bottom:9px">${targetMoNum}월 회비를 납부해야 이 세션에 참석 신청할 수 있어요.</div><button class="btn accent" style="width:100%" onclick="switchTab('dues')">회비 납부하러 가기</button></div>`
         : `<div style="margin-top:14px;padding-top:14px;border-top:1px solid var(--line)"><div style="font-size:11px;color:var(--muted);font-weight:800;letter-spacing:.04em;margin-bottom:9px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${sessLabel} 참석</div><div style="display:flex;gap:6px">${qbtn('yes','참석','var(--win)','var(--cream)')}${qbtn('no','불참','var(--alert)','var(--cream)')}${qbtn('maybe','미정','var(--accent)','#14281b')}</div></div>`) : '';
@@ -2898,6 +2898,42 @@ function uniformRoster(){
 // 경기 결과(월별 승리 팀) — 운영진 입력. 멤버의 현재 팀(WHITE/BLACK) 기준으로 승률 계산.
 let RESULTS = null;                       // { 'YYYY-MM': 'WHITE'|'BLACK'|'draw' }
 const RESULTS_SEED = { '2026-06': 'BLACK' };
+// 게스트 신청(휴면 멤버가 세션 게스트 참여 신청 → 운영진 승인). settings.guestReqs = [{sid,mid,name,at,status:'pending'|'approved'}]
+let GUEST_REQS = [];
+async function freshGuestReqs(){
+  try{ if(USE_DB){ const {data:row}=await sb.from('club_settings').select('data').eq('id','current').maybeSingle(); if(row&&row.data){ _settingsCache=row.data; GUEST_REQS=row.data.guestReqs||[]; } } else { GUEST_REQS=(await fetchSettings()).guestReqs||[]; } }catch(e){}
+  return GUEST_REQS;
+}
+function guestStatusOf(sid, mid){ const g=GUEST_REQS.find(x=>x.sid===sid&&x.mid===mid); return g?g.status:'none'; }
+async function requestGuest(sid){
+  const me=getMe(); if(me==null){ toast('로그인이 필요해요'); return; }
+  await freshGuestReqs();
+  if(GUEST_REQS.some(g=>g.sid===sid&&g.mid===me)){ toast('이미 신청했어요'); await rerender(renderAtt); return; }
+  const nm=(ROSTER.find(x=>x.id===me)||{}).name||'';
+  GUEST_REQS=[...GUEST_REQS,{sid,mid:me,name:nm,at:new Date().toISOString(),status:'pending'}];
+  if(!(await saveSettings({guestReqs:GUEST_REQS}))){ toast('신청 중 오류가 났어요'); return; }
+  toast('게스트로 신청했어요. 운영진 승인 후 확정돼요.');
+  await rerender(renderAtt);
+}
+async function cancelGuest(sid, mid){
+  const me=getMe(); if(!isAdmin() && mid!==me) return;
+  await freshGuestReqs();
+  const wasApproved = GUEST_REQS.some(g=>g.sid===sid&&g.mid===mid&&g.status==='approved');
+  GUEST_REQS=GUEST_REQS.filter(g=>!(g.sid===sid&&g.mid===mid));
+  if(!(await saveSettings({guestReqs:GUEST_REQS}))){ toast('처리 중 오류가 났어요'); return; }
+  if(wasApproved){ try{ await setAttendance(sid, mid, 'no'); }catch(e){} }
+  toast('게스트 신청을 취소했어요');
+  await rerender(renderAtt);
+}
+async function approveGuest(sid, mid){
+  if(!isAdmin()) return;
+  await freshGuestReqs();
+  GUEST_REQS=GUEST_REQS.map(g=> (g.sid===sid&&g.mid===mid)?{...g,status:'approved'}:g);
+  if(!(await saveSettings({guestReqs:GUEST_REQS}))){ toast('승인 중 오류가 났어요'); return; }
+  try{ await setAttendance(sid, mid, 'yes'); }catch(e){}   // 게스트 참석 확정
+  toast('게스트를 승인했어요');
+  await rerender(renderAtt);
+}
 function curResults(){ return Object.assign({}, RESULTS_SEED, (RESULTS||{})); }
 function winRateOf(team){
   if (team!=='WHITE' && team!=='BLACK') return null;
@@ -3334,6 +3370,7 @@ function toggleAttGrp(k, btn){ attCollapsed[k] = !attCollapsed[k]; if(btn && btn
 async function renderAtt() {
   const el = document.getElementById('attContent');
   el.innerHTML = `<div class="empty">불러오는 중...</div>`;
+  await freshGuestReqs();   // 게스트 신청 최신화
   const sessions = await upcomingSessions();
   if (attSessionId == null || !sessions.some(s=>s.id===attSessionId)) attSessionId = sessions[0].id;
   const sess = sessions.find(s=>s.id===attSessionId);
@@ -3409,8 +3446,15 @@ async function renderAtt() {
   } else if (!meActive) {
     const _meP = attMe != null ? ROSTER.find(x => x.id === attMe) : null;
     const _st = _meP ? (_meP.status||'active') : 'former';
-    const _baseOK = _meP && _st!=='former' && _st!=='friends' && _meP.joinDate && new Date(_meP.joinDate) <= sessMonthEnd && (sess.allowDormant || !isDormantFor(_meP, sessMonth));
-    if (sess.duesOnly && _baseOK && duesPaidSet && !duesPaidSet.has(attMe)) {
+    const _joined = _meP && _st!=='former' && _st!=='friends' && _meP.joinDate && new Date(_meP.joinDate) <= sessMonthEnd;
+    const _dormBlocked = _joined && !sess.allowDormant && isDormantFor(_meP, sessMonth);
+    const _baseOK = _joined && (sess.allowDormant || !isDormantFor(_meP, sessMonth));
+    if (_dormBlocked) {
+      const gs = guestStatusOf(sess.id, attMe);
+      if (gs === 'approved') html += `<div class="card"><h2>${esc(meName())} 님</h2><p class="sub">게스트 참석이 <b style="color:var(--win)">확정</b>됐어요. 아래 명단 '게스트'에 표시돼요.</p></div>`;
+      else if (gs === 'pending') html += `<div class="card"><h2>${esc(meName())} 님</h2><p class="sub">게스트 신청 완료 · <b>운영진 승인 대기중</b>이에요.</p><button class="btn ghost sm" style="margin-top:10px;width:100%" onclick="cancelGuest('${sess.id}',${attMe})">신청 취소</button></div>`;
+      else html += `<div class="card"><h2>${esc(meName())} 님</h2><p class="sub">이번 달 휴면이에요. 이 세션에 <b>게스트로 참여</b>하려면 신청하세요. (운영진 승인 후 확정)</p><button class="btn accent" style="margin-top:10px;width:100%" onclick="requestGuest('${sess.id}')">게스트로 신청</button></div>`;
+    } else if (sess.duesOnly && _baseOK && duesPaidSet && !duesPaidSet.has(attMe)) {
       html += `<div class="card"><h2>${esc(meName())} 님</h2><p class="sub">${smM}월 회비를 납부해야 참석 신청할 수 있어요.</p><button class="btn accent" style="margin-top:10px;width:100%" onclick="switchTab('dues')">회비 납부하러 가기</button></div>`;
     } else {
       html += `<div class="card"><h2>${esc(meName())} 님</h2><p class="sub">이번 달 활동 회원이 아니라 참석 체크 대상이 아니에요.</p></div>`;
@@ -3480,6 +3524,10 @@ async function renderAtt() {
       </div>
       <div class="att-list">${listHtml}</div>
     </div>
+    ${(()=>{ const gp=GUEST_REQS.filter(g=>g.sid===sess.id&&g.status==='pending'); const ga=GUEST_REQS.filter(g=>g.sid===sess.id&&g.status==='approved'); let s='';
+      if(admin&&gp.length) s+=`<div class="card" style="margin-top:12px"><div style="font-size:12px;font-weight:800;color:var(--accent);margin-bottom:8px">게스트 신청 · 승인 대기 ${gp.length}명</div>${gp.map(g=>`<div style="display:flex;align-items:center;justify-content:space-between;gap:8px;padding:6px 0"><span style="color:var(--cream);font-size:14px">${esc(g.name)}</span><span style="display:flex;gap:6px"><button class="btn accent sm" onclick="approveGuest('${sess.id}',${g.mid})">승인</button><button class="btn ghost sm" style="color:var(--red)" onclick="cancelGuest('${sess.id}',${g.mid})">거절</button></span></div>`).join('')}</div>`;
+      if(ga.length) s+=`<div class="card" style="margin-top:12px"><div style="font-size:12px;font-weight:800;color:var(--win);margin-bottom:8px">게스트 ${ga.length}명</div>${ga.map(g=>`<div style="display:flex;align-items:center;justify-content:space-between;gap:8px;padding:5px 0"><span style="color:var(--cream);font-size:14px">${esc(g.name)} <span style="font-size:11px;color:var(--win);font-weight:800">게스트</span></span>${admin?`<button class="btn ghost sm" style="color:var(--red)" onclick="cancelGuest('${sess.id}',${g.mid})">취소</button>`:''}</div>`).join('')}</div>`;
+      return s; })()}
     ${nDraft ? `<div class="save-bar"><span class="save-n">변경 ${nDraft}건 (미저장)</span><span class="sb-actions"><button class="cancel" onclick="attCancelDraft()">취소</button><button class="ok" onclick="attSaveDraft()">저장</button></span></div>` : ''}`;
   el.innerHTML = html;
   // 선택된 일정 칩을 가장 왼쪽으로 스크롤
@@ -4377,7 +4425,7 @@ async function initApp() {
   updateAdminBtn();
   try { const r = await fetchRoster(); if (r) applyPlayers(r); } catch (e) {}
   await mergeTbMembers();   // 팀빌더에만 있는 멤버도 로그인 가능하게 병합
-  try { const s = await fetchSettings(); teamSplitOn = s.teamSplit !== false; CLUB_PINS = s.pins || {}; BANK = s.bank || null; SURVEY = s.survey || null; UNIFORM = s.uniform || null; RESULTS = s.results || null; } catch (e) {}
+  try { const s = await fetchSettings(); teamSplitOn = s.teamSplit !== false; CLUB_PINS = s.pins || {}; BANK = s.bank || null; SURVEY = s.survey || null; UNIFORM = s.uniform || null; RESULTS = s.results || null; GUEST_REQS = s.guestReqs || []; } catch (e) {}
   await loadTbDormant();
   await rolloverDormancyIfNeeded();   // 15일 이후 다음 달 휴면 자동 롤오버(월 1회) — 누가 앱을 열든 자동
   // 로컬 미리보기: 첫 활동 회원으로 자동 로그인

@@ -2001,6 +2001,7 @@ function updateGuestDom(sid){
   set('attGuestNum', gaCount);   // 게스트는 멤버 참석과 별도 카운트
   set('attRosterStat', `멤버 ${b.yesM+b.no+b.maybe}/${b.membersLen} 응답${gaCount?` · 게스트 ${gaCount}`:''}`);
   const mn=document.getElementById('gxMinus'); if(mn) mn.disabled = gx<=0;
+  if (attFilter==='guest') { if(_attRows) _attRows.guest = guestRowsHtml(sid); const lb=document.getElementById('attListBody'); if(lb) lb.innerHTML = guestRowsHtml(sid); }
 }
 function guestStatusOf(sid, mid){ const g=GUEST_REQS.find(x=>x.sid===sid&&x.mid===mid); return g?g.status:'none'; }
 async function requestGuest(sid){
@@ -2441,8 +2442,16 @@ function setAttFilter(st){
   attFilter = st;
   if (attTeamView) { attTeamView = false; rerender(renderAtt); return; }   // 팀뷰였으면 일반뷰로 전환
   const b = document.getElementById('attListBody'); if (b && _attRows) b.innerHTML = _attRows[st] || '';
-  const lbl = document.getElementById('attFilterLabel'); if (lbl) lbl.textContent = ({yes:'참석',no:'불참',maybe:'미정',none:'미응답'})[st] || '명단';
+  const lbl = document.getElementById('attFilterLabel'); if (lbl) lbl.textContent = ({yes:'참석',no:'불참',maybe:'미정',none:'미응답',guest:'게스트'})[st] || '명단';
   document.querySelectorAll('.att-counts .att-cnt').forEach(c=>c.classList.toggle('sel', c.classList.contains(st)));
+}
+// 게스트 명단 행(승인된 멤버 게스트 + 외부 게스트) — 게스트 필터 표시용
+function guestRowsHtml(sid){
+  const ga = GUEST_REQS.filter(g=>g.sid===sid&&g.status==='approved');
+  const gx = GUEST_EXTRA[sid]||0;
+  let r = ga.map(g=>`<div class="att-row"><span class="js"></span><span class="nm">${esc(g.name)} <span style="font-size:11px;color:var(--win);font-weight:800">게스트</span></span><span class="st"></span></div>`).join('');
+  if (gx>0) r += `<div class="att-row"><span class="js"></span><span class="nm">외부 게스트</span><span class="st" style="color:var(--win);font-weight:800;font-size:13px">${gx}명</span></div>`;
+  return r || '<div class="empty" style="font-size:13px;padding:16px 0;text-align:center">게스트가 없어요.</div>';
 }
 // 참석 신청 마감: 세션에 deadline이 있으면 그 날 23:59, 없으면 매치일 직전 일요일(전주 일요일)
 function autoDeadline(dateStr){
@@ -2607,6 +2616,7 @@ async function renderAtt() {
   const _emptyRow = '<div class="empty" style="font-size:13px;padding:16px 0;text-align:center">해당 인원이 없어요.</div>';
   // 상태별 명단 행 미리 생성(카운트 클릭 시 즉시 전환)
   _attRows = {}; ['yes','no','maybe','none'].forEach(st=>{ _attRows[st] = sortedM.filter(m=>eff(m.id)===st).map(rosterRow).join('') || _emptyRow; });
+  _attRows.guest = guestRowsHtml(sess.id);
   let listHtml;
   if (teamSplitOn && attTeamView) {
     listHtml = [['WHITE','WHITE'],['BLACK','BLACK'],['기타','기타']].map(([key,label])=>{
@@ -2625,11 +2635,11 @@ async function renderAtt() {
       <div class="att-cnt no ${attFilter==='no'?'sel':''}" onclick="setAttFilter('no')"><div class="num">${no}</div><div class="cap">불참</div></div>
       <div class="att-cnt maybe ${attFilter==='maybe'?'sel':''}" onclick="setAttFilter('maybe')"><div class="num">${maybe}</div><div class="cap">미정</div></div>
       <div class="att-cnt none ${attFilter==='none'?'sel':''}" onclick="setAttFilter('none')"><div class="num">${none}</div><div class="cap">미응답</div></div>
-      <div class="att-cnt guest"><div class="num" id="attGuestNum" style="color:var(--win)">${gaCount}</div><div class="cap">게스트</div></div>
+      <div class="att-cnt guest ${attFilter==='guest'?'sel':''}" onclick="setAttFilter('guest')"><div class="num" id="attGuestNum" style="color:var(--win)">${gaCount}</div><div class="cap">게스트</div></div>
     </div>
     <div class="card" style="margin-top:10px">
       <div class="section-title" style="margin:0 0 8px;display:flex;justify-content:space-between;align-items:center">
-        <span><span id="attFilterLabel">${({yes:'참석',no:'불참',maybe:'미정',none:'미응답'})[attFilter]||'명단'}</span> 명단 <span id="attRosterStat" style="font-size:12px;color:var(--muted);font-weight: 600">멤버 ${respondedCnt}/${members.length} 응답${gaCount?` · 게스트 ${gaCount}`:''}</span></span>
+        <span><span id="attFilterLabel">${({yes:'참석',no:'불참',maybe:'미정',none:'미응답',guest:'게스트'})[attFilter]||'명단'}</span> 명단 <span id="attRosterStat" style="font-size:12px;color:var(--muted);font-weight: 600">멤버 ${respondedCnt}/${members.length} 응답${gaCount?` · 게스트 ${gaCount}`:''}</span></span>
         ${teamSplitOn?`<button class="btn ghost sm" onclick="toggleAttTeam()">${attTeamView?'전체 보기':'팀별 보기'}</button>`:''}
       </div>
       <div class="att-list" id="attListBody">${listHtml}</div>

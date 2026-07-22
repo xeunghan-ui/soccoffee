@@ -792,3 +792,42 @@
   .sk-mvs { display: flex; flex-direction: column; gap: 2px; flex-shrink: 0; }
   .sk-mv { width: 22px; height: 14px; line-height: 1; padding: 0; border-radius: 4px; border: 1px solid var(--line); background: transparent; color: var(--muted); font-size: 9px; cursor: pointer; }
   .sk-mv:disabled { opacity: .3; cursor: default; }
+
+  /* =====================================================================
+     모바일 사용성 개선 (2026-07-22)
+     - iOS는 background-attachment:fixed 미지원(배경 확대·스크롤 잭 현상)
+       → 이미지 배경을 body::before 고정 레이어로 이동
+     - viewport-fit=cover(HTML meta)와 함께 노치·홈바 safe-area 정상 동작
+     - 입력 16px: iOS 포커스 시 자동 화면확대 방지
+     - 터치 타깃 확대 + 탭 하이라이트 제거 + 누름(:active) 피드백
+     ===================================================================== */
+  html { background: #15281b; -webkit-text-size-adjust: 100%; }
+  body { background: none; }
+  body::before {
+    content: ""; position: fixed; inset: 0; z-index: -1; pointer-events: none;
+    background:
+      linear-gradient(rgba(12,24,16,0.74), rgba(12,24,16,0.86)),
+      url("../scf_bg.png") center center / cover no-repeat;
+    background-color: #15281b;
+  }
+  .gate {
+    background:
+      linear-gradient(rgba(12,24,16,0.78), rgba(12,24,16,0.9)),
+      url("../scf_bg.png") center center / cover no-repeat;
+    background-color: #15281b;
+  }
+  .wrap { padding-bottom: calc(var(--navh) + 30px); }
+  input, select, textarea { font-size: 16px; }
+  .gate-box input { font-size: 16px; }
+  a, button { -webkit-tap-highlight-color: transparent; touch-action: manipulation; }
+  /* 터치 타깃 — 참석 토글·서브탭·랭킹 탭·세션 칩 */
+  .att-row { padding: 10px 4px; }
+  .att-row .st { padding: 6px 12px; }
+  .att-row .st-set .st { padding: 7px 12px; }
+  .rk-tabs { -webkit-overflow-scrolling: touch; }
+  .rk-tab { padding: 10px 14px; }
+  .member-subnav .msub { padding: 11px 6px; }
+  .sess-chip { padding: 9px 14px; }
+  /* 모바일엔 hover가 없으니 누름 피드백으로 대체 */
+  .msub:active, .rk-tab:active, .sess-chip:active, .more-item:active,
+  .bnav-item:active, .att-row button.st:active { opacity: .72; }

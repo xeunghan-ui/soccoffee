@@ -353,7 +353,9 @@
   .att-seg button.no.on { background: var(--red); border-color: var(--red); color: #fff; }
   .att-seg button.maybe.on { background: var(--accent); border-color: var(--accent); color: #fff; }
   .att-counts { display: flex; gap: 10px; margin: 12px 0; }
-  .att-cnt { flex: 1; text-align: center; background: #fbf6ee; border-radius: 12px; padding: 12px 6px; }
+  .att-cnt { flex: 1; text-align: center; background: #fbf6ee; border-radius: 12px; padding: 12px 6px; cursor: pointer; box-shadow: inset 0 0 0 2px transparent; transition: box-shadow .12s; }
+  .att-cnt.sel { box-shadow: inset 0 0 0 2px var(--accent); }
+  .att-cnt.guest { cursor: default; box-shadow: none; }
   .att-cnt .num { font-size: 26px; font-weight: 400; font-family: var(--disp); letter-spacing: .01em; }
   .att-cnt .cap { font-size: 12px; color: var(--muted); font-weight: 600; }
   .att-cnt.yes .num { color: var(--green); }
@@ -2922,7 +2924,7 @@ function updateGuestDom(sid){
   set('gxNum', gx);
   set('gHdr', `게스트 ${gaCount}명`);
   set('attGuestNum', gaCount);   // 게스트는 멤버 참석과 별도 카운트
-  set('attRosterStat', `멤버 ${b.yesM+b.no+b.maybe}/${b.membersLen} 응답${gaCount?` · 게스트 ${gaCount}`:''}${isAdmin()?' · 상태 눌러 변경':''}`);
+  set('attRosterStat', `멤버 ${b.yesM+b.no+b.maybe}/${b.membersLen} 응답${gaCount?` · 게스트 ${gaCount}`:''}`);
   const mn=document.getElementById('gxMinus'); if(mn) mn.disabled = gx<=0;
 }
 function guestStatusOf(sid, mid){ const g=GUEST_REQS.find(x=>x.sid===sid&&x.mid===mid); return g?g.status:'none'; }
@@ -3357,9 +3359,16 @@ let attMe = null;
 let attSessionId = null;
 let attTeamView = false;     // 참석 탭: 팀별 보기 on/off
 let teamSplitOn = true;      // 이번 달 팀 구분(WHITE/BLACK) 사용 여부 (운영진 설정)
-let attListOpen = false;     // 명단 현황 펼침 여부(기본 접힘 · 카운트 박스 클릭 토글)
+let attFilter = 'yes';       // 명단 현황 상태 필터: yes(참석)/no(불참)/maybe(미정)/none(미응답). 기본 참석
+let _attRows = null;         // 상태별 명단 행 캐시(필터 즉시 전환용 · 재렌더 없이)
 function toggleAttTeam(){ attTeamView = !attTeamView; renderAtt(); }
-function toggleAttRoster(){ attListOpen = !attListOpen; const w=document.getElementById('attRosterWrap'); if(w) w.style.display = attListOpen?'':'none'; const c=document.getElementById('attRosterCaret'); if(c) c.textContent = attListOpen?'▴':'▾'; }
+function setAttFilter(st){
+  attFilter = st;
+  if (attTeamView) { attTeamView = false; renderAtt(); return; }   // 팀뷰였으면 일반뷰로 전환
+  const b = document.getElementById('attListBody'); if (b && _attRows) b.innerHTML = _attRows[st] || '';
+  const lbl = document.getElementById('attFilterLabel'); if (lbl) lbl.textContent = ({yes:'참석',no:'불참',maybe:'미정',none:'미응답'})[st] || '명단';
+  document.querySelectorAll('.att-counts .att-cnt').forEach(c=>c.classList.toggle('sel', c.classList.contains(st)));
+}
 // 참석 신청 마감: 세션에 deadline이 있으면 그 날 23:59, 없으면 매치일 직전 일요일(전주 일요일)
 function autoDeadline(dateStr){
   if(!dateStr) return null;
@@ -3520,6 +3529,9 @@ async function renderAtt() {
     return `<div class="att-row${dirty?' dirty':''}"><span class="js">${m.jersey!=null?m.jersey:''}</span><span class="nm">${esc(m.name)}${dirty?' <span class="dirty-dot">●</span>':''}</span>${st}</div>`;
   };
   const sortedM = [...members].sort(byJersey);
+  const _emptyRow = '<div class="empty" style="font-size:13px;padding:16px 0;text-align:center">해당 인원이 없어요.</div>';
+  // 상태별 명단 행 미리 생성(카운트 클릭 시 즉시 전환)
+  _attRows = {}; ['yes','no','maybe','none'].forEach(st=>{ _attRows[st] = sortedM.filter(m=>eff(m.id)===st).map(rosterRow).join('') || _emptyRow; });
   let listHtml;
   if (teamSplitOn && attTeamView) {
     listHtml = [['WHITE','WHITE'],['BLACK','BLACK'],['기타','기타']].map(([key,label])=>{
@@ -3529,30 +3541,23 @@ async function renderAtt() {
       return `<div class="att-grp${attCollapsed[key]?' collapsed':''}"><div class="att-grp-h" onclick="toggleAttGrp('${key}',this)">${label} <span>참석 ${gy} / ${gm.length}명</span><span class="grp-caret"></span></div><div class="att-grp-body">${gm.map(rosterRow).join('')}</div></div>`;
     }).join('');
   } else {
-    listHtml = [['yes','참석'],['no','불참'],['maybe','미정'],['none','미응답']].map(([key,label])=>{
-      const gm = sortedM.filter(m=>eff(m.id)===key);
-      if (!gm.length) return '';
-      return `<div class="att-grp${attCollapsed[key]?' collapsed':''}"><div class="att-grp-h" onclick="toggleAttGrp('${key}',this)">${label} <span>${gm.length}명</span><span class="grp-caret"></span></div><div class="att-grp-body">${gm.map(rosterRow).join('')}</div></div>`;
-    }).join('');
+    listHtml = _attRows[attFilter] || _emptyRow;   // 선택된 상태(기본 참석)만 표시
   }
 
   html += `
-    <div class="att-counts" onclick="toggleAttRoster()" style="cursor:pointer">
-      <div class="att-cnt yes"><div class="num" id="attYesNum">${yesM}</div><div class="cap">참석</div></div>
-      <div class="att-cnt no"><div class="num">${no}</div><div class="cap">불참</div></div>
-      <div class="att-cnt maybe"><div class="num">${maybe}</div><div class="cap">미정</div></div>
-      <div class="att-cnt none"><div class="num">${none}</div><div class="cap">미응답</div></div>
+    <div class="att-counts">
+      <div class="att-cnt yes ${attFilter==='yes'?'sel':''}" onclick="setAttFilter('yes')"><div class="num" id="attYesNum">${yesM}</div><div class="cap">참석</div></div>
+      <div class="att-cnt no ${attFilter==='no'?'sel':''}" onclick="setAttFilter('no')"><div class="num">${no}</div><div class="cap">불참</div></div>
+      <div class="att-cnt maybe ${attFilter==='maybe'?'sel':''}" onclick="setAttFilter('maybe')"><div class="num">${maybe}</div><div class="cap">미정</div></div>
+      <div class="att-cnt none ${attFilter==='none'?'sel':''}" onclick="setAttFilter('none')"><div class="num">${none}</div><div class="cap">미응답</div></div>
       <div class="att-cnt guest"><div class="num" id="attGuestNum" style="color:var(--win)">${gaCount}</div><div class="cap">게스트</div></div>
     </div>
-    <div onclick="toggleAttRoster()" style="text-align:center;cursor:pointer;font-size:12px;font-weight:700;color:var(--muted);margin:8px 0 0">명단 현황 <span id="attRosterCaret">${attListOpen?'▴':'▾'}</span></div>
-    <div id="attRosterWrap" style="${attListOpen?'':'display:none'}">
     <div class="card" style="margin-top:10px">
       <div class="section-title" style="margin:0 0 8px;display:flex;justify-content:space-between;align-items:center">
-        <span>명단 현황 <span id="attRosterStat" style="font-size:12px;color:var(--muted);font-weight: 600">멤버 ${respondedCnt}/${members.length} 응답${gaCount?` · 게스트 ${gaCount}`:''}${admin?' · 상태 눌러 변경':''}</span></span>
-        ${teamSplitOn?`<button class="btn ghost sm" onclick="event.stopPropagation();toggleAttTeam()">${attTeamView?'전체 보기':'팀별 보기'}</button>`:''}
+        <span><span id="attFilterLabel">${({yes:'참석',no:'불참',maybe:'미정',none:'미응답'})[attFilter]||'명단'}</span> 명단 <span id="attRosterStat" style="font-size:12px;color:var(--muted);font-weight: 600">멤버 ${respondedCnt}/${members.length} 응답${gaCount?` · 게스트 ${gaCount}`:''}</span></span>
+        ${teamSplitOn?`<button class="btn ghost sm" onclick="toggleAttTeam()">${attTeamView?'전체 보기':'팀별 보기'}</button>`:''}
       </div>
-      <div class="att-list">${listHtml}</div>
-    </div>
+      <div class="att-list" id="attListBody">${listHtml}</div>
     </div>
     ${(()=>{ const gp=GUEST_REQS.filter(g=>g.sid===sess.id&&g.status==='pending'); const ga=GUEST_REQS.filter(g=>g.sid===sess.id&&g.status==='approved'); const gx=GUEST_EXTRA[sess.id]||0; let s='';
       if(admin&&gp.length) s+=`<div class="card" style="margin-top:12px"><div style="font-size:12px;font-weight:800;color:var(--accent);margin-bottom:8px">게스트 신청 · 승인 대기 ${gp.length}명</div>${gp.map(g=>`<div style="display:flex;align-items:center;justify-content:space-between;gap:8px;padding:6px 0"><span style="color:var(--cream);font-size:14px">${esc(g.name)}</span><span style="display:flex;gap:6px"><button class="btn accent sm" onclick="approveGuest('${sess.id}',${g.mid})">승인</button><button class="btn ghost sm" style="color:var(--red)" onclick="cancelGuest('${sess.id}',${g.mid})">거절</button></span></div>`).join('')}</div>`;

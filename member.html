@@ -3357,7 +3357,9 @@ let attMe = null;
 let attSessionId = null;
 let attTeamView = false;     // 참석 탭: 팀별 보기 on/off
 let teamSplitOn = true;      // 이번 달 팀 구분(WHITE/BLACK) 사용 여부 (운영진 설정)
+let attListOpen = false;     // 명단 현황 펼침 여부(기본 접힘 · 카운트 박스 클릭 토글)
 function toggleAttTeam(){ attTeamView = !attTeamView; renderAtt(); }
+function toggleAttRoster(){ attListOpen = !attListOpen; const w=document.getElementById('attRosterWrap'); if(w) w.style.display = attListOpen?'':'none'; const c=document.getElementById('attRosterCaret'); if(c) c.textContent = attListOpen?'▴':'▾'; }
 // 참석 신청 마감: 세션에 deadline이 있으면 그 날 23:59, 없으면 매치일 직전 일요일(전주 일요일)
 function autoDeadline(dateStr){
   if(!dateStr) return null;
@@ -3537,18 +3539,21 @@ async function renderAtt() {
   }
 
   html += `
-    <div class="att-counts">
+    <div class="att-counts" onclick="toggleAttRoster()" style="cursor:pointer">
       <div class="att-cnt yes"><div class="num" id="attYesNum">${yes}</div><div class="cap">참석</div></div>
       <div class="att-cnt no"><div class="num">${no}</div><div class="cap">불참</div></div>
       <div class="att-cnt maybe"><div class="num">${maybe}</div><div class="cap">미정</div></div>
       <div class="att-cnt none"><div class="num">${none}</div><div class="cap">미응답</div></div>
     </div>
-    <div class="card">
+    <div onclick="toggleAttRoster()" style="text-align:center;cursor:pointer;font-size:12px;font-weight:700;color:var(--muted);margin:8px 0 0">명단 현황 <span id="attRosterCaret">${attListOpen?'▴':'▾'}</span></div>
+    <div id="attRosterWrap" style="${attListOpen?'':'display:none'}">
+    <div class="card" style="margin-top:10px">
       <div class="section-title" style="margin:0 0 8px;display:flex;justify-content:space-between;align-items:center">
         <span>명단 현황 <span id="attRosterStat" style="font-size:12px;color:var(--muted);font-weight: 600">${respondedCnt}/${rosterTotal} 응답${gaCount?` · 게스트 ${gaCount}`:''}${admin?' · 상태 눌러 변경':''}</span></span>
-        ${teamSplitOn?`<button class="btn ghost sm" onclick="toggleAttTeam()">${attTeamView?'전체 보기':'팀별 보기'}</button>`:''}
+        ${teamSplitOn?`<button class="btn ghost sm" onclick="event.stopPropagation();toggleAttTeam()">${attTeamView?'전체 보기':'팀별 보기'}</button>`:''}
       </div>
       <div class="att-list">${listHtml}</div>
+    </div>
     </div>
     ${(()=>{ const gp=GUEST_REQS.filter(g=>g.sid===sess.id&&g.status==='pending'); const ga=GUEST_REQS.filter(g=>g.sid===sess.id&&g.status==='approved'); const gx=GUEST_EXTRA[sess.id]||0; let s='';
       if(admin&&gp.length) s+=`<div class="card" style="margin-top:12px"><div style="font-size:12px;font-weight:800;color:var(--accent);margin-bottom:8px">게스트 신청 · 승인 대기 ${gp.length}명</div>${gp.map(g=>`<div style="display:flex;align-items:center;justify-content:space-between;gap:8px;padding:6px 0"><span style="color:var(--cream);font-size:14px">${esc(g.name)}</span><span style="display:flex;gap:6px"><button class="btn accent sm" onclick="approveGuest('${sess.id}',${g.mid})">승인</button><button class="btn ghost sm" style="color:var(--red)" onclick="cancelGuest('${sess.id}',${g.mid})">거절</button></span></div>`).join('')}</div>`;

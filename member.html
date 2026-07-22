@@ -2906,14 +2906,24 @@ async function freshGuestReqs(){
   return GUEST_REQS;
 }
 function guestCountOf(sid){ return GUEST_REQS.filter(g=>g.sid===sid&&g.status==='approved').length + (GUEST_EXTRA[sid]||0); }
-async function setGuestExtra(sid, n){   // 박승한 전용 — 외부 게스트 인원 직접 수정
+let _attBase = null;   // renderAtt 카운트 베이스(게스트 즉시 반영용)
+function changeGuestExtra(sid, delta){   // 박승한 전용 — 외부 게스트 인원. 즉시 DOM 반영 + 백그라운드 저장(전체 재렌더 X)
   if(!isAdmin()) return;
-  n = Math.max(0, n|0);
-  await freshGuestReqs();
+  const n = Math.max(0, (GUEST_EXTRA[sid]||0) + delta);
   const next = { ...GUEST_EXTRA }; if(n>0) next[sid]=n; else delete next[sid];
   GUEST_EXTRA = next;
-  if(!(await saveSettings({guestExtra:next}))){ toast('저장 중 오류가 났어요'); return; }
-  await rerender(renderAtt);
+  updateGuestDom(sid);
+  saveSettings({ guestExtra: next }).then(ok=>{ if(!ok) toast('게스트 저장 중 오류가 났어요'); });
+}
+function updateGuestDom(sid){
+  const b=_attBase; if(!b||b.sid!==sid) return;
+  const gx=GUEST_EXTRA[sid]||0, gaCount=b.gaMember+gx, yes=b.yesM+gaCount;
+  const set=(id,v)=>{ const e=document.getElementById(id); if(e) e.textContent=v; };
+  set('gxNum', gx);
+  set('gHdr', `게스트 ${gaCount}명`);
+  set('attYesNum', yes);
+  set('attRosterStat', `${b.yesM+b.no+b.maybe+gaCount}/${b.membersLen+gaCount} 응답${gaCount?` · 게스트 ${gaCount}`:''}${isAdmin()?' · 상태 눌러 변경':''}`);
+  const mn=document.getElementById('gxMinus'); if(mn) mn.disabled = gx<=0;
 }
 function guestStatusOf(sid, mid){ const g=GUEST_REQS.find(x=>x.sid===sid&&x.mid===mid); return g?g.status:'none'; }
 async function requestGuest(sid){
@@ -3421,6 +3431,7 @@ async function renderAtt() {
   const none = members.length - yesM - no - maybe;   // 미응답(멤버 기준)
   const rosterTotal = members.length + gaCount;      // 총 인원(게스트 포함)
   const respondedCnt = yesM + no + maybe + gaCount;  // 응답 인원(게스트 포함)
+  _attBase = { sid: sess.id, yesM, no, maybe, membersLen: members.length, gaMember: GUEST_REQS.filter(g=>g.sid===sess.id&&g.status==='approved').length };
   const mine = attMe ? map[attMe] : null;
   const nDraft = admin ? Object.keys(attDraft).length : 0;
 
@@ -3527,21 +3538,21 @@ async function renderAtt() {
 
   html += `
     <div class="att-counts">
-      <div class="att-cnt yes"><div class="num">${yes}</div><div class="cap">참석</div></div>
+      <div class="att-cnt yes"><div class="num" id="attYesNum">${yes}</div><div class="cap">참석</div></div>
       <div class="att-cnt no"><div class="num">${no}</div><div class="cap">불참</div></div>
       <div class="att-cnt maybe"><div class="num">${maybe}</div><div class="cap">미정</div></div>
       <div class="att-cnt none"><div class="num">${none}</div><div class="cap">미응답</div></div>
     </div>
     <div class="card">
       <div class="section-title" style="margin:0 0 8px;display:flex;justify-content:space-between;align-items:center">
-        <span>명단 현황 <span style="font-size:12px;color:var(--muted);font-weight: 600">${respondedCnt}/${rosterTotal} 응답${gaCount?` · 게스트 ${gaCount}`:''}${admin?' · 상태 눌러 변경':''}</span></span>
+        <span>명단 현황 <span id="attRosterStat" style="font-size:12px;color:var(--muted);font-weight: 600">${respondedCnt}/${rosterTotal} 응답${gaCount?` · 게스트 ${gaCount}`:''}${admin?' · 상태 눌러 변경':''}</span></span>
         ${teamSplitOn?`<button class="btn ghost sm" onclick="toggleAttTeam()">${attTeamView?'전체 보기':'팀별 보기'}</button>`:''}
       </div>
       <div class="att-list">${listHtml}</div>
     </div>
     ${(()=>{ const gp=GUEST_REQS.filter(g=>g.sid===sess.id&&g.status==='pending'); const ga=GUEST_REQS.filter(g=>g.sid===sess.id&&g.status==='approved'); const gx=GUEST_EXTRA[sess.id]||0; let s='';
       if(admin&&gp.length) s+=`<div class="card" style="margin-top:12px"><div style="font-size:12px;font-weight:800;color:var(--accent);margin-bottom:8px">게스트 신청 · 승인 대기 ${gp.length}명</div>${gp.map(g=>`<div style="display:flex;align-items:center;justify-content:space-between;gap:8px;padding:6px 0"><span style="color:var(--cream);font-size:14px">${esc(g.name)}</span><span style="display:flex;gap:6px"><button class="btn accent sm" onclick="approveGuest('${sess.id}',${g.mid})">승인</button><button class="btn ghost sm" style="color:var(--red)" onclick="cancelGuest('${sess.id}',${g.mid})">거절</button></span></div>`).join('')}</div>`;
-      if(ga.length||gx>0||admin) s+=`<div class="card" style="margin-top:12px"><div style="font-size:12px;font-weight:800;color:var(--win);margin-bottom:8px">게스트 ${ga.length+gx}명</div>${ga.map(g=>`<div style="display:flex;align-items:center;justify-content:space-between;gap:8px;padding:5px 0"><span style="color:var(--cream);font-size:14px">${esc(g.name)} <span style="font-size:11px;color:var(--win);font-weight:800">게스트</span></span>${admin?`<button class="btn ghost sm" style="color:var(--red)" onclick="cancelGuest('${sess.id}',${g.mid})">취소</button>`:''}</div>`).join('')}${(gx>0&&!admin)?`<div style="padding:5px 0;color:var(--cream);font-size:14px">외부 게스트 <b>${gx}명</b></div>`:''}${admin?`<div style="display:flex;align-items:center;justify-content:space-between;gap:8px;padding:8px 0 2px;${ga.length?'border-top:1px solid var(--line);margin-top:6px':''}"><span style="color:var(--muted);font-size:13px">외부 게스트(명단 외)</span><span style="display:flex;align-items:center;gap:12px"><button class="btn ghost sm" onclick="setGuestExtra('${sess.id}',${gx-1})" ${gx<=0?'disabled':''}>−</button><b style="min-width:18px;text-align:center;color:var(--cream)">${gx}</b><button class="btn ghost sm" onclick="setGuestExtra('${sess.id}',${gx+1})">＋</button></span></div>`:''}</div>`;
+      if(ga.length||gx>0||admin) s+=`<div class="card" style="margin-top:12px"><div id="gHdr" style="font-size:12px;font-weight:800;color:var(--win);margin-bottom:8px">게스트 ${ga.length+gx}명</div>${ga.map(g=>`<div style="display:flex;align-items:center;justify-content:space-between;gap:8px;padding:5px 0"><span style="color:var(--cream);font-size:14px">${esc(g.name)} <span style="font-size:11px;color:var(--win);font-weight:800">게스트</span></span>${admin?`<button class="btn ghost sm" style="color:var(--red)" onclick="cancelGuest('${sess.id}',${g.mid})">취소</button>`:''}</div>`).join('')}${(gx>0&&!admin)?`<div style="padding:5px 0;color:var(--cream);font-size:14px">외부 게스트 <b>${gx}명</b></div>`:''}${admin?`<div style="display:flex;align-items:center;justify-content:space-between;gap:8px;padding:8px 0 2px;${ga.length?'border-top:1px solid var(--line);margin-top:6px':''}"><span style="color:var(--muted);font-size:13px">외부 게스트(명단 외)</span><span style="display:flex;align-items:center;gap:12px"><button class="btn ghost sm" id="gxMinus" onclick="changeGuestExtra('${sess.id}',-1)" ${gx<=0?'disabled':''}>−</button><b id="gxNum" style="min-width:18px;text-align:center;color:var(--cream)">${gx}</b><button class="btn ghost sm" onclick="changeGuestExtra('${sess.id}',1)">＋</button></span></div>`:''}</div>`;
       return s; })()}
     ${nDraft ? `<div class="save-bar"><span class="save-n">변경 ${nDraft}건 (미저장)</span><span class="sb-actions"><button class="cancel" onclick="attCancelDraft()">취소</button><button class="ok" onclick="attSaveDraft()">저장</button></span></div>` : ''}`;
   el.innerHTML = html;

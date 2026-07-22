@@ -56,13 +56,6 @@
   .halfline::before,.halfline::after{content:""; flex:1; height:1px; background:var(--line);}
   .halfline span{width:12px; height:12px; border:1px solid var(--line); border-radius:50%; flex-shrink:0;}
 
-  /* 스탯 — 스코어보드 */
-  .stats{display:grid; grid-template-columns:repeat(4,1fr); gap:10px;}
-  .stat{background:var(--green-2); border:1px solid var(--line); border-top:3px solid var(--gold); border-radius:12px; padding:18px 8px; text-align:center;}
-  .stat .n{font-size:30px; font-weight:400; color:var(--gold-bright); font-family:var(--disp); letter-spacing:.5px;}
-  .stat .l{font-size:11px; color:var(--muted); font-weight:600; margin-top:4px;}
-  @media(max-width:480px){ .stats{grid-template-columns:repeat(2,1fr);} }
-
   /* 키트 (WHITE · BLACK) */
   .kits{display:grid; grid-template-columns:1fr 1fr; gap:12px;}
   .kit{position:relative; border:1px solid var(--line); border-radius:14px; padding:20px 16px; overflow:hidden; text-align:center;}
@@ -126,12 +119,6 @@
   .cafe .go{flex-shrink:0; font-size:11px; font-weight:600; color:var(--green); background:var(--sand); border-radius:999px; padding:6px 12px; white-space:nowrap;}
   @media(max-width:420px){ .fx-row{padding:13px 13px; gap:8px;} .fx-end{gap:12px;} .fx .wk{font-size:13px;} .fx .loc{font-size:13px;} }
 
-  /* 활동 정보 카드 */
-  .info{display:grid; gap:10px;}
-  .info-row{display:flex; gap:13px; align-items:flex-start; background:var(--green-2); border:1px solid var(--line); border-radius:14px; padding:15px 16px;}
-  .info-row .k{font-size:13px; font-weight:600; color:var(--sand); min-width:78px; flex-shrink:0;}
-  .info-row .v{font-size:14px; color:var(--cream);}
-
   /* 갤러리 — 원본 비율 유지(메이슨리) */
   /* 갤러리 — 풀블리드 그리드 메이슨리(비율 유지·정렬) */
   .gallery{width:100vw; margin-left:calc(50% - 50vw); padding:0 12px; display:grid; grid-template-columns:repeat(4,1fr); grid-auto-rows:0; grid-auto-flow:row dense; gap:10px;}
@@ -142,13 +129,6 @@
   .gallery img.gal-hidden{display:none;}
   .morebtn{display:block; margin:18px auto 0; padding:11px 28px; border-radius:999px; background:var(--green-2); color:var(--sand); border:1px solid var(--line); font-weight:600; font-size:13px; letter-spacing:.5px; cursor:pointer;}
   .morebtn:hover{background:#24402e; color:var(--gold); border-color:var(--gold-dim);}
-
-  /* 가입 */
-  .join{background:var(--sand); color:var(--green); border-radius:18px; padding:30px 22px; text-align:center;}
-  .join h2{color:var(--green);}
-  .join p{color:#2d3a2c; opacity:1;}
-  .btn{display:inline-block; margin-top:14px; padding:13px 26px; border-radius:12px; background:var(--green); color:var(--sand); font-weight:600; text-decoration:none; font-size:15px;}
-  .btn.ghost{background:transparent; color:var(--green); border:1.5px solid var(--green); margin-left:8px;}
 
   footer{text-align:center; padding:34px 18px 44px; border-top:1px solid var(--line);}
   footer img{width:58px; opacity:.85;}

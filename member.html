@@ -1275,7 +1275,7 @@ async function render() {
   const list = document.getElementById('rideList');
   const pastSection = document.getElementById('pastSection');
   const pastList = document.getElementById('pastList');
-  list.innerHTML = `<div class="empty">불러오는 중...</div>`;
+  if (!list.innerHTML.trim()) list.innerHTML = `<div class="empty">불러오는 중...</div>`;
   const rides = await fetchRides();
   const _lt = document.getElementById('tab-list');
   if (_lt && !_lt.classList.contains('hidden')) markRidesSeen(rides);  // 카풀 탭이 실제로 열려 있을 때만 신규 점 해제
@@ -1871,7 +1871,7 @@ async function renderPotm() {
     const d = new Date(); d.setDate(1); d.setMonth(d.getMonth() - 1);
     const pMonth = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
     const pMembers = votingMembers(pMonth);
-    el.innerHTML = `<div class="empty">불러오는 중...</div>`;
+    if (!el.innerHTML.trim()) el.innerHTML = `<div class="empty">불러오는 중...</div>`;
     const [pMvp, pGrowth] = await Promise.all([fetchVotes(pMonth, 'mvp'), fetchVotes(pMonth, 'growth')]);
     const adminP = isAdmin();
     el.innerHTML = `
@@ -1886,7 +1886,7 @@ async function renderPotm() {
     return;
   }
 
-  el.innerHTML = `<div class="empty">불러오는 중...</div>`;
+  if (!el.innerHTML.trim()) el.innerHTML = `<div class="empty">불러오는 중...</div>`;
   const [votesMvp, votesGrowth] = await Promise.all([fetchVotes(month,'mvp'), fetchVotes(month,'growth')]);
   const total = members.length;
 
@@ -2391,7 +2391,7 @@ function markRidesSeen(rides){
 /* ===== 마이페이지 ===== */
 async function renderMine() {
   const el = document.getElementById('mineContent');
-  el.innerHTML = `<div class="empty">불러오는 중...</div>`;
+  if (!el.innerHTML.trim()) el.innerHTML = `<div class="empty">불러오는 중...</div>`;
   const me = getMe();
   const p = PLAYERS.find(x => x.id === me);
   if (!p) { el.innerHTML = `<div class="card"><div class="empty">로그인이 필요해요.</div></div>`; return; }
@@ -2483,7 +2483,7 @@ async function homeSetDue(memberId, month, paid){
 
 async function renderHome() {
   const el = document.getElementById('homeContent');
-  el.innerHTML = `<div class="empty">불러오는 중...</div>`;
+  if (!el.innerHTML.trim()) el.innerHTML = `<div class="empty">불러오는 중...</div>`;
   const allUpcoming = await upcomingSessions();
   // 홈에서는 이미 끝난(마감) 세션은 숨김
   const sessions = allUpcoming.filter(s => !sessionEnded(s));
@@ -2678,7 +2678,7 @@ async function renderHome() {
 /* ===== 팀 현황(팀빌더 명단 연동) — 서브 페이지 ===== */
 async function renderSquad() {
   const el = document.getElementById('squadContent');
-  el.innerHTML = `<div class="empty">불러오는 중...</div>`;
+  if (!el.innerHTML.trim()) el.innerHTML = `<div class="empty">불러오는 중...</div>`;
   let tb = null;
   try { tb = await fetchTeamBuilder(); } catch(e) {}
   const month = potmMonth();
@@ -3682,7 +3682,7 @@ let duesDraft = {};     // memberId -> bool(paid)
 let duesPaidDB = {};
 async function renderDues() {
   const el = document.getElementById('duesContent');
-  el.innerHTML = `<div class="empty">불러오는 중...</div>`;
+  if (!el.innerHTML.trim()) el.innerHTML = `<div class="empty">불러오는 중...</div>`;
   const month = duesMonth();
   // 활동 멤버 — 휴면(isDormantFor)은 제외해 미납 인원/명단/집계에서 빠짐
   const members = activeMembers(month).filter(m => !isDormantFor(m, month));
@@ -3875,7 +3875,7 @@ function duesCancelDraft(){ duesDraft = {}; rerender(renderDues); }
 async function renderOps() {
   const el = document.getElementById('opsContent');
   if (!isAdmin()) { el.innerHTML = `<div class="card"><div class="empty">운영진 모드에서만 보여요.</div></div>`; return; }
-  el.innerHTML = `<div class="empty">불러오는 중...</div>`;
+  if (!el.innerHTML.trim()) el.innerHTML = `<div class="empty">불러오는 중...</div>`;
   const month = potmMonth();
   const [allSessions, notices, dues, votesMvp, votesGrowth] = await Promise.all([
     getSessions(), fetchNotices(), fetchDues(month), fetchVotes(month,'mvp'), fetchVotes(month,'growth')
@@ -4300,7 +4300,7 @@ function rkRanks(list, key){ const r=[]; list.forEach((x,i)=>{ if(i===0){r.push(
 
 async function renderRank(){
   const el = document.getElementById('rankContent');
-  el.innerHTML = `<div class="empty">불러오는 중...</div>`;
+  if (!el.innerHTML.trim()) el.innerHTML = `<div class="empty">불러오는 중...</div>`;
   const tb = await fetchTeamBuilder();
   const _rkTabs = [['att','출석율'],['winrate','승률'],['model','모범생'],['lma','당일 불참'],['dorm','휴면율']];
   if (meName()==='박승한') _rkTabs.push(['bad','불량배']);   // 불량배는 나만 보기
@@ -4439,6 +4439,7 @@ async function gateLogin() {
   showGate(false);
   updateAdminBtn();
   switchTab('home');
+  setTimeout(()=>{ try{ preloadTabs(); }catch(e){} }, 300);   // 로그인 후 주요 탭 미리 렌더
 }
 function logout() {
   if (!confirm('로그아웃할까요?')) return;
@@ -4451,6 +4452,12 @@ function meName() {
   return p ? p.name : '';
 }
 
+// 주요 탭을 백그라운드로 미리 렌더 → 탭 전환 시 즉시 표시(깜빡임 없음). 숨겨진 탭 div에 채워둠.
+function preloadTabs(){
+  [renderAtt, renderMine, renderSquad, renderRank, renderPotm, renderFaq, renderMore].forEach(fn=>{ try{ fn(); }catch(e){} });
+  if (isDuesViewer()) { try{ renderDues(); }catch(e){} }
+  if (isAdmin()) { try{ renderOps(); }catch(e){} }
+}
 async function initApp() {
   updateAdminBtn();
   try { const r = await fetchRoster(); if (r) applyPlayers(r); } catch (e) {}
@@ -4474,6 +4481,7 @@ async function initApp() {
   render();  // 카풀 데이터 미리 로드(실시간 구독 대비)
   refreshAttBadge();   // 일정 탭 미응답 배지
   refreshNewBadges();  // 신규 콘텐츠 점(카풀·투표)
+  if (loggedIn) setTimeout(()=>{ try{ preloadTabs(); }catch(e){} }, 300);   // 주요 탭 미리 렌더
 }
 // 뒤로/앞으로 가기(해시 변경) → 해당 탭으로(히스토리 조작 없이)
 window.addEventListener('hashchange', () => {

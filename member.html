@@ -1986,11 +1986,18 @@ function pickCandSel(cat, val) {
 function resultsHtml(votes, members, showVoters) {
   const tally = {};
   votes.forEach(v => { tally[v.candidate_id] = (tally[v.candidate_id] || 0) + 1; });
-  const ranked = members.map(m => ({ ...m, c: tally[m.id] || 0 }))
+  // 이름/등번호는 전체 명단(ROSTER)에서 찾음 — 투표 당시 활동회원이 지금 휴면이어도 결과엔 표시돼야 함
+  const infoOf = id => {
+    const m = members.find(x => x.id === id) || ROSTER.find(x => x.id === id);
+    if (!m) return { id, name: '#' + id, jersey: null };
+    const j = (m.jersey != null) ? m.jersey : (TEAM_SHEET[m.name] ? TEAM_SHEET[m.name].jersey : null);
+    return { id, name: m.name, jersey: (j != null ? j : null) };
+  };
+  const ranked = Object.keys(tally).map(id => { const info = infoOf(Number(id)); return { ...info, c: tally[id] }; })
     .filter(m => m.c > 0)
-    .sort((a, b) => b.c - a.c || a.name.localeCompare(b.name, 'ko'));
+    .sort((a, b) => b.c - a.c || (a.name || '').localeCompare(b.name || '', 'ko'));
   // 운영진 전용: 누가 누구에게 투표했는지
-  const nameOf = id => { const m = members.find(x => x.id === id); return m ? m.name : ('#' + id); };
+  const nameOf = id => infoOf(id).name;
   const votersBlock = (showVoters && votes.length)
     ? `<div style="margin-top:14px;padding-top:10px;border-top:1px solid var(--line);font-size:12px;color:var(--muted);line-height:1.7">
          <b style="color:var(--coffee-2)">투표자 ${votes.length}명</b><br>${votes.map(v => esc(nameOf(v.voter_id))).join(', ')}</div>`

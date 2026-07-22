@@ -161,8 +161,11 @@ async function deleteRide(id) {
 
 /* ---------- UI ---------- */
 const ALL_TABS = ['home','att','dues','list','potm','rank','more','mine','faq','squad','ops','draft'];
+const _tabScroll = {};   // 탭별 마지막 스크롤 위치 — 탭을 오가도 보던 자리 유지
 function switchTab(tab, mode) {
   if (tab === 'ops' && !isAdmin()) tab = 'home';   // 운영진 전용 탭은 비운영진 직접 접근 차단
+  const prevTab = ALL_TABS.find(t => { const el = document.getElementById('tab-' + t); return el && !el.classList.contains('hidden'); });
+  if (prevTab) _tabScroll[prevTab] = window.scrollY;
   const memberTabs = ['squad','list','potm','rank'];   // 멤버 탭 묶음(멤버현황·카풀·투표·랭킹)
   const navActive = memberTabs.includes(tab) ? 'member' : (['home','att'].includes(tab) ? tab : 'more');
   document.querySelectorAll('.bnav-item').forEach(b => b.classList.toggle('active', b.dataset.tab === navActive));
@@ -183,8 +186,11 @@ function switchTab(tab, mode) {
       else history.pushState(null, '', '#' + tab);
     } catch(e){ location.hash = tab; }
   }
-  // 탭 전환 시 맨 위로 (하단에서 다른 탭으로 이동해도 빈 화면처럼 보이지 않게)
-  if (mode !== 'none') { try { window.scrollTo(0, 0); document.scrollingElement.scrollTop = 0; } catch(e){} }
+  // 스크롤: 같은 탭 재클릭이면 그대로 두고, 다른 탭이면 그 탭에서 마지막 보던 위치 복원(첫 방문은 맨 위)
+  if (mode !== 'none' && prevTab !== tab) {
+    const _y = _tabScroll[tab] || 0;
+    try { window.scrollTo(0, _y); document.scrollingElement.scrollTop = _y; } catch(e){}
+  }
   if (tab === 'home') renderHome();
   if (tab === 'att')  renderAtt();
   if (tab === 'dues') renderDues();
@@ -493,7 +499,7 @@ let opsAddSessionOpen = false;
 // 실시간 갱신 (DB 모드일 때, 다른 사람의 변경을 자동 반영)
 if (USE_DB) {
   sb.channel('rides-changes')
-    .on('postgres_changes', { event: '*', schema: 'public', table: 'rides' }, () => render())
+    .on('postgres_changes', { event: '*', schema: 'public', table: 'rides' }, () => rerender(render))
     .subscribe();
 }
 
@@ -921,7 +927,7 @@ let potmVoterId = null;     // 로그인한 본인 (getMe)
 let potmPick = { mvp:null, growth:null };   // 부문별 선택 (한 번에 두 명)
 
 function refreshPotmIfOpen() {
-  if (!document.getElementById('tab-potm').classList.contains('hidden')) renderPotm();
+  if (!document.getElementById('tab-potm').classList.contains('hidden')) rerender(renderPotm);
 }
 
 async function renderPotm() {
@@ -1093,9 +1099,9 @@ function syncVoteBtn() {
 async function submitVote() {
   if (!potmVoterId) return;
   // 투표 대상(그 달 활동 회원, 친구·휴면 제외)만 투표 가능 — UI 우회·명단 변동 대비 제출 시 재검증
-  if (!votingMembers(potmMonth()).some(m => m.id === potmVoterId)) { toast('투표 대상이 아니에요'); return renderPotm(); }
+  if (!votingMembers(potmMonth()).some(m => m.id === potmVoterId)) { toast('투표 대상이 아니에요'); return rerender(renderPotm); }
   if (!potmPick.mvp || !potmPick.growth) return toast('두 부문 모두 선택해 주세요');
-  if (!isVotingOpen() && !isAdmin()) { toast(`투표는 ${fmtOpenTime(votingOpensAt())}부터 가능해요`); return renderPotm(); }
+  if (!isVotingOpen() && !isAdmin()) { toast(`투표는 ${fmtOpenTime(votingOpensAt())}부터 가능해요`); return rerender(renderPotm); }
   const pm = ROSTER.find(m => m.id === potmPick.mvp), pg = ROSTER.find(m => m.id === potmPick.growth);
   if (!confirm(`이달의 선수: ${pm?pm.name:''}\n가장 성장한 선수: ${pg?pg.name:''}\n\n제출할까요? 투표 후엔 변경할 수 없어요.`)) return;
   const btn = document.getElementById('potmVoteBtn');
@@ -1122,7 +1128,7 @@ async function adminResetPotm() {
 if (USE_DB) {
   sb.channel('potm-changes')
     .on('postgres_changes', { event: '*', schema: 'public', table: 'potm_votes' }, () => {
-      if (!document.getElementById('tab-potm').classList.contains('hidden')) renderPotm();
+      if (!document.getElementById('tab-potm').classList.contains('hidden')) rerender(renderPotm);
     })
     .subscribe();
 }
@@ -1359,7 +1365,7 @@ function squadBlock(members, team) {
 
 /* ===== 더보기 메뉴 ===== */
 let moreTab = 'use';   // 회원 메뉴 카테고리 탭: 'use'(이용) | 'set'(설정)
-function setMoreTab(t){ moreTab = t; renderMore(); }
+function setMoreTab(t){ moreTab = t; rerender(renderMore); }
 function renderMore() {
   const el = document.getElementById('moreContent');
   const admin = isAdmin();
@@ -2069,7 +2075,7 @@ async function resetPin(id){
   const bak = CLUB_PINS[id];
   delete CLUB_PINS[id];
   const ok = await saveSettings({ pins: CLUB_PINS });
-  if (ok) { toast('PIN을 초기화했어요.'); renderOps(); }
+  if (ok) { toast('PIN을 초기화했어요.'); rerender(renderOps); }
   else { CLUB_PINS[id] = bak; toast('초기화 중 오류가 났어요.'); }
 }
 
@@ -2430,10 +2436,10 @@ let attTeamView = false;     // 참석 탭: 팀별 보기 on/off
 let teamSplitOn = true;      // 이번 달 팀 구분(WHITE/BLACK) 사용 여부 (운영진 설정)
 let attFilter = 'yes';       // 명단 현황 상태 필터: yes(참석)/no(불참)/maybe(미정)/none(미응답). 기본 참석
 let _attRows = null;         // 상태별 명단 행 캐시(필터 즉시 전환용 · 재렌더 없이)
-function toggleAttTeam(){ attTeamView = !attTeamView; renderAtt(); }
+function toggleAttTeam(){ attTeamView = !attTeamView; rerender(renderAtt); }
 function setAttFilter(st){
   attFilter = st;
-  if (attTeamView) { attTeamView = false; renderAtt(); return; }   // 팀뷰였으면 일반뷰로 전환
+  if (attTeamView) { attTeamView = false; rerender(renderAtt); return; }   // 팀뷰였으면 일반뷰로 전환
   const b = document.getElementById('attListBody'); if (b && _attRows) b.innerHTML = _attRows[st] || '';
   const lbl = document.getElementById('attFilterLabel'); if (lbl) lbl.textContent = ({yes:'참석',no:'불참',maybe:'미정',none:'미응답'})[st] || '명단';
   document.querySelectorAll('.att-counts .att-cnt').forEach(c=>c.classList.toggle('sel', c.classList.contains(st)));
@@ -2639,7 +2645,7 @@ async function renderAtt() {
   const _on = _tabs && _tabs.querySelector('.sess-chip.on');
   if (_tabs && _on) _tabs.scrollLeft = Math.max(0, _on.offsetLeft - _tabs.offsetLeft);
 }
-function pickAttSession(id){ attSessionId = id; attDraft = {}; renderAtt(); }
+function pickAttSession(id){ attSessionId = id; attDraft = {}; rerender(renderAtt); }
 // 운영진 출석 일괄: 클릭은 드래프트에만 반영(같은 값 다시 누르면 미응답)
 function attDraftSet(id, target){
   if(!isAdmin()) return;
@@ -3108,20 +3114,20 @@ async function opsResetVote(cat) {
   if (!isAdmin()) return;
   const c = VOTE_CATS.find(x=>x.key===cat) || VOTE_CATS[0];
   if (!confirm(`[${c.label}] 이번 달 투표를 초기화할까요? 되돌릴 수 없어요.`)) return;
-  if (await resetVotes(potmMonth(), cat)) { await renderOps(); toast('초기화했어요'); }
+  if (await resetVotes(potmMonth(), cat)) { await rerender(renderOps); toast('초기화했어요'); }
 }
 async function opsToggleTeamSplit() {
   if (!isAdmin()) return;
   const next = !teamSplitOn;
   if (!(await saveSettings({ teamSplit: next }))) return;
   teamSplitOn = next;
-  await renderOps(); refreshOpenMemberViews();
+  await rerender(renderOps); refreshOpenMemberViews();
   toast(teamSplitOn ? '팀 구분 사용' : '팀 구분 미사용 (전체 명단)');
 }
 
 /* ---------- 운영진 내부 서브탭 ---------- */
 let opsTabSel = 'notice';
-function opsSwitch(key){ opsTabSel = key; renderOps(); }
+function opsSwitch(key){ opsTabSel = key; rerender(renderOps); }
 // 더보기에서 특정 운영진 기능으로 바로 진입
 function openOps(sub){ if(!isAdmin()) return; if(sub) opsTabSel = sub; switchTab('ops'); }
 
@@ -3130,10 +3136,10 @@ let opsEditId = null;
 function nextPlayerId(){ return PLAYERS.reduce((m,p)=>Math.max(m, p.id||0), 0) + 1; }
 function refreshOpenMemberViews(){
   const open = id => !document.getElementById(id).classList.contains('hidden');
-  if (open('tab-home')) renderHome();
-  if (open('tab-att'))  renderAtt();
-  if (open('tab-dues')) renderDues();
-  if (open('tab-potm')) renderPotm();
+  if (open('tab-home')) rerender(renderHome);
+  if (open('tab-att'))  rerender(renderAtt);
+  if (open('tab-dues')) rerender(renderDues);
+  if (open('tab-potm')) rerender(renderPotm);
 }
 async function opsAddPlayer(){
   if (!isAdmin()) return;
@@ -3146,7 +3152,7 @@ async function opsAddPlayer(){
   const p = { id:nextPlayerId(), name, tier, status:'active', joinDate:potmMonth()+'-01',
     friendsSince:null, dormantMonths:[], jersey:(jv!==''?parseInt(jv):null), eng, team, cap:false };
   if (!(await saveRoster(PLAYERS.concat([p])))) return;
-  opsEditId = null; await renderOps(); refreshOpenMemberViews(); toast('선수를 추가했어요');
+  opsEditId = null; await rerender(renderOps); refreshOpenMemberViews(); toast('선수를 추가했어요');
 }
 async function opsDelPlayer(id){
   if (!isAdmin()) return;
@@ -3154,7 +3160,7 @@ async function opsDelPlayer(id){
   if (!confirm(`'${p?p.name:''}' 님을 명단에서 삭제할까요?`)) return;
   if (!(await saveRoster(PLAYERS.filter(x=>x.id!==id)))) return;
   if (opsEditId===id) opsEditId = null;
-  await renderOps(); refreshOpenMemberViews(); toast('삭제했어요');
+  await rerender(renderOps); refreshOpenMemberViews(); toast('삭제했어요');
 }
 async function opsToggleDormant(id){
   if (!isAdmin()) return;
@@ -3166,9 +3172,9 @@ async function opsToggleDormant(id){
     return { ...p, dormantMonths:dm };
   });
   if (!(await saveRoster(list))) return;
-  await renderOps(); refreshOpenMemberViews();
+  await rerender(renderOps); refreshOpenMemberViews();
 }
-function opsEditPlayer(id){ opsEditId = id; renderOps(); }
+function opsEditPlayer(id){ opsEditId = id; rerender(renderOps); }
 async function opsSavePlayer(id){
   if (!isAdmin()) return;
   const name = document.getElementById('opeName').value.trim();
@@ -3182,7 +3188,7 @@ async function opsSavePlayer(id){
   const list = PLAYERS.map(p => p.id!==id ? p
     : { ...p, name, team, tier, eng, cap, status, jersey:(jv!==''?parseInt(jv):null) });
   if (!(await saveRoster(list))) return;
-  opsEditId = null; await renderOps(); refreshOpenMemberViews(); toast('저장했어요');
+  opsEditId = null; await rerender(renderOps); refreshOpenMemberViews(); toast('저장했어요');
 }
 async function opsAddNotice() {
   const title = document.getElementById('opsNoticeTitle').value.trim();
@@ -3197,10 +3203,10 @@ async function opsAddNotice() {
   const link = _lt==='url' ? document.getElementById('opsNoticeLinkUrl').value.trim() : _lt;
   const ok = await addNotice({ title, body, pinned, publish_at, hide_at, link });
   if (!ok) return;
-  await renderOps(); toast('공지를 등록했어요');
+  await rerender(renderOps); toast('공지를 등록했어요');
 }
-function opsEditNotice(id){ opsEditNoticeId = String(id); renderOps(); }
-function opsCancelEdit(){ opsEditNoticeId = null; renderOps(); }
+function opsEditNotice(id){ opsEditNoticeId = String(id); rerender(renderOps); }
+function opsCancelEdit(){ opsEditNoticeId = null; rerender(renderOps); }
 async function opsSaveNotice(id){
   const title = document.getElementById('opsEditTitle').value.trim();
   if (!title) return toast('제목을 입력해 주세요');
@@ -3212,10 +3218,10 @@ async function opsSaveNotice(id){
   const hide_at = untilV ? new Date(untilV+'T23:59:59').toISOString() : null;
   const _lt = document.getElementById('opsEditLinkType').value;
   const link = _lt==='url' ? document.getElementById('opsEditLinkUrl').value.trim() : _lt;
-  if (await updateNotice(id, { title, body, pinned, publish_at, hide_at, link: link||null })) { opsEditNoticeId = null; await renderOps(); toast('수정했어요'); }
+  if (await updateNotice(id, { title, body, pinned, publish_at, hide_at, link: link||null })) { opsEditNoticeId = null; await rerender(renderOps); toast('수정했어요'); }
 }
-async function opsDelNotice(id){ if(!confirm('이 공지를 삭제할까요?'))return; if(await deleteNotice(id)){ await renderOps(); toast('삭제했어요'); } }
-async function opsPin(id, pin){ if(await togglePinNotice(id, pin)){ await renderOps(); } }
+async function opsDelNotice(id){ if(!confirm('이 공지를 삭제할까요?'))return; if(await deleteNotice(id)){ await rerender(renderOps); toast('삭제했어요'); } }
+async function opsPin(id, pin){ if(await togglePinNotice(id, pin)){ await rerender(renderOps); } }
 function opsSyncDeadline() {
   const dt = document.getElementById('opsSessDate');
   const dd = document.getElementById('opsSessDeadline');
@@ -3226,8 +3232,8 @@ function opsSyncDeadline() {
   const lbl = document.getElementById('opsSessSeasonLbl');
   if (dt && lbl) lbl.textContent = `${seasonLabel(dt.value)} 시즌`;
 }
-function opsOpenAddSession(){ opsAddSessionOpen = true; renderOps(); }
-function opsCloseAddSession(){ opsAddSessionOpen = false; renderOps(); }
+function opsOpenAddSession(){ opsAddSessionOpen = true; rerender(renderOps); }
+function opsCloseAddSession(){ opsAddSessionOpen = false; rerender(renderOps); }
 async function opsAddSession() {
   const date = document.getElementById('opsSessDate').value;
   if (!date) return toast('날짜를 선택해 주세요');
@@ -3246,16 +3252,16 @@ async function opsAddSession() {
   list.push({ id:'s'+Date.now().toString(36)+Math.random().toString(36).slice(2,5), date, time, endTime, type, place, placeUrl, guestUrl, deadline, label, desc, duesOnly, allowDormant });
   if (!(await saveSettings({ sessions: list }))) return;
   opsAddSessionOpen = false;
-  await renderOps(); toast('세션을 추가했어요');
+  await rerender(renderOps); toast('세션을 추가했어요');
 }
 async function opsDelSession(id) {
   if (!confirm('이 세션을 삭제할까요? 참석 기록도 더는 표시되지 않아요.')) return;
   const list = (await getSessions()).filter(s=>s.id!==id);
   if (!(await saveSettings({ sessions: list }))) return;
-  await renderOps(); toast('세션을 삭제했어요');
+  await rerender(renderOps); toast('세션을 삭제했어요');
 }
-function opsEditSession(id){ opsEditSessionId = String(id); renderOps(); }
-function opsCancelSessionEdit(){ opsEditSessionId = null; renderOps(); }
+function opsEditSession(id){ opsEditSessionId = String(id); rerender(renderOps); }
+function opsCancelSessionEdit(){ opsEditSessionId = null; rerender(renderOps); }
 async function opsSaveSession(id) {
   const list = await getSessions();
   const s = list.find(x=>String(x.id)===String(id));
@@ -3276,7 +3282,7 @@ async function opsSaveSession(id) {
   s.allowDormant = document.getElementById('esAllowDorm').checked;
   if (!(await saveSettings({ sessions: list }))) return;
   opsEditSessionId = null;
-  await renderOps(); toast('세션을 수정했어요');
+  await rerender(renderOps); toast('세션을 수정했어요');
 }
 
 /* ---------- 실시간 갱신 (새 테이블) ---------- */
@@ -3286,10 +3292,10 @@ if (USE_DB) {
       _settingsCache = null;
       if (tbl === 'club_settings') { try { const r = await fetchRoster(); if (r) applyPlayers(r); const s = await fetchSettings(); teamSplitOn = s.teamSplit !== false; await loadTbDormant(); } catch (e) {} }
       const open = id => !document.getElementById(id).classList.contains('hidden');
-      if (open('tab-home')) renderHome();
-      if (open('tab-att'))  renderAtt();
-      if (open('tab-dues')) renderDues();
-      if (open('tab-ops'))  renderOps();
+      if (open('tab-home')) rerender(renderHome);
+      if (open('tab-att'))  rerender(renderAtt);
+      if (open('tab-dues')) rerender(renderDues);
+      if (open('tab-ops'))  rerender(renderOps);
     }).subscribe();
   });
 }
@@ -3298,8 +3304,8 @@ if (USE_DB) {
    랭킹 — 팀빌더 클라우드 데이터(club_settings id='teambuilder')를 읽어 집계
    ============================================================ */
 let rankTab = 'att', rankYear = '2026';
-function switchRankTab(t){ rankTab = t; renderRank(); }
-function changeRankYear(y){ rankYear = y; renderRank(); }
+function switchRankTab(t){ rankTab = t; rerender(renderRank); }
+function changeRankYear(y){ rankYear = y; rerender(renderRank); }
 
 async function fetchTeamBuilder(){
   if (!USE_DB) return null;

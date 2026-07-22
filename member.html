@@ -3392,7 +3392,7 @@ let attCollapsed = {};  // 명단 그룹 접힘 상태 (key -> true=접힘)
 function toggleAttGrp(k, btn){ attCollapsed[k] = !attCollapsed[k]; if(btn && btn.parentNode) btn.parentNode.classList.toggle('collapsed', attCollapsed[k]); }
 async function renderAtt() {
   const el = document.getElementById('attContent');
-  el.innerHTML = `<div class="empty">불러오는 중...</div>`;
+  if (!el.innerHTML.trim()) el.innerHTML = `<div class="empty">불러오는 중...</div>`;   // 첫 로드만 로딩 표시(세션 전환 시 깜빡임 방지)
   await freshGuestReqs();   // 게스트 신청 최신화
   const sessions = await upcomingSessions();
   if (attSessionId == null || !sessions.some(s=>s.id===attSessionId)) attSessionId = sessions[0].id;

@@ -3402,10 +3402,14 @@ async function renderAtt() {
   attMapDB = map;
   // 운영진 드래프트가 있으면 그 값을 우선 적용해 표시
   const eff = id => (id in attDraft) ? attDraft[id] : (map[id]||'none');
-  const yes = members.filter(m=>eff(m.id)==='yes').length;
+  const gaCount = GUEST_REQS.filter(g=>g.sid===sess.id&&g.status==='approved').length;   // 승인된 게스트(참석)
+  const yesM = members.filter(m=>eff(m.id)==='yes').length;
+  const yes = yesM + gaCount;                        // 참석 = 멤버 참석 + 게스트
   const no  = members.filter(m=>eff(m.id)==='no').length;
   const maybe = members.filter(m=>eff(m.id)==='maybe').length;
-  const none = members.length - yes - no - maybe;   // 미응답
+  const none = members.length - yesM - no - maybe;   // 미응답(멤버 기준)
+  const rosterTotal = members.length + gaCount;      // 총 인원(게스트 포함)
+  const respondedCnt = yesM + no + maybe + gaCount;  // 응답 인원(게스트 포함)
   const mine = attMe ? map[attMe] : null;
   const nDraft = admin ? Object.keys(attDraft).length : 0;
 
@@ -3519,7 +3523,7 @@ async function renderAtt() {
     </div>
     <div class="card">
       <div class="section-title" style="margin:0 0 8px;display:flex;justify-content:space-between;align-items:center">
-        <span>명단 현황 <span style="font-size:12px;color:var(--muted);font-weight: 600">${att.length}/${members.length} 응답${admin?' · 상태 눌러 변경':''}</span></span>
+        <span>명단 현황 <span style="font-size:12px;color:var(--muted);font-weight: 600">${respondedCnt}/${rosterTotal} 응답${gaCount?` · 게스트 ${gaCount}`:''}${admin?' · 상태 눌러 변경':''}</span></span>
         ${teamSplitOn?`<button class="btn ghost sm" onclick="toggleAttTeam()">${attTeamView?'전체 보기':'팀별 보기'}</button>`:''}
       </div>
       <div class="att-list">${listHtml}</div>

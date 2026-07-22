@@ -2900,9 +2900,20 @@ let RESULTS = null;                       // { 'YYYY-MM': 'WHITE'|'BLACK'|'draw'
 const RESULTS_SEED = { '2026-06': 'BLACK' };
 // 게스트 신청(휴면 멤버가 세션 게스트 참여 신청 → 운영진 승인). settings.guestReqs = [{sid,mid,name,at,status:'pending'|'approved'}]
 let GUEST_REQS = [];
+let GUEST_EXTRA = {};   // { sid: n } — 박승한이 직접 정하는 외부 게스트(명단 없는) 인원
 async function freshGuestReqs(){
-  try{ if(USE_DB){ const {data:row}=await sb.from('club_settings').select('data').eq('id','current').maybeSingle(); if(row&&row.data){ _settingsCache=row.data; GUEST_REQS=row.data.guestReqs||[]; } } else { GUEST_REQS=(await fetchSettings()).guestReqs||[]; } }catch(e){}
+  try{ if(USE_DB){ const {data:row}=await sb.from('club_settings').select('data').eq('id','current').maybeSingle(); if(row&&row.data){ _settingsCache=row.data; GUEST_REQS=row.data.guestReqs||[]; GUEST_EXTRA=row.data.guestExtra||{}; } } else { const s=await fetchSettings(); GUEST_REQS=s.guestReqs||[]; GUEST_EXTRA=s.guestExtra||{}; } }catch(e){}
   return GUEST_REQS;
+}
+function guestCountOf(sid){ return GUEST_REQS.filter(g=>g.sid===sid&&g.status==='approved').length + (GUEST_EXTRA[sid]||0); }
+async function setGuestExtra(sid, n){   // 박승한 전용 — 외부 게스트 인원 직접 수정
+  if(!isAdmin()) return;
+  n = Math.max(0, n|0);
+  await freshGuestReqs();
+  const next = { ...GUEST_EXTRA }; if(n>0) next[sid]=n; else delete next[sid];
+  GUEST_EXTRA = next;
+  if(!(await saveSettings({guestExtra:next}))){ toast('저장 중 오류가 났어요'); return; }
+  await rerender(renderAtt);
 }
 function guestStatusOf(sid, mid){ const g=GUEST_REQS.find(x=>x.sid===sid&&x.mid===mid); return g?g.status:'none'; }
 async function requestGuest(sid){
@@ -3402,7 +3413,7 @@ async function renderAtt() {
   attMapDB = map;
   // 운영진 드래프트가 있으면 그 값을 우선 적용해 표시
   const eff = id => (id in attDraft) ? attDraft[id] : (map[id]||'none');
-  const gaCount = GUEST_REQS.filter(g=>g.sid===sess.id&&g.status==='approved').length;   // 승인된 게스트(참석)
+  const gaCount = guestCountOf(sess.id);   // 승인된 멤버 게스트 + 외부 게스트(박승한 지정)
   const yesM = members.filter(m=>eff(m.id)==='yes').length;
   const yes = yesM + gaCount;                        // 참석 = 멤버 참석 + 게스트
   const no  = members.filter(m=>eff(m.id)==='no').length;
@@ -3528,9 +3539,9 @@ async function renderAtt() {
       </div>
       <div class="att-list">${listHtml}</div>
     </div>
-    ${(()=>{ const gp=GUEST_REQS.filter(g=>g.sid===sess.id&&g.status==='pending'); const ga=GUEST_REQS.filter(g=>g.sid===sess.id&&g.status==='approved'); let s='';
+    ${(()=>{ const gp=GUEST_REQS.filter(g=>g.sid===sess.id&&g.status==='pending'); const ga=GUEST_REQS.filter(g=>g.sid===sess.id&&g.status==='approved'); const gx=GUEST_EXTRA[sess.id]||0; let s='';
       if(admin&&gp.length) s+=`<div class="card" style="margin-top:12px"><div style="font-size:12px;font-weight:800;color:var(--accent);margin-bottom:8px">게스트 신청 · 승인 대기 ${gp.length}명</div>${gp.map(g=>`<div style="display:flex;align-items:center;justify-content:space-between;gap:8px;padding:6px 0"><span style="color:var(--cream);font-size:14px">${esc(g.name)}</span><span style="display:flex;gap:6px"><button class="btn accent sm" onclick="approveGuest('${sess.id}',${g.mid})">승인</button><button class="btn ghost sm" style="color:var(--red)" onclick="cancelGuest('${sess.id}',${g.mid})">거절</button></span></div>`).join('')}</div>`;
-      if(ga.length) s+=`<div class="card" style="margin-top:12px"><div style="font-size:12px;font-weight:800;color:var(--win);margin-bottom:8px">게스트 ${ga.length}명</div>${ga.map(g=>`<div style="display:flex;align-items:center;justify-content:space-between;gap:8px;padding:5px 0"><span style="color:var(--cream);font-size:14px">${esc(g.name)} <span style="font-size:11px;color:var(--win);font-weight:800">게스트</span></span>${admin?`<button class="btn ghost sm" style="color:var(--red)" onclick="cancelGuest('${sess.id}',${g.mid})">취소</button>`:''}</div>`).join('')}</div>`;
+      if(ga.length||gx>0||admin) s+=`<div class="card" style="margin-top:12px"><div style="font-size:12px;font-weight:800;color:var(--win);margin-bottom:8px">게스트 ${ga.length+gx}명</div>${ga.map(g=>`<div style="display:flex;align-items:center;justify-content:space-between;gap:8px;padding:5px 0"><span style="color:var(--cream);font-size:14px">${esc(g.name)} <span style="font-size:11px;color:var(--win);font-weight:800">게스트</span></span>${admin?`<button class="btn ghost sm" style="color:var(--red)" onclick="cancelGuest('${sess.id}',${g.mid})">취소</button>`:''}</div>`).join('')}${(gx>0&&!admin)?`<div style="padding:5px 0;color:var(--cream);font-size:14px">외부 게스트 <b>${gx}명</b></div>`:''}${admin?`<div style="display:flex;align-items:center;justify-content:space-between;gap:8px;padding:8px 0 2px;${ga.length?'border-top:1px solid var(--line);margin-top:6px':''}"><span style="color:var(--muted);font-size:13px">외부 게스트(명단 외)</span><span style="display:flex;align-items:center;gap:12px"><button class="btn ghost sm" onclick="setGuestExtra('${sess.id}',${gx-1})" ${gx<=0?'disabled':''}>−</button><b style="min-width:18px;text-align:center;color:var(--cream)">${gx}</b><button class="btn ghost sm" onclick="setGuestExtra('${sess.id}',${gx+1})">＋</button></span></div>`:''}</div>`;
       return s; })()}
     ${nDraft ? `<div class="save-bar"><span class="save-n">변경 ${nDraft}건 (미저장)</span><span class="sb-actions"><button class="cancel" onclick="attCancelDraft()">취소</button><button class="ok" onclick="attSaveDraft()">저장</button></span></div>` : ''}`;
   el.innerHTML = html;
@@ -4429,7 +4440,7 @@ async function initApp() {
   updateAdminBtn();
   try { const r = await fetchRoster(); if (r) applyPlayers(r); } catch (e) {}
   await mergeTbMembers();   // 팀빌더에만 있는 멤버도 로그인 가능하게 병합
-  try { const s = await fetchSettings(); teamSplitOn = s.teamSplit !== false; CLUB_PINS = s.pins || {}; BANK = s.bank || null; SURVEY = s.survey || null; UNIFORM = s.uniform || null; RESULTS = s.results || null; GUEST_REQS = s.guestReqs || []; } catch (e) {}
+  try { const s = await fetchSettings(); teamSplitOn = s.teamSplit !== false; CLUB_PINS = s.pins || {}; BANK = s.bank || null; SURVEY = s.survey || null; UNIFORM = s.uniform || null; RESULTS = s.results || null; GUEST_REQS = s.guestReqs || []; GUEST_EXTRA = s.guestExtra || {}; } catch (e) {}
   await loadTbDormant();
   await rolloverDormancyIfNeeded();   // 15일 이후 다음 달 휴면 자동 롤오버(월 1회) — 누가 앱을 열든 자동
   // 로컬 미리보기: 첫 활동 회원으로 자동 로그인

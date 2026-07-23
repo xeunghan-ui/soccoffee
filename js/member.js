@@ -1393,6 +1393,11 @@ async function enablePush(){
   toast('알림을 켰어요! 공지·세션 소식을 보내드릴게요.');
   rerender(renderMore);
 }
+// 개인 알림 큐 — 발송기(GitHub Actions)가 매시간 비우며 해당 멤버에게 전송
+async function queuePush(targetId, title, body, url){
+  if (!USE_DB || !targetId) return;
+  try { await sb.from('push_queue').insert({ target_member_id: targetId, title, body, url: url||'./member.html' }); } catch(e){}
+}
 async function disablePush(){
   const sub = await getPushSub();
   if (sub) {
@@ -2720,10 +2725,16 @@ async function attSaveDraft(){
   if(!isAdmin() || !attSessionId) return;
   const entries = Object.entries(attDraft);
   if(!entries.length) return;
+  const _s = (await getSessions()).find(x=>String(x.id)===String(attSessionId));
+  const _lbl = _s && _s.date ? `${parseInt(_s.date.split('-')[1])}/${parseInt(_s.date.split('-')[2])} 세션` : '세션';
   for(const [id,st] of entries){
     const mid = Number(id);
     if(st==='none') await clearAttendance(attSessionId, mid);
     else await setAttendance(attSessionId, mid, st);
+    if (mid !== getMe() && st !== 'none') {
+      const stLbl = ({yes:'참석',no:'불참',maybe:'미정'})[st] || st;
+      queuePush(mid, '📋 참석 상태 변경', `운영진이 ${_lbl} 참석 상태를 '${stLbl}'(으)로 변경했어요.`, './member.html#att');
+    }
   }
   attDraft = {};
   await rerender(renderAtt);
@@ -2760,7 +2771,15 @@ async function adminSetAtt(memberId, cur, target){
   const ok = (cur===target)
     ? await clearAttendance(attSessionId, memberId)
     : await setAttendance(attSessionId, memberId, target);
-  if(ok) await rerender(renderAtt);
+  if(ok){
+    if (memberId !== getMe() && cur !== target) {
+      const s = (await getSessions()).find(x=>String(x.id)===String(attSessionId));
+      const lbl = s && s.date ? `${parseInt(s.date.split('-')[1])}/${parseInt(s.date.split('-')[2])} 세션` : '세션';
+      const stLbl = ({yes:'참석',no:'불참',maybe:'미정'})[target] || target;
+      queuePush(memberId, '📋 참석 상태 변경', `운영진이 ${lbl} 참석 상태를 '${stLbl}'(으)로 변경했어요.`, './member.html#att');
+    }
+    await rerender(renderAtt);
+  }
 }
 async function markAtt(status){
   if(!attMe || !attSessionId) return;
@@ -2832,6 +2851,7 @@ async function toggleDuesConfirm(month, id){
   const arr = new Set(dc[month]||[]); if (arr.has(id)) arr.delete(id); else arr.add(id); dc[month] = [...arr];
   DUES_CONFIRMED = dc;
   if (!(await saveSettings({ duesConfirmed: dc }))) { toast('저장 중 오류가 났어요'); return; }
+  if ((dc[month]||[]).includes(id)) queuePush(id, '✅ 입금 확인', `${parseInt(month.split('-')[1])}월 회비 입금이 확인됐어요. 감사합니다!`, './member.html#dues');
   await rerender(renderDues);
 }
 let duesDraft = {};     // memberId -> bool(paid)
@@ -2978,6 +2998,10 @@ async function toggleDue(memberId, currentlyPaid) {
   const m = ROSTER.find(x=>x.id===memberId);
   const ok = await setDuesPaid(duesMonth(), memberId, !currentlyPaid, dueAmount(m?m.name:''));
   if (!ok) return;
+  if (isAdmin() && memberId !== getMe()) {
+    const mo = parseInt(duesMonth().split('-')[1]);
+    queuePush(memberId, '💰 회비 상태 변경', `운영진이 ${mo}월 회비를 '${!currentlyPaid?'납부':'미납'}'(으)로 변경했어요.`, './member.html#dues');
+  }
   await renderDues();
   window.scrollTo(0, y);
 }
@@ -3017,7 +3041,11 @@ async function duesSaveDraft(){
   for(const [id,st] of entries){
     const mid = Number(id); const m = ROSTER.find(x=>x.id===mid);
     if (st === 'dormant') { dormIds.push(mid); }
-    else { const ok = await setDuesPaid(mo, mid, st === 'paid', dueAmount(m?m.name:'')); if(!ok) anyErr = true; }
+    else {
+      const ok = await setDuesPaid(mo, mid, st === 'paid', dueAmount(m?m.name:''));
+      if(!ok) anyErr = true;
+      else if (mid !== getMe()) queuePush(mid, '💰 회비 상태 변경', `운영진이 ${parseInt(mo.split('-')[1])}월 회비를 '${st==='paid'?'납부':'미납'}'(으)로 변경했어요.`, './member.html#dues');
+    }
   }
   // 휴면: 팀빌더 명단에 해당 월 등록(roster에 쓰면 mergeTbMembers가 덮어쓰므로 팀빌더가 단일 출처)
   if (dormIds.length) {

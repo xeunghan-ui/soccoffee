@@ -79,6 +79,14 @@ async function main() {
   const thisMonth = monthOf(today);
   const msgs = [];   // { title, body, url, targets?: [memberId] }  targets 없으면 전체
 
+  // ⓠ 개인 알림 큐 (입금 확인·관리자 변경 등) — 매 실행마다 비움
+  const queue = await j(await rest('push_queue?select=id,target_member_id,title,body,url&order=created_at.asc&limit=50')) || [];
+  const qIds = [];
+  for (const q of queue) {
+    qIds.push(q.id);
+    msgs.push({ title: q.title, body: q.body, url: q.url || './member.html', targets: [q.target_member_id] });
+  }
+
   if (MANUAL_TITLE || MANUAL_BODY) {
     msgs.push({ title: MANUAL_TITLE || '싸커피', body: MANUAL_BODY, url: './member.html' });
   } else {
@@ -173,8 +181,9 @@ async function main() {
       }
     }
     for (const ep of [...new Set(dead)]) await rest(`push_subs?endpoint=eq.${encodeURIComponent(ep)}`, { method: 'DELETE' });
+    for (const qid of qIds) await rest(`push_queue?id=eq.${qid}`, { method: 'DELETE' });
     if (dead.length) console.log('만료 구독', new Set(dead).size, '건 정리');
-  } else console.log('보낼 메시지 없음');
+  } else { console.log('보낼 메시지 없음'); for (const qid of qIds) await rest(`push_queue?id=eq.${qid}`, { method: 'DELETE' }); }
 
   await rest('club_settings', { method: 'POST', headers: { Prefer: 'resolution=merge-duplicates' },
     body: JSON.stringify({ id: 'push_state', data: st, updated_at: new Date().toISOString() }) });

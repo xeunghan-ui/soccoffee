@@ -1,7 +1,7 @@
 name: push-notify
 on:
   schedule:
-    - cron: '10 * * * *'   # 매시간 10분 (UTC)
+    - cron: '7,22,37,52 * * * *'   # 15분마다 (정시 혼잡 회피 오프셋)
   workflow_dispatch:
     inputs:
       title:

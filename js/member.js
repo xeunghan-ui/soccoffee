@@ -1417,8 +1417,8 @@ async function pushTpl(key, vars){
 }
 
 // 개인 알림 큐 — 발송기(GitHub Actions)가 매시간 비우며 해당 멤버에게 전송
-async function queuePush(targetId, title, body, url){
-  if (!USE_DB || !targetId) return;
+async function queuePush(targetId, title, body, url){   // targetId 0 = 전체 발송
+  if (!USE_DB || targetId == null) return;
   try { await sb.from('push_queue').insert({ target_member_id: targetId, title, body, url: url||'./member.html' }); } catch(e){}
 }
 async function disablePush(){
@@ -3291,6 +3291,13 @@ async function renderOps() {
 
   const _tplOv = (await fetchSettings()).pushTemplates || {};
   const secPush = `
+    <div style="border:1.5px dashed var(--accent);border-radius:12px;padding:14px 14px 12px;margin-bottom:16px">
+      <b style="color:#ece6d2;font-size:13px">📢 수동 발송</b>
+      <div class="hint" style="margin:2px 0 10px">알림 켠 멤버 전체에게 즉시 보내요 (다음 발송 주기 15분 내 도착)</div>
+      <div class="field" style="margin-bottom:8px"><input id="mpTitle" placeholder="제목 (예: 📣 싸커피)" maxlength="60"></div>
+      <div class="field" style="margin-bottom:10px"><textarea id="mpBody" rows="2" placeholder="내용을 입력하세요" maxlength="300"></textarea></div>
+      <button class="btn accent sm" onclick="opsManualPush()">전체에게 보내기</button>
+    </div>
     <p class="hint" style="margin-top:0;line-height:1.6">푸시 알림 문구를 수정할 수 있어요. <b style="color:#ece6d2">{중괄호}</b> 부분은 발송 시 실제 값으로 바뀌어요.<br>비워두면 기본 문구가 쓰여요. 저장 후 다음 발송부터 적용됩니다.</p>
     ${Object.entries(PUSH_TPL_DEFAULTS).map(([k,d])=>{
       const ov = _tplOv[k] || {};
@@ -3315,6 +3322,16 @@ async function renderOps() {
       ${OPS_TABS.map(t => `<button class="ops-subtab ${t.key===opsTabSel?'on':''}" onclick="opsSwitch('${t.key}')">${t.label}</button>`).join('')}
     </div>
     <div class="card">${bodyMap[opsTabSel]}</div>`;
+}
+async function opsManualPush(){
+  if (!isAdmin()) return;
+  const t = (document.getElementById('mpTitle')||{}).value?.trim() || '';
+  const bd = (document.getElementById('mpBody')||{}).value?.trim() || '';
+  if (!t && !bd) return toast('제목이나 내용을 입력해 주세요');
+  if (!confirm(`알림 켠 멤버 전체에게 보낼까요?\n\n${t||'싸커피'}\n${bd}`)) return;
+  await queuePush(0, t || '싸커피', bd, './member.html#home');
+  document.getElementById('mpTitle').value=''; document.getElementById('mpBody').value='';
+  toast('발송 예약됐어요 — 15분 내 전송됩니다.');
 }
 async function opsSavePushTpl(){
   if (!isAdmin()) return;

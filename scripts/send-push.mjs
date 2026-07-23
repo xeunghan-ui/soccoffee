@@ -104,7 +104,8 @@ async function main() {
   const qIds = [];
   for (const q of queue) {
     qIds.push(q.id);
-    msgs.push({ title: q.title, body: q.body, url: q.url || './member.html', targets: [q.target_member_id] });
+    msgs.push({ title: q.title, body: q.body, url: q.url || './member.html',
+      targets: q.target_member_id === 0 ? null : [q.target_member_id] });   // 0 = 전체 발송
   }
 
   if (MANUAL_TITLE || MANUAL_BODY) {

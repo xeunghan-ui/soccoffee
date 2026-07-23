@@ -1393,6 +1393,29 @@ async function enablePush(){
   toast('알림을 켰어요! 공지·세션 소식을 보내드릴게요.');
   rerender(renderMore);
 }
+// 푸시 문구 템플릿 — 기본값. 운영진 탭 '푸시'에서 수정하면 club_settings.pushTemplates에 저장되어 우선 적용
+const PUSH_TPL_DEFAULTS = {
+  notice:       { name:'새 공지',            vars:'{제목}',                         title:'📣 새 공지', body:'{제목}' },
+  ride:         { name:'새 카풀',            vars:'{운전자} {날짜} {시간} {출발지} {도착지}', title:'🚗 새 카풀', body:'{운전자}님 · {날짜} {시간} {출발지} → {도착지}' },
+  session_new:  { name:'새 세션 일정',       vars:'{날짜} {시간} {장소}',            title:'📅 새 세션 일정', body:'{날짜} {시간} {장소} — 참석 체크해 주세요' },
+  tomorrow:     { name:'내일 세션 리마인드', vars:'{날짜} {시간} {장소}',            title:'⚽ 내일 세션', body:'{날짜} {시간} {장소} — 내일이에요!' },
+  deadline:     { name:'참석 마감 임박(미응답·미정)', vars:'{날짜}',                 title:'⏰ 참석 마감 임박', body:'{날짜} 세션 참석 응답이 내일 마감돼요. 참석/불참을 정해 주세요!' },
+  vote:         { name:'투표 시작(25일)',    vars:'',                               title:'🗳️ 이달의 선수 투표 시작', body:'이번 달 MVP와 성장상을 뽑아 주세요!' },
+  dues_open:    { name:'회비 시작(15일)',    vars:'{월}',                           title:'💰 회비 안내', body:'{월}월 회비 납부가 시작됐어요. 25일까지 입금 부탁드려요!' },
+  dues_urge:    { name:'회비 마감 임박(미납·24일)', vars:'{월}',                     title:'💸 회비 마감 임박', body:'{월}월 회비가 내일(25일) 마감돼요. 아직 미납 상태예요!' },
+  dorm_ask:     { name:'휴면 복귀 확인(15일)', vars:'{월}',                          title:'🌙 {월}월엔 복귀하시나요?', body:"복귀하려면 홈에서 '활동'을, 계속 쉬려면 '휴면'을 눌러 주세요. 그대로 두면 휴면이 유지돼요." },
+  dues_confirm: { name:'입금 확인(개인)',    vars:'{월}',                           title:'✅ 입금 확인', body:'{월}월 회비 입금이 확인됐어요. 감사합니다!' },
+  att_change:   { name:'참석 상태 변경(개인)', vars:'{세션} {상태}',                 title:'📋 참석 상태 변경', body:"운영진이 {세션} 참석 상태를 '{상태}'(으)로 변경했어요." },
+  dues_change:  { name:'회비 상태 변경(개인)', vars:'{월} {상태}',                   title:'💰 회비 상태 변경', body:"운영진이 {월}월 회비를 '{상태}'(으)로 변경했어요." },
+};
+function pushTplFill(t, vars){ let r=t; for(const k in (vars||{})) r=r.split('{'+k+'}').join(vars[k]); return r; }
+async function pushTpl(key, vars){
+  let ov = {};
+  try { ov = ((await fetchSettings()).pushTemplates || {})[key] || {}; } catch(e){}
+  const d = PUSH_TPL_DEFAULTS[key] || { title:'싸커피', body:'' };
+  return { title: pushTplFill(ov.title || d.title, vars), body: pushTplFill(ov.body || d.body, vars) };
+}
+
 // 개인 알림 큐 — 발송기(GitHub Actions)가 매시간 비우며 해당 멤버에게 전송
 async function queuePush(targetId, title, body, url){
   if (!USE_DB || !targetId) return;
@@ -2733,7 +2756,8 @@ async function attSaveDraft(){
     else await setAttendance(attSessionId, mid, st);
     if (mid !== getMe() && st !== 'none') {
       const stLbl = ({yes:'참석',no:'불참',maybe:'미정'})[st] || st;
-      queuePush(mid, '📋 참석 상태 변경', `운영진이 ${_lbl} 참석 상태를 '${stLbl}'(으)로 변경했어요.`, './member.html#att');
+      const t = await pushTpl('att_change', {'세션':_lbl,'상태':stLbl});
+      queuePush(mid, t.title, t.body, './member.html#att');
     }
   }
   attDraft = {};
@@ -2776,7 +2800,8 @@ async function adminSetAtt(memberId, cur, target){
       const s = (await getSessions()).find(x=>String(x.id)===String(attSessionId));
       const lbl = s && s.date ? `${parseInt(s.date.split('-')[1])}/${parseInt(s.date.split('-')[2])} 세션` : '세션';
       const stLbl = ({yes:'참석',no:'불참',maybe:'미정'})[target] || target;
-      queuePush(memberId, '📋 참석 상태 변경', `운영진이 ${lbl} 참석 상태를 '${stLbl}'(으)로 변경했어요.`, './member.html#att');
+      const t = await pushTpl('att_change', {'세션':lbl,'상태':stLbl});
+      queuePush(memberId, t.title, t.body, './member.html#att');
     }
     await rerender(renderAtt);
   }
@@ -2851,7 +2876,7 @@ async function toggleDuesConfirm(month, id){
   const arr = new Set(dc[month]||[]); if (arr.has(id)) arr.delete(id); else arr.add(id); dc[month] = [...arr];
   DUES_CONFIRMED = dc;
   if (!(await saveSettings({ duesConfirmed: dc }))) { toast('저장 중 오류가 났어요'); return; }
-  if ((dc[month]||[]).includes(id)) queuePush(id, '✅ 입금 확인', `${parseInt(month.split('-')[1])}월 회비 입금이 확인됐어요. 감사합니다!`, './member.html#dues');
+  if ((dc[month]||[]).includes(id)) { const t = await pushTpl('dues_confirm', {'월':parseInt(month.split('-')[1])}); queuePush(id, t.title, t.body, './member.html#dues'); }
   await rerender(renderDues);
 }
 let duesDraft = {};     // memberId -> bool(paid)
@@ -2999,8 +3024,8 @@ async function toggleDue(memberId, currentlyPaid) {
   const ok = await setDuesPaid(duesMonth(), memberId, !currentlyPaid, dueAmount(m?m.name:''));
   if (!ok) return;
   if (isAdmin() && memberId !== getMe()) {
-    const mo = parseInt(duesMonth().split('-')[1]);
-    queuePush(memberId, '💰 회비 상태 변경', `운영진이 ${mo}월 회비를 '${!currentlyPaid?'납부':'미납'}'(으)로 변경했어요.`, './member.html#dues');
+    const t = await pushTpl('dues_change', {'월':parseInt(duesMonth().split('-')[1]),'상태':!currentlyPaid?'납부':'미납'});
+    queuePush(memberId, t.title, t.body, './member.html#dues');
   }
   await renderDues();
   window.scrollTo(0, y);
@@ -3044,7 +3069,7 @@ async function duesSaveDraft(){
     else {
       const ok = await setDuesPaid(mo, mid, st === 'paid', dueAmount(m?m.name:''));
       if(!ok) anyErr = true;
-      else if (mid !== getMe()) queuePush(mid, '💰 회비 상태 변경', `운영진이 ${parseInt(mo.split('-')[1])}월 회비를 '${st==='paid'?'납부':'미납'}'(으)로 변경했어요.`, './member.html#dues');
+      else if (mid !== getMe()) { const t = await pushTpl('dues_change', {'월':parseInt(mo.split('-')[1]),'상태':st==='paid'?'납부':'미납'}); queuePush(mid, t.title, t.body, './member.html#dues'); }
     }
   }
   // 휴면: 팀빌더 명단에 해당 월 등록(roster에 쓰면 mergeTbMembers가 덮어쓰므로 팀빌더가 단일 출처)
@@ -3125,6 +3150,7 @@ async function renderOps() {
     { key:'session', label:'세션' },
     { key:'dues',    label:'회비' },
     { key:'vote',    label:'투표' },
+    { key:'push',    label:'푸시' },
     { key:'roster',  label:'설정' },
   ];
   if (!OPS_TABS.some(t => t.key === opsTabSel)) opsTabSel = 'notice';
@@ -3263,7 +3289,24 @@ async function renderOps() {
     ${resultsHtml(votesGrowth, members, true)}
     <button class="btn ghost sm" style="color:var(--red);margin-top:10px" onclick="opsResetVote('growth')">가장 성장한 선수 초기화</button>`;
 
-  const bodyMap = { notice:secNotice, session:secSession, roster:secRoster, dues:secDues, vote:secVote };
+  const _tplOv = (await fetchSettings()).pushTemplates || {};
+  const secPush = `
+    <p class="hint" style="margin-top:0;line-height:1.6">푸시 알림 문구를 수정할 수 있어요. <b style="color:#ece6d2">{중괄호}</b> 부분은 발송 시 실제 값으로 바뀌어요.<br>비워두면 기본 문구가 쓰여요. 저장 후 다음 발송부터 적용됩니다.</p>
+    ${Object.entries(PUSH_TPL_DEFAULTS).map(([k,d])=>{
+      const ov = _tplOv[k] || {};
+      const mod = (ov.title || ov.body) ? ' <span class="pin-tag" style="background:#7a5b2e;color:#fff">수정됨</span>' : '';
+      return `<div style="border-top:1px solid var(--line);padding:13px 0 4px;margin-top:4px">
+        <div style="font-size:13px;font-weight:800;color:#ece6d2;margin-bottom:2px">${d.name}${mod}</div>
+        ${d.vars?`<div class="hint" style="margin:0 0 8px">사용 가능: ${esc(d.vars)}</div>`:''}
+        <div class="field" style="margin-bottom:8px"><input id="ptpl-t-${k}" placeholder="${esc(d.title)}" value="${esc(ov.title||'')}" maxlength="60"></div>
+        <div class="field"><textarea id="ptpl-b-${k}" rows="2" placeholder="${esc(d.body)}">${esc(ov.body||'')}</textarea></div>
+      </div>`;
+    }).join('')}
+    <div class="n-actions" style="margin-top:12px">
+      <button class="btn accent sm" onclick="opsSavePushTpl()">문구 저장</button>
+      <button class="btn ghost sm" onclick="opsResetPushTpl()">전부 기본값으로</button>
+    </div>`;
+  const bodyMap = { notice:secNotice, session:secSession, roster:secRoster, dues:secDues, vote:secVote, push:secPush };
 
   el.innerHTML = `
     <div class="ops-note">운영진 전용 화면입니다. 팀원에게는 보이지 않아요.</div>
@@ -3272,6 +3315,25 @@ async function renderOps() {
       ${OPS_TABS.map(t => `<button class="ops-subtab ${t.key===opsTabSel?'on':''}" onclick="opsSwitch('${t.key}')">${t.label}</button>`).join('')}
     </div>
     <div class="card">${bodyMap[opsTabSel]}</div>`;
+}
+async function opsSavePushTpl(){
+  if (!isAdmin()) return;
+  const out = {};
+  Object.keys(PUSH_TPL_DEFAULTS).forEach(k=>{
+    const t = (document.getElementById('ptpl-t-'+k)||{}).value?.trim() || '';
+    const bd = (document.getElementById('ptpl-b-'+k)||{}).value?.trim() || '';
+    if (t || bd) out[k] = { ...(t?{title:t}:{}), ...(bd?{body:bd}:{}) };
+  });
+  if (!(await saveSettings({ pushTemplates: out }))) { toast('저장 중 오류가 났어요'); return; }
+  toast('푸시 문구를 저장했어요. 다음 발송부터 적용돼요.');
+  await rerender(renderOps);
+}
+async function opsResetPushTpl(){
+  if (!isAdmin()) return;
+  if (!confirm('모든 푸시 문구를 기본값으로 되돌릴까요?')) return;
+  if (!(await saveSettings({ pushTemplates: {} }))) { toast('저장 중 오류가 났어요'); return; }
+  toast('기본 문구로 되돌렸어요.');
+  await rerender(renderOps);
 }
 async function opsResetVote(cat) {
   if (!isAdmin()) return;

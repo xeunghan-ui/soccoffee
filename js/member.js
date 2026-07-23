@@ -650,10 +650,6 @@ async function fetchRoster() {
   const s = await fetchSettings();
   return Array.isArray(s.roster) && s.roster.length ? s.roster : null;
 }
-async function saveRoster(players) {
-  applyPlayers(players);
-  return await saveSettings({ roster: players });
-}
 
 const POTM_STORE = 'socoffee_potm_votes_v1'; // 데모 모드 저장소
 const POTM_VOTER_KEY = 'socoffee_potm_voter'; // 이 브라우저의 투표자 이름(편의용)
@@ -1072,9 +1068,11 @@ function resultsHtml(votes, members, showVoters) {
     : '';
   if (ranked.length === 0) return `<div class="res-locked"><div class="big"></div>아직 집계된 표가 없어요.</div>${votersBlock}`;
   const max = ranked[0].c;
+  let _rk = 0, _prevC = null;
+  const _rankOf = (m, i) => { if (m.c !== _prevC) { _rk = i + 1; _prevC = m.c; } return _rk; };
   return `<div style="margin-top:16px">` + ranked.map((m, i) => `
     <div class="res-row">
-      <div class="res-rank ${i === 0 ? 'top' : ''}">${i + 1}</div>
+      <div class="res-rank ${m.c === max ? 'top' : ''}">${_rankOf(m, i)}</div>
       <div class="res-main">
         <div class="res-name"><span>${m.jersey != null ? `<span style="color:var(--muted)">${m.jersey}</span> ` : ''}${esc(m.name)}</span><span class="cnt">${m.c}표</span></div>
         <div class="res-bar"><div style="width:${Math.round(m.c / max * 100)}%"></div></div>
@@ -2001,7 +1999,6 @@ function updateGuestDom(sid){
   set('attGuestNum', gaCount);   // 게스트는 멤버 참석과 별도 카운트
   set('attRosterStat', `멤버 ${b.yesM+b.no+b.maybe}/${b.membersLen} 응답${gaCount?` · 게스트 ${gaCount}`:''}`);
   const mn=document.getElementById('gxMinus'); if(mn) mn.disabled = gx<=0;
-  if (attFilter==='guest') { if(_attRows) _attRows.guest = guestRowsHtml(sid); const lb=document.getElementById('attListBody'); if(lb) lb.innerHTML = guestRowsHtml(sid); }
 }
 function guestStatusOf(sid, mid){ const g=GUEST_REQS.find(x=>x.sid===sid&&x.mid===mid); return g?g.status:'none'; }
 async function requestGuest(sid){
@@ -2442,16 +2439,8 @@ function setAttFilter(st){
   attFilter = st;
   if (attTeamView) { attTeamView = false; rerender(renderAtt); return; }   // 팀뷰였으면 일반뷰로 전환
   const b = document.getElementById('attListBody'); if (b && _attRows) b.innerHTML = _attRows[st] || '';
-  const lbl = document.getElementById('attFilterLabel'); if (lbl) lbl.textContent = ({yes:'참석',no:'불참',maybe:'미정',none:'미응답',guest:'게스트'})[st] || '명단';
+  const lbl = document.getElementById('attFilterLabel'); if (lbl) lbl.textContent = ({yes:'참석',no:'불참',maybe:'미정',none:'미응답'})[st] || '명단';
   document.querySelectorAll('.att-counts .att-cnt').forEach(c=>c.classList.toggle('sel', c.classList.contains(st)));
-}
-// 게스트 명단 행(승인된 멤버 게스트 + 외부 게스트) — 게스트 필터 표시용
-function guestRowsHtml(sid){
-  const ga = GUEST_REQS.filter(g=>g.sid===sid&&g.status==='approved');
-  const gx = GUEST_EXTRA[sid]||0;
-  let r = ga.map(g=>`<div class="att-row"><span class="js"></span><span class="nm">${esc(g.name)} <span style="font-size:11px;color:var(--win);font-weight:800">게스트</span></span><span class="st"></span></div>`).join('');
-  if (gx>0) r += `<div class="att-row"><span class="js"></span><span class="nm">외부 게스트</span><span class="st" style="color:var(--win);font-weight:800;font-size:13px">${gx}명</span></div>`;
-  return r || '<div class="empty" style="font-size:13px;padding:16px 0;text-align:center">게스트가 없어요.</div>';
 }
 // 참석 신청 마감: 세션에 deadline이 있으면 그 날 23:59, 없으면 매치일 직전 일요일(전주 일요일)
 function autoDeadline(dateStr){
@@ -2616,7 +2605,6 @@ async function renderAtt() {
   const _emptyRow = '<div class="empty" style="font-size:13px;padding:16px 0;text-align:center">해당 인원이 없어요.</div>';
   // 상태별 명단 행 미리 생성(카운트 클릭 시 즉시 전환)
   _attRows = {}; ['yes','no','maybe','none'].forEach(st=>{ _attRows[st] = sortedM.filter(m=>eff(m.id)===st).map(rosterRow).join('') || _emptyRow; });
-  _attRows.guest = guestRowsHtml(sess.id);
   let listHtml;
   if (teamSplitOn && attTeamView) {
     listHtml = [['WHITE','WHITE'],['BLACK','BLACK'],['기타','기타']].map(([key,label])=>{
@@ -2635,11 +2623,11 @@ async function renderAtt() {
       <div class="att-cnt no ${attFilter==='no'?'sel':''}" onclick="setAttFilter('no')"><div class="num">${no}</div><div class="cap">불참</div></div>
       <div class="att-cnt maybe ${attFilter==='maybe'?'sel':''}" onclick="setAttFilter('maybe')"><div class="num">${maybe}</div><div class="cap">미정</div></div>
       <div class="att-cnt none ${attFilter==='none'?'sel':''}" onclick="setAttFilter('none')"><div class="num">${none}</div><div class="cap">미응답</div></div>
-      <div class="att-cnt guest ${attFilter==='guest'?'sel':''}" onclick="setAttFilter('guest')"><div class="num" id="attGuestNum" style="color:var(--win)">${gaCount}</div><div class="cap">게스트</div></div>
+      <div class="att-cnt guest"><div class="num" id="attGuestNum" style="color:var(--win)">${gaCount}</div><div class="cap">게스트</div></div>
     </div>
     <div class="card" style="margin-top:10px">
       <div class="section-title" style="margin:0 0 8px;display:flex;justify-content:space-between;align-items:center">
-        <span><span id="attFilterLabel">${({yes:'참석',no:'불참',maybe:'미정',none:'미응답',guest:'게스트'})[attFilter]||'명단'}</span> 명단 <span id="attRosterStat" style="font-size:12px;color:var(--muted);font-weight: 600">멤버 ${respondedCnt}/${members.length} 응답${gaCount?` · 게스트 ${gaCount}`:''}</span></span>
+        <span><span id="attFilterLabel">${({yes:'참석',no:'불참',maybe:'미정',none:'미응답'})[attFilter]||'명단'}</span> 명단 <span id="attRosterStat" style="font-size:12px;color:var(--muted);font-weight: 600">멤버 ${respondedCnt}/${members.length} 응답${gaCount?` · 게스트 ${gaCount}`:''}</span></span>
         ${teamSplitOn?`<button class="btn ghost sm" onclick="toggleAttTeam()">${attTeamView?'전체 보기':'팀별 보기'}</button>`:''}
       </div>
       <div class="att-list" id="attListBody">${listHtml}</div>
@@ -3044,23 +3032,10 @@ async function renderOps() {
       }).join('')}
     </div>`;
 
-  const secSession = `
-    ${opsEditSessionId ? '' : (opsAddSessionOpen ? `
-    <div class="row"><div class="field"><label>날짜 <span style="color:var(--muted);font-weight:400">(<span id="opsSessSeasonLbl">${seasonLabel(defDate)} 시즌</span>)</span></label><input id="opsSessDate" type="date" value="${defDate}" onchange="opsSyncDeadline()"></div><div class="field"><label>시작</label><input id="opsSessTime" type="time" value="${seasonDefaultTime(defDate).start}" onchange="endPlus2('opsSessTime','opsSessEnd')"></div><div class="field"><label>종료 <span style="color:var(--muted);font-weight:400">(팀 리그 20–23시 · 일반 21–23시 자동)</span></label><input id="opsSessEnd" type="time" value="${seasonDefaultTime(defDate).end}"></div></div>
-    <div class="field"><label>유형 <span style="color:var(--muted);font-weight:400">(팀빌더 통계 유형)</span></label><select id="opsSessType">${[['풋살','풋살 경기'],['축구','축구 경기'],['회식','회식'],['야유회','야유회'],['기타','기타']].map(([v,l])=>`<option value="${v}"${v==='풋살'?' selected':''}>${l}</option>`).join('')}</select></div>
-    <div class="field"><label>장소</label><input id="opsSessPlace" value="상암 풋살장" maxlength="40"></div>
-    <div class="field"><label>장소 링크 <span style="color:var(--muted);font-weight:400">(지도 URL · 선택)</span></label><input id="opsSessPlaceUrl" placeholder="https://naver.me/..." maxlength="300"></div>
-    <div class="field"><label>게스트 신청 링크 <span style="color:var(--muted);font-weight:400">(선택 · 소개 페이지에 '게스트 신청' 버튼 노출)</span></label><input id="opsSessGuestUrl" placeholder="https://forms.gle/..." maxlength="300"></div>
-    <div class="field"><label>참석 신청 마감 <span style="color:var(--muted);font-weight:400">(기본: 전주 일요일 23:59)</span></label><input id="opsSessDeadline" type="date" value="${autoDeadlineStr(defDate)}"></div>
-    <div class="field"><label>이름/메모 <span style="color:var(--muted);font-weight:400">(선택, 예: EVENT, A매치)</span></label><input id="opsSessLabel" maxlength="30" placeholder="예: EVENT, A매치"></div>
-    <div class="field"><label>세부내용 <span style="color:var(--muted);font-weight:400">(선택 · 소개 페이지에서 클릭하면 펼쳐짐 · 링크 자동연결)</span></label><textarea id="opsSessDesc" rows="2" placeholder="행사 안내, 준비물, 링크 등"></textarea></div>
-    <div class="field"><label>참석 조건 <span style="color:var(--muted);font-weight:400">(선택)</span></label>
-      <label style="display:flex;align-items:center;gap:7px;font-size:13px;color:var(--cream);margin-top:2px"><input type="checkbox" id="opsSessDuesOnly"> 회비 납부자만 참석</label>
-      <label style="display:flex;align-items:center;gap:7px;font-size:13px;color:var(--cream);margin-top:6px"><input type="checkbox" id="opsSessAllowDorm"> 휴면도 참석 가능</label></div>
-    <div class="n-actions"><button class="btn accent sm" onclick="opsAddSession()">세션 추가</button><button class="btn ghost sm" onclick="opsCloseAddSession()">취소</button></div>` : `
-    <button class="btn accent sm" onclick="opsOpenAddSession()">＋ 세션 추가</button>`)}
-    <div style="margin-top:16px">
-      ${allSessions.length===0?'<p class="hint">등록된 세션이 없어요. (비우면 다가오는 수요일·상암 풋살장으로 자동 표시돼요)</p>':allSessions.map(s=>{
+  const _t0 = todayStr();
+  const _upSess = allSessions.filter(s=>(s.date||'')>=_t0);
+  const _pastSess = allSessions.filter(s=>(s.date||'')<_t0).reverse();   // 최근 것부터
+  const _sessRow = (s)=>{
         if (String(s.id)===opsEditSessionId) {
           return `<div class="ops-row" style="flex-direction:column;align-items:stretch;gap:0">
             <div class="row"><div class="field"><label>날짜</label><input id="esD" type="date" value="${s.date||''}"></div><div class="field"><label>시작</label><input id="esT" type="time" value="${s.time||'21:00'}" onchange="endPlus2('esT','esTe')"></div><div class="field"><label>종료 <span style="color:var(--muted);font-weight:400">(시작+2시간 기본)</span></label><input id="esTe" type="time" value="${s.endTime||''}"></div></div>
@@ -3078,11 +3053,28 @@ async function renderOps() {
           </div>`;
         }
         return `<div class="ops-row"><div style="min-width:0"><b>${fmtSessionDate(s.date,s.time,s.endTime)}</b>${s.label?` · ${esc(s.label)}`:''}<div class="hint" style="margin:0">${esc(s.place)} · 마감 ${deadlineLabel(sessionDeadline(s))}</div></div><span style="display:flex;gap:6px;flex-shrink:0"><button class="btn ghost sm" onclick="opsEditSession('${s.id}')">수정</button><button class="btn ghost sm" style="color:var(--red)" onclick="opsDelSession('${s.id}')">삭제</button></span></div>`;
-      }).join('')}
+      };
+  const secSession = `
+    ${opsEditSessionId ? '' : (opsAddSessionOpen ? `
+    <div class="row"><div class="field"><label>날짜 <span style="color:var(--muted);font-weight:400">(<span id="opsSessSeasonLbl">${seasonLabel(defDate)} 시즌</span>)</span></label><input id="opsSessDate" type="date" value="${defDate}" onchange="opsSyncDeadline()"></div><div class="field"><label>시작</label><input id="opsSessTime" type="time" value="${seasonDefaultTime(defDate).start}" onchange="endPlus2('opsSessTime','opsSessEnd')"></div><div class="field"><label>종료 <span style="color:var(--muted);font-weight:400">(팀 리그 20–23시 · 일반 21–23시 자동)</span></label><input id="opsSessEnd" type="time" value="${seasonDefaultTime(defDate).end}"></div></div>
+    <div class="field"><label>유형 <span style="color:var(--muted);font-weight:400">(팀빌더 통계 유형)</span></label><select id="opsSessType">${[['풋살','풋살 경기'],['축구','축구 경기'],['회식','회식'],['야유회','야유회'],['기타','기타']].map(([v,l])=>`<option value="${v}"${v==='풋살'?' selected':''}>${l}</option>`).join('')}</select></div>
+    <div class="field"><label>장소</label><input id="opsSessPlace" value="상암 풋살장" maxlength="40"></div>
+    <div class="field"><label>장소 링크 <span style="color:var(--muted);font-weight:400">(지도 URL · 선택)</span></label><input id="opsSessPlaceUrl" placeholder="https://naver.me/..." maxlength="300"></div>
+    <div class="field"><label>게스트 신청 링크 <span style="color:var(--muted);font-weight:400">(선택 · 소개 페이지에 '게스트 신청' 버튼 노출)</span></label><input id="opsSessGuestUrl" placeholder="https://forms.gle/..." maxlength="300"></div>
+    <div class="field"><label>참석 신청 마감 <span style="color:var(--muted);font-weight:400">(기본: 전주 일요일 23:59)</span></label><input id="opsSessDeadline" type="date" value="${autoDeadlineStr(defDate)}"></div>
+    <div class="field"><label>이름/메모 <span style="color:var(--muted);font-weight:400">(선택, 예: EVENT, A매치)</span></label><input id="opsSessLabel" maxlength="30" placeholder="예: EVENT, A매치"></div>
+    <div class="field"><label>세부내용 <span style="color:var(--muted);font-weight:400">(선택 · 소개 페이지에서 클릭하면 펼쳐짐 · 링크 자동연결)</span></label><textarea id="opsSessDesc" rows="2" placeholder="행사 안내, 준비물, 링크 등"></textarea></div>
+    <div class="field"><label>참석 조건 <span style="color:var(--muted);font-weight:400">(선택)</span></label>
+      <label style="display:flex;align-items:center;gap:7px;font-size:13px;color:var(--cream);margin-top:2px"><input type="checkbox" id="opsSessDuesOnly"> 회비 납부자만 참석</label>
+      <label style="display:flex;align-items:center;gap:7px;font-size:13px;color:var(--cream);margin-top:6px"><input type="checkbox" id="opsSessAllowDorm"> 휴면도 참석 가능</label></div>
+    <div class="n-actions"><button class="btn accent sm" onclick="opsAddSession()">세션 추가</button><button class="btn ghost sm" onclick="opsCloseAddSession()">취소</button></div>` : `
+    <button class="btn accent sm" onclick="opsOpenAddSession()">＋ 세션 추가</button>`)}
+    <div style="margin-top:16px">
+      ${allSessions.length===0?'<p class="hint">등록된 세션이 없어요. (비우면 다가오는 수요일·상암 풋살장으로 자동 표시돼요)</p>':(_upSess.map(_sessRow).join('')||'<p class="hint">다가오는 세션이 없어요.</p>')+(_pastSess.length?`<details class="ops-past" style="margin-top:14px"><summary style="cursor:pointer;font-size:13px;color:var(--muted);font-weight:600">지난 세션 ${_pastSess.length}개 보기</summary><div style="margin-top:6px">${_pastSess.map(_sessRow).join('')}</div></details>`:'')}
     </div>
     <p class="hint" style="margin-top:10px">같은 날 여러 경기(A/B매치)도 따로 등록하면 참석을 각각 받아요.</p>`;
 
-  const pinMembers = [...PLAYERS].filter(p => p.status !== 'former').sort((a,b)=>a.name.localeCompare(b.name,'ko'));
+  const pinMembers = [...PLAYERS].filter(p => p.status !== 'former').sort((a,b)=>((CLUB_PINS[a.id]?1:0)-(CLUB_PINS[b.id]?1:0)) || a.name.localeCompare(b.name,'ko'));   // 미설정(챙길 사람) 먼저
   const pinDone = pinMembers.filter(p => CLUB_PINS[p.id]).length;
   const pinRows = pinMembers.map(p=>`<div class="dues-row"><span class="nm">${esc(p.name)}</span>${CLUB_PINS[p.id]
       ? `<span class="dues-badge paid">설정됨</span> <button class="btn ghost sm" onclick="resetPin(${p.id})">초기화</button>`
@@ -3103,12 +3095,17 @@ async function renderOps() {
     <p class="hint" style="margin-top:0">'회비' 탭에서 이름을 눌러 납부 처리하세요. 빠른 이동:</p>
     <button class="btn sm" onclick="switchTab('dues')">회비 현황판 열기</button>`;
 
+  const _vPool = votingMembers(month);
+  const _vDone = new Set(votesMvp.concat(votesGrowth).map(v=>v.voter_id));
+  const _vMissing = _vPool.filter(m=>!_vDone.has(m.id));
   const secVote = `
+    <p class="hint" style="margin:0 0 10px">투표 대상 ${_vPool.length}명 중 <b style="color:#ece6d2">${_vDone.size}명 참여</b>${_vMissing.length?` · 미투표 ${_vMissing.length}명`:''}</p>
+    ${_vMissing.length?`<div style="font-size:12px;color:var(--muted);line-height:1.7;margin:0 0 14px;padding-bottom:12px;border-bottom:1px solid var(--line)"><b style="color:var(--coffee-2)">미투표</b> ${_vMissing.map(m=>esc(m.name)).join(', ')}</div>`:''}
     <p class="hint" style="margin:0 0 6px;font-weight:800;color:#ece6d2">이달의 선수 (${votesMvp.length}표)</p>
-    ${resultsHtml(votesMvp, members)}
+    ${resultsHtml(votesMvp, members, true)}
     <button class="btn ghost sm" style="color:var(--red);margin-top:10px" onclick="opsResetVote('mvp')">이달의 선수 초기화</button>
     <p class="hint" style="margin:18px 0 6px;font-weight:800;color:#ece6d2">가장 성장한 선수 (${votesGrowth.length}표)</p>
-    ${resultsHtml(votesGrowth, members)}
+    ${resultsHtml(votesGrowth, members, true)}
     <button class="btn ghost sm" style="color:var(--red);margin-top:10px" onclick="opsResetVote('growth')">가장 성장한 선수 초기화</button>`;
 
   const bodyMap = { notice:secNotice, session:secSession, roster:secRoster, dues:secDues, vote:secVote };
@@ -3141,9 +3138,7 @@ function opsSwitch(key){ opsTabSel = key; rerender(renderOps); }
 // 더보기에서 특정 운영진 기능으로 바로 진입
 function openOps(sub){ if(!isAdmin()) return; if(sub) opsTabSel = sub; switchTab('ops'); }
 
-/* ---------- 명단 관리 (운영진) ---------- */
-let opsEditId = null;
-function nextPlayerId(){ return PLAYERS.reduce((m,p)=>Math.max(m, p.id||0), 0) + 1; }
+/* 명단 관리는 팀빌더 단일 출처 — 사이트 측 편집 기능은 제거됨(2026-07-22) */
 function refreshOpenMemberViews(){
   const open = id => !document.getElementById(id).classList.contains('hidden');
   if (open('tab-home')) rerender(renderHome);
@@ -3151,55 +3146,7 @@ function refreshOpenMemberViews(){
   if (open('tab-dues')) rerender(renderDues);
   if (open('tab-potm')) rerender(renderPotm);
 }
-async function opsAddPlayer(){
-  if (!isAdmin()) return;
-  const name = document.getElementById('opNewName').value.trim();
-  if (!name) return toast('이름을 입력해 주세요');
-  const team = document.getElementById('opNewTeam').value;
-  const jv = document.getElementById('opNewJersey').value;
-  const tier = parseInt(document.getElementById('opNewTier').value) || 3;
-  const eng = document.getElementById('opNewEng').value.trim();
-  const p = { id:nextPlayerId(), name, tier, status:'active', joinDate:potmMonth()+'-01',
-    friendsSince:null, dormantMonths:[], jersey:(jv!==''?parseInt(jv):null), eng, team, cap:false };
-  if (!(await saveRoster(PLAYERS.concat([p])))) return;
-  opsEditId = null; await rerender(renderOps); refreshOpenMemberViews(); toast('선수를 추가했어요');
-}
-async function opsDelPlayer(id){
-  if (!isAdmin()) return;
-  const p = PLAYERS.find(x=>x.id===id);
-  if (!confirm(`'${p?p.name:''}' 님을 명단에서 삭제할까요?`)) return;
-  if (!(await saveRoster(PLAYERS.filter(x=>x.id!==id)))) return;
-  if (opsEditId===id) opsEditId = null;
-  await rerender(renderOps); refreshOpenMemberViews(); toast('삭제했어요');
-}
-async function opsToggleDormant(id){
-  if (!isAdmin()) return;
-  const m = potmMonth();
-  const list = PLAYERS.map(p => {
-    if (p.id !== id) return p;
-    const dm = (p.dormantMonths||[]).slice();
-    const i = dm.indexOf(m); if (i>=0) dm.splice(i,1); else dm.push(m);
-    return { ...p, dormantMonths:dm };
-  });
-  if (!(await saveRoster(list))) return;
-  await rerender(renderOps); refreshOpenMemberViews();
-}
-function opsEditPlayer(id){ opsEditId = id; rerender(renderOps); }
-async function opsSavePlayer(id){
-  if (!isAdmin()) return;
-  const name = document.getElementById('opeName').value.trim();
-  if (!name) return toast('이름을 입력해 주세요');
-  const team = document.getElementById('opeTeam').value;
-  const jv = document.getElementById('opeJersey').value;
-  const tier = parseInt(document.getElementById('opeTier').value) || 3;
-  const eng = document.getElementById('opeEng').value.trim();
-  const cap = document.getElementById('opeCap').checked;
-  const status = document.getElementById('opeStatus').value;
-  const list = PLAYERS.map(p => p.id!==id ? p
-    : { ...p, name, team, tier, eng, cap, status, jersey:(jv!==''?parseInt(jv):null) });
-  if (!(await saveRoster(list))) return;
-  opsEditId = null; await rerender(renderOps); refreshOpenMemberViews(); toast('저장했어요');
-}
+
 async function opsAddNotice() {
   const title = document.getElementById('opsNoticeTitle').value.trim();
   if (!title) return toast('제목을 입력해 주세요');
@@ -3300,7 +3247,7 @@ if (USE_DB) {
   ['notices','attendance','dues','club_settings'].forEach(tbl => {
     sb.channel(tbl+'-rt').on('postgres_changes', { event:'*', schema:'public', table:tbl }, async () => {
       _settingsCache = null;
-      if (tbl === 'club_settings') { try { const r = await fetchRoster(); if (r) applyPlayers(r); const s = await fetchSettings(); teamSplitOn = s.teamSplit !== false; await loadTbDormant(); } catch (e) {} }
+      if (tbl === 'club_settings') { try { const r = await fetchRoster(); if (r) applyPlayers(r); await mergeTbMembers(); const s = await fetchSettings(); teamSplitOn = s.teamSplit !== false; await loadTbDormant(); } catch (e) {} }
       const open = id => !document.getElementById(id).classList.contains('hidden');
       if (open('tab-home')) rerender(renderHome);
       if (open('tab-att'))  rerender(renderAtt);

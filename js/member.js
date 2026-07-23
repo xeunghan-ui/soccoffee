@@ -1676,7 +1676,7 @@ async function renderHome() {
     const myYes = sessions.filter(s => myStatusOf(s.id) === 'yes');
     // ── 묶음 ① 신원·스킬 / ② 현황(상태·참석예정·미확정) ──
     const statusHtml = `${confirmPhase
-        ? `<div class="pc-stat"><span class="lbl">${moNum}월</span><span class="act-toggle"><button class="${!dormStatus?'on':''}" onclick="setMyDormancy(${me},'${dMonth}',false)">활동</button><button class="${dormStatus?'on':''}" onclick="setMyDormancy(${me},'${dMonth}',true)">휴면</button></span></div>`
+        ? `${dormStatus ? `<div style="font-size:12px;color:var(--muted);line-height:1.6;margin-bottom:6px">🌙 <b style="color:#ece6d2">${moNum}월엔 복귀하시나요?</b> 복귀하면 '활동', 계속 쉬면 '휴면'을 눌러 주세요.</div>` : ''}<div class="pc-stat"><span class="lbl">${moNum}월</span><span class="act-toggle"><button class="${!dormStatus?'on':''}" onclick="setMyDormancy(${me},'${dMonth}',false)">활동</button><button class="${dormStatus?'on':''}" onclick="setMyDormancy(${me},'${dMonth}',true)">휴면</button></span></div>`
         : `<div class="pc-stat"><span class="lbl">${moNum}월</span><span class="pc-badge ${dormStatus?'neutral':'done'}">${dormStatus?'휴면 중':'활동 중'}</span></div>`}
       ${!dormStatus
         ? `<div class="pc-stat"><span class="lbl">${moNum}월 회비${myPaid?'':' <span class="mini-dot"></span>'}</span><span class="act-toggle dues"><button class="paid ${myPaid?'on':''}" onclick="homeSetDue(${me},'${dMonth}',true)">완료</button><button class="unpaid ${!myPaid?'on':''}" onclick="homeSetDue(${me},'${dMonth}',false)">미납</button></span></div>`

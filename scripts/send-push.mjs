@@ -39,6 +39,12 @@ function activeFor(players, m) {
   });
 }
 
+// 그 달 활동 멤버 id 목록 (allowAll=true면 휴면 포함 전체)
+function idsFor(players, m, allowAll) {
+  if (allowAll) return null;   // null = 전체 발송
+  return activeFor(players, m).map(p => p.id);
+}
+
 async function main() {
   const subs = await j(await rest('push_subs?select=endpoint,data,member_id'));
   if (!Array.isArray(subs) || !subs.length) { console.log('구독자 없음 — 종료'); return; }
@@ -81,7 +87,7 @@ async function main() {
       st.rideIds.push(String(r.id));
       if (firstRun) continue;
       if (r.ride_date && r.ride_date < today) continue;
-      msgs.push({ title: '🚗 새 카풀', body: `${r.driver}님 · ${mdLabel(r.ride_date)} ${r.ride_time || ''} ${r.place} → ${r.dest || ''}`, url: './member.html#list' });
+      msgs.push({ title: '🚗 새 카풀', body: `${r.driver}님 · ${mdLabel(r.ride_date)} ${r.ride_time || ''} ${r.place} → ${r.dest || ''}`, url: './member.html#list', targets: idsFor(players, monthOf(r.ride_date || today), false) });
     }
     // ④ 새 세션 일정 (지난 세션 제외)
     for (const s of sessions) {
@@ -90,14 +96,14 @@ async function main() {
       st.sessionIds.push(sid);
       if (firstRun) continue;
       if (!s.date || s.date < today) continue;
-      msgs.push({ title: '📅 새 세션 일정', body: `${mdLabel(s.date)} ${s.time || ''} ${s.place || ''} — 참석 체크해 주세요`, url: './member.html#att' });
+      msgs.push({ title: '📅 새 세션 일정', body: `${mdLabel(s.date)} ${s.time || ''} ${s.place || ''} — 참석 체크해 주세요`, url: './member.html#att', targets: idsFor(players, monthOf(s.date), s.allowDormant) });
     }
     if (evening) {
       // ⑧ 내일 세션 리마인드 (전체)
       for (const s of sessions) {
         if (s.date !== kstDate(1)) continue;
         if (!once('rem-' + (s.id || s.date))) continue;
-        msgs.push({ title: '⚽ 내일 세션', body: `${mdLabel(s.date)} ${s.time || ''} ${s.place || ''} — 내일이에요!`, url: './member.html#att' });
+        msgs.push({ title: '⚽ 내일 세션', body: `${mdLabel(s.date)} ${s.time || ''} ${s.place || ''} — 내일이에요!`, url: './member.html#att', targets: idsFor(players, monthOf(s.date), s.allowDormant) });
       }
       // ① 마감 하루 전 — 미응답·미정만 타겟
       for (const s of sessions) {
@@ -114,12 +120,13 @@ async function main() {
       }
       // ② 투표 시작 (25일)
       if (dom === 25 && once('vote-' + thisMonth)) {
-        msgs.push({ title: '🗳️ 이달의 선수 투표 시작', body: '이번 달 MVP와 성장상을 뽑아 주세요!', url: './member.html#potm' });
+        msgs.push({ title: '🗳️ 이달의 선수 투표 시작', body: '이번 달 MVP와 성장상을 뽑아 주세요!', url: './member.html#potm', targets: idsFor(players, thisMonth, false) });
       }
       // ⑤ 회비 시작 (15일 — 다음 달 회비)
       if (dom === 15 && once('dues-open-' + thisMonth)) {
         const nm = Number(thisMonth.slice(5, 7)) % 12 + 1;
-        msgs.push({ title: '💰 회비 안내', body: `${nm}월 회비 납부가 시작됐어요. 25일까지 입금 부탁드려요!`, url: './member.html#dues' });
+        const dmStart = `${nm === 1 ? Number(thisMonth.slice(0,4))+1 : thisMonth.slice(0,4)}-${String(nm).padStart(2,'0')}`;
+        msgs.push({ title: '💰 회비 안내', body: `${nm}월 회비 납부가 시작됐어요. 25일까지 입금 부탁드려요!`, url: './member.html#dues', targets: idsFor(players, dmStart, false) });
       }
       // ⑥ 회비 마감(25일) 하루 전 — 미납만 타겟
       if (dom === 24 && once('dues-urge-' + thisMonth)) {

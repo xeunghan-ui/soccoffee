@@ -382,6 +382,9 @@
   .dues-badge.paid { background: var(--green-soft); color: var(--green); }
   .dues-badge.unpaid { background: #f4e0dc; color: var(--red); }
   .dues-badge.dormant { background: #6b6b6b; color: #f0ede2; }
+  .dues-conf { flex-shrink: 0; font-size: 11px; font-weight: 800; padding: 4px 9px; border-radius: 20px; border: 1px solid var(--line); background: transparent; color: var(--muted); cursor: pointer; font-family: inherit; white-space: nowrap; }
+  .dues-conf.on { background: var(--green); color: #fff; border-color: var(--green); }
+  .dues-conf.ro { cursor: default; }
   .dues-badge.toggle { cursor: pointer; }
   .dues-badge.toggle:hover { filter: brightness(.96); }
   /* 회비 운영진: 납부/미납/휴면 직접 선택(참석 방식) */

@@ -2756,20 +2756,6 @@ async function setDuesPaid(month, memberId, paid, amount) {
 }
 
 // 운영진 일괄 수정용 드래프트 (회비)
-const DUES_CONFIRM_NAMES = ['박승한','원재식'];   // 회비 입금 확인 권한(총괄 + 총무)
-function isDuesConfirmer(){ const p = PLAYERS.find(x=>x.id===getMe()); return !!(p && DUES_CONFIRM_NAMES.includes(p.name)); }
-let DUES_CONFIRMED = {};   // { 'YYYY-MM': [memberId] } — 실제 입금 확인(총무/총괄이 계좌 확인 후 체크)
-function isDuesConfirmed(month, id){ return (DUES_CONFIRMED[month]||[]).includes(id); }
-async function toggleDuesConfirm(month, id){
-  if (!isDuesConfirmer()) return;
-  let cur = {};
-  try { if (USE_DB){ const {data:row}=await sb.from('club_settings').select('data').eq('id','current').maybeSingle(); cur=(row&&row.data)||{}; _settingsCache=cur; } else cur=await fetchSettings(); } catch(e){ cur=_settingsCache||{}; }
-  const dc = Object.assign({}, cur.duesConfirmed||{});
-  const arr = new Set(dc[month]||[]); if (arr.has(id)) arr.delete(id); else arr.add(id); dc[month] = [...arr];
-  DUES_CONFIRMED = dc;
-  if (!(await saveSettings({ duesConfirmed: dc }))) { toast('저장 중 오류가 났어요'); return; }
-  await rerender(renderDues);
-}
 let duesDraft = {};     // memberId -> bool(paid)
 let duesPaidDB = {};
 async function renderDues() {
@@ -2811,18 +2797,16 @@ async function renderDues() {
   const collected = payMembers.filter(m=>isPaid(m.id)).reduce((s,m)=>s+dueAmount(m.name),0);
   const expected = payMembers.reduce((s,m)=>s+dueAmount(m.name),0);
   const pct = total ? Math.round(paidCount/total*100) : 0;
-  const confirmedCount = payMembers.filter(m=>isDuesConfirmed(month, m.id)).length;   // 입금 확인 인원
   const meActive = me != null && members.some(x => x.id === me);
   const myState = effState(me);                  // 드래프트까지 반영
   const myPaid = myState === 'paid';
-  const myConfd = isDuesConfirmed(month, me);
   const myName = (ROSTER.find(x=>x.id===me)||{}).name || '';
   const myDirty = admin && (me in duesDraft);    // 저장 전 변경 여부
 
   const myCard = meActive ? `<div class="card" style="display:flex;align-items:center;justify-content:space-between;gap:12px;padding:14px 16px;margin-bottom:12px">
       <div style="min-width:0">
         <div style="font-size:13px;font-weight:800;color:var(--coffee)">내 회비${myName?` — ${esc(myName)}`:''} · ${potmMonthLabel(month)}</div>
-        <div style="font-size:12px;color:var(--muted);margin-top:2px">${myPaid ? (myConfd ? '납부 · <b style="color:var(--win)">입금 확인됨</b>' : '납부 표시됨 · 입금 확인 대기중') : '미납 상태예요'}${myDirty?' · 저장 전 (아래 저장 필요)':''}</div>
+        <div style="font-size:12px;color:var(--muted);margin-top:2px">${myPaid ? '납부 완료로 표시됨' : '미납 상태예요'}${myDirty?' · 저장 전 (아래 저장 필요)':''}</div>
       </div>
       ${admin
         ? `<button class="dues-badge toggle ${myPaid?'paid':'unpaid'}" style="flex-shrink:0" onclick="duesDraftCardToggle(${me})">${myPaid ? '납부 취소' : '납부 표시'}</button>`
@@ -2860,7 +2844,7 @@ async function renderDues() {
     <div class="potm-hero" style="background:linear-gradient(135deg,#2f7a4f,#245f3e)">
       <div class="trophy"></div>
       <h2>${potmMonthLabel(month)} 회비</h2>
-      <div class="month">${paidCount}/${total}명 납부 · 입금확인 ${confirmedCount}명</div>
+      <div class="month">${paidCount}/${total}명 납부 · ${pct}%</div>
     </div>
     <div class="dues-progress"><div style="width:${pct}%"></div></div>
     <div class="dues-summary">
@@ -2876,22 +2860,15 @@ async function renderDues() {
     <div class="ops-note">${admin ? '운영진 모드 — 납부 / 미납 / 휴면(다음달)을 직접 선택하고 아래 \'저장\'으로 반영돼요' : '읽기전용 현황 — 납부는 멤버가 홈에서 직접 표시해요.'}</div>
     <div class="card">
       <div class="att-list dues-grid">
-        ${[...members].sort((a,b)=>{ const rk=s=>s==='unpaid'?0:(s==='paid'?1:2); return rk(effState(a.id))-rk(effState(b.id)) || byJersey(a,b); }).map(m=>{
+        ${[...members].sort((a,b)=>{ const rk=s=>s==='unpaid'?0:(s==='paid'?1:2); return rk(effState(a.id))-rk(effState(b.id)) || byName(a,b); }).map(m=>{
           const stt = effState(m.id);
           const isMe = me===m.id;
           const dirty = admin && (m.id in duesDraft);
-          const confd = isDuesConfirmed(month, m.id);
-          const confChip = (stt==='paid')
-            ? (isDuesConfirmer()
-                ? `<button class="dues-conf ${confd?'on':''}" onclick="toggleDuesConfirm('${month}',${m.id})">${confd?'✓ 확인':'입금확인'}</button>`
-                : (confd ? `<span class="dues-conf on ro">✓ 확인</span>` : ''))
-            : '';
-          const statusEl = admin
-            ? `<span class="st-set"><button class="st paid ${stt==='paid'?'on':''}" onclick="duesDraftSet(${m.id},'paid')">납부</button><button class="st unpaid ${stt==='unpaid'?'on':''}" onclick="duesDraftSet(${m.id},'unpaid')">미납</button><button class="st dormant ${stt==='dormant'?'on':''}" onclick="duesDraftSet(${m.id},'dormant')">휴면</button></span>`
-            : `<span style="flex-shrink:0;font-size:12px;font-weight:800;padding:4px 12px;border-radius:20px;background:${stt==='paid'?'rgba(70,179,129,.92)':'rgba(217,97,74,.92)'};color:#fff">${stt==='paid'?'납부':'미납'}</span>`;
           return `<div class="dues-row ${isMe?'me':''}${dirty?' dirty':''}">
             <span class="nm">${esc(m.name)}${isMe?' <span style="font-size:11px;color:var(--accent)">(나)</span>':''}${dirty?' <span class="dirty-dot">●</span>':''}</span>
-            <span style="display:flex;align-items:center;gap:8px;flex-shrink:0">${confChip}${statusEl}</span>
+            ${admin
+              ? `<span class="st-set"><button class="st paid ${stt==='paid'?'on':''}" onclick="duesDraftSet(${m.id},'paid')">납부</button><button class="st unpaid ${stt==='unpaid'?'on':''}" onclick="duesDraftSet(${m.id},'unpaid')">미납</button><button class="st dormant ${stt==='dormant'?'on':''}" onclick="duesDraftSet(${m.id},'dormant')">휴면</button></span>`
+              : `<span style="flex-shrink:0;font-size:12px;font-weight:800;padding:4px 12px;border-radius:20px;background:${stt==='paid'?'rgba(70,179,129,.92)':'rgba(217,97,74,.92)'};color:#fff">${stt==='paid'?'납부':'미납'}</span>`}
           </div>`;
         }).join('')}
         ${dormantMembers.map(m=>{
@@ -2984,6 +2961,49 @@ async function renderOps() {
   const members = activeMembers(month);
   const paidCount = members.filter(m=>dues.find(d=>d.member_id===m.id && d.paid)).length;
   const defDate = upcomingSessionDate();
+
+  // ---- 할 일 요약 (총괄관리자 대시보드) ----
+  const _next = await nearestSession();
+  let _noResp = 0, _nextLbl = '';
+  if (_next && _next.date) {
+    try {
+      const _att = await fetchAttendance(_next.id);
+      const _resp = new Set(_att.map(r => r.member_id));
+      const _sm = activeMembers(_next.date.slice(0,7));
+      _noResp = _sm.filter(m => !_resp.has(m.id)).length;
+      const _p = _next.date.split('-');
+      _nextLbl = Number(_p[1])+'/'+Number(_p[2]);
+    } catch(e) {}
+  }
+  const _dm = duesMonth();
+  const _duesRows = (_dm === month) ? dues : await fetchDues(_dm);
+  const _dMembers = activeMembers(_dm);
+  const _duesUnpaid = _dMembers.filter(m => !_duesRows.find(r => r.member_id === m.id && r.paid)).length;
+  await freshGuestReqs();
+  const _upIds = new Set(allSessions.filter(x=>(x.date||'')>=todayStr()).map(x=>String(x.id)));
+  const _guestPend = GUEST_REQS.filter(g => g.status==='pending' && (_upIds.size===0 || _upIds.has(String(g.sid)))).length;
+  const _pinMissing = PLAYERS.filter(p => p.status !== 'former' && !CLUB_PINS[p.id]).length;
+  const _vPool = votingMembers(month);
+  const _vDone = new Set(votesMvp.concat(votesGrowth).map(v=>v.voter_id));
+  const _vMissing = _vPool.filter(m=>!_vDone.has(m.id));
+  const _todoItems = [
+    { n:_noResp,            label:'다음 세션 미응답'+(_nextLbl?' ('+_nextLbl+')':''), go:"switchTab('att')" },
+    { n:_duesUnpaid, label:parseInt(_dm.split('-')[1])+'월 회비 미납', go:"switchTab('dues')" },
+    { n:_vMissing.length,   label:'이달 투표 미참여', go:"opsSwitch('vote')" },
+    { n:_guestPend,         label:'게스트 신청 대기', go:"switchTab('att')" },
+    { n:_pinMissing,        label:'PIN 미설정(미로그인)', go:"opsSwitch('roster')" },
+  ].filter(x => x.n > 0);
+  const _todoHtml = `
+    <div class="card" style="padding:13px 16px;margin-bottom:12px">
+      <b style="color:#ece6d2;font-size:13px">할 일</b>
+      ${_todoItems.length === 0
+        ? `<div class="hint" style="margin:6px 0 0">지금 처리할 일이 없어요.</div>`
+        : `<div style="display:grid;gap:6px;margin-top:9px">${_todoItems.map(x=>`
+            <button onclick="${x.go}" style="display:flex;justify-content:space-between;align-items:center;gap:10px;width:100%;padding:9px 12px;border-radius:10px;border:1px solid var(--line);background:#18301f;color:var(--cream);font-family:inherit;font-size:13px;font-weight:600;cursor:pointer;text-align:left">
+              <span>${x.label}</span>
+              <span style="flex-shrink:0;display:inline-flex;align-items:center;gap:6px"><span class="dues-badge unpaid">${x.n}명</span><span style="color:var(--muted)">→</span></span>
+            </button>`).join('')}</div>`}
+    </div>`;
 
   const OPS_TABS = [
     { key:'notice',  label:'공지' },
@@ -3091,7 +3111,7 @@ async function renderOps() {
       <label style="display:flex;align-items:center;gap:7px;font-size:13px;color:var(--cream);margin-top:2px"><input type="checkbox" id="opsSessDuesOnly"> 회비 납부자만 참석</label>
       <label style="display:flex;align-items:center;gap:7px;font-size:13px;color:var(--cream);margin-top:6px"><input type="checkbox" id="opsSessAllowDorm"> 휴면도 참석 가능</label></div>
     <div class="n-actions"><button class="btn accent sm" onclick="opsAddSession()">세션 추가</button><button class="btn ghost sm" onclick="opsCloseAddSession()">취소</button></div>` : `
-    <button class="btn accent sm" onclick="opsOpenAddSession()">＋ 세션 추가</button>`)}
+    <div class="n-actions"><button class="btn accent sm" onclick="opsOpenAddSession()">＋ 세션 추가</button><button class="btn ghost sm" onclick="opsAddNextMonth()">다음 달 수요일 일괄 등록</button></div>`)}
     <div style="margin-top:16px">
       ${allSessions.length===0?'<p class="hint">등록된 세션이 없어요. (비우면 다가오는 수요일·상암 풋살장으로 자동 표시돼요)</p>':(_upSess.map(_sessRow).join('')||'<p class="hint">다가오는 세션이 없어요.</p>')+(_pastSess.length?`<details class="ops-past" style="margin-top:14px"><summary style="cursor:pointer;font-size:13px;color:var(--muted);font-weight:600">지난 세션 ${_pastSess.length}개 보기</summary><div style="margin-top:6px">${_pastSess.map(_sessRow).join('')}</div></details>`:'')}
     </div>
@@ -3118,9 +3138,6 @@ async function renderOps() {
     <p class="hint" style="margin-top:0">'회비' 탭에서 이름을 눌러 납부 처리하세요. 빠른 이동:</p>
     <button class="btn sm" onclick="switchTab('dues')">회비 현황판 열기</button>`;
 
-  const _vPool = votingMembers(month);
-  const _vDone = new Set(votesMvp.concat(votesGrowth).map(v=>v.voter_id));
-  const _vMissing = _vPool.filter(m=>!_vDone.has(m.id));
   const secVote = `
     <p class="hint" style="margin:0 0 10px">투표 대상 ${_vPool.length}명 중 <b style="color:#ece6d2">${_vDone.size}명 참여</b>${_vMissing.length?` · 미투표 ${_vMissing.length}명`:''}</p>
     ${_vMissing.length?`<div style="font-size:12px;color:var(--muted);line-height:1.7;margin:0 0 14px;padding-bottom:12px;border-bottom:1px solid var(--line)"><b style="color:var(--coffee-2)">미투표</b> ${_vMissing.map(m=>esc(m.name)).join(', ')}</div>`:''}
@@ -3135,6 +3152,7 @@ async function renderOps() {
 
   el.innerHTML = `
     <div class="ops-note">운영진 전용 화면입니다. 팀원에게는 보이지 않아요.</div>
+    ${_todoHtml}
     <div class="ops-subtabs">
       ${OPS_TABS.map(t => `<button class="ops-subtab ${t.key===opsTabSel?'on':''}" onclick="opsSwitch('${t.key}')">${t.label}</button>`).join('')}
     </div>
@@ -3234,6 +3252,37 @@ async function opsAddSession() {
   opsAddSessionOpen = false;
   await rerender(renderOps); toast('세션을 추가했어요');
 }
+
+// 다음 달 수요일 세션 일괄 등록 — 시즌 규칙(리그 20-23시·일반 21-23시) 자동 적용
+async function opsAddNextMonth(){
+  if (!isAdmin()) return;
+  const now = new Date();
+  const ny = now.getMonth()===11 ? now.getFullYear()+1 : now.getFullYear();
+  const nm = now.getMonth()===11 ? 1 : now.getMonth()+2;
+  const mStr = ny+'-'+String(nm).padStart(2,'0');
+  const days = [];
+  const d = new Date(ny, nm-1, 1);
+  while (d.getMonth() === nm-1) {
+    if (d.getDay() === 3) days.push(mStr+'-'+String(d.getDate()).padStart(2,'0'));
+    d.setDate(d.getDate()+1);
+  }
+  const list = await getSessions();
+  const exist = new Set(list.map(s=>s.date));
+  const targets = days.filter(ds=>!exist.has(ds));
+  if (!targets.length) return toast(nm+'월 수요일 세션은 이미 모두 등록돼 있어요');
+  const t0 = seasonDefaultTime(mStr);
+  const lbl = targets.map(ds=>{const p=ds.split('-');return Number(p[1])+'/'+Number(p[2]);}).join(', ');
+  if (!confirm(nm+'월('+(isLeague(mStr)?'팀 리그':'일반')+' 시즌) 수요일 '+targets.length+'개 세션을 등록할까요?\n'+lbl+' · '+t0.start+'-'+t0.end+' · 상암 풋살장')) return;
+  targets.forEach(ds=>{
+    const t = seasonDefaultTime(ds);
+    list.push({ id:'s'+Date.now().toString(36)+Math.random().toString(36).slice(2,5)+ds.slice(-2),
+      date:ds, time:t.start, endTime:t.end, type:'풋살', place:'상암 풋살장', placeUrl:'', guestUrl:'',
+      deadline:autoDeadlineStr(ds), label:'', desc:'', duesOnly:false, allowDormant:false });
+  });
+  if (!(await saveSettings({ sessions: list }))) return;
+  await rerender(renderOps); toast(targets.length+'개 세션을 등록했어요');
+}
+
 async function opsDelSession(id) {
   if (!confirm('이 세션을 삭제할까요? 참석 기록도 더는 표시되지 않아요.')) return;
   const list = (await getSessions()).filter(s=>s.id!==id);
@@ -3522,7 +3571,7 @@ async function initApp() {
   updateAdminBtn();
   try { const r = await fetchRoster(); if (r) applyPlayers(r); } catch (e) {}
   await mergeTbMembers();   // 팀빌더에만 있는 멤버도 로그인 가능하게 병합
-  try { const s = await fetchSettings(); teamSplitOn = s.teamSplit !== false; CLUB_PINS = s.pins || {}; BANK = s.bank || null; SURVEY = s.survey || null; UNIFORM = s.uniform || null; RESULTS = s.results || null; GUEST_REQS = s.guestReqs || []; GUEST_EXTRA = s.guestExtra || {}; DUES_CONFIRMED = s.duesConfirmed || {}; } catch (e) {}
+  try { const s = await fetchSettings(); teamSplitOn = s.teamSplit !== false; CLUB_PINS = s.pins || {}; BANK = s.bank || null; SURVEY = s.survey || null; UNIFORM = s.uniform || null; RESULTS = s.results || null; GUEST_REQS = s.guestReqs || []; GUEST_EXTRA = s.guestExtra || {}; } catch (e) {}
   await loadTbDormant();
   await rolloverDormancyIfNeeded();   // 15일 이후 다음 달 휴면 자동 롤오버(월 1회) — 누가 앱을 열든 자동
   // 로컬 미리보기: 첫 활동 회원으로 자동 로그인

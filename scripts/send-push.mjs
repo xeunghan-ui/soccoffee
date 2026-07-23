@@ -140,11 +140,13 @@ async function main() {
       msgs.push({ ...T('session_new', {'날짜': mdLabel(s.date), '시간': s.time || '', '장소': s.place || ''}), url: './member.html#att', targets: idsFor(players, monthOf(s.date), s.allowDormant, thisMonth) });
     }
     if (evening) {
-      // ⑧ 내일 세션 리마인드 (전체)
+      // ⑧ 내일 세션 리마인드 — '참석'으로 응답한 멤버에게만
       for (const s of sessions) {
         if (s.date !== kstDate(1)) continue;
         if (!once('rem-' + (s.id || s.date))) continue;
-        msgs.push({ ...T('tomorrow', {'날짜': mdLabel(s.date), '시간': s.time || '', '장소': s.place || ''}), url: './member.html#att', targets: idsFor(players, monthOf(s.date), s.allowDormant, thisMonth) });
+        const att = await j(await rest(`attendance?select=member_id,status&session_id=eq.${encodeURIComponent(s.id)}`)) || [];
+        const going = att.filter(a => a.status === 'yes').map(a => a.member_id);
+        if (going.length) msgs.push({ ...T('tomorrow', {'날짜': mdLabel(s.date), '시간': s.time || '', '장소': s.place || ''}), url: './member.html#att', targets: going });
       }
       // ① 마감 하루 전 — 미응답·미정만 타겟
       for (const s of sessions) {

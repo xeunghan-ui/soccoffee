@@ -1,0 +1,28 @@
+name: push-notify
+on:
+  schedule:
+    - cron: '10 * * * *'   # 매시간 10분 (UTC)
+  workflow_dispatch:
+    inputs:
+      title:
+        description: '수동 발송 제목 (예: 📣 싸커피)'
+        required: false
+      body:
+        description: '수동 발송 내용'
+        required: false
+permissions: {}
+concurrency: push-notify
+jobs:
+  send:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: 20 }
+      - run: npm install web-push@3
+      - run: node scripts/send-push.mjs
+        env:
+          VAPID_PUBLIC_KEY: ${{ secrets.VAPID_PUBLIC_KEY }}
+          VAPID_PRIVATE_KEY: ${{ secrets.VAPID_PRIVATE_KEY }}
+          MANUAL_TITLE: ${{ inputs.title }}
+          MANUAL_BODY: ${{ inputs.body }}

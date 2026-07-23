@@ -1365,7 +1365,45 @@ function squadBlock(members, team) {
 /* ===== 더보기 메뉴 ===== */
 let moreTab = 'use';   // 회원 메뉴 카테고리 탭: 'use'(이용) | 'set'(설정)
 function setMoreTab(t){ moreTab = t; rerender(renderMore); }
-function renderMore() {
+
+/* ---------- 웹 푸시 알림 (2026-07) ---------- */
+const VAPID_PUBLIC_KEY = 'BFRcgQIzaZzRhMqnEpfaLHEpSaS_0i7Rq-Rc6tQMShJP9_0LdF_veA3SrN1BakQbuNAtW-mzBnwfMyfTU8-a7ms';
+const PUSH_SUPPORTED = ('serviceWorker' in navigator) && ('PushManager' in window) && ('Notification' in window);
+const IS_IOS = /iPhone|iPad|iPod/i.test(navigator.userAgent);
+const IS_STANDALONE = window.matchMedia && matchMedia('(display-mode: standalone)').matches || navigator.standalone === true;
+function _b64ToU8(s){ const p='='.repeat((4-s.length%4)%4); const b=atob((s+p).replace(/-/g,'+').replace(/_/g,'/')); return Uint8Array.from([...b].map(c=>c.charCodeAt(0))); }
+async function _swReg(){ try { return await navigator.serviceWorker.register('sw.js'); } catch(e){ return null; } }
+async function getPushSub(){ if(!PUSH_SUPPORTED) return null; const r=await navigator.serviceWorker.getRegistration('sw.js').catch(()=>null)||await _swReg(); if(!r) return null; return await r.pushManager.getSubscription(); }
+async function enablePush(){
+  if (!PUSH_SUPPORTED) { toast(IS_IOS ? '홈 화면에 추가한 뒤 앱에서 다시 열어 주세요.' : '이 브라우저는 알림을 지원하지 않아요.'); return; }
+  if (IS_IOS && !IS_STANDALONE) { showAddHomeGuide && showAddHomeGuide(); toast('아이폰은 먼저 홈 화면에 추가해야 알림을 켤 수 있어요.'); return; }
+  const perm = await Notification.requestPermission();
+  if (perm !== 'granted') { toast('알림 권한이 거부됐어요. 브라우저 설정에서 허용해 주세요.'); return; }
+  const reg = await _swReg();
+  if (!reg) { toast('서비스 워커 등록에 실패했어요.'); return; }
+  await navigator.serviceWorker.ready;
+  let sub;
+  try { sub = await reg.pushManager.subscribe({ userVisibleOnly:true, applicationServerKey:_b64ToU8(VAPID_PUBLIC_KEY) }); }
+  catch(e){ toast('알림 등록에 실패했어요: '+e.message); return; }
+  const me = getMe(); const mp = PLAYERS.find(x=>x.id===me);
+  try {
+    const { error } = await sb.from('push_subs').upsert({ endpoint: sub.endpoint, data: sub.toJSON(), member_id: me||null, member_name: mp?mp.name:null }, { onConflict:'endpoint' });
+    if (error) { toast('저장 오류: '+error.message); return; }
+  } catch(e){ toast('저장 중 오류가 났어요'); return; }
+  toast('알림을 켰어요! 공지·세션 소식을 보내드릴게요.');
+  rerender(renderMore);
+}
+async function disablePush(){
+  const sub = await getPushSub();
+  if (sub) {
+    try { await sb.from('push_subs').delete().eq('endpoint', sub.endpoint); } catch(e){}
+    await sub.unsubscribe().catch(()=>{});
+  }
+  toast('알림을 껐어요.');
+  rerender(renderMore);
+}
+
+async function renderMore() {
   const el = document.getElementById('moreContent');
   const admin = isAdmin();
   const memberItems = [
@@ -1391,11 +1429,17 @@ function renderMore() {
   const uniformBtn = `<button class="more-item" onclick="showUniform()"><div class="mi-name">유니폼 사이즈 조사</div><div class="mi-desc">2026 SS 유니폼 · 내 사이즈 입력·수정</div></button>`;
   const bankBtn = `<button class="more-item" onclick="showBankInfo()"><div class="mi-name">회비 계좌 안내</div><div class="mi-desc">입금 계좌 확인 · 복사</div></button>`;
   const pinBtn = `<button class="more-item" onclick="changeMyPin()"><div class="mi-name">내 PIN 변경</div><div class="mi-desc">로그인 PIN 4자리 바꾸기</div></button>`;
+  let _pushOn = false; try { _pushOn = !!(await getPushSub()) && Notification.permission==='granted'; } catch(e){}
+  const notifBtn = PUSH_SUPPORTED || IS_IOS
+    ? (_pushOn
+      ? `<button class="more-item" onclick="disablePush()"><div class="mi-name">알림 <span style="font-size:11px;color:var(--win);font-weight:800">켜짐</span></div><div class="mi-desc">공지·세션 리마인드 푸시 받는 중 · 눌러서 끄기</div></button>`
+      : `<button class="more-item" onclick="enablePush()"><div class="mi-name">알림 받기</div><div class="mi-desc">공지·세션 리마인드를 폰 알림으로${IS_IOS&&!IS_STANDALONE?' (홈 화면 추가 필요)':''}</div></button>`)
+    : '';
   const logoutBtn = `<button class="more-item" style="border-color:rgba(189,100,82,.45)" onclick="logout()"><div class="mi-name" style="color:#e08a76">로그아웃</div><div class="mi-desc">이 기기에서 로그아웃</div></button>`;
   const draftBtn = `<button class="more-item" onclick="openDraft()"><div class="mi-name">팀 뽑기 (드래프트)</div><div class="mi-desc">감독 2명이 번갈아 팀원 선발 · 팀 리그 현장용</div></button>`;
   // 회원 메뉴 = 카테고리 탭(이용 / 설정)
   const useGrid = memberItems.map(btn).join('') + draftBtn + bankBtn + introLink;   // 이용: FAQ·팀뽑기·회비계좌·소개
-  const setGrid = pinBtn + guideBtn + logoutBtn;                                     // 설정: PIN·홈추가·로그아웃
+  const setGrid = notifBtn + pinBtn + guideBtn + logoutBtn;                                     // 설정: PIN·홈추가·로그아웃
   const mt = (moreTab === 'set') ? 'set' : 'use';
   const memberTabbed = `<div class="more-tabs">
       <button class="more-tab ${mt==='use'?'on':''}" onclick="setMoreTab('use')">이용</button>

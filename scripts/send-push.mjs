@@ -78,7 +78,7 @@ const T = (key, vars) => {
 };
 
 async function main() {
-  const subs = await j(await rest('push_subs?select=endpoint,data,member_id'));
+  const subs = await j(await rest('push_subs?select=endpoint,data,member_id,prefs'));
   if (!Array.isArray(subs) || !subs.length) { console.log('구독자 없음 — 종료'); return; }
 
   const stRow = await j(await rest('club_settings?select=data&id=eq.push_state'));
@@ -119,7 +119,7 @@ async function main() {
       if (n.publish_at && new Date(n.publish_at) > new Date()) continue;
       st.noticeIds.push(String(n.id));
       if (firstRun) continue;
-      msgs.push({ ...T('notice', {'제목': n.title}), url: './member.html#home' });
+      msgs.push({ cat:'news', ...T('notice', {'제목': n.title}), url: './member.html#home' });
     }
     // ③ 새 카풀 (다가오는 것만)
     const rides = await j(await rest('rides?select=id,driver,place,dest,ride_date,ride_time,created_at&order=created_at.desc&limit=10')) || [];
@@ -129,7 +129,7 @@ async function main() {
       st.rideIds.push(String(r.id));
       if (firstRun) continue;
       if (r.ride_date && r.ride_date < today) continue;
-      msgs.push({ ...T('ride', {'운전자': r.driver, '날짜': mdLabel(r.ride_date), '시간': r.ride_time || '', '출발지': r.place || '', '도착지': r.dest || ''}), url: './member.html#list', targets: idsFor(players, monthOf(r.ride_date || today), false, thisMonth) });
+      msgs.push({ cat:'news', ...T('ride', {'운전자': r.driver, '날짜': mdLabel(r.ride_date), '시간': r.ride_time || '', '출발지': r.place || '', '도착지': r.dest || ''}), url: './member.html#list', targets: idsFor(players, monthOf(r.ride_date || today), false, thisMonth) });
     }
     // ④ 새 세션 일정 (지난 세션 제외)
     for (const s of sessions) {
@@ -138,7 +138,7 @@ async function main() {
       st.sessionIds.push(sid);
       if (firstRun) continue;
       if (!s.date || s.date < today) continue;
-      msgs.push({ ...T('session_new', {'날짜': mdLabel(s.date), '시간': s.time || '', '장소': s.place || ''}), url: './member.html#att', targets: idsFor(players, monthOf(s.date), s.allowDormant, thisMonth) });
+      msgs.push({ cat:'session', ...T('session_new', {'날짜': mdLabel(s.date), '시간': s.time || '', '장소': s.place || ''}), url: './member.html#att', targets: idsFor(players, monthOf(s.date), s.allowDormant, thisMonth) });
     }
     if (evening) {
       // ⑧ 내일 세션 리마인드 — '참석'으로 응답한 멤버에게만
@@ -147,7 +147,7 @@ async function main() {
         if (!once('rem-' + (s.id || s.date))) continue;
         const att = await j(await rest(`attendance?select=member_id,status&session_id=eq.${encodeURIComponent(s.id)}`)) || [];
         const going = att.filter(a => a.status === 'yes').map(a => a.member_id);
-        if (going.length) msgs.push({ ...T('tomorrow', {'날짜': mdLabel(s.date), '시간': s.time || '', '장소': s.place || ''}), url: './member.html#att', targets: going });
+        if (going.length) msgs.push({ cat:'session', ...T('tomorrow', {'날짜': mdLabel(s.date), '시간': s.time || '', '장소': s.place || ''}), url: './member.html#att', targets: going });
       }
       // ① 마감 하루 전 — 미응답·미정만 타겟
       for (const s of sessions) {
@@ -158,19 +158,19 @@ async function main() {
           const att = await j(await rest(`attendance?select=member_id,status&session_id=eq.${encodeURIComponent(s.id)}`)) || [];
           const done = new Set(att.filter(a => a.status === 'yes' || a.status === 'no').map(a => a.member_id));
           const need = activeFor(players, monthOf(s.date), thisMonth).filter(p => !done.has(p.id)).map(p => p.id);
-          if (need.length) msgs.push({ ...T('deadline', {'날짜': mdLabel(s.date)}), url: './member.html#att', targets: need });
+          if (need.length) msgs.push({ cat:'session', ...T('deadline', {'날짜': mdLabel(s.date)}), url: './member.html#att', targets: need });
           st.sent.push('dl-' + (s.id || s.date));
         }
       }
       // ② 투표 시작 (25일)
       if (dom === 25 && once('vote-' + thisMonth)) {
-        msgs.push({ ...T('vote', {}), url: './member.html#potm', targets: idsFor(players, thisMonth, false, thisMonth) });
+        msgs.push({ cat:'vote', ...T('vote', {}), url: './member.html#potm', targets: idsFor(players, thisMonth, false, thisMonth) });
       }
       // ⑤ 회비 시작 (15일 — 다음 달 회비)
       if (dom === 15 && once('dues-open-' + thisMonth)) {
         const nm = Number(thisMonth.slice(5, 7)) % 12 + 1;
         const dmStart = `${nm === 1 ? Number(thisMonth.slice(0,4))+1 : thisMonth.slice(0,4)}-${String(nm).padStart(2,'0')}`;
-        msgs.push({ ...T('dues_open', {'월': nm}), url: './member.html#dues', targets: idsFor(players, dmStart, false, thisMonth) });
+        msgs.push({ cat:'dues', ...T('dues_open', {'월': nm}), url: './member.html#dues', targets: idsFor(players, dmStart, false, thisMonth) });
       }
       // ⑨ 휴면 멤버 복귀 확인 (15일 — 다음 달 상태 선택이 열리는 날)
       if (dom === 15 && once('dorm-ask-' + thisMonth)) {
@@ -185,7 +185,7 @@ async function main() {
         const dues = await j(await rest(`dues?select=member_id,paid&month=eq.${dm}`)) || [];
         const paid = new Set(dues.filter(d => d.paid).map(d => d.member_id));
         const unpaid = activeFor(players, dm, thisMonth).filter(p => !paid.has(p.id)).map(p => p.id);
-        if (unpaid.length) msgs.push({ ...T('dues_urge', {'월': Number(dm.slice(5, 7))}), url: './member.html#dues', targets: unpaid });
+        if (unpaid.length) msgs.push({ cat:'dues', ...T('dues_urge', {'월': Number(dm.slice(5, 7))}), url: './member.html#dues', targets: unpaid });
       }
     }
     st.noticeIds = st.noticeIds.slice(-100); st.rideIds = st.rideIds.slice(-50);
@@ -196,7 +196,8 @@ async function main() {
     console.log('메시지', msgs.length, '건');
     const dead = [];
     for (const m of msgs) {
-      const to = m.targets ? subs.filter(s => m.targets.includes(s.member_id)) : subs;
+      let to = m.targets ? subs.filter(s => m.targets.includes(s.member_id)) : subs;
+      if (m.cat) to = to.filter(s => !s.prefs || s.prefs[m.cat] !== false);   // 멤버가 끈 종류 제외
       console.log('-', m.title, '→', m.targets ? `타겟 ${to.length}명` : `전체 ${to.length}명`);
       for (const s of to) {
         try { await webpush.sendNotification(s.data, JSON.stringify({ title: m.title, body: m.body, url: m.url })); }

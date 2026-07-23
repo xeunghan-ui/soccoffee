@@ -1752,6 +1752,13 @@ async function renderHome() {
 }
 
 /* ===== 팀 현황(팀빌더 명단 연동) — 서브 페이지 ===== */
+let squadFilter = 'active';   // 멤버 현황 필터: active(활동)/dormant(휴면)/staff(운영진)
+let _squadGroups = null;
+function setSquadFilter(f){
+  squadFilter = f;
+  const b = document.getElementById('squadListBody'); if (b && _squadGroups) b.innerHTML = _squadGroups[f] || '';
+  document.querySelectorAll('#squadContent .att-counts .att-cnt').forEach(c=>c.classList.toggle('sel', c.dataset.sf===f));
+}
 async function renderSquad() {
   const el = document.getElementById('squadContent');
   if (!el.innerHTML.trim()) el.innerHTML = `<div class="empty">불러오는 중...</div>`;
@@ -1775,19 +1782,21 @@ async function renderSquad() {
     const wb = `${p.id===w.mvp?'<span class="win-badge mvp" style="flex-shrink:0">MVP</span>':''}${p.id===w.growth?'<span class="win-badge grow" style="flex-shrink:0">성장</span>':''}`;
     return `<button class="sq-chip${rc}${sk}" onclick="openMemberCard(${p.id})"><span class="sq-no">${p.jersey!=null?p.jersey:'–'}</span><span class="sq-nm">${esc(p.name)}</span>${wb}<span class="sq-dot" title="${hasSkill(p.id)?'스킬 입력함':'스킬 미입력'}"></span></button>`;
   };
-  const grp = (title, arr, dim) => arr.length ? `<div class="sq-grp-h"><span>${title}</span><span>${arr.length}명</span></div><div class="sq-grid${dim?' dim':''}">${arr.map(chip).join('')}</div>` : '';
+  const staff = players.filter(p => MEMBER_ROLES[p.name]).sort(sortJ);   // 운영진 = 역할 있는 멤버(활동/휴면 무관)
+  const gridOf = (arr, dim) => arr.length ? `<div class="sq-grid${dim?' dim':''}">${arr.map(chip).join('')}</div>` : '<div class="empty" style="font-size:13px;padding:20px 0;text-align:center">해당 인원이 없어요.</div>';
+  _squadGroups = { active: gridOf(active,false), dormant: gridOf(dormant,true), staff: gridOf(staff,false) };
+  if (!['active','dormant','staff'].includes(squadFilter)) squadFilter = 'active';
   el.innerHTML = `<div class="section-title">${potmMonthLabel(month)} 팀 현황</div>
     <div class="att-counts" style="margin:6px 0 8px">
-      <div class="att-cnt"><div class="num">${active.length+dormant.length}</div><div class="cap">전체</div></div>
-      <div class="att-cnt yes"><div class="num">${active.length}</div><div class="cap">활동</div></div>
-      <div class="att-cnt none"><div class="num">${dormant.length}</div><div class="cap">휴면</div></div>
+      <div class="att-cnt yes ${squadFilter==='active'?'sel':''}" data-sf="active" onclick="setSquadFilter('active')"><div class="num">${active.length}</div><div class="cap">활동</div></div>
+      <div class="att-cnt none ${squadFilter==='dormant'?'sel':''}" data-sf="dormant" onclick="setSquadFilter('dormant')"><div class="num">${dormant.length}</div><div class="cap">휴면</div></div>
+      <div class="att-cnt ${squadFilter==='staff'?'sel':''}" data-sf="staff" onclick="setSquadFilter('staff')"><div class="num">${staff.length}</div><div class="cap">운영진</div></div>
     </div>
     <div style="font-size:11px;color:var(--muted);margin:0 2px 10px;display:flex;align-items:center;gap:5px">
       <span style="width:8px;height:8px;border-radius:50%;background:var(--green);display:inline-block"></span>스킬 입력
       <span style="width:8px;height:8px;border-radius:50%;border:1.5px solid var(--muted);box-sizing:border-box;display:inline-block;margin-left:8px"></span>미입력
     </div>
-    ${grp('활동', active, false)}
-    ${grp('이번 달 휴면', dormant, true)}`;
+    <div id="squadListBody">${_squadGroups[squadFilter]}</div>`;
 }
 
 /* ===== 멤버 카드 모달 (역할 + 스파이더 차트) ===== */

@@ -7,8 +7,9 @@
 - JS는 커밋 전 **`node --check`로 문법 검증**한다. 2026-07-22부터 CSS/JS가 파일로 분리됨: `member.html`→`css/member.css`+`js/member.js`, `index.html`→`css/intro.css`+`js/intro.js`. **CSS/JS 수정 시 HTML의 `?v=` 캐시버스팅 번호를 함께 올릴 것**(Pages CDN 캐시 대응). CSS 내 이미지 경로는 css/ 기준 상대경로(`../scf_bg.png`).
 - **⚠️ `git add -A` 금지 — 변경한 파일만 명시적으로 add 한다.** (과거 `git add -A`가 팀빌더로 덮인 루트 `index.html`을 같이 커밋해 소개 페이지가 날아간 사고 있음.)
 - **루트 `index.html` 커밋 전 반드시 확인**: 첫 부분에 `싸커피 — 소개`가 있어야 함. `Team Builder`/`팀빌더`가 보이면 **커밋 금지**(팀빌더로 덮인 것). 복원: `git show <마지막 소개 커밋>:index.html > index.html`.
-- **푸시는 직접 못 한다**(자격증명 없음). 커밋 후 응답 끝에 항상 안내:
-  `cd ~/Documents/Claude/Projects/socoffee && git push origin main`
+- **푸시는 직접 못 한다**(자격증명 없음). 커밋 후 응답 끝에 항상 안내(아래 순서 그대로):
+  `cd ~/Documents/Claude/Projects/socoffee && git pull --rebase origin main && git push origin main`
+- **⚠️ 동시 편집 대비 — 자기 커밋만 안전하게 푸시.** 다른 코웤/기기가 같은 `js/member.js` 등을 편집·커밋함. **push 전 반드시 `git pull --rebase origin main`으로 상대 커밋을 먼저 받고 그 위에 rebase.** `git push -f`(force) **절대 금지**(force나 rebase 없이 밀면 상대 커밋이 통째로 되돌아가 작업이 유실됨 — 2026-07-22 실제 발생: 68cc64f가 b6b4522를 덮음). 변경한 파일만 add. 충돌 나면 수동 해결 후 진행.
 - GitHub Pages는 HTML을 CDN 캐시해서 최신본이 늦게 보인다. 라이브 확인 시 `?v=숫자`로 캐시 우회.
 
 ## 구조

@@ -123,6 +123,19 @@ create policy "settings update" on public.club_settings for update using (true);
 다른 사람의 변경이 새로고침 없이 반영되게 하려면:
 Database → **Replication** → `rides`, `potm_votes`, `notices`, `attendance`, `dues`, `club_settings` 를 publication에 추가.
 
+## bell_reads — 알림함 읽음 상태(멤버 기준, 2026-07 추가)
+멤버앱 상단 종 알림함의 읽음 표시를 기기(localStorage)만이 아니라 멤버 계정 기준으로 유지합니다.
+
+```sql
+create table if not exists bell_reads (
+  member_id bigint primary key,
+  ids jsonb default '[]'::jsonb,
+  updated_at timestamptz default now()
+);
+alter table bell_reads enable row level security;
+create policy "bell_reads_open" on bell_reads for all using (true) with check (true);
+```
+
 ## 보안 참고
 모든 정책이 "익명 키로 누구나 읽기/쓰기"(링크 기반 신뢰 그룹용)입니다.
 회비·명단 등 민감 데이터를 더 엄격히 막으려면 정책을 손봐야 합니다(필요 시 도와드림).

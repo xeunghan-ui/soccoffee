@@ -2175,7 +2175,7 @@ function renderMemberCard(){
   let h=document.getElementById('mmHost'); if(!h){ h=document.createElement('div'); h.id='mmHost'; document.body.appendChild(h); }
   if(!mmState){ h.innerHTML=''; return; }
   const s=mmState;
-  const roleHtml = s.role ? `<span class="mm-role ${s.role.type==='admin'?'admin':'other'}" style="font-size:10px;padding:2px 8px;margin-top:0">${esc(s.role.role)}</span>` : '';
+  const roleHtml = s.role ? `<span class="mm-role ${s.role.type==='admin'?'admin':'other'}" style="font-size:10px;padding:2px 8px;margin-top:0;vertical-align:middle">${esc(s.role.role)}</span>` : '';
   const winHtml = (s.wins && s.wins.length) ? ' ' + s.wins.map(t=>`<span class="win-badge ${t==='MVP'?'mvp':'grow'}">${t}</span>`).join(' ') : '';
   let body;
   if(s.edit){
@@ -2193,7 +2193,7 @@ function renderMemberCard(){
     body = (skills || bio) ? bio + skills : `<div class="empty" style="font-size:13px;padding:14px 0">${s.own?'포지션·스타일·한 줄 소개를 채워보세요.':'아직 프로필이 없어요.'}</div>`;
     if(s.own) body += `<button class="btn ghost sm" onclick="mmEdit(true)" style="margin-top:12px;width:100%">프로필 편집</button>`;
   }
-  h.innerHTML = `<div class="mm-back" onclick="if(event.target===this)closeMemberCard()"><div class="mm-box"><div class="mm-head"><span class="mm-no">${s.jersey!=null?s.jersey:'–'}</span><div><div class="mm-name">${esc(s.name)}${winHtml}</div>${!s.edit&&roleHtml?`<div style="margin-top:4px">${roleHtml}</div>`:''}${!s.edit?profilePosHtml(s.pf):''}</div><button class="mm-x" onclick="closeMemberCard()">×</button></div>${body}</div></div>`;
+  h.innerHTML = `<div class="mm-back" onclick="if(event.target===this)closeMemberCard()"><div class="mm-box"><div class="mm-head"><span class="mm-no">${s.jersey!=null?s.jersey:'–'}</span><div><div class="mm-name">${esc(s.name)}${winHtml}${!s.edit&&roleHtml?` ${roleHtml}`:''}</div>${!s.edit?profilePosHtml(s.pf):''}</div><button class="mm-x" onclick="closeMemberCard()">×</button></div>${body}</div></div>`;
 }
 
 /* ============================================================

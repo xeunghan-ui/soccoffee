@@ -129,7 +129,7 @@ async function main() {
       st.rideIds.push(String(r.id));
       if (firstRun) continue;
       if (r.ride_date && r.ride_date < today) continue;
-      msgs.push({ cat:'news', ...T('ride', {'운전자': r.driver, '날짜': mdLabel(r.ride_date), '시간': r.ride_time || '', '출발지': r.place || '', '도착지': r.dest || ''}), url: './member.html#list', targets: idsFor(players, monthOf(r.ride_date || today), false, thisMonth) });
+      msgs.push({ cat:'ride', ...T('ride', {'운전자': r.driver, '날짜': mdLabel(r.ride_date), '시간': r.ride_time || '', '출발지': r.place || '', '도착지': r.dest || ''}), url: './member.html#list', targets: idsFor(players, monthOf(r.ride_date || today), false, thisMonth) });
     }
     // ④ 새 세션 일정 (지난 세션 제외)
     for (const s of sessions) {

@@ -20,7 +20,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Anton&family=Oswald:wght@400;500;600&display=swap" rel="stylesheet">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-<link rel="stylesheet" href="css/member.css?v=20260722d">
+<link rel="stylesheet" href="css/member.css?v=20260722o">
 </head>
 <body>
 <div class="gate" id="gate">
@@ -40,9 +40,14 @@
 </div>
 
 <div class="wrap">
-  <header>
-    <img class="brand-logo" src="scf_logo.png" alt="싸커피 SCF">
-  </header>
+  <div class="topbar">
+    <span class="tb-mark">SOCCOFFEE <span class="tb-sub">FC</span></span>
+    <button class="bell-btn" onclick="toggleBell()" aria-label="알림">
+      <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8a6 6 0 0 0-12 0c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.7 21a2 2 0 0 1-3.4 0"/></svg>
+      <span class="bell-dot" id="bellDot" style="display:none"></span>
+    </button>
+  </div>
+  <div class="bell-panel hidden" id="bellPanel"></div>
 
   <div class="demo-note hidden" id="demoNote">데모 모드 — 데이터가 이 브라우저에만 저장돼요. (Supabase 키를 넣으면 실제 공유됩니다)</div>
 
@@ -140,6 +145,6 @@
 
 <div class="toast" id="toast"></div>
 
-<script src="js/member.js?v=20260722n"></script>
+<script src="js/member.js?v=20260722o"></script>
 </body>
 </html>

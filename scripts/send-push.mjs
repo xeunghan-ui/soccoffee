@@ -69,6 +69,7 @@ const TPL = {
   dues_open:   { title:'💰 회비 안내', body:'{월}월 회비 납부가 시작됐어요. 25일까지 입금 부탁드려요!' },
   dues_urge:   { title:'💸 회비 마감 임박', body:'{월}월 회비가 내일(25일) 마감돼요. 아직 미납 상태예요!' },
   dorm_ask:    { title:'🌙 {월}월엔 복귀하시나요?', body:"복귀하려면 홈에서 '활동'을, 계속 쉬려면 '휴면'을 눌러 주세요. 그대로 두면 휴면이 유지돼요." },
+  winner:      { title:'🏆 축하합니다!', body:'{월}월 {부문}에 선정됐어요! 🎉' },
 };
 let TPL_OV = {};
 const fill = (t, v) => { let r = t; for (const k in (v || {})) r = r.split('{' + k + '}').join(v[k]); return r; };
@@ -178,6 +179,21 @@ async function main() {
         const dmAsk = `${nm2 === 1 ? Number(thisMonth.slice(0,4))+1 : thisMonth.slice(0,4)}-${String(nm2).padStart(2,'0')}`;
         const dorm = dormantFor(players, dmAsk, thisMonth).map(p => p.id);
         if (dorm.length) msgs.push({ ...T('dorm_ask', {'월': nm2}), url: './member.html#home', targets: dorm });
+      }
+      // ⑩ 투표 선정 축하 (매월 1일 — 전월 결과 확정)
+      if (dom === 1 && once('winner-' + thisMonth)) {
+        const pd = new Date(Date.now() + 9 * 3600e3); pd.setUTCDate(0);   // 전월 말일
+        const pm = pd.toISOString().slice(0, 7);
+        const votes = await j(await rest(`potm_votes?select=category,candidate_id&month=eq.${pm}`)) || [];
+        const CATS = [['mvp', '이달의 선수'], ['growth', '가장 성장한 선수']];
+        for (const [cat, catLbl] of CATS) {
+          const tally = {};
+          votes.filter(v => v.category === cat).forEach(v => { tally[v.candidate_id] = (tally[v.candidate_id] || 0) + 1; });
+          const max = Math.max(0, ...Object.values(tally));
+          if (max < 1) continue;
+          const winners = Object.keys(tally).filter(k => tally[k] === max).map(Number);   // 동률 공동 수상
+          msgs.push({ ...T('winner', {'월': Number(pm.slice(5, 7)), '부문': catLbl}), url: './member.html#potm', targets: winners });
+        }
       }
       // ⑥ 회비 마감(25일) 하루 전 — 미납만 타겟
       if (dom === 24 && once('dues-urge-' + thisMonth)) {

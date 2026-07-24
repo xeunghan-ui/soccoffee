@@ -1119,6 +1119,9 @@ async function submitVote() {
   const r1 = await castVote(m, 'mvp', potmVoterId, potmPick.mvp);
   const r2 = await castVote(m, 'growth', potmVoterId, potmPick.growth);
   potmPick = { mvp:null, growth:null };
+  if (r1 !== 'dup' && r2 !== 'dup' && r1 && r2) {
+    try { const t = await pushTpl('vote_done', {'월':parseInt(m.split('-')[1])}); queuePush(potmVoterId, t.title, t.body, './member.html#potm'); } catch(e){}
+  }
   await rerender(renderPotm);
   refreshNewBadges();
   toast((r1 === 'dup' || r2 === 'dup') ? '이미 이번 달 투표를 하셨어요' : '투표 완료!');
@@ -1417,6 +1420,8 @@ const PUSH_TPL_DEFAULTS = {
   dues_confirm: { name:'입금 확인(개인)',    vars:'{월}',                           title:'✅ 입금 확인', body:'{월}월 회비 입금이 확인됐어요. 감사합니다!' },
   att_change:   { name:'참석 상태 변경(개인)', vars:'{세션} {상태}',                 title:'📋 참석 상태 변경', body:"운영진이 {세션} 참석 상태를 '{상태}'(으)로 변경했어요." },
   dues_change:  { name:'회비 상태 변경(개인)', vars:'{월} {상태}',                   title:'💰 회비 상태 변경', body:"운영진이 {월}월 회비를 '{상태}'(으)로 변경했어요." },
+  vote_done:    { name:'투표 완료(개인)',      vars:'{월}',                           title:'🗳️ 투표 완료', body:'{월}월 투표가 접수됐어요. 참여 감사합니다!' },
+  winner:       { name:'투표 선정(개인)',      vars:'{월} {부문}',                     title:'🏆 축하합니다!', body:'{월}월 {부문}에 선정됐어요! 🎉' },
 };
 function pushTplFill(t, vars){ let r=t; for(const k in (vars||{})) r=r.split('{'+k+'}').join(vars[k]); return r; }
 async function pushTpl(key, vars){

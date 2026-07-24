@@ -100,9 +100,21 @@ const MEMBER_ROLES = {
   '김균원':{role:'MD',type:'role'},
 };
 // 멤버 프로필 — club_settings.current.profiles[memberId] = { pos, tags[], bio }
-const PROFILE_POS = ['공격','미드필더','수비','키퍼','올라운더'];
-const PROFILE_TAGS = ['스피드','피지컬','뇌지컬','패스','슛','드리블','수비력','활동량','왼발','골 결정력','위치 선정','시야','세트피스','헤더','커버 플레이','리더십','분위기 메이커','침착함','투지'];   // 강점
-const PROFILE_WEAKS = ['체력','스피드','슛 정확도','수비','왼발','오른발','멘탈','지각','헛발질','몸싸움','방향감각','백패스 본능','유리몸','집중력','숙취','새가슴','세모발','뇌지컬'];   // 약점(최대 3개, 유머 환영)
+const PROFILE_POS = ['골레이로(GOLEIRO)','픽소(FIXO)','아라(ALA)','피보(PIVO)'];   // 풋살 포지션
+// 강점 — 신체 → 공격기술 → 수비·전술 → 정신·분위기 순
+const PROFILE_TAGS = [
+  '스피드','피지컬','활동량',                                  // 신체
+  '드리블','패스','슛','골 결정력','왼발','헤더','세트피스',      // 공격·기술
+  '수비력','위치 선정','시야','커버 플레이',                     // 수비·전술
+  '뇌지컬','침착함','투지','리더십','분위기 메이커'              // 정신·분위기
+];
+// 약점(최대 3개, 유머 환영) — 신체 → 기술 → 정신 → 생활·유머 순
+const PROFILE_WEAKS = [
+  '체력','스피드','유리몸','몸싸움',                    // 신체
+  '슛 정확도','수비','왼발','오른발','세모발','헛발질',   // 기술
+  '멘탈','집중력','방향감각','백패스 본능','새가슴','뇌지컬', // 정신
+  '지각','숙취'                                        // 생활·유머
+];
 async function getProfile(id){ const s = await fetchSettings(); return ((s.profiles||{})[id]) || null; }
 async function saveProfile(id, pf){
   const s = await fetchSettings();
@@ -113,12 +125,18 @@ async function saveProfile(id, pf){
 function profileChipsHtml(pf, small){
   if (!pf) return '';
   const cls = 'pf-chip' + (small ? ' sm' : '');
-  const chips = [
-    pf.pos ? `<span class="${cls} pos">${esc(pf.pos)}</span>` : '',
-    ...(pf.tags||[]).map(t=>`<span class="${cls}">${esc(t)}</span>`),
-    ...(pf.weaks||[]).map(t=>`<span class="${cls} weak" title="약점">${esc(t)}</span>`)
-  ].filter(Boolean).join('');
-  return chips ? `<div class="pf-chips">${chips}</div>` : '';
+  const posChip = pf.pos ? `<span class="${cls} pos">${esc(pf.pos)}</span>` : '';
+  const tagChips = (pf.tags||[]).map(t=>`<span class="${cls}">${esc(t)}</span>`).join('');
+  const weakChips = (pf.weaks||[]).map(t=>`<span class="${cls} weak" title="약점">${esc(t)}</span>`).join('');
+  if (small) {   // 컴팩트(리스트 등): 포지션 → 강점 → 약점 한 줄
+    const c = [posChip, tagChips, weakChips].filter(Boolean).join('');
+    return c ? `<div class="pf-chips">${c}</div>` : '';
+  }
+  // 상세: 포지션 / 강점 / 약점을 라벨로 구분해 표시
+  const grp = (label, inner) => inner
+    ? `<span style="display:block;font-size:10px;font-weight:800;letter-spacing:.04em;color:var(--muted);margin:11px 0 0">${label}</span><div class="pf-chips" style="margin-top:5px">${inner}</div>`
+    : '';
+  return [grp('포지션', posChip), grp('강점', tagChips), grp('약점', weakChips)].filter(Boolean).join('');
 }
 function isAdmin() {   // 총괄관리자(전체 편집)
   const p = PLAYERS.find(x => x.id === getMe());

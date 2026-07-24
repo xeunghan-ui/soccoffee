@@ -1452,14 +1452,27 @@ async function notifyDriver(ride, title, body){
 }
 
 /* ---------- 상단 알림 종(알림 센터) ---------- */
-const BELL_SEEN_KEY = 'socoffee_bell_seen';
+const BELL_READ_KEY = 'socoffee_bell_read';   // 읽은 공지 id 목록
+function bellReadIds(){ try { return JSON.parse(localStorage.getItem(BELL_READ_KEY)) || []; } catch(e){ return []; } }
+function bellMarkRead(ids){
+  const cur = new Set(bellReadIds());
+  (Array.isArray(ids)?ids:[ids]).forEach(x=>cur.add(String(x)));
+  localStorage.setItem(BELL_READ_KEY, JSON.stringify([...cur].slice(-100)));
+  bellDotRefresh();
+}
+async function bellVisibleNotices(){
+  let ns = [];
+  try { ns = await fetchNotices(); } catch(e){}
+  const now = new Date();
+  return ns.filter(n => (!n.publish_at || new Date(n.publish_at) <= now) && (!n.hide_at || new Date(n.hide_at) >= now)).slice(0, 8);
+}
 async function bellDotRefresh(){
   try {
-    const ns = await fetchNotices();
-    const latest = ns.length ? (ns[0].created_at || '') : '';
-    const seen = localStorage.getItem(BELL_SEEN_KEY) || '';
+    const ns = await bellVisibleNotices();
+    const read = bellReadIds();
+    const unread = ns.filter(n => !read.includes(String(n.id))).length;
     const d = document.getElementById('bellDot');
-    if (d) d.style.display = (latest && latest > seen) ? 'block' : 'none';
+    if (d) { d.textContent = unread > 9 ? '9+' : String(unread); d.style.display = unread > 0 ? 'flex' : 'none'; }
   } catch(e){}
 }
 async function toggleBell(){
@@ -1468,28 +1481,34 @@ async function toggleBell(){
   if (!p.classList.contains('hidden')) { p.classList.add('hidden'); return; }
   p.innerHTML = '<div class="bp-empty">불러오는 중...</div>';
   p.classList.remove('hidden');
-  let ns = [];
-  try { ns = await fetchNotices(); } catch(e){}
-  const now = new Date();
-  ns = ns.filter(n => (!n.publish_at || new Date(n.publish_at) <= now) && (!n.hide_at || new Date(n.hide_at) >= now)).slice(0, 6);
-  const seen = localStorage.getItem(BELL_SEEN_KEY) || '';
+  const ns = await bellVisibleNotices();
+  const read = bellReadIds();
+  const unreadCnt = ns.filter(n => !read.includes(String(n.id))).length;
   let pushLine = '';
   try {
     const on = PUSH_SUPPORTED && !!(await getPushSub()) && Notification.permission === 'granted';
-    pushLine = on
-      ? `<div class="bp-d" style="margin:0 0 4px">푸시 알림 켜짐 — 새 소식을 폰으로 받아요</div>`
-      : `<button class="bp-row" style="border-top:none;padding-top:2px" onclick="document.getElementById('bellPanel').classList.add('hidden');enablePush()"><span class="bp-t" style="color:var(--accent)">푸시 알림이 꺼져 있어요 — 켜기 →</span></button>`;
+    if (!on) pushLine = `<button class="bp-row" style="border-top:none;padding-top:2px" onclick="document.getElementById('bellPanel').classList.add('hidden');enablePush()"><span class="bp-t" style="color:var(--accent)">푸시 알림이 꺼져 있어요 — 켜기 →</span></button>`;
   } catch(e){}
-  p.innerHTML = `<div class="bp-h"><span class="bp-title">알림</span><button class="admin-link" onclick="document.getElementById('bellPanel').classList.add('hidden')">닫기</button></div>
+  p.innerHTML = `<div class="bp-h"><span class="bp-title">알림${unreadCnt?` <span style="color:var(--alert)">${unreadCnt}</span>`:''}</span>
+      <span style="display:flex;gap:12px;align-items:center">
+        ${unreadCnt ? `<button class="admin-link" onclick="bellReadAll()">모두 읽음</button>` : ''}
+        <button class="admin-link" onclick="document.getElementById('bellPanel').classList.add('hidden')">닫기</button>
+      </span></div>
     ${pushLine}
-    ${ns.length ? ns.map(n => `<button class="bp-row" onclick="document.getElementById('bellPanel').classList.add('hidden');noticeGo('${esc(String(n.link||''))}' , '${n.id}')">
-        <span class="bp-t">${(n.created_at||'') > seen ? '<span class="new"></span>' : ''}${n.pinned ? '<span class="pin-tag">고정</span> ' : ''}${esc(n.title)}</span>
+    ${ns.length ? ns.map(n => { const un = !read.includes(String(n.id)); return `<button class="bp-row${un?' unread':''}" onclick="bellOpen('${esc(String(n.link||''))}','${n.id}')">
+        <span class="bp-t">${un ? '<span class="new"></span>' : ''}${n.pinned ? '<span class="pin-tag">고정</span> ' : ''}${esc(n.title)}</span>
         <span class="bp-d">${noticeWhenLabel(n)}</span>
-      </button>`).join('') : '<div class="bp-empty">등록된 공지가 없어요.</div>'}`;
-  if (ns.length && ns[0].created_at) localStorage.setItem(BELL_SEEN_KEY, ns[0].created_at);
-  const d = document.getElementById('bellDot'); if (d) d.style.display = 'none';
+      </button>`; }).join('') : '<div class="bp-empty">등록된 공지가 없어요.</div>'}`;
 }
-function noticeGo(link, id){
+async function bellReadAll(){
+  const ns = await bellVisibleNotices();
+  bellMarkRead(ns.map(n => n.id));
+  const p = document.getElementById('bellPanel');
+  if (p) { p.classList.add('hidden'); toggleBell(); }   // 읽음 반영해 다시 열기
+}
+function bellOpen(link, id){
+  bellMarkRead(id);
+  document.getElementById('bellPanel').classList.add('hidden');
   if (link && /^tab:/.test(link)) { switchTab(link.slice(4)); return; }
   if (link && /^https?:/i.test(link)) { window.open(link, '_blank', 'noopener'); return; }
   switchTab('home');

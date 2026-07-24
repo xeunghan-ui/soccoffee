@@ -854,3 +854,7 @@
   .bell-panel .bp-t .new { flex-shrink:0; width:6px; height:6px; border-radius:50%; background:var(--alert); }
   .bell-panel .bp-d { font-size:11px; color:var(--muted); margin-top:2px; }
   .bell-panel .bp-empty { font-size:13px; color:var(--muted); padding:12px 0; text-align:center; }
+
+  /* 알림 설정 접기/펼치기 */
+  details.more-item summary::-webkit-details-marker { display:none; }
+  details.more-item[open] .notif-chev { transform:rotate(180deg); display:inline-block; }

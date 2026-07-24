@@ -139,7 +139,7 @@ function profileSkillsHtml(pf, small){
   const col = (label, inner, div) => `<div style="flex:1;min-width:0${div?';border-left:1px solid var(--line);padding-left:11px':''}">`
     + `<span style="display:block;font-size:10px;font-weight:800;letter-spacing:.04em;color:var(--muted);margin-bottom:5px">${label}</span>`
     + `<div class="pf-chips" style="margin-top:0">${inner||dash}</div></div>`;
-  return `<div style="display:flex;gap:11px;margin-top:11px">${col('강점', tagChips, false)}${col('약점', weakChips, true)}</div>`;
+  return `<div style="display:flex;gap:11px;margin-top:9px">${col('강점', tagChips, false)}${col('약점', weakChips, true)}</div>`;
 }
 function isAdmin() {   // 총괄관리자(전체 편집)
   const p = PLAYERS.find(x => x.id === getMe());
@@ -2191,7 +2191,7 @@ function renderMemberCard(){
     const skills = profileSkillsHtml(s.pf);
     const bio = (s.pf.bio||'').trim() ? `<div class="pf-bio">"${esc(s.pf.bio.trim())}"</div>` : '';
     body = (skills || bio) ? bio + skills : `<div class="empty" style="font-size:13px;padding:14px 0">${s.own?'포지션·스타일·한 줄 소개를 채워보세요.':'아직 프로필이 없어요.'}</div>`;
-    if(s.own) body += `<button class="btn ghost sm" onclick="mmEdit(true)" style="margin-top:12px;width:100%">프로필 편집</button>`;
+    if(s.own) body += `<button class="btn ghost sm" onclick="mmEdit(true)" style="margin-top:10px;width:100%">프로필 편집</button>`;
   }
   h.innerHTML = `<div class="mm-back" onclick="if(event.target===this)closeMemberCard()"><div class="mm-box"><div class="mm-head"><span class="mm-no">${s.jersey!=null?s.jersey:'–'}</span><div><div class="mm-name">${esc(s.name)}${winHtml}${!s.edit&&roleHtml?` ${roleHtml}`:''}</div>${!s.edit?profilePosHtml(s.pf):''}</div><button class="mm-x" onclick="closeMemberCard()">×</button></div>${body}</div></div>`;
 }

@@ -20,13 +20,12 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Anton&family=Oswald:wght@400;500;600&display=swap" rel="stylesheet">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-<link rel="stylesheet" href="css/member.css?v=20260722q">
+<link rel="stylesheet" href="css/member.css?v=20260722r">
 </head>
 <body>
 <div class="gate" id="gate">
   <div class="gate-box">
     <img class="brand-logo" src="scf_logo.png" alt="싸커피 SCF" style="width:150px;margin-bottom:14px">
-    <p>이름을 고르고 <b>PIN(4자리)</b>을 입력해 로그인하세요.</p>
     <div class="field" style="text-align:left;margin-bottom:10px">
       <select id="gateName" onchange="gateNameChanged()"><option value="">— 이름 선택 —</option></select>
     </div>
@@ -48,8 +47,6 @@
     </button>
   </div>
   <div class="bell-panel hidden" id="bellPanel"></div>
-
-  <div class="demo-note hidden" id="demoNote">데모 모드 — 데이터가 이 브라우저에만 저장돼요. (Supabase 키를 넣으면 실제 공유됩니다)</div>
 
   <div id="memberSubnav" class="member-subnav hidden">
     <button class="msub" data-sub="squad" onclick="switchTab('squad')">멤버 현황</button>
@@ -145,6 +142,6 @@
 
 <div class="toast" id="toast"></div>
 
-<script src="js/member.js?v=20260722q"></script>
+<script src="js/member.js?v=20260722r"></script>
 </body>
 </html>

@@ -16,8 +16,6 @@ let sb = null;
 
 if (USE_DB) {
   sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
-} else {
-  document.getElementById('demoNote').classList.remove('hidden');
 }
 
 /* ---------- 데이터 계층 (DB 또는 로컬) ---------- */
@@ -101,13 +99,21 @@ const MEMBER_ROLES = {
   '조은애':{role:'브랜드 및 디자인',type:'role'},
   '김균원':{role:'MD',type:'role'},
 };
-// 멤버 스킬(스파이더 차트) — club_settings.current.skills[memberId] = [{name,level(1~5)}]
-async function getMemberSkills(id){ const s = await fetchSettings(); return ((s.skills||{})[id]) || []; }
-async function saveMemberSkills(id, arr){
+// 멤버 프로필 — club_settings.current.profiles[memberId] = { pos, tags[], bio }
+const PROFILE_POS = ['공격','미드필더','수비','키퍼','올라운더'];
+const PROFILE_TAGS = ['스피드','피지컬','패스','슛','드리블','수비력','활동량','왼발'];
+async function getProfile(id){ const s = await fetchSettings(); return ((s.profiles||{})[id]) || null; }
+async function saveProfile(id, pf){
   const s = await fetchSettings();
-  const skills = { ...(s.skills||{}) };
-  if (arr && arr.length) skills[id] = arr; else delete skills[id];
-  return await saveSettings({ skills });
+  const profiles = { ...(s.profiles||{}) };
+  if (pf && (pf.pos || (pf.tags||[]).length || (pf.bio||'').trim())) profiles[id] = pf; else delete profiles[id];
+  return await saveSettings({ profiles });
+}
+function profileChipsHtml(pf, small){
+  if (!pf) return '';
+  const cls = 'pf-chip' + (small ? ' sm' : '');
+  const chips = [pf.pos ? `<span class="${cls} pos">${esc(pf.pos)}</span>` : '', ...(pf.tags||[]).map(t=>`<span class="${cls}">${esc(t)}</span>`)].filter(Boolean).join('');
+  return chips ? `<div class="pf-chips">${chips}</div>` : '';
 }
 function isAdmin() {   // 총괄관리자(전체 편집)
   const p = PLAYERS.find(x => x.id === getMe());
@@ -1568,10 +1574,10 @@ async function renderMore() {
       ? `<details class="more-item" style="cursor:default" ${_notifOpen?'open':''} ontoggle="_notifOpen=this.open">
           <summary style="cursor:pointer;list-style:none;display:block">
             <div class="mi-name" style="display:flex;align-items:center;justify-content:space-between"><span>알림 <span style="font-size:11px;color:var(--win);font-weight:800">켜짐</span></span><span class="notif-chev" style="font-size:12px;color:var(--muted)">▾</span></div>
-            <div class="mi-desc">누르면 알림 종류를 고를 수 있어요</div>
+            
           </summary>
           <div style="margin-top:8px">
-            <div class="mi-desc" style="margin-bottom:6px">받고 싶은 알림을 고르세요 · 입금확인 등 개인 알림은 항상 와요</div>${_catRows}
+            <div class="mi-desc" style="margin-bottom:6px">개인 알림(입금확인 등)은 항상 와요</div>${_catRows}
             <button class="btn ghost sm" style="margin-top:10px;width:100%" onclick="disablePush()">알림 전체 끄기</button>
           </div>
         </details>`
@@ -1697,7 +1703,7 @@ function renderFaq() {
     ['MVP · 성장 투표', ['매월 <b>25일~말일</b> 진행', '1~24일: 지난달 결과 표시', '대상: 그 달 <b>활동 회원</b> · <b>친구·휴면 제외</b>', '두 부문 1표씩 · 제출 후 변경 불가']],
     ['WHITE / BLACK 팀', ['경기 밸런스용 두 팀', '<b>팀 리그</b> 달: 감독(캡틴)이 팀원 선발', '팀 구분 켠 달엔 이름 옆 팀 표시']],
     ['카풀', ['운전자가 출발지 · 좌석 등록', '탑승자는 빈 좌석 눌러 신청', '지난 카풀은 접혀서 정리']],
-    ['내 프로필 · 기록', ['홈에서 가입월 · 기간 · 참여 · 출석률 · 수상 확인', '스킬(스파이더 차트) 직접 편집', '<b>사진으로 저장</b>해 공유']],
+    ['내 프로필 · 기록', ['홈에서 가입월 · 기간 · 참여 · 출석률 · 수상 확인', '포지션·스타일·한 줄 소개로 프로필 꾸미기 (멤버 현황에서 서로 확인)']],
     ['운영진', ['<b>박승한</b> · 팀 운영 · 경기장 예약', '<b>홍순인</b> · 경기 및 리그 운영', '<b>원재식</b> · 총무', '<b>최승호</b> · 장비', '<b>정희범</b> · 사진']],
     ['운영진 외', ['<b>조은애</b> · 브랜드 및 디자인', '<b>김균원</b> · MD', '<b>김이연</b> · 사진']],
   ];
@@ -1779,7 +1785,7 @@ async function renderHome() {
   const dMonth = statusMonth();   // 홈 상태박스: 15일부터 다음 달
   const myDues = meActive ? await fetchDues(dMonth) : [];
   const myPaid = myDues.some(d => d.member_id === me && d.paid);
-  const mySkills = meActive ? await getMemberSkills(me) : [];
+  const myProfile = meActive ? await getProfile(me) : null;
   const myWins = meActive ? myWinTitles(me, await getPrevWinners()) : [];
   // 참여 세션·출석률·최근3개월·수상: 팀빌더 데이터 기반 (사이트 attendance 테이블은 최근분만 있음)
   let myAttended = 0, myAttRate = null, myRecent3 = null, myWinPct = null;
@@ -1831,11 +1837,9 @@ async function renderHome() {
         : `<div style="margin-top:14px;padding-top:14px;border-top:1px solid var(--line)"><div style="font-size:11px;color:var(--muted);font-weight:800;letter-spacing:.04em;margin-bottom:9px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${sessLabel} 참석</div><div style="display:flex;gap:6px">${qbtn('yes','참석','var(--win)','var(--cream)')}${qbtn('no','불참','var(--alert)','var(--cream)')}${qbtn('maybe','미정','var(--accent)','#14281b')}</div></div>`) : '';
     const upcomingHtml = myYes.length ? `<div style="margin-top:12px;padding-top:12px;border-top:1px solid var(--line)"><div style="font-size:11px;color:var(--muted);font-weight:800;letter-spacing:.04em;margin-bottom:4px">참석 예정 ${myYes.length}개</div>${myYes.map(s => `<div style="padding:5px 0;font-size:13px;color:var(--cream)"><div style="display:flex;align-items:center;gap:8px"><span style="color:var(--cream);font-size:7px;opacity:.7">●</span><span style="min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(sessChipLabel(s))}</span><span style="margin-left:auto;flex-shrink:0;color:var(--muted);font-size:12px">${esc((s.time||'').slice(0,5))}${s.endTime?'–'+esc(s.endTime.slice(0,5)):''}</span></div>${s.place ? `<div style="margin-left:17px;color:var(--muted);font-size:12px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(s.place)}</div>` : ''}</div>`).join('')}</div>` : '';
     const pendingHtml = pending.length ? `<div style="margin-top:12px;padding-top:12px;border-top:1px solid var(--line)"><button onclick="openAtt('${pending[0].id}')" style="width:100%;text-align:left;cursor:pointer;font-family:inherit;border:none;background:transparent;padding:0;display:flex;align-items:center;justify-content:space-between;gap:10px"><span style="font-size:13px;font-weight:600;color:#ece6d2">미응답한 일정 ${pending.length}개</span><span style="font-size:12px;font-weight:800;color:var(--accent)">응답하기 →</span></button></div>` : '';
-    const skillHtml = mySkills.length>=3
-        ? radarSvg(mySkills)
-        : (mySkills.length
-            ? `<div style="margin-top:8px">${mySkills.map(sk=>`<div style="display:flex;justify-content:space-between;font-size:13px;color:var(--cream);padding:3px 0"><span>${esc(sk.name)}</span><span style="color:var(--accent);font-weight:800">${sk.level}/5</span></div>`).join('')}</div>`
-            : `<div class="hint" style="margin-top:6px">스파이더 차트로 내 스킬을 표시해 보세요.</div>`);
+    const profileHtml = myProfile
+        ? `${profileChipsHtml(myProfile)}${(myProfile.bio||'').trim()?`<div class="pf-bio">"${esc(myProfile.bio.trim())}"</div>`:''}`
+        : '';
     // 카드 ① 신원 + 스킬
     const joinFmt = meP.joinDate ? meP.joinDate.slice(0,7).replace('-','.') : '—';
     const monthsTogether = monthsSince(meP.joinDate);
@@ -1852,11 +1856,10 @@ async function renderHome() {
       <div style="display:flex;align-items:center;gap:14px">
         <div class="pc-jersey" style="font-size:38px">${jersey}</div>
         <div style="min-width:0;flex:1"><div class="pc-name" style="margin:0">${esc(meName())}${myWins.map(t=>` <span class="win-badge ${t==='MVP'?'mvp':'grow'}">${t}</span>`).join('')}${teamPill}</div><div class="pc-team">${subline}</div></div>
-        <button class="btn ghost sm" style="flex-shrink:0" onclick="openMemberCard(${me}, true)">${mySkills.length?'스킬 편집':'스킬 추가'}</button>
+        <button class="btn ghost sm" style="flex-shrink:0" onclick="openMemberCard(${me}, true)">${myProfile?'프로필 편집':'프로필 만들기'}</button>
       </div>
+      ${profileHtml}
       ${miniHtml}
-      ${skillHtml}
-      <button class="btn ghost sm" onclick="saveMyCard()" style="width:100%;margin-top:12px">사진으로 저장</button>
     </div>`;
     // 카드 ② 현황(상태 · 참석예정 · 미확정)
     dash += `<div class="card" style="padding:16px;margin-bottom:12px">
@@ -1958,15 +1961,15 @@ async function renderSquad() {
   players.forEach(p => { isDorm(p) ? dormant.push(p) : (p.status === 'friends' ? friends.push(p) : active.push(p)); });
   const sortJ = (a,b) => ((a.jersey==null?999:a.jersey) - (b.jersey==null?999:b.jersey)) || a.name.localeCompare(b.name,'ko');
   [active, friends, dormant].forEach(g => g.sort(sortJ));
-  let skillsMap = {};
-  try { skillsMap = (await fetchSettings()).skills || {}; } catch(e) {}
-  const hasSkill = id => Array.isArray(skillsMap[id]) && skillsMap[id].length > 0;
+  let profMap = {};
+  try { profMap = (await fetchSettings()).profiles || {}; } catch(e) {}
+  const hasProfile = id => !!profMap[id];
   const w = await getPrevWinners();
   const chip = p => {
     const r = MEMBER_ROLES[p.name]; const rc = r ? (r.type==='admin'?' role-admin':' role-other') : '';
-    const sk = hasSkill(p.id) ? ' has-skill' : '';
+    const sk = hasProfile(p.id) ? ' has-skill' : '';
     const wb = `${p.id===w.mvp?'<span class="win-badge mvp" style="flex-shrink:0">MVP</span>':''}${p.id===w.growth?'<span class="win-badge grow" style="flex-shrink:0">성장</span>':''}`;
-    return `<button class="sq-chip${rc}${sk}" onclick="openMemberCard(${p.id})"><span class="sq-no">${p.jersey!=null?p.jersey:'–'}</span><span class="sq-nm">${esc(p.name)}</span>${wb}<span class="sq-dot" title="${hasSkill(p.id)?'스킬 입력함':'스킬 미입력'}"></span></button>`;
+    return `<button class="sq-chip${rc}${sk}" onclick="openMemberCard(${p.id})"><span class="sq-no">${p.jersey!=null?p.jersey:'–'}</span><span class="sq-nm">${esc(p.name)}</span>${wb}<span class="sq-dot" title="${hasProfile(p.id)?'프로필 있음':'프로필 없음'}"></span></button>`;
   };
   const staff = players.filter(p => MEMBER_ROLES[p.name]).sort(sortJ);   // 운영진 = 역할 있는 멤버(활동/휴면 무관)
   const gridOf = (arr, dim) => arr.length ? `<div class="sq-grid${dim?' dim':''}">${arr.map(chip).join('')}</div>` : '<div class="empty" style="font-size:13px;padding:20px 0;text-align:center">해당 인원이 없어요.</div>';
@@ -1985,20 +1988,18 @@ async function renderSquad() {
     <div id="squadListBody">${_squadGroups[squadFilter]}</div>`;
 }
 
-/* ===== 멤버 카드 모달 (역할 + 스파이더 차트) ===== */
+/* ===== 멤버 카드 모달 (역할 + 프로필) ===== */
 let mmState = null;
 async function openMemberCard(id, startEdit){
   let p = (typeof PLAYERS!=='undefined'?PLAYERS:[]).find(x=>x.id===id);
   if(!p){ try{ const tb=await fetchTeamBuilder(); p=(tb&&tb.players||[]).find(x=>x.id===id); }catch(e){} }
   if(!p) return;
-  const skills = await getMemberSkills(id);
+  const pf = await getProfile(id);
   const wins = myWinTitles(id, await getPrevWinners());
   const own = (getMe()===id);
-  let sk = skills.map(s=>({name:s.name,level:s.level}));
   const edit = !!startEdit && own;
-  if (edit && !sk.length) sk = [{name:'',level:3}];   // 편집 진입 시 빈 스킬 1개 시드
   mmState = { id, name:p.name, jersey:(p.jersey!=null?p.jersey:null), role:(MEMBER_ROLES[p.name]||null),
-    wins, skills:sk, edit, own };
+    wins, pf: pf ? {pos:pf.pos||null, tags:(pf.tags||[]).slice(), bio:pf.bio||''} : {pos:null, tags:[], bio:''}, hasPf:!!pf, edit, own };
   renderMemberCard();
 }
 function closeMemberCard(){ mmState=null; const h=document.getElementById('mmHost'); if(h) h.innerHTML=''; }
@@ -2014,111 +2015,23 @@ function showAddHomeGuide(){
   const ol = `style="margin:6px 0 4px 18px;padding:0;font-size:13px;color:var(--cream);line-height:1.9"`;
   h.innerHTML = `<div class="mm-back" onclick="if(event.target===this)closeMemberCard()"><div class="mm-box">
     <div class="mm-head"><div class="mm-name">홈 화면에 추가</div><button class="mm-x" onclick="closeMemberCard()">×</button></div>
-    <p class="hint" style="margin:2px 0 14px">앱처럼 한 번에 열 수 있어요. 기기에 맞게 따라 해 주세요.</p>
+    
     <div class="mm-sec">아이폰 · Safari</div>
     <ol ${ol}><li>하단 <b>공유</b> 버튼 탭</li><li><b>홈 화면에 추가</b> 선택</li><li>오른쪽 위 <b>추가</b> 탭</li></ol>
     <div class="mm-sec">안드로이드 · Chrome</div>
     <ol ${ol}><li>오른쪽 위 <b>⋮ 메뉴</b> 탭</li><li><b>홈 화면에 추가</b> 선택</li><li><b>추가</b> 탭</li></ol>
   </div></div>`;
 }
-function mmEdit(on){ if(!mmState) return; mmState.edit=on; if(on && !mmState.skills.length) mmState.skills=[{name:'',level:3}]; renderMemberCard(); }
-function mmAddSkill(){ if(mmState){ mmState.skills.push({name:'',level:3}); renderMemberCard(); } }
-function mmDelSkill(i){ if(mmState){ mmState.skills.splice(i,1); renderMemberCard(); } }
-function mmSetLevel(i,lv){ if(mmState){ mmState.skills[i].level=lv; renderMemberCard(); } }
-function mmSetName(i,v){ if(mmState && mmState.skills[i]) mmState.skills[i].name=v; }
-function mmMoveSkill(i,dir){ if(!mmState) return; const a=mmState.skills, j=i+dir; if(j<0||j>=a.length) return; const t=a[i]; a[i]=a[j]; a[j]=t; renderMemberCard(); }
+function mmEdit(on){ if(!mmState) return; mmState.edit=on; renderMemberCard(); }
+function mmSetPos(p){ if(!mmState) return; mmState.pf.pos = (mmState.pf.pos===p) ? null : p; renderMemberCard(); }
+function mmToggleTag(t){ if(!mmState) return; const a=mmState.pf.tags; const i=a.indexOf(t);
+  if(i>=0) a.splice(i,1); else { if(a.length>=2){ toast('스타일은 2개까지만요'); return; } a.push(t); } renderMemberCard(); }
+function mmSetBio(v){ if(mmState) mmState.pf.bio = v; }
 async function mmSave(){
   if(!mmState) return;
-  const arr = mmState.skills.map(s=>({name:(s.name||'').trim(), level:Math.max(1,Math.min(5,s.level||3))})).filter(s=>s.name);
-  if(!(await saveMemberSkills(mmState.id, arr))){ toast('저장 오류'); return; }
-  mmState.skills=arr; mmState.edit=false; toast('스킬을 저장했어요'); renderMemberCard();
-}
-function radarSvg(skills){
-  const n=skills.length; if(n<3) return '';
-  const cx=110,cy=110,R=82,rings=5; let g='';
-  for(let k=1;k<=rings;k++){ const rr=R*k/rings; let pts=''; for(let i=0;i<n;i++){ const a=-Math.PI/2+i*2*Math.PI/n; pts+=(cx+rr*Math.cos(a)).toFixed(1)+','+(cy+rr*Math.sin(a)).toFixed(1)+' '; } g+=`<polygon points="${pts}" fill="none" stroke="#33492f" stroke-width="1"/>`; }
-  for(let i=0;i<n;i++){ const a=-Math.PI/2+i*2*Math.PI/n; g+=`<line x1="${cx}" y1="${cy}" x2="${(cx+R*Math.cos(a)).toFixed(1)}" y2="${(cy+R*Math.sin(a)).toFixed(1)}" stroke="#33492f" stroke-width="1"/>`; }
-  let dp=''; for(let i=0;i<n;i++){ const a=-Math.PI/2+i*2*Math.PI/n; const rr=R*(skills[i].level/5); dp+=(cx+rr*Math.cos(a)).toFixed(1)+','+(cy+rr*Math.sin(a)).toFixed(1)+' '; }
-  g+=`<polygon points="${dp}" fill="rgba(221,214,182,.35)" stroke="#ddd6b6" stroke-width="2"/>`;
-  for(let i=0;i<n;i++){ const a=-Math.PI/2+i*2*Math.PI/n; const lx=cx+(R+15)*Math.cos(a), ly=cy+(R+15)*Math.sin(a); const anc=Math.abs(Math.cos(a))<0.3?'middle':(Math.cos(a)>0?'start':'end'); g+=`<text x="${lx.toFixed(1)}" y="${(ly+3).toFixed(1)}" fill="#ece6d2" font-size="11" font-weight="600" text-anchor="${anc}">${esc(skills[i].name)} ${skills[i].level}</text>`; }
-  return `<svg viewBox="0 0 220 220" style="width:100%;max-width:230px;display:block;margin:6px auto 0;overflow:visible">${g}</svg>`;
-}
-// 내 카드 이미지 저장 (SCF 로고 + 등번호·이름·역할 + 스킬 레이더)
-async function saveMyCard(){
-  const me=getMe(); if(me==null) return;
-  const p=(typeof PLAYERS!=='undefined'?PLAYERS:[]).find(z=>z.id===me)||{};
-  const skills=await getMemberSkills(me);
-  const name=meName();
-  const meT=(typeof TEAM_SHEET!=='undefined'?TEAM_SHEET[p.name]:null)||{};
-  const jersey=(p.jersey!=null)?p.jersey:((meT.jersey!=null)?meT.jersey:'–');
-  // 개인 스탯 (홈 카드와 동일 계산)
-  let attCountAll=0, attRate=null, recent3=null;
-  try{ const tb=await fetchTeamBuilder(); const tp=(tb&&tb.players||[]).find(z=>z.id===me); if(tp){ attCountAll=tp.attCountAll??tp.attCount??0; attRate=tp.attendanceAll??tp.attendance??null; recent3=recent3Rate(tp, tb.sessions);} }catch(e){}
-  const winCount=(await getWinCounts())[me]||0;
-  const joinFmt=p.joinDate?p.joinDate.slice(0,7).replace('-','.'):'—';
-  const _mT=monthsSince(p.joinDate); const monthsLabel=_mT>0?_mT+'개월':'이번 달';
-  const stats=[['가입월',joinFmt],['함께한 기간',monthsLabel],['참여 세션',attCountAll+'회'],['전체 출석률',attRate!=null?Math.round(attRate)+'%':'—'],['최근 3개월',recent3!=null?recent3+'%':'—'],['수상 횟수',winCount+'회']];
-  const W=640,H=1050, c=document.createElement('canvas'); c.width=W; c.height=H; const x=c.getContext('2d');
-  try{ await document.fonts.ready; }catch(e){}
-  const loadImg = src => new Promise(r=>{ const im=new Image(); im.onload=()=>r(im); im.onerror=()=>r(null); im.src=src; });
-  const [bgImg, logoImg] = await Promise.all([loadImg('scf_bg.png'), loadImg('img/scf_logo_preview.png')]);
-  // 잔디 배경(cover) + 어두운 오버레이
-  x.fillStyle='#15281b'; x.fillRect(0,0,W,H);
-  if(bgImg){ const s=Math.max(W/bgImg.naturalWidth, H/bgImg.naturalHeight), dw=bgImg.naturalWidth*s, dh=bgImg.naturalHeight*s; x.drawImage(bgImg,(W-dw)/2,(H-dh)/2,dw,dh); x.fillStyle='rgba(18,32,22,0.82)'; x.fillRect(0,0,W,H); }
-  x.strokeStyle='#33492f'; x.lineWidth=2; x.strokeRect(16,16,W-32,H-32);
-  x.textAlign='center';
-  x.fillStyle='#ece6d2'; x.font='98px "Anton","Pretendard",sans-serif'; x.fillText(String(jersey), W/2, 168);
-  x.font='800 36px "Pretendard",sans-serif'; x.fillText(name, W/2, 227);
-  const wins = myWinTitles(me, await getPrevWinners());
-  if(wins.length) drawWinPills(x, W/2, 261, wins);
-  const dy = wins.length ? 289 : 275;
-  x.strokeStyle='#33492f'; x.lineWidth=1; x.beginPath(); x.moveTo(90, dy); x.lineTo(W-90, dy); x.stroke();
-  // 스탯 그리드 (3열 x 2행)
-  const colX=[W/2-150, W/2, W/2+150], r0=dy+58, r1=r0+76;
-  stats.forEach((s,i)=>{ const cx=colX[i%3], cy=(i<3)?r0:r1;
-    x.textAlign='center'; x.fillStyle='#ece6d2'; x.font='800 24px "Pretendard",sans-serif'; x.fillText(s[1], cx, cy);
-    x.fillStyle='#a4b39a'; x.font='400 14px "Pretendard",sans-serif'; x.fillText(s[0], cx, cy+21); });
-  const dy2 = r1+72;
-  x.strokeStyle='#33492f'; x.lineWidth=1; x.beginPath(); x.moveTo(90, dy2); x.lineTo(W-90, dy2); x.stroke();
-  let radarBottom;
-  if(skills.length>=3){ const rcy=dy2+222, R=146; drawRadarCanvas(x, W/2, rcy, R, skills); radarBottom=rcy+R+22; }
-  else { x.fillStyle='#a4b39a'; x.textAlign='center'; x.font='400 18px "Pretendard",sans-serif'; x.fillText(skills.length?('스킬 '+skills.length+'개'):'스킬 미설정', W/2, dy2+70); radarBottom=dy2+90; }
-  if(logoImg){ const lw=88, lh=lw*logoImg.naturalHeight/logoImg.naturalWidth; const yLogo=Math.max(radarBottom+30, H-lh-42); x.drawImage(logoImg,(W-lw)/2, yLogo, lw, lh); }
-  let url; try{ url=c.toDataURL('image/png'); }catch(e){ toast('이미지 생성 실패'); return; }
-  showCardPreview(url, name||'card');
-}
-// 카드 이미지 미리보기 → 저장
-function showCardPreview(url, name){
-  let h=document.getElementById('mmHost'); if(!h){ h=document.createElement('div'); h.id='mmHost'; document.body.appendChild(h); }
-  h.innerHTML = `<div class="mm-back" onclick="if(event.target===this)closeMemberCard()"><div class="mm-box">
-    <div class="mm-head"><div class="mm-name">사진 저장</div><button class="mm-x" onclick="closeMemberCard()">×</button></div>
-    <img src="${url}" alt="내 카드" style="width:100%;border-radius:10px;display:block;border:1px solid var(--line)">
-    <p class="hint" style="margin:10px 0 12px;font-size:11px">아이폰은 위 이미지를 길게 눌러 "사진에 저장"하세요.</p>
-    <a href="${url}" download="싸커피_${name}.png" class="btn accent" style="display:block;text-align:center;text-decoration:none" onclick="setTimeout(closeMemberCard,300)">저장하기</a>
-  </div></div>`;
-}
-function drawWinPills(x, cx, cy, wins){
-  x.font='800 17px "Pretendard",sans-serif'; x.textAlign='center';
-  const padX=13, gap=8, h=28;
-  const ws = wins.map(t=>x.measureText(t).width + padX*2);
-  const total = ws.reduce((a,b)=>a+b,0) + gap*(wins.length-1);
-  let xx = cx - total/2;
-  wins.forEach((t,i)=>{
-    const w=ws[i], yy=cy-h/2, r=h/2;
-    x.fillStyle = (t==='MVP') ? '#e0a530' : '#5a9277';
-    x.beginPath(); x.moveTo(xx+r,yy); x.arcTo(xx+w,yy,xx+w,yy+h,r); x.arcTo(xx+w,yy+h,xx,yy+h,r); x.arcTo(xx,yy+h,xx,yy,r); x.arcTo(xx,yy,xx+w,yy,r); x.closePath(); x.fill();
-    x.fillStyle = (t==='MVP') ? '#3a2600' : '#ffffff';
-    x.fillText(t, xx+w/2, cy+6);
-    xx += w + gap;
-  });
-}
-function drawRadarCanvas(x, cx, cy, R, skills){
-  const n=skills.length; if(n<3) return;
-  for(let k=1;k<=5;k++){ x.beginPath(); for(let i=0;i<n;i++){ const a=-Math.PI/2+i*2*Math.PI/n; const px=cx+R*k/5*Math.cos(a), py=cy+R*k/5*Math.sin(a); i?x.lineTo(px,py):x.moveTo(px,py);} x.closePath(); x.strokeStyle='#33492f'; x.lineWidth=1; x.stroke(); }
-  for(let i=0;i<n;i++){ const a=-Math.PI/2+i*2*Math.PI/n; x.beginPath(); x.moveTo(cx,cy); x.lineTo(cx+R*Math.cos(a),cy+R*Math.sin(a)); x.strokeStyle='#33492f'; x.lineWidth=1; x.stroke(); }
-  x.beginPath(); for(let i=0;i<n;i++){ const a=-Math.PI/2+i*2*Math.PI/n; const rr=R*skills[i].level/5; const px=cx+rr*Math.cos(a), py=cy+rr*Math.sin(a); i?x.lineTo(px,py):x.moveTo(px,py);} x.closePath(); x.fillStyle='rgba(221,214,182,.35)'; x.fill(); x.strokeStyle='#ddd6b6'; x.lineWidth=2.5; x.stroke();
-  x.fillStyle='#ece6d2'; x.font='600 18px "Pretendard",sans-serif';
-  for(let i=0;i<n;i++){ const a=-Math.PI/2+i*2*Math.PI/n; const lx=cx+(R+22)*Math.cos(a), ly=cy+(R+22)*Math.sin(a); x.textAlign=Math.abs(Math.cos(a))<0.3?'center':(Math.cos(a)>0?'left':'right'); x.fillText(skills[i].name+' '+skills[i].level, lx, ly+6); }
+  const pf = { pos:mmState.pf.pos||null, tags:mmState.pf.tags.slice(0,2), bio:(mmState.pf.bio||'').trim().slice(0,30) };
+  if(!(await saveProfile(mmState.id, pf))){ toast('저장 오류'); return; }
+  mmState.pf=pf; mmState.hasPf=!!(pf.pos||pf.tags.length||pf.bio); mmState.edit=false; toast('프로필을 저장했어요'); renderMemberCard();
 }
 function renderMemberCard(){
   let h=document.getElementById('mmHost'); if(!h){ h=document.createElement('div'); h.id='mmHost'; document.body.appendChild(h); }
@@ -2128,16 +2041,19 @@ function renderMemberCard(){
   const winHtml = (s.wins && s.wins.length) ? ' ' + s.wins.map(t=>`<span class="win-badge ${t==='MVP'?'mvp':'grow'}">${t}</span>`).join(' ') : '';
   let body;
   if(s.edit){
-    body = `<div class="hint" style="margin-bottom:8px;font-size:11px">스킬명은 최대 5자 · 레벨 1~5 · ▲▼로 순서 이동</div>` + s.skills.map((sk,i)=>`<div class="sk-row"><span class="sk-mvs"><button class="sk-mv" onclick="mmMoveSkill(${i},-1)" ${i===0?'disabled':''} title="위로">▲</button><button class="sk-mv" onclick="mmMoveSkill(${i},1)" ${i===s.skills.length-1?'disabled':''} title="아래로">▼</button></span><input type="text" maxlength="5" value="${esc(sk.name)}" placeholder="스킬명 (5자)" oninput="mmSetName(${i},this.value)"><span class="sk-lv">${[1,2,3,4,5].map(lv=>`<button class="${sk.level===lv?'on':''}" onclick="mmSetLevel(${i},${lv})">${lv}</button>`).join('')}</span><button class="sk-del" onclick="mmDelSkill(${i})">×</button></div>`).join('')
-      + `<button class="btn ghost sm" onclick="mmAddSkill()" style="margin-top:4px">＋ 스킬 추가</button><div style="display:flex;gap:8px;margin-top:14px"><button class="btn accent sm" onclick="mmSave()" style="flex:1">저장</button><button class="btn ghost sm" onclick="mmEdit(false)">취소</button></div>`;
+    const posChips = PROFILE_POS.map(p=>`<button class="pf-pick ${s.pf.pos===p?'on':''}" onclick="mmSetPos('${p}')">${p}</button>`).join('');
+    const tagChips = PROFILE_TAGS.map(t=>`<button class="pf-pick ${s.pf.tags.includes(t)?'on':''}" onclick="mmToggleTag('${t}')">${t}</button>`).join('');
+    body = `<div class="mm-sec">포지션</div><div class="pf-picks">${posChips}</div>
+      <div class="mm-sec">스타일 <span style="font-weight:400;color:var(--muted)">최대 2개</span></div><div class="pf-picks">${tagChips}</div>
+      <div class="mm-sec">한 줄 소개</div><input type="text" maxlength="30" value="${esc(s.pf.bio||'')}" placeholder="예: 왼발은 거들 뿐" oninput="mmSetBio(this.value)">
+      <div style="display:flex;gap:8px;margin-top:16px"><button class="btn accent sm" onclick="mmSave()" style="flex:1">저장</button><button class="btn ghost sm" onclick="mmEdit(false)">취소</button></div>`;
   } else {
-    const radar = radarSvg(s.skills);
-    body = s.skills.length
-      ? (radar || s.skills.map(sk=>`<div style="display:flex;justify-content:space-between;font-size:13px;color:var(--cream);padding:4px 0"><span>${esc(sk.name)}</span><span style="color:var(--accent);font-weight:800">${sk.level}/5</span></div>`).join(''))
-      : `<div class="empty" style="font-size:13px">${s.own?'아직 스킬이 없어요. 추가해보세요.':'아직 스킬 미설정'}</div>`;
-    if(s.own) body += `<button class="btn ghost sm" onclick="mmEdit(true)" style="margin-top:12px;width:100%">스킬 편집</button>`;
+    const chips = profileChipsHtml(s.pf);
+    const bio = (s.pf.bio||'').trim() ? `<div class="pf-bio">"${esc(s.pf.bio.trim())}"</div>` : '';
+    body = (chips || bio) ? chips + bio : `<div class="empty" style="font-size:13px;padding:14px 0">${s.own?'포지션·스타일·한 줄 소개를 채워보세요.':'아직 프로필이 없어요.'}</div>`;
+    if(s.own) body += `<button class="btn ghost sm" onclick="mmEdit(true)" style="margin-top:12px;width:100%">프로필 편집</button>`;
   }
-  h.innerHTML = `<div class="mm-back" onclick="if(event.target===this)closeMemberCard()"><div class="mm-box"><div class="mm-head"><span class="mm-no">${s.jersey!=null?s.jersey:'–'}</span><div><div class="mm-name">${esc(s.name)}${winHtml}</div>${roleHtml}</div><button class="mm-x" onclick="closeMemberCard()">×</button></div><div class="mm-sec">스킬</div>${body}</div></div>`;
+  h.innerHTML = `<div class="mm-back" onclick="if(event.target===this)closeMemberCard()"><div class="mm-box"><div class="mm-head"><span class="mm-no">${s.jersey!=null?s.jersey:'–'}</span><div><div class="mm-name">${esc(s.name)}${winHtml}</div>${roleHtml}</div><button class="mm-x" onclick="closeMemberCard()">×</button></div>${body}</div></div>`;
 }
 
 /* ============================================================
@@ -3056,7 +2972,7 @@ async function renderDues() {
 
   // 일반 멤버(총괄·일반관리자 아님): 전체 납부현황 비공개 — 본인 회비만
   if (!isDuesViewer()) {
-    el.innerHTML = `<div class="section-title">${potmMonthLabel(month)} 회비</div>${myCard}${bankInlineHtml()}<p class="hint" style="text-align:center;margin-top:8px">전체 납부 현황은 운영진이 관리해요. 위에서 본인 회비를 확인하고 직접 표시할 수 있어요.</p>`;
+    el.innerHTML = `<div class="section-title">${potmMonthLabel(month)} 회비</div>${myCard}${bankInlineHtml()}`;
     return;
   }
 
@@ -3368,9 +3284,9 @@ async function renderOps() {
     <div class="n-actions"><button class="btn accent sm" onclick="opsAddSession()">세션 추가</button><button class="btn ghost sm" onclick="opsCloseAddSession()">취소</button></div>` : `
     <div class="n-actions"><button class="btn accent sm" onclick="opsOpenAddSession()">＋ 세션 추가</button><button class="btn ghost sm" onclick="opsAddNextMonth()">다음 달 수요일 일괄 등록</button></div>`)}
     <div style="margin-top:16px">
-      ${allSessions.length===0?'<p class="hint">등록된 세션이 없어요. (비우면 다가오는 수요일·상암 풋살장으로 자동 표시돼요)</p>':(_upSess.map(_sessRow).join('')||'<p class="hint">다가오는 세션이 없어요.</p>')+(_pastSess.length?`<details class="ops-past" style="margin-top:14px"><summary style="cursor:pointer;font-size:13px;color:var(--muted);font-weight:600">지난 세션 ${_pastSess.length}개 보기</summary><div style="margin-top:6px">${_pastSess.map(_sessRow).join('')}</div></details>`:'')}
+      ${allSessions.length===0?'<p class="hint">등록된 세션이 없어요 — 비우면 다가오는 수요일로 자동 표시돼요</p>':(_upSess.map(_sessRow).join('')||'<p class="hint">다가오는 세션이 없어요.</p>')+(_pastSess.length?`<details class="ops-past" style="margin-top:14px"><summary style="cursor:pointer;font-size:13px;color:var(--muted);font-weight:600">지난 세션 ${_pastSess.length}개 보기</summary><div style="margin-top:6px">${_pastSess.map(_sessRow).join('')}</div></details>`:'')}
     </div>
-    <p class="hint" style="margin-top:10px">같은 날 여러 경기(A/B매치)도 따로 등록하면 참석을 각각 받아요.</p>`;
+`;
 
   const pinMembers = [...PLAYERS].filter(p => p.status !== 'former').sort((a,b)=>((CLUB_PINS[a.id]?1:0)-(CLUB_PINS[b.id]?1:0)) || a.name.localeCompare(b.name,'ko'));   // 미설정(챙길 사람) 먼저
   const pinDone = pinMembers.filter(p => CLUB_PINS[p.id]).length;
@@ -3385,12 +3301,11 @@ async function renderOps() {
     <p class="hint" style="margin-top:4px;line-height:1.6">선수 명단·등번호·티어·<b style="color:#ece6d2">휴면</b>은 <b style="color:#ece6d2">팀빌더</b>에서 관리해요(더 자세함).<br>휴면 상태는 팀빌더 데이터를 사이트가 자동으로 읽어 반영합니다.</p>
     <div style="margin-top:16px;border-top:1px solid #2a3d30;padding-top:14px">
       <b style="color:#ece6d2">PIN 관리 <span class="hint" style="font-weight: 600">(${pinDone}/${pinMembers.length} 설정)</span></b>
-      <div class="hint" style="margin:2px 0 10px">미설정 멤버는 아직 첫 로그인을 안 한 거예요. 잊은 멤버는 초기화하면 다음 로그인에서 새로 정해요.</div>
+      <div class="hint" style="margin:2px 0 10px">초기화하면 그 멤버가 다음 로그인 때 새 PIN을 정해요.</div>
       ${pinRows}
     </div>`;
 
   const secDues = `
-    <p class="hint" style="margin-top:0">'회비' 탭에서 이름을 눌러 납부 처리하세요. 빠른 이동:</p>
     <button class="btn sm" onclick="switchTab('dues')">회비 현황판 열기</button>`;
 
   const secVote = `
@@ -3412,7 +3327,7 @@ async function renderOps() {
       <div class="field" style="margin-bottom:10px"><textarea id="mpBody" rows="2" placeholder="내용을 입력하세요" maxlength="300"></textarea></div>
       <button class="btn accent sm" onclick="opsManualPush()">전체에게 보내기</button>
     </div>
-    <p class="hint" style="margin-top:0;line-height:1.6">푸시 알림 문구를 수정할 수 있어요. <b style="color:#ece6d2">{중괄호}</b> 부분은 발송 시 실제 값으로 바뀌어요.<br>비워두면 기본 문구가 쓰여요. 저장 후 다음 발송부터 적용됩니다.</p>
+    <p class="hint" style="margin-top:0"><b style="color:#ece6d2">{중괄호}</b>는 발송 시 실제 값으로 바뀌어요 · 비우면 기본 문구</p>
     ${Object.entries(PUSH_TPL_DEFAULTS).map(([k,d])=>{
       const ov = _tplOv[k] || {};
       const mod = (ov.title || ov.body) ? ' <span class="pin-tag" style="background:#7a5b2e;color:#fff">수정됨</span>' : '';
@@ -3430,7 +3345,6 @@ async function renderOps() {
   const bodyMap = { notice:secNotice, session:secSession, roster:secRoster, dues:secDues, vote:secVote, push:secPush };
 
   el.innerHTML = `
-    <div class="ops-note">운영진 전용 화면입니다. 팀원에게는 보이지 않아요.</div>
     ${_todoHtml}
     <div class="ops-subtabs">
       ${OPS_TABS.map(t => `<button class="ops-subtab ${t.key===opsTabSel?'on':''}" onclick="opsSwitch('${t.key}')">${t.label}</button>`).join('')}

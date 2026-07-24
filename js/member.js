@@ -101,8 +101,8 @@ const MEMBER_ROLES = {
 };
 // 멤버 프로필 — club_settings.current.profiles[memberId] = { pos, tags[], bio }
 const PROFILE_POS = ['공격','미드필더','수비','키퍼','올라운더'];
-const PROFILE_TAGS = ['스피드','피지컬','패스','슛','드리블','수비력','활동량','왼발','골 결정력','위치 선정','시야','세트피스','헤더','커버 플레이','리더십','분위기 메이커','침착함','투지'];   // 강점
-const PROFILE_WEAKS = ['체력','스피드','슛 정확도','수비','왼발','오른발','멘탈','지각','헛발질','몸싸움','방향감각','백패스 본능','유리몸','집중력','숙취','새가슴'];   // 약점(최대 1개, 유머 환영)
+const PROFILE_TAGS = ['스피드','피지컬','뇌지컬','패스','슛','드리블','수비력','활동량','왼발','골 결정력','위치 선정','시야','세트피스','헤더','커버 플레이','리더십','분위기 메이커','침착함','투지'];   // 강점
+const PROFILE_WEAKS = ['체력','스피드','슛 정확도','수비','왼발','오른발','멘탈','지각','헛발질','몸싸움','방향감각','백패스 본능','유리몸','집중력','숙취','새가슴','세모발'];   // 약점(최대 3개, 유머 환영)
 async function getProfile(id){ const s = await fetchSettings(); return ((s.profiles||{})[id]) || null; }
 async function saveProfile(id, pf){
   const s = await fetchSettings();
@@ -2140,13 +2140,13 @@ function showAddHomeGuide(){
 function mmEdit(on){ if(!mmState) return; mmState.edit=on; renderMemberCard(); }
 function mmSetPos(p){ if(!mmState) return; mmState.pf.pos = (mmState.pf.pos===p) ? null : p; renderMemberCard(); }
 function mmToggleTag(t){ if(!mmState) return; const a=mmState.pf.tags; const i=a.indexOf(t);
-  if(i>=0) a.splice(i,1); else { if(a.length>=2){ toast('강점은 2개까지만요'); return; } a.push(t); } renderMemberCard(); }
+  if(i>=0) a.splice(i,1); else { if(a.length>=3){ toast('강점은 3개까지만요'); return; } a.push(t); } renderMemberCard(); }
 function mmToggleWeak(t){ if(!mmState) return; const a=mmState.pf.weaks; const i=a.indexOf(t);
-  if(i>=0) a.splice(i,1); else { if(a.length>=1){ toast('약점은 하나면 충분해요'); return; } a.push(t); } renderMemberCard(); }
+  if(i>=0) a.splice(i,1); else { if(a.length>=3){ toast('약점은 3개까지만요'); return; } a.push(t); } renderMemberCard(); }
 function mmSetBio(v){ if(mmState) mmState.pf.bio = v; }
 async function mmSave(){
   if(!mmState) return;
-  const pf = { pos:mmState.pf.pos||null, tags:mmState.pf.tags.slice(0,2), weaks:(mmState.pf.weaks||[]).slice(0,1), bio:(mmState.pf.bio||'').trim().slice(0,30) };
+  const pf = { pos:mmState.pf.pos||null, tags:mmState.pf.tags.slice(0,3), weaks:(mmState.pf.weaks||[]).slice(0,3), bio:(mmState.pf.bio||'').trim().slice(0,30) };
   if(!(await saveProfile(mmState.id, pf))){ toast('저장 오류'); return; }
   mmState.pf=pf; mmState.hasPf=!!(pf.pos||pf.tags.length||pf.weaks.length||pf.bio); mmState.edit=false; toast('프로필을 저장했어요'); renderMemberCard();
 }
@@ -2162,8 +2162,8 @@ function renderMemberCard(){
     const tagChips = PROFILE_TAGS.map(t=>`<button class="pf-pick ${s.pf.tags.includes(t)?'on':''}" onclick="mmToggleTag('${t}')">${t}</button>`).join('');
     const weakChips = PROFILE_WEAKS.map(t=>`<button class="pf-pick ${s.pf.weaks.includes(t)?'on w':''}" onclick="mmToggleWeak('${t}')">${t}</button>`).join('');
     body = `<div class="mm-sec">포지션</div><div class="pf-picks">${posChips}</div>
-      <div class="mm-sec">강점 <span style="font-weight:400;color:var(--muted)">최대 2개</span></div><div class="pf-picks">${tagChips}</div>
-      <div class="mm-sec">약점 <span style="font-weight:400;color:var(--muted)">1개 · 유머 환영</span></div><div class="pf-picks">${weakChips}</div>
+      <div class="mm-sec">강점 <span style="font-weight:400;color:var(--muted)">최대 3개</span></div><div class="pf-picks">${tagChips}</div>
+      <div class="mm-sec">약점 <span style="font-weight:400;color:var(--muted)">최대 3개 · 유머 환영</span></div><div class="pf-picks">${weakChips}</div>
       <div class="mm-sec">한 줄 소개</div><input type="text" maxlength="30" value="${esc(s.pf.bio||'')}" placeholder="예: 왼발은 거들 뿐" oninput="mmSetBio(this.value)">
       <div style="display:flex;gap:8px;margin-top:16px"><button class="btn accent sm" onclick="mmSave()" style="flex:1">저장</button><button class="btn ghost sm" onclick="mmEdit(false)">취소</button></div>`;
   } else {

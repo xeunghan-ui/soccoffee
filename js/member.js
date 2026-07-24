@@ -25,7 +25,7 @@ async function fetchRides() {
     if (error) { toast('불러오기 오류: ' + error.message); return []; }
     return data.map(r => ({
       id: r.id, driver: r.driver, place: r.place, date: r.ride_date,
-      time: r.ride_time, seats: r.seats, dest: r.dest, riders: r.riders || []
+      time: r.ride_time, seats: r.seats, dest: r.dest, riders: r.riders || [], created_at: r.created_at
     }));
   }
   try { return JSON.parse(localStorage.getItem(STORE)) || []; } catch (e) { return []; }
@@ -1451,29 +1451,61 @@ async function notifyDriver(ride, title, body){
   queuePush(drv.id, title, body.replace('{일시}', t), './member.html#list');
 }
 
-/* ---------- 상단 알림 종(알림 센터) ---------- */
-const BELL_READ_KEY = 'socoffee_bell_read';   // 읽은 공지 id 목록
+/* ---------- 상단 알림 종(통합 알림함: 공지·카풀·세션) ---------- */
+const BELL_READ_KEY = 'socoffee_bell_read';   // 읽은 항목 id 목록 (n공지 / r카풀 / s세션)
 function bellReadIds(){ try { return JSON.parse(localStorage.getItem(BELL_READ_KEY)) || []; } catch(e){ return []; } }
 function bellMarkRead(ids){
   const cur = new Set(bellReadIds());
   (Array.isArray(ids)?ids:[ids]).forEach(x=>cur.add(String(x)));
-  localStorage.setItem(BELL_READ_KEY, JSON.stringify([...cur].slice(-100)));
+  localStorage.setItem(BELL_READ_KEY, JSON.stringify([...cur].slice(-150)));
   bellDotRefresh();
 }
-async function bellVisibleNotices(){
-  let ns = [];
-  try { ns = await fetchNotices(); } catch(e){}
-  const now = new Date();
-  return ns.filter(n => (!n.publish_at || new Date(n.publish_at) <= now) && (!n.hide_at || new Date(n.hide_at) >= now)).slice(0, 8);
+function _sessCreatedMs(id){   // 세션 id('s'+ts36+rand)에서 등록 시각 추출
+  if (typeof id !== 'string' || !/^s[0-9a-z]{11,}$/.test(id)) return null;
+  const ms = parseInt(id.slice(1, 9), 36);
+  return (ms > 1.6e12 && ms < 2.2e12) ? ms : null;   // 2020~2039년 범위만 인정
+}
+async function bellFeed(){
+  const items = [];
+  const now = new Date(), cutoff = Date.now() - 14 * 86400e3;   // 최근 2주
+  try {
+    (await fetchNotices()).forEach(n => {
+      if (n.publish_at && new Date(n.publish_at) > now) return;
+      if (n.hide_at && new Date(n.hide_at) < now) return;
+      items.push({ id:'n'+n.id, tag:'공지', title:n.title, at:new Date(n.created_at||0).getTime(), pinned:!!n.pinned, link:String(n.link||''), go:'home' });
+    });
+  } catch(e){}
+  try {
+    (await fetchRides()).forEach(r => {
+      const at = new Date(r.created_at||0).getTime();
+      if (at < cutoff) return;
+      items.push({ id:'r'+r.id, tag:'카풀', title:`${r.driver}님 · ${(r.date||'').slice(5).replace('-','/')} ${r.place||''} → ${r.dest||''}`, at, go:'list' });
+    });
+  } catch(e){}
+  try {
+    (await getSessions()).forEach(sx => {
+      const at = _sessCreatedMs(String(sx.id||''));
+      if (!at || at < cutoff) return;
+      if ((sx.date||'') < todayStr()) return;
+      items.push({ id:'s'+sx.id, tag:'세션', title:`${fmtSessionDate(sx.date, sx.time)} · ${sx.place||''}`, at, go:'att' });
+    });
+  } catch(e){}
+  return items.sort((a,b) => (b.pinned?1:0)-(a.pinned?1:0) || b.at - a.at).slice(0, 12);
 }
 async function bellDotRefresh(){
   try {
-    const ns = await bellVisibleNotices();
     const read = bellReadIds();
-    const unread = ns.filter(n => !read.includes(String(n.id))).length;
+    const unread = (await bellFeed()).filter(x => !read.includes(x.id)).length;
     const d = document.getElementById('bellDot');
     if (d) { d.textContent = unread > 9 ? '9+' : String(unread); d.style.display = unread > 0 ? 'flex' : 'none'; }
   } catch(e){}
+}
+function _bellRow(x, un){
+  const when = x.at ? (d => `${d.getMonth()+1}/${d.getDate()}`)(new Date(x.at)) : '';
+  return `<button class="bp-row${un?' unread':''}" onclick="bellOpen('${x.id}','${x.go}','${esc(x.link||'')}')">
+    <span class="bp-t">${un?'<span class="new"></span>':''}<span class="bp-tag${x.tag==='공지'?' notice':''}">${x.tag}</span>${esc(x.title)}</span>
+    <span class="bp-d">${when}</span>
+  </button>`;
 }
 async function toggleBell(){
   const p = document.getElementById('bellPanel');
@@ -1481,37 +1513,36 @@ async function toggleBell(){
   if (!p.classList.contains('hidden')) { p.classList.add('hidden'); return; }
   p.innerHTML = '<div class="bp-empty">불러오는 중...</div>';
   p.classList.remove('hidden');
-  const ns = await bellVisibleNotices();
+  const feed = await bellFeed();
   const read = bellReadIds();
-  const unreadCnt = ns.filter(n => !read.includes(String(n.id))).length;
+  const unread = feed.filter(x => !read.includes(x.id));
+  const done = feed.filter(x => read.includes(x.id));
   let pushLine = '';
   try {
     const on = PUSH_SUPPORTED && !!(await getPushSub()) && Notification.permission === 'granted';
     if (!on) pushLine = `<button class="bp-row" style="border-top:none;padding-top:2px" onclick="document.getElementById('bellPanel').classList.add('hidden');enablePush()"><span class="bp-t" style="color:var(--accent)">푸시 알림이 꺼져 있어요 — 켜기 →</span></button>`;
   } catch(e){}
-  p.innerHTML = `<div class="bp-h"><span class="bp-title">알림${unreadCnt?` <span style="color:var(--alert)">${unreadCnt}</span>`:''}</span>
+  p.innerHTML = `<div class="bp-h"><span class="bp-title">알림${unread.length?` <span style="color:var(--alert)">${unread.length}</span>`:''}</span>
       <span style="display:flex;gap:12px;align-items:center">
-        ${unreadCnt ? `<button class="admin-link" onclick="bellReadAll()">모두 읽음</button>` : ''}
+        ${unread.length ? `<button class="admin-link" onclick="bellReadAll()">모두 읽음</button>` : ''}
         <button class="admin-link" onclick="document.getElementById('bellPanel').classList.add('hidden')">닫기</button>
       </span></div>
     ${pushLine}
-    ${ns.length ? ns.map(n => { const un = !read.includes(String(n.id)); return `<button class="bp-row${un?' unread':''}" onclick="bellOpen('${esc(String(n.link||''))}','${n.id}')">
-        <span class="bp-t">${un ? '<span class="new"></span>' : ''}${n.pinned ? '<span class="pin-tag">고정</span> ' : ''}${esc(n.title)}</span>
-        <span class="bp-d">${noticeWhenLabel(n)}</span>
-      </button>`; }).join('') : '<div class="bp-empty">등록된 공지가 없어요.</div>'}`;
+    ${feed.length === 0 ? '<div class="bp-empty">새 소식이 없어요.</div>' : ''}
+    ${unread.map(x => _bellRow(x, true)).join('')}
+    ${done.length ? `<div class="bp-sec">읽음</div>${done.map(x => _bellRow(x, false)).join('')}` : ''}`;
 }
 async function bellReadAll(){
-  const ns = await bellVisibleNotices();
-  bellMarkRead(ns.map(n => n.id));
+  bellMarkRead((await bellFeed()).map(x => x.id));
   const p = document.getElementById('bellPanel');
-  if (p) { p.classList.add('hidden'); toggleBell(); }   // 읽음 반영해 다시 열기
+  if (p) { p.classList.add('hidden'); toggleBell(); }
 }
-function bellOpen(link, id){
+function bellOpen(id, go, link){
   bellMarkRead(id);
   document.getElementById('bellPanel').classList.add('hidden');
   if (link && /^tab:/.test(link)) { switchTab(link.slice(4)); return; }
   if (link && /^https?:/i.test(link)) { window.open(link, '_blank', 'noopener'); return; }
-  switchTab('home');
+  switchTab(go || 'home');
 }
 // 패널 밖 탭하면 닫기
 document.addEventListener('click', e => {

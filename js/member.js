@@ -1036,9 +1036,6 @@ async function renderPotm() {
 
   const voter = members.find(m => m.id === potmVoterId) || null;
   const admin = isAdmin();
-  const bothResults = () =>
-    `<div class="card"><h2>이달의 선수 결과</h2>${resultsHtml(votesMvp, members, admin)}</div>
-     <div class="card"><h2>가장 성장한 선수 결과</h2>${resultsHtml(votesGrowth, members, admin)}</div>`;
 
   // 1) 로그인 안 됐거나 이번 달 활동 회원이 아님
   if (!voter) {
@@ -1063,8 +1060,8 @@ async function renderPotm() {
     const pm = members.find(m => m.id === myMvp.candidate_id);
     const pg = members.find(m => m.id === myGrowth.candidate_id);
     body += `<div class="card"><h2>투표 완료</h2>
-      <p class="sub">이달의 선수 <b>${pm?esc(pm.name):'-'}</b> · 가장 성장한 선수 <b>${pg?esc(pg.name):'-'}</b></p></div>`;
-    body += bothResults();
+      <p class="sub">이달의 선수 <b>${pm?esc(pm.name):'-'}</b> · 가장 성장한 선수 <b>${pg?esc(pg.name):'-'}</b></p>
+      <p class="sub" style="margin-top:8px;color:var(--muted)">결과는 <b>투표 종료 후(다음 달 1일)</b> 공개돼요.</p>${admin?`<p class="sub" style="margin-top:4px;color:var(--muted)">운영진은 <b>더보기 › 투표</b>에서 실시간 현황을 볼 수 있어요.</p>`:''}</div>`;
     el.innerHTML = body;
     return;
   }
@@ -1086,7 +1083,6 @@ async function renderPotm() {
       <button class="btn accent" id="potmVoteBtn" onclick="submitVote()" disabled>두 부문 투표하기</button>
     </div>
     <p class="potm-note">두 부문 모두 선택해야 제출돼요. 투표 후엔 변경할 수 없어요.</p>`;
-  if (admin) body += bothResults();
   el.innerHTML = body;
   syncVoteBtn();
 }

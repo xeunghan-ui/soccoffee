@@ -2059,8 +2059,26 @@ async function openMemberCard(id, startEdit){
 }
 function closeMemberCard(){ mmState=null; const h=document.getElementById('mmHost'); if(h) h.innerHTML=''; }
 // 모달(mmHost)이 열려 있으면 배경(body) 스크롤 잠금 — 모든 모달에 일괄 적용
+// iOS Safari는 body{overflow:hidden}만으론 배경 스크롤이 안 막혀 position:fixed 방식 사용.
 (function(){
-  function sync(){ const h=document.getElementById('mmHost'); document.body.style.overflow = (h && h.innerHTML.trim()) ? 'hidden' : ''; }
+  let lockY = 0;
+  function sync(){
+    const h = document.getElementById('mmHost');
+    const open = !!(h && h.innerHTML.trim());
+    const locked = document.body.style.position === 'fixed';
+    if (open && !locked) {
+      lockY = window.scrollY || document.documentElement.scrollTop || 0;
+      document.body.style.top = `-${lockY}px`;
+      document.body.style.position = 'fixed';
+      document.body.style.left = '0'; document.body.style.right = '0'; document.body.style.width = '100%';
+      document.body.style.overflow = 'hidden';
+    } else if (!open && locked) {
+      document.body.style.position = ''; document.body.style.top = '';
+      document.body.style.left = ''; document.body.style.right = ''; document.body.style.width = '';
+      document.body.style.overflow = '';
+      window.scrollTo(0, lockY);
+    }
+  }
   function attach(){ let h=document.getElementById('mmHost'); if(!h){ h=document.createElement('div'); h.id='mmHost'; document.body.appendChild(h); } new MutationObserver(sync).observe(h,{childList:true}); sync(); }
   if(document.readyState==='loading') document.addEventListener('DOMContentLoaded',attach); else attach();
 })();
@@ -3071,7 +3089,7 @@ async function renderDues() {
       <div style="font-size:12px;font-weight:800;color:var(--red);margin-bottom:6px">미납 ${total-paidCount}명</div>
       <div style="font-size:14px;line-height:1.7;color:var(--text)">${[...payMembers].filter(m=>effState(m.id)==='unpaid').sort(byName).map(m=>esc(m.name)).join(', ')}</div>
     </div>` : ''}
-    <div class="ops-note">${admin ? '운영진 모드 — 납부 / 미납 / 휴면(다음달)을 직접 선택하고 아래 \'저장\'으로 반영돼요' : '읽기전용 현황 — 납부는 멤버가 홈에서 직접 표시해요.'}</div>
+    <div class="ops-note">${admin ? '운영진 모드 — <b>납부/미납/휴면</b>은 상태 표시(멤버 자가신고 기준), <b>입금확인</b>은 총무가 계좌에서 실제 입금을 확인했다는 별도 표시예요. 상태 변경 후 아래 \'저장\'을 눌러야 반영돼요.' : (isDuesConfirmer() ? '<b>입금확인</b> — 계좌에서 실제 입금을 확인한 뒤 눌러주세요. (납부 상태 변경은 총괄만)' : '읽기전용 현황 — 납부는 멤버가 홈에서 직접 표시해요.')}</div>
     <div class="card">
       <div class="att-list dues-grid">
         ${[...members].sort((a,b)=>{ const rk=s=>s==='unpaid'?0:(s==='paid'?1:2); return rk(effState(a.id))-rk(effState(b.id)) || byName(a,b); }).map(m=>{
@@ -3081,8 +3099,8 @@ async function renderDues() {
           const confd = isDuesConfirmed(month, m.id);
           const confChip = (stt==='paid')
             ? (isDuesConfirmer()
-                ? `<button class="dues-conf ${confd?'on':''}" onclick="toggleDuesConfirm('${month}',${m.id})">${confd?'✓ 확인':'입금확인'}</button>`
-                : (confd ? `<span class="dues-conf on ro">✓ 확인</span>` : ''))
+                ? `<button class="dues-conf ${confd?'on':''}" onclick="toggleDuesConfirm('${month}',${m.id})">${confd?'✓ 입금확인':'입금확인'}</button>`
+                : (confd ? `<span class="dues-conf on ro">✓ 입금확인</span>` : ''))
             : '';
           const statusEl = admin
             ? `<span class="st-set"><button class="st paid ${stt==='paid'?'on':''}" onclick="duesDraftSet(${m.id},'paid')">납부</button><button class="st unpaid ${stt==='unpaid'?'on':''}" onclick="duesDraftSet(${m.id},'unpaid')">미납</button><button class="st dormant ${stt==='dormant'?'on':''}" onclick="duesDraftSet(${m.id},'dormant')">휴면</button></span>`

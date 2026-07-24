@@ -1645,7 +1645,7 @@ async function renderMore() {
   const adminItems = [
     ['notice',  '공지',   '공지 작성 · 노출 기간', 'ops'],
     ['session', '세션',   '세션 추가 · 마감 설정', 'ops'],
-    ['dues',    '회비',   '이번 달 납부 현황',     'dues'],
+    ['dues',    '회비',   '이번 달 입금 현황',     'dues'],
     ['vote',    '투표',   '투표 결과 · 투표자',   'ops'],
     ['roster',  '설정',   'PIN 관리 · 팀 구분',   'ops'],
   ];
@@ -1701,7 +1701,7 @@ async function renderMore() {
   } else if (isSubAdmin()) {   // 일반 관리자 — 회비 현황(읽기전용)만
     html += memberTabbed;
     html += `<div class="more-sec-title">운영진 메뉴</div>`;
-    html += `<div class="more-grid"><button class="more-item" onclick="switchTab('dues')"><div class="mi-name">회비 현황</div><div class="mi-desc">이번 달 납부 현황 · 읽기전용</div></button></div>`;
+    html += `<div class="more-grid"><button class="more-item" onclick="switchTab('dues')"><div class="mi-name">회비 현황</div><div class="mi-desc">이번 달 입금 현황 · 읽기전용</div></button></div>`;
   } else {
     html += memberTabbed;
   }
@@ -1776,7 +1776,7 @@ async function renderMine() {
       <div class="hint" style="margin-top:4px">${team} 팀${dorm ? ' · 이번 달 휴면' : ''}</div>
     </div>
     <div class="mine-stats">
-      <div class="mine-stat"><div class="v" style="color:${myPaid ? 'var(--win)' : 'var(--alert)'}">${myPaid ? '납부' : '미납'}</div><div class="k">${potmMonthLabel(month)} 회비</div></div>
+      <div class="mine-stat"><div class="v" style="color:${myPaid ? 'var(--win)' : 'var(--alert)'}">${myPaid ? '입금' : '미납'}</div><div class="k">${potmMonthLabel(month)} 회비</div></div>
       <div class="mine-stat"><div class="v">T${p.tier || '–'}</div><div class="k">티어</div></div>
     </div>
     <button class="btn ghost" style="margin-top:14px" onclick="switchTab('rank')">출석 랭킹에서 내 순위 보기</button>
@@ -1790,7 +1790,7 @@ function renderFaq() {
   const el = document.getElementById('faqContent');
   const rules = [
     ['연간 운영 시즌', ['<b>팀 리그</b> — 3·5·9·11월 · <b>20~23시</b> · 감독(캡틴)이 팀원 선발', '<b>일반 경기</b> — 그 외 전부(혹서기 7·8월 · 혹한기 12·1·2월 포함) · <b>21~23시</b>', '홈 배너·세션 카드에 이번 달 시즌 표시']],
-    ['회비', ['매월 <b>15일</b>부터 다음 달 회비 표시', (BANK&&BANK.number)?`입금 계좌: <b>${esc(BANK.bank||'')} ${esc(BANK.number)}</b>${BANK.holder?` (${esc(BANK.holder)})`:''}`:'입금 계좌: 운영진에게 문의', '입금 후 회비 화면에서 <b>직접 납부 표시</b>', '전체 금액 비공개 · 납부/미납 인원만 공개']],
+    ['회비', ['매월 <b>15일</b>부터 다음 달 회비 표시', (BANK&&BANK.number)?`입금 계좌: <b>${esc(BANK.bank||'')} ${esc(BANK.number)}</b>${BANK.holder?` (${esc(BANK.holder)})`:''}`:'입금 계좌: 운영진에게 문의', '입금 후 회비 화면에서 <b>직접 입금 표시</b>', '전체 금액 비공개 · 입금/미납 인원만 공개']],
     ['참석 신청', ['<b>매치 직전 일요일 23:59</b> 마감', '당일 불참 시 반드시 <b>불참으로 체크</b>', '마감 후 참가는 <b>불참이 생긴 경우에만</b> 가능', '당일 참가도 <b>당일 불참이 생긴 경우에만</b> 가능']],
     ['게스트', ['싸커피 <b>인스타그램 세션 일정 댓글</b> 필히 작성', '게스트 확정은 <b>월요일</b> 인스타그램으로 전달', '확정 후 <b>계좌로 입금</b>']],
     ['휴면', ['한 달 단위로 활동 쉬기', '매월 <b>15일</b>부터 홈에서 다음 달 신청', '휴면 달은 회비 · 참석 · 명단 · 투표 제외', '휴면 중 특정 세션 참여: <b>일정 → 게스트로 신청</b> → 운영진 승인 후 참석 확정']],
@@ -1843,7 +1843,7 @@ async function homeSetDue(memberId, month, paid){
   const m = ROSTER.find(x=>x.id===memberId);
   const ok = await setDuesPaid(month, memberId, paid, dueAmount(m?m.name:''));
   if (!ok) return;
-  toast(paid ? '납부로 표시했어요' : '미납으로 바꿨어요');
+  toast(paid ? '입금으로 표시했어요' : '미납으로 바꿨어요');
   await rerender(renderHome);
   refreshNewBadges();
 }
@@ -1926,7 +1926,7 @@ async function renderHome() {
         ? `${dormStatus ? `<div style="font-size:12px;color:var(--muted);line-height:1.6;margin-bottom:6px"><b style="color:#ece6d2">${moNum}월엔 복귀하시나요?</b> 복귀하면 '활동', 계속 쉬면 '휴면'을 눌러 주세요.</div>` : ''}<div class="pc-stat"><span class="lbl">${moNum}월</span><span class="act-toggle"><button class="${!dormStatus?'on':''}" onclick="setMyDormancy(${me},'${dMonth}',false)">활동</button><button class="${dormStatus?'on':''}" onclick="setMyDormancy(${me},'${dMonth}',true)">휴면</button></span></div>`
         : `<div class="pc-stat"><span class="lbl">${moNum}월</span><span class="pc-badge ${dormStatus?'neutral':'done'}">${dormStatus?'휴면 중':'활동 중'}</span></div>`}
       ${!dormStatus
-        ? `<div class="pc-stat"><span class="lbl">${moNum}월 회비${myPaid?'':' <span class="mini-dot"></span>'}</span><span class="act-toggle dues"><button class="paid ${myPaid?'on':''}" onclick="homeSetDue(${me},'${dMonth}',true)">완료</button><button class="unpaid ${!myPaid?'on':''}" onclick="homeSetDue(${me},'${dMonth}',false)">미납</button></span></div>`
+        ? `<div class="pc-stat"><span class="lbl">${moNum}월 회비${myPaid?'':' <span class="mini-dot"></span>'}</span><span class="act-toggle dues"><button class="paid ${myPaid?'on':''}" onclick="homeSetDue(${me},'${dMonth}',true)">입금</button><button class="unpaid ${!myPaid?'on':''}" onclick="homeSetDue(${me},'${dMonth}',false)">미납</button></span></div>`
         : ''}`;
     const respondHtml = targetSess ? (
       targetBlockedDorm
@@ -3082,13 +3082,13 @@ async function renderDues() {
   const myCard = meActive ? `<div class="card" style="display:flex;align-items:center;justify-content:space-between;gap:12px;padding:14px 16px;margin-bottom:12px">
       <div style="min-width:0">
         <div style="font-size:13px;font-weight:800;color:var(--coffee)">내 회비${myName?` — ${esc(myName)}`:''} · ${potmMonthLabel(month)}</div>
-        <div style="font-size:12px;color:var(--muted);margin-top:2px">${myPaid ? (myConfd ? '납부 · <b style="color:var(--win)">입금 확인됨</b>' : '납부 표시됨 · 입금 확인 대기중') : '미납 상태예요'}${myDirty?' · 저장 전 (아래 저장 필요)':''}</div>
+        <div style="font-size:12px;color:var(--muted);margin-top:2px">${myPaid ? (myConfd ? '<b style="color:var(--win)">입금 확인됨</b>' : '입금 표시됨 · 확인 대기중') : '미납 상태예요'}${myDirty?' · 저장 전 (아래 저장 필요)':''}</div>
       </div>
       ${admin
-        ? `<button class="dues-badge toggle ${myPaid?'paid':'unpaid'}" style="flex-shrink:0" onclick="duesDraftCardToggle(${me})">${myPaid ? '납부 취소' : '납부 표시'}</button>`
+        ? `<button class="dues-badge toggle ${myPaid?'paid':'unpaid'}" style="flex-shrink:0" onclick="duesDraftCardToggle(${me})">${myPaid ? '입금 취소' : '입금 표시'}</button>`
         : isSubAdmin()
-          ? `<span class="dues-badge ${myPaid?'paid':'unpaid'}" style="flex-shrink:0;font-weight:800">${myPaid?'납부':'미납'}</span>`
-          : `<button class="dues-badge toggle ${myPaid?'paid':'unpaid'}" style="flex-shrink:0" onclick="toggleDue(${me},${myPaid})">${myPaid ? '납부 취소' : '납부 표시'}</button>`}
+          ? `<span class="dues-badge ${myPaid?'paid':'unpaid'}" style="flex-shrink:0;font-weight:800">${myPaid?'입금':'미납'}</span>`
+          : `<button class="dues-badge toggle ${myPaid?'paid':'unpaid'}" style="flex-shrink:0" onclick="toggleDue(${me},${myPaid})">${myPaid ? '입금 취소' : '입금 표시'}</button>`}
     </div>` : '';
 
   // 일반 멤버(총괄·일반관리자 아님): 전체 납부현황 비공개 — 본인 회비만
@@ -3120,11 +3120,11 @@ async function renderDues() {
     <div class="potm-hero" style="background:linear-gradient(135deg,#2f7a4f,#245f3e)">
       <div class="trophy"></div>
       <h2>${potmMonthLabel(month)} 회비</h2>
-      <div class="month">${paidCount}/${total}명 납부 · 입금확인 ${confirmedCount}명</div>
+      <div class="month">입금 ${paidCount}/${total}명 · 확인 ${confirmedCount}명</div>
     </div>
     <div class="dues-progress"><div style="width:${pct}%"></div></div>
     <div class="dues-summary">
-      <div class="dues-stat paid"><div class="num">${paidCount}</div><div class="cap">납부</div></div>
+      <div class="dues-stat paid"><div class="num">${paidCount}</div><div class="cap">입금</div></div>
       <div class="dues-stat unpaid"><div class="num">${total-paidCount}</div><div class="cap">미납</div></div>
     </div>
     ${transCard}
@@ -3133,7 +3133,7 @@ async function renderDues() {
       <div style="font-size:12px;font-weight:800;color:var(--red);margin-bottom:6px">미납 ${total-paidCount}명</div>
       <div style="font-size:14px;line-height:1.7;color:var(--text)">${[...payMembers].filter(m=>effState(m.id)==='unpaid').sort(byName).map(m=>esc(m.name)).join(', ')}</div>
     </div>` : ''}
-    <div class="ops-note">${admin ? '운영진 모드 — <b>납부/미납/휴면</b>은 상태 표시(멤버 자가신고 기준), <b>입금확인</b>은 총무가 계좌에서 실제 입금을 확인했다는 별도 표시예요. 상태 변경 후 아래 \'저장\'을 눌러야 반영돼요.' : (isDuesConfirmer() ? '<b>입금확인</b> — 계좌에서 실제 입금을 확인한 뒤 눌러주세요. (납부 상태 변경은 총괄만)' : '읽기전용 현황 — 납부는 멤버가 홈에서 직접 표시해요.')}</div>
+    <div class="ops-note">${admin ? '운영진 모드 — <b>입금/미납/휴면</b>은 멤버 자가신고 상태, <b>입금확인</b>은 총무가 계좌에서 확인한 표시예요. 변경 후 아래 \'저장\' 필요.' : (isDuesConfirmer() ? '<b>입금확인</b> — 계좌에서 실제 입금 확인 후 눌러주세요. (상태 변경은 총괄만)' : '읽기전용 — 입금은 멤버가 홈에서 직접 표시해요.')}</div>
     <div class="card">
       <div class="att-list dues-grid">
         ${[...members].sort((a,b)=>{ const rk=s=>s==='unpaid'?0:(s==='paid'?1:2); return rk(effState(a.id))-rk(effState(b.id)) || byName(a,b); }).map(m=>{
@@ -3147,8 +3147,8 @@ async function renderDues() {
                 : (confd ? `<span class="dues-conf on ro">✓ 입금확인</span>` : ''))
             : '';
           const statusEl = admin
-            ? `<span class="st-set"><button class="st paid ${stt==='paid'?'on':''}" onclick="duesDraftSet(${m.id},'paid')">납부</button><button class="st unpaid ${stt==='unpaid'?'on':''}" onclick="duesDraftSet(${m.id},'unpaid')">미납</button><button class="st dormant ${stt==='dormant'?'on':''}" onclick="duesDraftSet(${m.id},'dormant')">휴면</button></span>`
-            : `<span style="flex-shrink:0;font-size:12px;font-weight:800;padding:4px 12px;border-radius:20px;background:${stt==='paid'?'rgba(70,179,129,.92)':'rgba(217,97,74,.92)'};color:#fff">${stt==='paid'?'납부':'미납'}</span>`;
+            ? `<span class="st-set"><button class="st paid ${stt==='paid'?'on':''}" onclick="duesDraftSet(${m.id},'paid')">입금</button><button class="st unpaid ${stt==='unpaid'?'on':''}" onclick="duesDraftSet(${m.id},'unpaid')">미납</button><button class="st dormant ${stt==='dormant'?'on':''}" onclick="duesDraftSet(${m.id},'dormant')">휴면</button></span>`
+            : `<span style="flex-shrink:0;font-size:12px;font-weight:800;padding:4px 12px;border-radius:20px;background:${stt==='paid'?'rgba(70,179,129,.92)':'rgba(217,97,74,.92)'};color:#fff">${stt==='paid'?'입금':'미납'}</span>`;
           return `<div class="dues-row ${isMe?'me':''}${dirty?' dirty':''}">
             <span class="nm">${esc(m.name)}${isMe?' <span style="font-size:11px;color:var(--accent)">(나)</span>':''}${dirty?' <span class="dirty-dot">●</span>':''}</span>
             <span style="display:flex;align-items:center;gap:8px;flex-shrink:0">${confChip}${statusEl}</span>
@@ -3175,7 +3175,7 @@ async function toggleDue(memberId, currentlyPaid) {
   const ok = await setDuesPaid(duesMonth(), memberId, !currentlyPaid, dueAmount(m?m.name:''));
   if (!ok) return;
   if (isAdmin() && memberId !== getMe()) {
-    const t = await pushTpl('dues_change', {'월':parseInt(duesMonth().split('-')[1]),'상태':!currentlyPaid?'납부':'미납'});
+    const t = await pushTpl('dues_change', {'월':parseInt(duesMonth().split('-')[1]),'상태':!currentlyPaid?'입금':'미납'});
     queuePush(memberId, t.title, t.body, './member.html#dues');
   }
   await renderDues();
@@ -3220,7 +3220,7 @@ async function duesSaveDraft(){
     else {
       const ok = await setDuesPaid(mo, mid, st === 'paid', dueAmount(m?m.name:''));
       if(!ok) anyErr = true;
-      else if (mid !== getMe()) { const t = await pushTpl('dues_change', {'월':parseInt(mo.split('-')[1]),'상태':st==='paid'?'납부':'미납'}); queuePush(mid, t.title, t.body, './member.html#dues'); }
+      else if (mid !== getMe()) { const t = await pushTpl('dues_change', {'월':parseInt(mo.split('-')[1]),'상태':st==='paid'?'입금':'미납'}); queuePush(mid, t.title, t.body, './member.html#dues'); }
     }
   }
   // 휴면: 팀빌더 명단에 해당 월 등록(roster에 쓰면 mergeTbMembers가 덮어쓰므로 팀빌더가 단일 출처)

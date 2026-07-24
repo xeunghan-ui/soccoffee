@@ -70,6 +70,7 @@ const TPL = {
   dues_urge:   { title:'회비 마감 임박', body:'{월}월 회비가 내일(25일) 마감돼요. 아직 미납 상태예요!' },
   dorm_ask:    { title:'{월}월엔 복귀하시나요?', body:"복귀하려면 홈에서 '활동'을, 계속 쉬려면 '휴면'을 눌러 주세요. 그대로 두면 휴면이 유지돼요." },
   winner:      { title:'축하합니다!', body:'{월}월 {부문}에 선정됐어요!' },
+  vote_close:  { title:'{월}월 투표 마감 임박', body:'투표가 오늘 밤 마감돼요. 아직 참여 전이에요!' },
   results_open: { title:'{월}월 투표 결과 공개', body:'{월}월 이달의 선수·성장상 결과가 공개됐어요. 확인해 보세요!' },
 };
 let TPL_OV = {};
@@ -121,32 +122,11 @@ async function main() {
       if (n.publish_at && new Date(n.publish_at) > new Date()) continue;
       st.noticeIds.push(String(n.id));
       if (firstRun) continue;
-      msgs.push({ cat:'news', ...T('notice', {'제목': n.title}), url: './member.html#home' });
+      msgs.push({ ...T('notice', {'제목': n.title}), url: './member.html#home' });
     }
-    // ③ 새 카풀 (다가오는 것만)
-    const rides = await j(await rest('rides?select=id,driver,place,dest,ride_date,ride_time,riders,created_at&order=created_at.desc&limit=20')) || [];
-    // 이름→멤버 id (탑승자·드라이버는 이름만 저장됨)
-    const nameToId = {}; for (const p of players) nameToId[String(p.name || '').trim()] = p.id;
-    // 그 날짜에 이미 카풀 좌석이 있거나 드라이버인 멤버 id 집합 (새 카풀 알림 제외 대상)
-    const committedOn = (dateStr) => {
-      const ids = new Set();
-      for (const rr of rides) {
-        if ((rr.ride_date || '') !== dateStr) continue;
-        const dId = nameToId[String(rr.driver || '').trim()]; if (dId != null) ids.add(dId);
-        for (const rd of (rr.riders || [])) { const id = nameToId[String(rd.name || '').trim()]; if (id != null) ids.add(id); }
-      }
-      return ids;
-    };
-    for (const r of rides) {
-      if (st.rideIds.includes(String(r.id))) continue;
-      if (new Date(r.created_at) < new Date(Date.now() - 48 * 3600e3)) { st.rideIds.push(String(r.id)); continue; }
-      st.rideIds.push(String(r.id));
-      if (firstRun) continue;
-      if (r.ride_date && r.ride_date < today) continue;
-      let tg = idsFor(players, monthOf(r.ride_date || today), false, thisMonth);
-      if (tg) { const done = committedOn(r.ride_date || today); tg = tg.filter(id => !done.has(id)); }   // 이미 그날 카풀 신청/운전한 사람 제외
-      msgs.push({ cat:'ride', ...T('ride', {'운전자': r.driver, '날짜': mdLabel(r.ride_date), '시간': r.ride_time || '', '출발지': r.place || '', '도착지': r.dest || ''}), url: './member.html#list', targets: tg });
-    }
+    // ③ 새 카풀 — 전체 푸시 제거(2026-07-24 결정). 드라이버 개인 알림(push_queue)만 유지, 알림함에는 계속 표시
+    const rides = await j(await rest('rides?select=id,created_at&order=created_at.desc&limit=10')) || [];
+    for (const r of rides) { if (!st.rideIds.includes(String(r.id))) st.rideIds.push(String(r.id)); }
     // ④ 새 세션 일정 (지난 세션 제외)
     for (const s of sessions) {
       const sid = String(s.id || s.date);
@@ -188,6 +168,13 @@ async function main() {
         const dmStart = `${nm === 1 ? Number(thisMonth.slice(0,4))+1 : thisMonth.slice(0,4)}-${String(nm).padStart(2,'0')}`;
         msgs.push({ cat:'dues_open', legacy:'dues', ...T('dues_open', {'월': nm}), url: './member.html#dues', targets: idsFor(players, dmStart, false, thisMonth) });
       }
+      // ⑪ 투표 마감 임박 (말일) — 미투표자 타겟
+      if (monthOf(kstDate(1)) !== thisMonth && once('vote-close-' + thisMonth)) {   // 내일이 다음 달 = 오늘이 말일
+        const vts = await j(await rest(`potm_votes?select=voter_id&month=eq.${thisMonth}`)) || [];
+        const votedIds = new Set(vts.map(v => v.voter_id));
+        const notVoted = activeFor(players, thisMonth, thisMonth).filter(p => !votedIds.has(p.id)).map(p => p.id);
+        if (notVoted.length) msgs.push({ cat:'vote_close', legacy:'vote', ...T('vote_close', {'월': Number(thisMonth.slice(5, 7))}), url: './member.html#potm', targets: notVoted });
+      }
       // ⑨ 휴면 멤버 복귀 확인 (15일 — 다음 달 상태 선택이 열리는 날)
       if (dom === 15 && once('dorm-ask-' + thisMonth)) {
         const nm2 = Number(thisMonth.slice(5, 7)) % 12 + 1;
@@ -219,7 +206,7 @@ async function main() {
         const dues = await j(await rest(`dues?select=member_id,paid&month=eq.${dm}`)) || [];
         const paid = new Set(dues.filter(d => d.paid).map(d => d.member_id));
         const unpaid = activeFor(players, dm, thisMonth).filter(p => !paid.has(p.id)).map(p => p.id);
-        if (unpaid.length) msgs.push({ ...T('dues_urge', {'월': Number(dm.slice(5, 7))}), url: './member.html#dues', targets: unpaid });
+        if (unpaid.length) msgs.push({ cat:'dues_urge', legacy:'dues', ...T('dues_urge', {'월': Number(dm.slice(5, 7))}), url: './member.html#dues', targets: unpaid });
       }
     }
     st.noticeIds = st.noticeIds.slice(-100); st.rideIds = st.rideIds.slice(-50);

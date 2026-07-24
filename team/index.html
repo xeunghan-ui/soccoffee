@@ -400,6 +400,7 @@ body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; b
   <button class="tab-btn" id="tbtn-monthly" onclick="switchTab('monthly')"><span class="tab-icon">📅</span><span class="tab-label">월별 현황</span></button>
   <button class="tab-btn" id="tbtn-supplies" onclick="switchTab('supplies')"><span class="tab-icon">🛒</span><span class="tab-label">물품</span></button>
   <button class="tab-btn" id="tbtn-fee" onclick="switchTab('fee')"><span class="tab-icon">💰</span><span class="tab-label">회비</span></button>
+  <button class="tab-btn" id="tbtn-push" onclick="switchTab('push')"><span class="tab-icon">✎</span><span class="tab-label">푸시 문구</span></button>
 </div>
 
 <div class="main">
@@ -662,6 +663,10 @@ body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; b
 <!-- ══════════════ TAB: 회비 ══════════════ -->
 <div id="tab-fee" style="display:none;padding:14px">
   <div id="feeContent"></div>
+</div>
+
+<div id="tab-push" style="display:none;padding:14px">
+  <div id="pushTplContent"></div>
 </div>
 
 <div id="tab-matches" style="display:none;padding:14px">
@@ -1132,7 +1137,7 @@ function showToast(msg){
 }
 
 /* ─ Tab ─ */
-const ALL_TABS=['players','attendance','teams','matches','tier','monthly','ranking','supplies','fee'];
+const ALL_TABS=['players','attendance','teams','matches','tier','monthly','ranking','supplies','fee','push'];
 const TAB_GROUPS={
   '선수':['players','tier','ranking'],
   '경기':['attendance','teams','matches','monthly'],
@@ -1172,6 +1177,7 @@ function switchTab(tab){
   if(tab==='monthly'){ renderMonthlyStatus(); }
   if(tab==='ranking'){ renderRanking(); }
   if(tab==='supplies'){ renderSupplies(); }
+  if(tab==='push'){ renderPushTpl(); }
   if(tab==='fee'){
     const fc=document.getElementById('feeContent');
     if(fc && !feeLoaded) fc.innerHTML='<div style="text-align:center;color:#94a3b8;padding:30px">회비 불러오는 중…</div>';
@@ -4840,6 +4846,76 @@ function tbGateCheck(){
 }
 if(localStorage.getItem(TB_GATE_KEY)==='1'){ tbOpen(); }
 else{ const i=document.getElementById('tbGateInput'); if(i) i.focus(); }
+
+/* ─ 푸시 문구 편집 ─ 멤버앱 알림 문구를 club_settings(id='current').pushTemplates에 저장.
+   비우면 기본 문구. 발송은 GitHub Actions(scripts/send-push.mjs)와 멤버앱 개인 알림이 읽음. */
+const PUSH_TPL_DEFS = {
+  notice:       { name:'새 공지 (항상 발송)',            vars:'{제목}',                 title:'새 공지', body:'{제목}' },
+  session_new:  { name:'세션 추가',                      vars:'{날짜} {시간} {장소}',    title:'새 세션 일정', body:'{날짜} {시간} {장소} — 참석 체크해 주세요' },
+  tomorrow:     { name:'내일 세션 (참석 응답자·항상)',    vars:'{날짜} {시간} {장소}',    title:'내일 세션', body:'{날짜} {시간} {장소} — 내일이에요!' },
+  deadline:     { name:'참석 마감 임박 (미응답·항상)',    vars:'{날짜}',                 title:'참석 마감 임박', body:'{날짜} 세션 참석 응답이 내일 마감돼요. 참석/불참을 정해 주세요!' },
+  vote:         { name:'투표 시작 (25일)',               vars:'',                       title:'이달의 선수 투표 시작', body:'이번 달 MVP와 성장상을 뽑아 주세요!' },
+  vote_close:   { name:'투표 마감 (말일·미투표)',         vars:'{월}',                   title:'{월}월 투표 마감 임박', body:'투표가 오늘 밤 마감돼요. 아직 참여 전이에요!' },
+  results_open: { name:'투표 결과 공개 (1일·투표자)',     vars:'{월}',                   title:'{월}월 투표 결과 공개', body:'{월}월 이달의 선수·성장상 결과가 공개됐어요. 확인해 보세요!' },
+  winner:       { name:'투표 선정 축하 (1일·수상자)',     vars:'{월} {부문}',             title:'축하합니다!', body:'{월}월 {부문}에 선정됐어요!' },
+  dues_open:    { name:'회비 납부 시작 (15일)',          vars:'{월}',                   title:'회비 안내', body:'{월}월 회비 납부가 시작됐어요. 25일까지 입금 부탁드려요!' },
+  dues_urge:    { name:'회비 납부 마감 (24일·미납)',      vars:'{월}',                   title:'회비 마감 임박', body:'{월}월 회비가 내일(25일) 마감돼요. 아직 미납 상태예요!' },
+  dorm_ask:     { name:'휴면 복귀 확인 (15일·휴면)',      vars:'{월}',                   title:'{월}월엔 복귀하시나요?', body:"복귀하려면 홈에서 '활동'을, 계속 쉬려면 '휴면'을 눌러 주세요. 그대로 두면 휴면이 유지돼요." },
+  dues_confirm: { name:'입금 확인 (개인)',               vars:'{월}',                   title:'입금 확인', body:'{월}월 회비 입금이 확인됐어요. 감사합니다!' },
+  att_change:   { name:'참석 상태 변경 (개인)',           vars:'{세션} {상태}',           title:'참석 상태 변경', body:"운영진이 {세션} 참석 상태를 '{상태}'(으)로 변경했어요." },
+  dues_change:  { name:'회비 상태 변경 (개인)',           vars:'{월} {상태}',             title:'회비 상태 변경', body:"운영진이 {월}월 회비를 '{상태}'(으)로 변경했어요." },
+  vote_done:    { name:'투표 완료 (개인)',               vars:'{월}',                   title:'투표 완료', body:'{월}월 투표가 접수됐어요. 참여 감사합니다!' },
+};
+function _esc2(x){ return String(x==null?'':x).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/"/g,'&quot;'); }
+async function renderPushTpl(){
+  const el=document.getElementById('pushTplContent');
+  if(!tbSb){ el.innerHTML='<p style="color:#718096">클라우드 연결이 없어요.</p>'; return; }
+  el.innerHTML='<p style="color:#718096">불러오는 중...</p>';
+  let ov={};
+  try{ const {data:row}=await tbSb.from('club_settings').select('data').eq('id','current').maybeSingle(); ov=(row&&row.data&&row.data.pushTemplates)||{}; }catch(e){}
+  const box=(k,d)=>{
+    const o=ov[k]||{};
+    const mod=(o.title||o.body)?' <span style="font-size:10px;font-weight:800;background:#d69e2e;color:#fff;border-radius:5px;padding:1px 6px;vertical-align:middle">수정됨</span>':'';
+    return `<div style="border:1px solid #e2e8f0;border-radius:12px;padding:12px 14px;margin-bottom:10px;background:#fff">
+      <div style="font-size:14px;font-weight:800;color:#1a202c">${d.name}${mod}</div>
+      ${d.vars?`<div style="font-size:11px;color:#718096;margin:1px 0 8px">치환: ${_esc2(d.vars)}</div>`:'<div style="height:6px"></div>'}
+      <input id="ptt-${k}" placeholder="${_esc2(d.title)}" value="${_esc2(o.title||'')}" maxlength="60" style="width:100%;box-sizing:border-box;padding:9px 11px;border:1px solid #e2e8f0;border-radius:8px;font-size:14px;margin-bottom:6px">
+      <textarea id="ptb-${k}" rows="2" placeholder="${_esc2(d.body)}" maxlength="300" style="width:100%;box-sizing:border-box;padding:9px 11px;border:1px solid #e2e8f0;border-radius:8px;font-size:14px;font-family:inherit">${_esc2(o.body||'')}</textarea>
+    </div>`;
+  };
+  el.innerHTML = `<div style="max-width:640px;margin:0 auto">
+    <p style="font-size:13px;color:#4a5568;line-height:1.6;margin:4px 0 14px">멤버앱 푸시 알림 문구예요. <b>{중괄호}</b>는 발송 때 실제 값으로 바뀌고, 비워두면 아래 회색 기본 문구가 쓰여요. 저장 후 다음 발송부터 적용.</p>
+    ${Object.entries(PUSH_TPL_DEFS).map(([k,d])=>box(k,d)).join('')}
+    <div style="display:flex;gap:8px;margin:14px 0 30px">
+      <button onclick="savePushTpl()" style="flex:1;padding:12px;border:none;border-radius:10px;background:#2b6cb0;color:#fff;font-size:15px;font-weight:800;cursor:pointer">문구 저장</button>
+      <button onclick="resetPushTpl()" style="padding:12px 16px;border:1px solid #e2e8f0;border-radius:10px;background:#fff;color:#e53e3e;font-size:14px;font-weight:700;cursor:pointer">전부 기본값</button>
+    </div></div>`;
+}
+async function _savePushTplData(out){
+  // 저장 직전 최신값 재조회 후 병합 (전체 덮어쓰기 금지 규칙)
+  const {data:row}=await tbSb.from('club_settings').select('data').eq('id','current').maybeSingle();
+  const cur=(row&&row.data)||{};
+  const next=Object.assign({},cur,{pushTemplates:out});
+  const {error}=await tbSb.from('club_settings').upsert({id:'current',data:next,updated_at:new Date().toISOString()});
+  return !error;
+}
+async function savePushTpl(){
+  if(!tbSb) return;
+  const out={};
+  Object.keys(PUSH_TPL_DEFS).forEach(k=>{
+    const t=(document.getElementById('ptt-'+k)||{value:''}).value.trim();
+    const b=(document.getElementById('ptb-'+k)||{value:''}).value.trim();
+    if(t||b) out[k]=Object.assign({},t?{title:t}:{},b?{body:b}:{});
+  });
+  if(await _savePushTplData(out)){ alert('문구를 저장했어요. 다음 발송부터 적용돼요.'); renderPushTpl(); }
+  else alert('저장 중 오류가 났어요.');
+}
+async function resetPushTpl(){
+  if(!tbSb || !confirm('모든 푸시 문구를 기본값으로 되돌릴까요?')) return;
+  if(await _savePushTplData({})){ alert('기본 문구로 되돌렸어요.'); renderPushTpl(); }
+  else alert('저장 중 오류가 났어요.');
+}
+
 </script>
 </body>
 </html>

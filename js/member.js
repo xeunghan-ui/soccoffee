@@ -1472,7 +1472,9 @@ async function enablePush(){
   catch(e){ toast('알림 등록에 실패했어요: '+e.message); return; }
   const me = getMe(); const mp = PLAYERS.find(x=>x.id===me);
   try {
-    const { error } = await sb.from('push_subs').upsert({ endpoint: sub.endpoint, data: sub.toJSON(), member_id: me||null, member_name: mp?mp.name:null }, { onConflict:'endpoint' });
+    const row = { endpoint: sub.endpoint, data: sub.toJSON(), member_id: me||null, member_name: mp?mp.name:null };
+    try { const prev = me ? await getPushPrefs() : null; if (prev && Object.keys(prev).length) row.prefs = prev; } catch(e){}   // 다른 기기에서 정한 계정 설정 승계
+    const { error } = await sb.from('push_subs').upsert(row, { onConflict:'endpoint' });
     if (error) { toast('저장 오류: '+error.message); return; }
   } catch(e){ toast('저장 중 오류가 났어요'); return; }
   toast('알림을 켰어요! 공지·세션 소식을 보내드릴게요.');
@@ -1645,22 +1647,30 @@ const PUSH_CATS = [
   ['vote_close',  '투표 마감',        '말일 · 미투표일 때'],
   // 새 공지·내일 세션·참석 마감·개인·수동 알림은 항상 발송. 카풀 전체 푸시는 제거(드라이버 개인 알림만)
 ];
-async function setPushPref(cat, on){
+async function setPushPref(cat, on){   // 계정(멤버) 기준 — 같은 멤버의 모든 기기 구독에 반영
   const sub = await getPushSub();
   if (!sub) return;
+  const me = getMe();
   try {
-    const { data } = await sb.from('push_subs').select('prefs').eq('endpoint', sub.endpoint).maybeSingle();
-    const prefs = Object.assign({}, (data && data.prefs) || {});
+    const prefs = Object.assign({}, await getPushPrefs());
     prefs[cat] = !!on;
-    await sb.from('push_subs').update({ prefs }).eq('endpoint', sub.endpoint);
+    if (me) await sb.from('push_subs').update({ prefs }).eq('member_id', me);
+    await sb.from('push_subs').update({ prefs }).eq('endpoint', sub.endpoint);   // member_id 없는 옛 구독 대비
     toast(on ? '알림을 켰어요' : '이 종류 알림을 껐어요');
   } catch(e){ toast('저장 중 오류가 났어요'); }
 }
-async function getPushPrefs(){
-  const sub = await getPushSub();
-  if (!sub) return {};
-  try { const { data } = await sb.from('push_subs').select('prefs').eq('endpoint', sub.endpoint).maybeSingle(); return (data && data.prefs) || {}; }
-  catch(e){ return {}; }
+async function getPushPrefs(){   // 계정 기준 병합 조회 — 어느 기기에서 봐도 같은 설정
+  const me = getMe();
+  try {
+    if (me) {
+      const { data } = await sb.from('push_subs').select('prefs').eq('member_id', me);
+      return (data || []).reduce((a, r) => Object.assign(a, r.prefs || {}), {});
+    }
+    const sub = await getPushSub();
+    if (!sub) return {};
+    const { data } = await sb.from('push_subs').select('prefs').eq('endpoint', sub.endpoint).maybeSingle();
+    return (data && data.prefs) || {};
+  } catch(e){ return {}; }
 }
 async function disablePush(){
   const sub = await getPushSub();

@@ -83,6 +83,10 @@ const T = (key, vars) => {
 async function main() {
   const subs = await j(await rest('push_subs?select=endpoint,data,member_id,prefs'));
   if (!Array.isArray(subs) || !subs.length) { console.log('구독자 없음 — 종료'); return; }
+  // 알림 설정은 계정(멤버) 기준 — 같은 멤버의 구독들에서 prefs를 병합해 모든 기기에 동일 적용
+  const memberPrefs = {};
+  for (const s of subs) if (s.member_id && s.prefs) memberPrefs[s.member_id] = Object.assign(memberPrefs[s.member_id] || {}, s.prefs);
+  const prefFor = s => (s.member_id && memberPrefs[s.member_id]) || s.prefs || null;
 
   const stRow = await j(await rest('club_settings?select=data&id=eq.push_state'));
   const firstRun = !(stRow && stRow[0] && stRow[0].data);   // 최초 실행: 기존 콘텐츠는 기록만 하고 알리지 않음
@@ -226,7 +230,7 @@ async function main() {
       if (tset === 'ACTIVE') tset = activeFor(players, thisMonth, thisMonth).map(p => p.id);
       else if (tset === 'DORMANT') tset = dormantFor(players, thisMonth, thisMonth).map(p => p.id);
       let to = tset ? subs.filter(s => tset.includes(s.member_id)) : subs;
-      if (m.cat) to = to.filter(s => !s.prefs || (s.prefs[m.cat] !== false && (!m.legacy || s.prefs[m.legacy] !== false)));   // 멤버가 끈 항목 제외(옛 카테고리 설정도 존중)
+      if (m.cat) to = to.filter(s => { const p = prefFor(s); return !p || (p[m.cat] !== false && (!m.legacy || p[m.legacy] !== false)); });   // 멤버가 끈 항목 제외(옛 카테고리 설정도 존중)
       console.log('-', m.title, '→', m.targets ? `타겟 ${to.length}명` : `전체 ${to.length}명`);
       for (const s of to) {
         try { await webpush.sendNotification(s.data, JSON.stringify({ title: m.title, body: m.body, url: m.url })); }

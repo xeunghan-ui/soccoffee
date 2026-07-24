@@ -60,16 +60,16 @@ function idsFor(players, m, allowAll, curM) {
 
 // 문구 템플릿 — 기본값 (운영진 탭 '푸시'에서 수정 시 club_settings.pushTemplates가 우선)
 const TPL = {
-  notice:      { title:'📣 새 공지', body:'{제목}' },
-  ride:        { title:'🚗 새 카풀', body:'{운전자}님 · {날짜} {시간} {출발지} → {도착지}' },
-  session_new: { title:'📅 새 세션 일정', body:'{날짜} {시간} {장소} — 참석 체크해 주세요' },
-  tomorrow:    { title:'⚽ 내일 세션', body:'{날짜} {시간} {장소} — 내일이에요!' },
-  deadline:    { title:'⏰ 참석 마감 임박', body:'{날짜} 세션 참석 응답이 내일 마감돼요. 참석/불참을 정해 주세요!' },
-  vote:        { title:'🗳️ 이달의 선수 투표 시작', body:'이번 달 MVP와 성장상을 뽑아 주세요!' },
-  dues_open:   { title:'💰 회비 안내', body:'{월}월 회비 납부가 시작됐어요. 25일까지 입금 부탁드려요!' },
-  dues_urge:   { title:'💸 회비 마감 임박', body:'{월}월 회비가 내일(25일) 마감돼요. 아직 미납 상태예요!' },
-  dorm_ask:    { title:'🌙 {월}월엔 복귀하시나요?', body:"복귀하려면 홈에서 '활동'을, 계속 쉬려면 '휴면'을 눌러 주세요. 그대로 두면 휴면이 유지돼요." },
-  winner:      { title:'🏆 축하합니다!', body:'{월}월 {부문}에 선정됐어요! 🎉' },
+  notice:      { title:'새 공지', body:'{제목}' },
+  ride:        { title:'새 카풀', body:'{운전자}님 · {날짜} {시간} {출발지} → {도착지}' },
+  session_new: { title:'새 세션 일정', body:'{날짜} {시간} {장소} — 참석 체크해 주세요' },
+  tomorrow:    { title:'내일 세션', body:'{날짜} {시간} {장소} — 내일이에요!' },
+  deadline:    { title:'참석 마감 임박', body:'{날짜} 세션 참석 응답이 내일 마감돼요. 참석/불참을 정해 주세요!' },
+  vote:        { title:'이달의 선수 투표 시작', body:'이번 달 MVP와 성장상을 뽑아 주세요!' },
+  dues_open:   { title:'회비 안내', body:'{월}월 회비 납부가 시작됐어요. 25일까지 입금 부탁드려요!' },
+  dues_urge:   { title:'회비 마감 임박', body:'{월}월 회비가 내일(25일) 마감돼요. 아직 미납 상태예요!' },
+  dorm_ask:    { title:'{월}월엔 복귀하시나요?', body:"복귀하려면 홈에서 '활동'을, 계속 쉬려면 '휴면'을 눌러 주세요. 그대로 두면 휴면이 유지돼요." },
+  winner:      { title:'축하합니다!', body:'{월}월 {부문}에 선정됐어요!' },
 };
 let TPL_OV = {};
 const fill = (t, v) => { let r = t; for (const k in (v || {})) r = r.split('{' + k + '}').join(v[k]); return r; };

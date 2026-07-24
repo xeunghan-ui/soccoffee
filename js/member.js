@@ -101,8 +101,8 @@ const MEMBER_ROLES = {
 };
 // 멤버 프로필 — club_settings.current.profiles[memberId] = { pos, tags[], bio }
 const PROFILE_POS = ['공격','미드필더','수비','키퍼','올라운더'];
-const PROFILE_TAGS = ['스피드','피지컬','패스','슛','드리블','수비력','활동량','왼발'];   // 강점
-const PROFILE_WEAKS = ['체력','스피드','슛 정확도','수비','왼발','오른발','멘탈','지각'];   // 약점(최대 1개, 유머 환영)
+const PROFILE_TAGS = ['스피드','피지컬','패스','슛','드리블','수비력','활동량','왼발','골 결정력','위치 선정','시야','세트피스','헤더','커버 플레이','리더십','분위기 메이커','침착함','투지'];   // 강점
+const PROFILE_WEAKS = ['체력','스피드','슛 정확도','수비','왼발','오른발','멘탈','지각','헛발질','몸싸움','방향감각','백패스 본능','유리몸','집중력','숙취','새가슴'];   // 약점(최대 1개, 유머 환영)
 async function getProfile(id){ const s = await fetchSettings(); return ((s.profiles||{})[id]) || null; }
 async function saveProfile(id, pf){
   const s = await fetchSettings();
@@ -115,8 +115,8 @@ function profileChipsHtml(pf, small){
   const cls = 'pf-chip' + (small ? ' sm' : '');
   const chips = [
     pf.pos ? `<span class="${cls} pos">${esc(pf.pos)}</span>` : '',
-    ...(pf.tags||[]).map(t=>`<span class="${cls}">💪 ${esc(t)}</span>`),
-    ...(pf.weaks||[]).map(t=>`<span class="${cls} weak">😅 ${esc(t)}</span>`)
+    ...(pf.tags||[]).map(t=>`<span class="${cls}">${esc(t)}</span>`),
+    ...(pf.weaks||[]).map(t=>`<span class="${cls} weak" title="약점">${esc(t)}</span>`)
   ].filter(Boolean).join('');
   return chips ? `<div class="pf-chips">${chips}</div>` : '';
 }
@@ -458,7 +458,7 @@ async function applyRide(id) {
     const _r = (await fetchRides()).find(x => String(x.id) === String(id));
     if (_r) {
       const full = (_r.riders||[]).length >= _r.seats;
-      await notifyDriver(_r, '🚗 카풀 신청', `${name}님이 {일시} 카풀에 탑승 신청했어요. (${(_r.riders||[]).length}/${_r.seats})${full ? ' — 만석!' : ''}`);
+      await notifyDriver(_r, '카풀 신청', `${name}님이 {일시} 카풀에 탑승 신청했어요. (${(_r.riders||[]).length}/${_r.seats})${full ? ' — 만석!' : ''}`);
     }
   } catch(e){}
   await rerender(render);
@@ -478,7 +478,7 @@ async function cancelSeat(rideId, index, own) {
   if (!ok) return;
   if (target && target.rid) removeMyApp(target.rid);
   try {
-    if (own) await notifyDriver(r, '🚗 카풀 취소', `${target ? target.name : '탑승자'}님이 {일시} 카풀 탑승을 취소했어요. (${Math.max(0,(r.riders||[]).length-1)}/${r.seats})`);
+    if (own) await notifyDriver(r, '카풀 취소', `${target ? target.name : '탑승자'}님이 {일시} 카풀 탑승을 취소했어요. (${Math.max(0,(r.riders||[]).length-1)}/${r.seats})`);
   } catch(e){}
   await rerender(render);
   toast(admin && !own ? '탑승자를 뺐어요' : '탑승을 취소했어요');
@@ -963,7 +963,7 @@ async function renderPotm() {
     const adminP = isAdmin();
     el.innerHTML = `
       <div class="potm-hero">
-        <span class="trophy">🏆</span>
+        
         <h2>지난 투표 결과</h2>
         <div class="month">${potmMonthLabel(pMonth)} · 참여 ${pMvp.length}명</div>
         <div class="turnout">${parseInt(month.slice(5))}월 투표는 <b>25일</b>부터 열려요</div>
@@ -1419,20 +1419,20 @@ async function enablePush(){
 }
 // 푸시 문구 템플릿 — 기본값. 운영진 탭 '푸시'에서 수정하면 club_settings.pushTemplates에 저장되어 우선 적용
 const PUSH_TPL_DEFAULTS = {
-  notice:       { name:'새 공지',            vars:'{제목}',                         title:'📣 새 공지', body:'{제목}' },
-  ride:         { name:'새 카풀',            vars:'{운전자} {날짜} {시간} {출발지} {도착지}', title:'🚗 새 카풀', body:'{운전자}님 · {날짜} {시간} {출발지} → {도착지}' },
-  session_new:  { name:'새 세션 일정',       vars:'{날짜} {시간} {장소}',            title:'📅 새 세션 일정', body:'{날짜} {시간} {장소} — 참석 체크해 주세요' },
-  tomorrow:     { name:'내일 세션 리마인드(참석 응답자)', vars:'{날짜} {시간} {장소}',            title:'⚽ 내일 세션', body:'{날짜} {시간} {장소} — 내일이에요!' },
-  deadline:     { name:'참석 마감 임박(미응답·미정)', vars:'{날짜}',                 title:'⏰ 참석 마감 임박', body:'{날짜} 세션 참석 응답이 내일 마감돼요. 참석/불참을 정해 주세요!' },
-  vote:         { name:'투표 시작(25일)',    vars:'',                               title:'🗳️ 이달의 선수 투표 시작', body:'이번 달 MVP와 성장상을 뽑아 주세요!' },
-  dues_open:    { name:'회비 시작(15일)',    vars:'{월}',                           title:'💰 회비 안내', body:'{월}월 회비 납부가 시작됐어요. 25일까지 입금 부탁드려요!' },
-  dues_urge:    { name:'회비 마감 임박(미납·24일)', vars:'{월}',                     title:'💸 회비 마감 임박', body:'{월}월 회비가 내일(25일) 마감돼요. 아직 미납 상태예요!' },
-  dorm_ask:     { name:'휴면 복귀 확인(15일)', vars:'{월}',                          title:'🌙 {월}월엔 복귀하시나요?', body:"복귀하려면 홈에서 '활동'을, 계속 쉬려면 '휴면'을 눌러 주세요. 그대로 두면 휴면이 유지돼요." },
-  dues_confirm: { name:'입금 확인(개인)',    vars:'{월}',                           title:'✅ 입금 확인', body:'{월}월 회비 입금이 확인됐어요. 감사합니다!' },
-  att_change:   { name:'참석 상태 변경(개인)', vars:'{세션} {상태}',                 title:'📋 참석 상태 변경', body:"운영진이 {세션} 참석 상태를 '{상태}'(으)로 변경했어요." },
-  dues_change:  { name:'회비 상태 변경(개인)', vars:'{월} {상태}',                   title:'💰 회비 상태 변경', body:"운영진이 {월}월 회비를 '{상태}'(으)로 변경했어요." },
-  vote_done:    { name:'투표 완료(개인)',      vars:'{월}',                           title:'🗳️ 투표 완료', body:'{월}월 투표가 접수됐어요. 참여 감사합니다!' },
-  winner:       { name:'투표 선정(개인)',      vars:'{월} {부문}',                     title:'🏆 축하합니다!', body:'{월}월 {부문}에 선정됐어요! 🎉' },
+  notice:       { name:'새 공지',            vars:'{제목}',                         title:'새 공지', body:'{제목}' },
+  ride:         { name:'새 카풀',            vars:'{운전자} {날짜} {시간} {출발지} {도착지}', title:'새 카풀', body:'{운전자}님 · {날짜} {시간} {출발지} → {도착지}' },
+  session_new:  { name:'새 세션 일정',       vars:'{날짜} {시간} {장소}',            title:'새 세션 일정', body:'{날짜} {시간} {장소} — 참석 체크해 주세요' },
+  tomorrow:     { name:'내일 세션 리마인드(참석 응답자)', vars:'{날짜} {시간} {장소}',            title:'내일 세션', body:'{날짜} {시간} {장소} — 내일이에요!' },
+  deadline:     { name:'참석 마감 임박(미응답·미정)', vars:'{날짜}',                 title:'참석 마감 임박', body:'{날짜} 세션 참석 응답이 내일 마감돼요. 참석/불참을 정해 주세요!' },
+  vote:         { name:'투표 시작(25일)',    vars:'',                               title:'이달의 선수 투표 시작', body:'이번 달 MVP와 성장상을 뽑아 주세요!' },
+  dues_open:    { name:'회비 시작(15일)',    vars:'{월}',                           title:'회비 안내', body:'{월}월 회비 납부가 시작됐어요. 25일까지 입금 부탁드려요!' },
+  dues_urge:    { name:'회비 마감 임박(미납·24일)', vars:'{월}',                     title:'회비 마감 임박', body:'{월}월 회비가 내일(25일) 마감돼요. 아직 미납 상태예요!' },
+  dorm_ask:     { name:'휴면 복귀 확인(15일)', vars:'{월}',                          title:'{월}월엔 복귀하시나요?', body:"복귀하려면 홈에서 '활동'을, 계속 쉬려면 '휴면'을 눌러 주세요. 그대로 두면 휴면이 유지돼요." },
+  dues_confirm: { name:'입금 확인(개인)',    vars:'{월}',                           title:'입금 확인', body:'{월}월 회비 입금이 확인됐어요. 감사합니다!' },
+  att_change:   { name:'참석 상태 변경(개인)', vars:'{세션} {상태}',                 title:'참석 상태 변경', body:"운영진이 {세션} 참석 상태를 '{상태}'(으)로 변경했어요." },
+  dues_change:  { name:'회비 상태 변경(개인)', vars:'{월} {상태}',                   title:'회비 상태 변경', body:"운영진이 {월}월 회비를 '{상태}'(으)로 변경했어요." },
+  vote_done:    { name:'투표 완료(개인)',      vars:'{월}',                           title:'투표 완료', body:'{월}월 투표가 접수됐어요. 참여 감사합니다!' },
+  winner:       { name:'투표 선정(개인)',      vars:'{월} {부문}',                     title:'축하합니다!', body:'{월}월 {부문}에 선정됐어요!' },
 };
 function pushTplFill(t, vars){ let r=t; for(const k in (vars||{})) r=r.split('{'+k+'}').join(vars[k]); return r; }
 async function pushTpl(key, vars){
@@ -1477,13 +1477,13 @@ async function toggleBell(){
   try {
     const on = PUSH_SUPPORTED && !!(await getPushSub()) && Notification.permission === 'granted';
     pushLine = on
-      ? `<div class="bp-d" style="margin:0 0 4px">🔔 푸시 알림 켜짐 — 새 소식을 폰으로 받아요</div>`
-      : `<button class="bp-row" style="border-top:none;padding-top:2px" onclick="document.getElementById('bellPanel').classList.add('hidden');enablePush()"><span class="bp-t" style="color:var(--accent)">🔕 푸시 알림이 꺼져 있어요 — 켜기 →</span></button>`;
+      ? `<div class="bp-d" style="margin:0 0 4px">푸시 알림 켜짐 — 새 소식을 폰으로 받아요</div>`
+      : `<button class="bp-row" style="border-top:none;padding-top:2px" onclick="document.getElementById('bellPanel').classList.add('hidden');enablePush()"><span class="bp-t" style="color:var(--accent)">푸시 알림이 꺼져 있어요 — 켜기 →</span></button>`;
   } catch(e){}
   p.innerHTML = `<div class="bp-h"><span class="bp-title">알림</span><button class="admin-link" onclick="document.getElementById('bellPanel').classList.add('hidden')">닫기</button></div>
     ${pushLine}
     ${ns.length ? ns.map(n => `<button class="bp-row" onclick="document.getElementById('bellPanel').classList.add('hidden');noticeGo('${esc(String(n.link||''))}' , '${n.id}')">
-        <span class="bp-t">${(n.created_at||'') > seen ? '<span class="new"></span>' : ''}${n.pinned ? '📌 ' : ''}${esc(n.title)}</span>
+        <span class="bp-t">${(n.created_at||'') > seen ? '<span class="new"></span>' : ''}${n.pinned ? '<span class="pin-tag">고정</span> ' : ''}${esc(n.title)}</span>
         <span class="bp-d">${noticeWhenLabel(n)}</span>
       </button>`).join('') : '<div class="bp-empty">등록된 공지가 없어요.</div>'}`;
   if (ns.length && ns[0].created_at) localStorage.setItem(BELL_SEEN_KEY, ns[0].created_at);
@@ -1829,7 +1829,7 @@ async function renderHome() {
     const myYes = sessions.filter(s => myStatusOf(s.id) === 'yes');
     // ── 묶음 ① 신원·스킬 / ② 현황(상태·참석예정·미확정) ──
     const statusHtml = `${confirmPhase
-        ? `${dormStatus ? `<div style="font-size:12px;color:var(--muted);line-height:1.6;margin-bottom:6px">🌙 <b style="color:#ece6d2">${moNum}월엔 복귀하시나요?</b> 복귀하면 '활동', 계속 쉬면 '휴면'을 눌러 주세요.</div>` : ''}<div class="pc-stat"><span class="lbl">${moNum}월</span><span class="act-toggle"><button class="${!dormStatus?'on':''}" onclick="setMyDormancy(${me},'${dMonth}',false)">활동</button><button class="${dormStatus?'on':''}" onclick="setMyDormancy(${me},'${dMonth}',true)">휴면</button></span></div>`
+        ? `${dormStatus ? `<div style="font-size:12px;color:var(--muted);line-height:1.6;margin-bottom:6px"><b style="color:#ece6d2">${moNum}월엔 복귀하시나요?</b> 복귀하면 '활동', 계속 쉬면 '휴면'을 눌러 주세요.</div>` : ''}<div class="pc-stat"><span class="lbl">${moNum}월</span><span class="act-toggle"><button class="${!dormStatus?'on':''}" onclick="setMyDormancy(${me},'${dMonth}',false)">활동</button><button class="${dormStatus?'on':''}" onclick="setMyDormancy(${me},'${dMonth}',true)">휴면</button></span></div>`
         : `<div class="pc-stat"><span class="lbl">${moNum}월</span><span class="pc-badge ${dormStatus?'neutral':'done'}">${dormStatus?'휴면 중':'활동 중'}</span></div>`}
       ${!dormStatus
         ? `<div class="pc-stat"><span class="lbl">${moNum}월 회비${myPaid?'':' <span class="mini-dot"></span>'}</span><span class="act-toggle dues"><button class="paid ${myPaid?'on':''}" onclick="homeSetDue(${me},'${dMonth}',true)">완료</button><button class="unpaid ${!myPaid?'on':''}" onclick="homeSetDue(${me},'${dMonth}',false)">미납</button></span></div>`
@@ -2032,7 +2032,7 @@ function mmSetPos(p){ if(!mmState) return; mmState.pf.pos = (mmState.pf.pos===p)
 function mmToggleTag(t){ if(!mmState) return; const a=mmState.pf.tags; const i=a.indexOf(t);
   if(i>=0) a.splice(i,1); else { if(a.length>=2){ toast('강점은 2개까지만요'); return; } a.push(t); } renderMemberCard(); }
 function mmToggleWeak(t){ if(!mmState) return; const a=mmState.pf.weaks; const i=a.indexOf(t);
-  if(i>=0) a.splice(i,1); else { if(a.length>=1){ toast('약점은 하나면 충분해요 😅'); return; } a.push(t); } renderMemberCard(); }
+  if(i>=0) a.splice(i,1); else { if(a.length>=1){ toast('약점은 하나면 충분해요'); return; } a.push(t); } renderMemberCard(); }
 function mmSetBio(v){ if(mmState) mmState.pf.bio = v; }
 async function mmSave(){
   if(!mmState) return;
@@ -2052,8 +2052,8 @@ function renderMemberCard(){
     const tagChips = PROFILE_TAGS.map(t=>`<button class="pf-pick ${s.pf.tags.includes(t)?'on':''}" onclick="mmToggleTag('${t}')">${t}</button>`).join('');
     const weakChips = PROFILE_WEAKS.map(t=>`<button class="pf-pick ${s.pf.weaks.includes(t)?'on w':''}" onclick="mmToggleWeak('${t}')">${t}</button>`).join('');
     body = `<div class="mm-sec">포지션</div><div class="pf-picks">${posChips}</div>
-      <div class="mm-sec">💪 강점 <span style="font-weight:400;color:var(--muted)">최대 2개</span></div><div class="pf-picks">${tagChips}</div>
-      <div class="mm-sec">😅 약점 <span style="font-weight:400;color:var(--muted)">1개 · 유머 환영</span></div><div class="pf-picks">${weakChips}</div>
+      <div class="mm-sec">강점 <span style="font-weight:400;color:var(--muted)">최대 2개</span></div><div class="pf-picks">${tagChips}</div>
+      <div class="mm-sec">약점 <span style="font-weight:400;color:var(--muted)">1개 · 유머 환영</span></div><div class="pf-picks">${weakChips}</div>
       <div class="mm-sec">한 줄 소개</div><input type="text" maxlength="30" value="${esc(s.pf.bio||'')}" placeholder="예: 왼발은 거들 뿐" oninput="mmSetBio(this.value)">
       <div style="display:flex;gap:8px;margin-top:16px"><button class="btn accent sm" onclick="mmSave()" style="flex:1">저장</button><button class="btn ghost sm" onclick="mmEdit(false)">취소</button></div>`;
   } else {
@@ -3330,9 +3330,9 @@ async function renderOps() {
   const _tplOv = (await fetchSettings()).pushTemplates || {};
   const secPush = `
     <div style="border:1.5px dashed var(--accent);border-radius:12px;padding:14px 14px 12px;margin-bottom:16px">
-      <b style="color:#ece6d2;font-size:13px">📢 수동 발송</b>
+      <b style="color:#ece6d2;font-size:13px">수동 발송</b>
       <div class="hint" style="margin:2px 0 10px">알림 켠 멤버 전체에게 즉시 보내요 (다음 발송 주기 15분 내 도착)</div>
-      <div class="field" style="margin-bottom:8px"><input id="mpTitle" placeholder="제목 (예: 📣 싸커피)" maxlength="60"></div>
+      <div class="field" style="margin-bottom:8px"><input id="mpTitle" placeholder="제목" maxlength="60"></div>
       <div class="field" style="margin-bottom:10px"><textarea id="mpBody" rows="2" placeholder="내용을 입력하세요" maxlength="300"></textarea></div>
       <button class="btn accent sm" onclick="opsManualPush()">전체에게 보내기</button>
     </div>

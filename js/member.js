@@ -122,21 +122,23 @@ async function saveProfile(id, pf){
   if (pf && (pf.pos || (pf.tags||[]).length || (pf.weaks||[]).length || (pf.bio||'').trim())) profiles[id] = pf; else delete profiles[id];
   return await saveSettings({ profiles });
 }
-function profileChipsHtml(pf, small){
+// 포지션 칩(이름 밑에 표시)
+function profilePosHtml(pf, small){
+  if (!pf || !pf.pos) return '';
+  return `<span class="pf-chip pos${small?' sm':''}" style="display:inline-block;margin-top:5px">${esc(pf.pos)}</span>`;
+}
+// 강점 · 약점 — 한 줄에 반씩 나눠서 표시
+function profileSkillsHtml(pf, small){
   if (!pf) return '';
   const cls = 'pf-chip' + (small ? ' sm' : '');
-  const posChip = pf.pos ? `<span class="${cls} pos">${esc(pf.pos)}</span>` : '';
   const tagChips = (pf.tags||[]).map(t=>`<span class="${cls}">${esc(t)}</span>`).join('');
   const weakChips = (pf.weaks||[]).map(t=>`<span class="${cls} weak" title="약점">${esc(t)}</span>`).join('');
-  if (small) {   // 컴팩트(리스트 등): 포지션 → 강점 → 약점 한 줄
-    const c = [posChip, tagChips, weakChips].filter(Boolean).join('');
-    return c ? `<div class="pf-chips">${c}</div>` : '';
-  }
-  // 상세: 포지션 / 강점 / 약점을 라벨로 구분해 표시
-  const grp = (label, inner) => inner
-    ? `<span style="display:block;font-size:10px;font-weight:800;letter-spacing:.04em;color:var(--muted);margin:11px 0 0">${label}</span><div class="pf-chips" style="margin-top:5px">${inner}</div>`
-    : '';
-  return [grp('포지션', posChip), grp('강점', tagChips), grp('약점', weakChips)].filter(Boolean).join('');
+  if (!tagChips && !weakChips) return '';
+  const dash = '<span style="font-size:12px;color:var(--muted)">—</span>';
+  const col = (label, inner, div) => `<div style="flex:1;min-width:0${div?';border-left:1px solid var(--line);padding-left:11px':''}">`
+    + `<span style="display:block;font-size:10px;font-weight:800;letter-spacing:.04em;color:var(--muted);margin-bottom:5px">${label}</span>`
+    + `<div class="pf-chips" style="margin-top:0">${inner||dash}</div></div>`;
+  return `<div style="display:flex;gap:11px;margin-top:11px">${col('강점', tagChips, false)}${col('약점', weakChips, true)}</div>`;
 }
 function isAdmin() {   // 총괄관리자(전체 편집)
   const p = PLAYERS.find(x => x.id === getMe());
@@ -1953,7 +1955,7 @@ async function renderHome() {
     const upcomingHtml = myYes.length ? `<div style="margin-top:12px;padding-top:12px;border-top:1px solid var(--line)"><div style="font-size:11px;color:var(--muted);font-weight:800;letter-spacing:.04em;margin-bottom:4px">참석 예정 ${myYes.length}개</div>${myYes.map(s => `<div style="padding:5px 0;font-size:13px;color:var(--cream)"><div style="display:flex;align-items:center;gap:8px"><span style="color:var(--cream);font-size:7px;opacity:.7">●</span><span style="min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(sessChipLabel(s))}</span><span style="margin-left:auto;flex-shrink:0;color:var(--muted);font-size:12px">${esc((s.time||'').slice(0,5))}${s.endTime?'–'+esc(s.endTime.slice(0,5)):''}</span></div>${s.place ? `<div style="margin-left:17px;color:var(--muted);font-size:12px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(s.place)}</div>` : ''}</div>`).join('')}</div>` : '';
     const pendingHtml = pending.length ? `<div style="margin-top:12px;padding-top:12px;border-top:1px solid var(--line)"><button onclick="openAtt('${pending[0].id}')" style="width:100%;text-align:left;cursor:pointer;font-family:inherit;border:none;background:transparent;padding:0;display:flex;align-items:center;justify-content:space-between;gap:10px"><span style="font-size:13px;font-weight:600;color:#ece6d2">미응답한 일정 ${pending.length}개</span><span style="font-size:12px;font-weight:800;color:var(--accent)">응답하기 →</span></button></div>` : '';
     const profileHtml = myProfile
-        ? `${profileChipsHtml(myProfile)}${(myProfile.bio||'').trim()?`<div class="pf-bio">"${esc(myProfile.bio.trim())}"</div>`:''}`
+        ? `${(myProfile.bio||'').trim()?`<div class="pf-bio">"${esc(myProfile.bio.trim())}"</div>`:''}${profileSkillsHtml(myProfile)}`
         : '';
     // 카드 ① 신원 + 스킬
     const joinFmt = meP.joinDate ? meP.joinDate.slice(0,7).replace('-','.') : '—';
@@ -1970,7 +1972,7 @@ async function renderHome() {
     dash += `<div class="card" style="padding:16px;margin-bottom:12px">
       <div style="display:flex;align-items:center;gap:14px">
         <div class="pc-jersey" style="font-size:38px">${jersey}</div>
-        <div style="min-width:0;flex:1"><div class="pc-name" style="margin:0">${esc(meName())}${myWins.map(t=>` <span class="win-badge ${t==='MVP'?'mvp':'grow'}">${t}</span>`).join('')}${teamPill}</div><div class="pc-team">${subline}</div></div>
+        <div style="min-width:0;flex:1"><div class="pc-name" style="margin:0">${esc(meName())}${myWins.map(t=>` <span class="win-badge ${t==='MVP'?'mvp':'grow'}">${t}</span>`).join('')}${teamPill}</div>${myProfile?profilePosHtml(myProfile):''}<div class="pc-team">${subline}</div></div>
         <button class="btn ghost sm" style="flex-shrink:0" onclick="openMemberCard(${me}, true)">${myProfile?'프로필 편집':'프로필 만들기'}</button>
       </div>
       ${profileHtml}
@@ -2185,12 +2187,12 @@ function renderMemberCard(){
       <div class="mm-sec">한 줄 소개</div><input type="text" maxlength="30" value="${esc(s.pf.bio||'')}" placeholder="예: 왼발은 거들 뿐" oninput="mmSetBio(this.value)">
       <div style="display:flex;gap:8px;margin-top:16px"><button class="btn accent sm" onclick="mmSave()" style="flex:1">저장</button><button class="btn ghost sm" onclick="mmEdit(false)">취소</button></div>`;
   } else {
-    const chips = profileChipsHtml(s.pf);
+    const skills = profileSkillsHtml(s.pf);
     const bio = (s.pf.bio||'').trim() ? `<div class="pf-bio">"${esc(s.pf.bio.trim())}"</div>` : '';
-    body = (chips || bio) ? chips + bio : `<div class="empty" style="font-size:13px;padding:14px 0">${s.own?'포지션·스타일·한 줄 소개를 채워보세요.':'아직 프로필이 없어요.'}</div>`;
+    body = (skills || bio) ? bio + skills : `<div class="empty" style="font-size:13px;padding:14px 0">${s.own?'포지션·스타일·한 줄 소개를 채워보세요.':'아직 프로필이 없어요.'}</div>`;
     if(s.own) body += `<button class="btn ghost sm" onclick="mmEdit(true)" style="margin-top:12px;width:100%">프로필 편집</button>`;
   }
-  h.innerHTML = `<div class="mm-back" onclick="if(event.target===this)closeMemberCard()"><div class="mm-box"><div class="mm-head"><span class="mm-no">${s.jersey!=null?s.jersey:'–'}</span><div><div class="mm-name">${esc(s.name)}${winHtml}</div>${roleHtml}</div><button class="mm-x" onclick="closeMemberCard()">×</button></div>${body}</div></div>`;
+  h.innerHTML = `<div class="mm-back" onclick="if(event.target===this)closeMemberCard()"><div class="mm-box"><div class="mm-head"><span class="mm-no">${s.jersey!=null?s.jersey:'–'}</span><div><div class="mm-name">${esc(s.name)}${winHtml}</div>${!s.edit?profilePosHtml(s.pf):''}${roleHtml}</div><button class="mm-x" onclick="closeMemberCard()">×</button></div>${body}</div></div>`;
 }
 
 /* ============================================================

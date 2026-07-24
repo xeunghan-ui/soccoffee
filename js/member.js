@@ -102,7 +102,7 @@ const MEMBER_ROLES = {
 // 멤버 프로필 — club_settings.current.profiles[memberId] = { pos, tags[], bio }
 const PROFILE_POS = ['공격','미드필더','수비','키퍼','올라운더'];
 const PROFILE_TAGS = ['스피드','피지컬','뇌지컬','패스','슛','드리블','수비력','활동량','왼발','골 결정력','위치 선정','시야','세트피스','헤더','커버 플레이','리더십','분위기 메이커','침착함','투지'];   // 강점
-const PROFILE_WEAKS = ['체력','스피드','슛 정확도','수비','왼발','오른발','멘탈','지각','헛발질','몸싸움','방향감각','백패스 본능','유리몸','집중력','숙취','새가슴','세모발'];   // 약점(최대 3개, 유머 환영)
+const PROFILE_WEAKS = ['체력','스피드','슛 정확도','수비','왼발','오른발','멘탈','지각','헛발질','몸싸움','방향감각','백패스 본능','유리몸','집중력','숙취','새가슴','세모발','뇌지컬'];   // 약점(최대 3개, 유머 환영)
 async function getProfile(id){ const s = await fetchSettings(); return ((s.profiles||{})[id]) || null; }
 async function saveProfile(id, pf){
   const s = await fetchSettings();

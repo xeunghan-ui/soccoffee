@@ -123,14 +123,28 @@ async function main() {
       msgs.push({ cat:'news', ...T('notice', {'제목': n.title}), url: './member.html#home' });
     }
     // ③ 새 카풀 (다가오는 것만)
-    const rides = await j(await rest('rides?select=id,driver,place,dest,ride_date,ride_time,created_at&order=created_at.desc&limit=10')) || [];
+    const rides = await j(await rest('rides?select=id,driver,place,dest,ride_date,ride_time,riders,created_at&order=created_at.desc&limit=20')) || [];
+    // 이름→멤버 id (탑승자·드라이버는 이름만 저장됨)
+    const nameToId = {}; for (const p of players) nameToId[String(p.name || '').trim()] = p.id;
+    // 그 날짜에 이미 카풀 좌석이 있거나 드라이버인 멤버 id 집합 (새 카풀 알림 제외 대상)
+    const committedOn = (dateStr) => {
+      const ids = new Set();
+      for (const rr of rides) {
+        if ((rr.ride_date || '') !== dateStr) continue;
+        const dId = nameToId[String(rr.driver || '').trim()]; if (dId != null) ids.add(dId);
+        for (const rd of (rr.riders || [])) { const id = nameToId[String(rd.name || '').trim()]; if (id != null) ids.add(id); }
+      }
+      return ids;
+    };
     for (const r of rides) {
       if (st.rideIds.includes(String(r.id))) continue;
       if (new Date(r.created_at) < new Date(Date.now() - 48 * 3600e3)) { st.rideIds.push(String(r.id)); continue; }
       st.rideIds.push(String(r.id));
       if (firstRun) continue;
       if (r.ride_date && r.ride_date < today) continue;
-      msgs.push({ cat:'ride', ...T('ride', {'운전자': r.driver, '날짜': mdLabel(r.ride_date), '시간': r.ride_time || '', '출발지': r.place || '', '도착지': r.dest || ''}), url: './member.html#list', targets: idsFor(players, monthOf(r.ride_date || today), false, thisMonth) });
+      let tg = idsFor(players, monthOf(r.ride_date || today), false, thisMonth);
+      if (tg) { const done = committedOn(r.ride_date || today); tg = tg.filter(id => !done.has(id)); }   // 이미 그날 카풀 신청/운전한 사람 제외
+      msgs.push({ cat:'ride', ...T('ride', {'운전자': r.driver, '날짜': mdLabel(r.ride_date), '시간': r.ride_time || '', '출발지': r.place || '', '도착지': r.dest || ''}), url: './member.html#list', targets: tg });
     }
     // ④ 새 세션 일정 (지난 세션 제외)
     for (const s of sessions) {

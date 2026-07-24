@@ -335,7 +335,15 @@ function rideCard(r, past) {
       <div class="ride-actions">${actions}</div>
       ${owner ? `<div class="manage-panel" id="manage-${r.id}">
         <span class="manage-label">${isCreator ? '내가 등록한 카풀이에요' : '관리자 권한으로 삭제'}</span>
+        ${past ? '' : `<button class="btn ghost sm" onclick="toggleRideEdit('${r.id}')">시간·장소 수정</button>`}
         <button class="btn ghost sm" onclick="removeRide('${r.id}')" style="color:var(--red)">삭제하기</button>
+        ${past ? '' : `<div class="ride-edit hidden" id="redit-${r.id}" style="width:100%;margin-top:10px;display:none;flex-direction:column;gap:8px">
+          <div class="field"><label>날짜</label><input type="date" id="re-d-${r.id}" value="${esc(r.date||'')}"></div>
+          <div class="field"><label>시간</label><input type="time" id="re-t-${r.id}" value="${esc(r.time||'')}"></div>
+          <div class="field"><label>출발지</label><input id="re-p-${r.id}" value="${esc(r.place||'')}" maxlength="40"></div>
+          <div class="field"><label>도착지</label><input id="re-dest-${r.id}" value="${esc(r.dest||'')}" maxlength="40"></div>
+          <button class="btn accent sm" onclick="saveRideEdit('${r.id}')">저장 · 탑승자에게 알림</button>
+        </div>`}
       </div>` : ''}
       ${past ? '' : `<div class="apply-panel" id="apply-${r.id}">
         <p class="apply-note" style="margin-bottom:10px"><b>${esc(meName())}</b> 님으로 신청해요.</p>
@@ -407,6 +415,43 @@ async function repostRide(id) {
 function togglePast() {
   document.getElementById('pastList').classList.toggle('open');
   document.getElementById('pastChev').classList.toggle('open');
+}
+
+function toggleRideEdit(id){
+  const p = document.getElementById('redit-' + id);
+  if (!p) return;
+  const show = p.style.display === 'none' || !p.style.display;
+  p.style.display = show ? 'flex' : 'none';
+}
+
+// 드라이버(또는 운영진) 카풀 시간·장소 수정 → 탑승자에게 변경 알림
+async function saveRideEdit(id){
+  const rides = await fetchRides();
+  const r = rides.find(x => String(x.id) === String(id));
+  if (!r) return;
+  const nd = (document.getElementById('re-d-'+id)||{}).value || r.date;
+  const nt = (document.getElementById('re-t-'+id)||{}).value || r.time;
+  const np = ((document.getElementById('re-p-'+id)||{}).value || '').trim() || r.place;
+  const ndest = ((document.getElementById('re-dest-'+id)||{}).value || '').trim();
+  const changed = (nd!==r.date) || (nt!==r.time) || (np!==r.place) || (ndest!==(r.dest||''));
+  if (!changed) { toast('바뀐 내용이 없어요'); return; }
+  try {
+    const { error } = await sb.from('rides').update({ ride_date: nd, ride_time: nt, place: np, dest: ndest }).eq('id', idCast(id));
+    if (error) { toast('수정 오류: ' + error.message); return; }
+  } catch(e){ toast('수정 오류'); return; }
+  // 탑승자에게 알림(신청자만) — 이름→멤버 id 매핑, 본인 제외
+  const when = `${(nd||'').slice(5).replace('-','/')} ${nt||''}`.trim();
+  const dest = ndest ? ` → ${ndest}` : '';
+  const meId = getMe();
+  const seen = new Set();
+  for (const rd of (r.riders||[])){
+    const pl = PLAYERS.find(p => p.name === String(rd.name||'').trim());
+    if (!pl || pl.id === meId || seen.has(pl.id)) continue;
+    seen.add(pl.id);
+    await queuePush(pl.id, '카풀 정보 변경', `${r.driver}님 카풀이 변경됐어요 · ${when} ${np}${dest}`, './member.html#list');
+  }
+  await rerender(render);
+  toast(seen.size ? `수정 완료 · 탑승자 ${seen.size}명에게 알림 보냄` : '수정 완료');
 }
 
 function toggleApply(id) {
@@ -3593,6 +3638,7 @@ async function opsSaveSession(id) {
   const list = await getSessions();
   const s = list.find(x=>String(x.id)===String(id));
   if (!s) return;
+  const _old = { date:s.date, time:s.time, place:s.place };   // 변경 감지용(신청자 알림)
   const date = document.getElementById('esD').value;
   if (!date) return toast('날짜를 선택해 주세요');
   s.date = date;
@@ -3608,8 +3654,25 @@ async function opsSaveSession(id) {
   s.duesOnly = document.getElementById('esDuesOnly').checked;
   s.allowDormant = document.getElementById('esAllowDorm').checked;
   if (!(await saveSettings({ sessions: list }))) return;
+  // 날짜·시간·장소가 바뀌면 신청자(참석/미정 응답자)에게 변경 알림
+  const _changed = (_old.date!==s.date) || (_old.time!==s.time) || (_old.place!==s.place);
+  if (_changed) {
+    try {
+      const att = await fetchAttendance(id) || [];   // [{member_id, status}]
+      const when = `${(s.date||'').slice(5).replace('-','/')} ${s.time||''}`.trim();
+      const meId = getMe();
+      const seen = new Set();
+      for (const a of att) {
+        if (a.status !== 'yes' && a.status !== 'maybe') continue;   // 신청자 = 참석·미정 응답자
+        const tid = Number(a.member_id);
+        if (tid === meId || seen.has(tid)) continue;
+        seen.add(tid);
+        await queuePush(tid, '세션 일정 변경', `참석 신청한 세션이 변경됐어요 · ${when} ${s.place||''}`, './member.html#att');
+      }
+    } catch(e){}
+  }
   opsEditSessionId = null;
-  await rerender(renderOps); toast('세션을 수정했어요');
+  await rerender(renderOps); toast(_changed ? '세션 수정 · 신청자에게 알림 보냄' : '세션을 수정했어요');
 }
 
 /* ---------- 실시간 갱신 (새 테이블) ---------- */

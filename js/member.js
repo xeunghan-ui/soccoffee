@@ -2002,7 +2002,7 @@ async function renderHome() {
     dash += `<div class="card" style="padding:16px;margin-bottom:12px">
       <div style="display:flex;align-items:center;gap:14px">
         <div class="pc-jersey" style="font-size:38px">${jersey}</div>
-        <div style="min-width:0;flex:1"><div class="pc-name" style="margin:0">${esc(meName())}${myWins.map(t=>` <span class="win-badge ${t==='MVP'?'mvp':'grow'}">${t}</span>`).join('')}${teamPill}${subline?` <span class="pc-team" style="display:inline;margin:0;vertical-align:middle">${esc(subline)}</span>`:''}</div>${myProfile?profilePosHtml(myProfile):''}</div>
+        <div style="min-width:0;flex:1"><div class="pc-name" style="margin:0">${esc(meName())}${myWins.map(t=>` <span class="win-badge ${t==='MVP'?'mvp':'grow'}">${t}</span>`).join('')}${teamPill}${subline?` <span class="pc-team" style="display:inline;margin:0;vertical-align:middle">${esc(subline)}</span>`:''}${(myProfile&&myProfile.pos)?` <span class="pf-chip pos" style="font-size:11px;padding:2px 9px;vertical-align:middle">${esc(String(myProfile.pos).replace(/\s*\(.*\)\s*$/,''))}</span>`:''}</div></div>
         <button class="pf-edit-link" style="flex-shrink:0;align-self:flex-start" onclick="openMemberCard(${me}, true)">${myProfile?'수정':'만들기'}</button>
       </div>
       ${profileHtml}

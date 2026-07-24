@@ -861,3 +861,6 @@
     border:1px solid var(--line); background:transparent; color:var(--muted);
     font-family:inherit; cursor:pointer; }
   .pf-pick.on { background:var(--accent); color:#14281b; border-color:var(--accent); font-weight:800; }
+
+  .pf-chip.weak { background:rgba(189,100,82,.12); color:#d9a08e; border-color:rgba(189,100,82,.4); }
+  .pf-pick.on.w { background:var(--alert); color:#fff; border-color:var(--alert); }

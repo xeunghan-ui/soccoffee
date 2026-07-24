@@ -101,18 +101,23 @@ const MEMBER_ROLES = {
 };
 // 멤버 프로필 — club_settings.current.profiles[memberId] = { pos, tags[], bio }
 const PROFILE_POS = ['공격','미드필더','수비','키퍼','올라운더'];
-const PROFILE_TAGS = ['스피드','피지컬','패스','슛','드리블','수비력','활동량','왼발'];
+const PROFILE_TAGS = ['스피드','피지컬','패스','슛','드리블','수비력','활동량','왼발'];   // 강점
+const PROFILE_WEAKS = ['체력','스피드','슛 정확도','수비','왼발','오른발','멘탈','지각'];   // 약점(최대 1개, 유머 환영)
 async function getProfile(id){ const s = await fetchSettings(); return ((s.profiles||{})[id]) || null; }
 async function saveProfile(id, pf){
   const s = await fetchSettings();
   const profiles = { ...(s.profiles||{}) };
-  if (pf && (pf.pos || (pf.tags||[]).length || (pf.bio||'').trim())) profiles[id] = pf; else delete profiles[id];
+  if (pf && (pf.pos || (pf.tags||[]).length || (pf.weaks||[]).length || (pf.bio||'').trim())) profiles[id] = pf; else delete profiles[id];
   return await saveSettings({ profiles });
 }
 function profileChipsHtml(pf, small){
   if (!pf) return '';
   const cls = 'pf-chip' + (small ? ' sm' : '');
-  const chips = [pf.pos ? `<span class="${cls} pos">${esc(pf.pos)}</span>` : '', ...(pf.tags||[]).map(t=>`<span class="${cls}">${esc(t)}</span>`)].filter(Boolean).join('');
+  const chips = [
+    pf.pos ? `<span class="${cls} pos">${esc(pf.pos)}</span>` : '',
+    ...(pf.tags||[]).map(t=>`<span class="${cls}">💪 ${esc(t)}</span>`),
+    ...(pf.weaks||[]).map(t=>`<span class="${cls} weak">😅 ${esc(t)}</span>`)
+  ].filter(Boolean).join('');
   return chips ? `<div class="pf-chips">${chips}</div>` : '';
 }
 function isAdmin() {   // 총괄관리자(전체 편집)
@@ -1999,7 +2004,7 @@ async function openMemberCard(id, startEdit){
   const own = (getMe()===id);
   const edit = !!startEdit && own;
   mmState = { id, name:p.name, jersey:(p.jersey!=null?p.jersey:null), role:(MEMBER_ROLES[p.name]||null),
-    wins, pf: pf ? {pos:pf.pos||null, tags:(pf.tags||[]).slice(), bio:pf.bio||''} : {pos:null, tags:[], bio:''}, hasPf:!!pf, edit, own };
+    wins, pf: pf ? {pos:pf.pos||null, tags:(pf.tags||[]).slice(), weaks:(pf.weaks||[]).slice(), bio:pf.bio||''} : {pos:null, tags:[], weaks:[], bio:''}, hasPf:!!pf, edit, own };
   renderMemberCard();
 }
 function closeMemberCard(){ mmState=null; const h=document.getElementById('mmHost'); if(h) h.innerHTML=''; }
@@ -2025,13 +2030,15 @@ function showAddHomeGuide(){
 function mmEdit(on){ if(!mmState) return; mmState.edit=on; renderMemberCard(); }
 function mmSetPos(p){ if(!mmState) return; mmState.pf.pos = (mmState.pf.pos===p) ? null : p; renderMemberCard(); }
 function mmToggleTag(t){ if(!mmState) return; const a=mmState.pf.tags; const i=a.indexOf(t);
-  if(i>=0) a.splice(i,1); else { if(a.length>=2){ toast('스타일은 2개까지만요'); return; } a.push(t); } renderMemberCard(); }
+  if(i>=0) a.splice(i,1); else { if(a.length>=2){ toast('강점은 2개까지만요'); return; } a.push(t); } renderMemberCard(); }
+function mmToggleWeak(t){ if(!mmState) return; const a=mmState.pf.weaks; const i=a.indexOf(t);
+  if(i>=0) a.splice(i,1); else { if(a.length>=1){ toast('약점은 하나면 충분해요 😅'); return; } a.push(t); } renderMemberCard(); }
 function mmSetBio(v){ if(mmState) mmState.pf.bio = v; }
 async function mmSave(){
   if(!mmState) return;
-  const pf = { pos:mmState.pf.pos||null, tags:mmState.pf.tags.slice(0,2), bio:(mmState.pf.bio||'').trim().slice(0,30) };
+  const pf = { pos:mmState.pf.pos||null, tags:mmState.pf.tags.slice(0,2), weaks:(mmState.pf.weaks||[]).slice(0,1), bio:(mmState.pf.bio||'').trim().slice(0,30) };
   if(!(await saveProfile(mmState.id, pf))){ toast('저장 오류'); return; }
-  mmState.pf=pf; mmState.hasPf=!!(pf.pos||pf.tags.length||pf.bio); mmState.edit=false; toast('프로필을 저장했어요'); renderMemberCard();
+  mmState.pf=pf; mmState.hasPf=!!(pf.pos||pf.tags.length||pf.weaks.length||pf.bio); mmState.edit=false; toast('프로필을 저장했어요'); renderMemberCard();
 }
 function renderMemberCard(){
   let h=document.getElementById('mmHost'); if(!h){ h=document.createElement('div'); h.id='mmHost'; document.body.appendChild(h); }
@@ -2043,8 +2050,10 @@ function renderMemberCard(){
   if(s.edit){
     const posChips = PROFILE_POS.map(p=>`<button class="pf-pick ${s.pf.pos===p?'on':''}" onclick="mmSetPos('${p}')">${p}</button>`).join('');
     const tagChips = PROFILE_TAGS.map(t=>`<button class="pf-pick ${s.pf.tags.includes(t)?'on':''}" onclick="mmToggleTag('${t}')">${t}</button>`).join('');
+    const weakChips = PROFILE_WEAKS.map(t=>`<button class="pf-pick ${s.pf.weaks.includes(t)?'on w':''}" onclick="mmToggleWeak('${t}')">${t}</button>`).join('');
     body = `<div class="mm-sec">포지션</div><div class="pf-picks">${posChips}</div>
-      <div class="mm-sec">스타일 <span style="font-weight:400;color:var(--muted)">최대 2개</span></div><div class="pf-picks">${tagChips}</div>
+      <div class="mm-sec">💪 강점 <span style="font-weight:400;color:var(--muted)">최대 2개</span></div><div class="pf-picks">${tagChips}</div>
+      <div class="mm-sec">😅 약점 <span style="font-weight:400;color:var(--muted)">1개 · 유머 환영</span></div><div class="pf-picks">${weakChips}</div>
       <div class="mm-sec">한 줄 소개</div><input type="text" maxlength="30" value="${esc(s.pf.bio||'')}" placeholder="예: 왼발은 거들 뿐" oninput="mmSetBio(this.value)">
       <div style="display:flex;gap:8px;margin-top:16px"><button class="btn accent sm" onclick="mmSave()" style="flex:1">저장</button><button class="btn ghost sm" onclick="mmEdit(false)">취소</button></div>`;
   } else {

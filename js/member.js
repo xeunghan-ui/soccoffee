@@ -1513,12 +1513,30 @@ async function notifyDriver(ride, title, body){
 }
 
 /* ---------- 상단 알림 종(통합 알림함: 공지·카풀·세션) ---------- */
-const BELL_READ_KEY = 'socoffee_bell_read';   // 읽은 항목 id 목록 (n공지 / r카풀 / s세션)
+const BELL_READ_KEY = 'socoffee_bell_read';   // 읽은 항목 id 목록 (n공지 / r카풀 / s세션) — 기기 캐시
+let _bellSynced = false;   // 세션당 1회 DB(bell_reads)와 동기화
 function bellReadIds(){ try { return JSON.parse(localStorage.getItem(BELL_READ_KEY)) || []; } catch(e){ return []; } }
+function _bellStore(arr){ try { localStorage.setItem(BELL_READ_KEY, JSON.stringify(arr.slice(-150))); } catch(e){} }
+async function bellReadSync(){   // 읽음 상태를 멤버 기준으로 DB와 합침 — 기기·브라우저가 바뀌어도 유지
+  const me = getMe();
+  if (!USE_DB || !me || _bellSynced) return;
+  try {
+    const { data } = await sb.from('bell_reads').select('ids').eq('member_id', me).maybeSingle();
+    const dbIds = (data && Array.isArray(data.ids)) ? data.ids : [];
+    const merged = [...new Set([...dbIds, ...bellReadIds()])];
+    _bellStore(merged);
+    _bellSynced = true;
+    if (merged.length > dbIds.length) await sb.from('bell_reads').upsert({ member_id: me, ids: merged.slice(-150), updated_at: new Date().toISOString() });
+    bellDotRefresh();
+  } catch(e){}   // bell_reads 테이블이 아직 없으면 기기 저장만으로 동작
+}
 function bellMarkRead(ids){
   const cur = new Set(bellReadIds());
   (Array.isArray(ids)?ids:[ids]).forEach(x=>cur.add(String(x)));
-  localStorage.setItem(BELL_READ_KEY, JSON.stringify([...cur].slice(-150)));
+  const merged = [...cur].slice(-150);
+  _bellStore(merged);
+  const me = getMe();
+  if (USE_DB && me) { try { sb.from('bell_reads').upsert({ member_id: me, ids: merged, updated_at: new Date().toISOString() }).then(()=>{},()=>{}); } catch(e){} }
   bellDotRefresh();
 }
 function _sessCreatedMs(id){   // 세션 id('s'+ts36+rand)에서 등록 시각 추출
@@ -1571,6 +1589,7 @@ function _bellRow(x, un){
 async function toggleBell(){
   const p = document.getElementById('bellPanel');
   if (!p) return;
+  await bellReadSync();   // 다른 기기에서 읽은 기록 반영(세션당 1회)
   if (!p.classList.contains('hidden')) { p.classList.add('hidden'); return; }
   p.innerHTML = '<div class="bp-empty">불러오는 중...</div>';
   p.classList.remove('hidden');
@@ -1974,7 +1993,7 @@ async function renderHome() {
       <div style="display:flex;align-items:center;gap:14px">
         <div class="pc-jersey" style="font-size:38px">${jersey}</div>
         <div style="min-width:0;flex:1"><div class="pc-name" style="margin:0">${esc(meName())}${myWins.map(t=>` <span class="win-badge ${t==='MVP'?'mvp':'grow'}">${t}</span>`).join('')}${teamPill}${subline?` <span class="pc-team" style="display:inline;margin:0;vertical-align:middle">${esc(subline)}</span>`:''}</div>${myProfile?profilePosHtml(myProfile):''}</div>
-        <button class="btn ghost sm" style="flex-shrink:0" onclick="openMemberCard(${me}, true)">${myProfile?'프로필 편집':'프로필 만들기'}</button>
+        <button class="pf-edit-link" style="flex-shrink:0;align-self:flex-start" onclick="openMemberCard(${me}, true)">${myProfile?'수정':'만들기'}</button>
       </div>
       ${profileHtml}
       ${miniHtml}
@@ -3960,6 +3979,7 @@ async function initApp() {
   render();  // 카풀 데이터 미리 로드(실시간 구독 대비)
   refreshAttBadge();   // 일정 탭 미응답 배지
   refreshNewBadges();  // 신규 콘텐츠 점(카풀·투표)
+  bellReadSync();      // 읽음 상태 DB 동기화(기기 간 유지) 후 종 배지 각신
   bellDotRefresh();    // 상단 종 새 공지 점
   if (loggedIn) setTimeout(()=>{ try{ preloadTabs(); }catch(e){} }, 300);   // 주요 탭 미리 렌더
 }

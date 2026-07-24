@@ -107,8 +107,13 @@ async function main() {
   const qIds = [];
   for (const q of queue) {
     qIds.push(q.id);
-    msgs.push({ title: q.title, body: q.body, url: q.url || './member.html',
-      targets: q.target_member_id === 0 ? null : [q.target_member_id] });   // 0 = 전체 발송
+    // 대상 코드: 0=전체, -1=활동 회원, -2=휴면 회원, 그 외=개인 id
+    let tg;
+    if (q.target_member_id === 0) tg = null;
+    else if (q.target_member_id === -1) tg = 'ACTIVE';
+    else if (q.target_member_id === -2) tg = 'DORMANT';
+    else tg = [q.target_member_id];
+    msgs.push({ title: q.title, body: q.body, url: q.url || './member.html', targets: tg });
   }
 
   if (MANUAL_TITLE || MANUAL_BODY) {
@@ -217,7 +222,10 @@ async function main() {
     console.log('메시지', msgs.length, '건');
     const dead = [];
     for (const m of msgs) {
-      let to = m.targets ? subs.filter(s => m.targets.includes(s.member_id)) : subs;
+      let tset = m.targets;
+      if (tset === 'ACTIVE') tset = activeFor(players, thisMonth, thisMonth).map(p => p.id);
+      else if (tset === 'DORMANT') tset = dormantFor(players, thisMonth, thisMonth).map(p => p.id);
+      let to = tset ? subs.filter(s => tset.includes(s.member_id)) : subs;
       if (m.cat) to = to.filter(s => !s.prefs || (s.prefs[m.cat] !== false && (!m.legacy || s.prefs[m.legacy] !== false)));   // 멤버가 끈 항목 제외(옛 카테고리 설정도 존중)
       console.log('-', m.title, '→', m.targets ? `타겟 ${to.length}명` : `전체 ${to.length}명`);
       for (const s of to) {

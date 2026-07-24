@@ -3437,13 +3437,25 @@ async function renderOps() {
     ${resultsHtml(votesGrowth, members, true)}
     <button class="btn ghost sm" style="color:var(--red);margin-top:10px" onclick="opsResetVote('growth')">가장 성장한 선수 초기화</button>`;
 
+  const _mpMembers = [...PLAYERS].filter(p => p.status !== 'former').sort((a,b)=>a.name.localeCompare(b.name,'ko'));
   const secPush = `
     <div style="border:1.5px dashed var(--accent);border-radius:12px;padding:14px 14px 12px;margin-bottom:14px">
       <b style="color:#ece6d2;font-size:13px">수동 발송</b>
-      <div class="hint" style="margin:2px 0 10px">알림 켠 멤버 전체에게 · 15분 내 도착</div>
+      <div class="hint" style="margin:2px 0 10px">알림 켠 멤버에게 · 15분 내 도착</div>
+      <div class="field" style="margin-bottom:8px">
+        <select id="mpTarget" onchange="document.getElementById('mpMemberWrap').style.display = this.value==='one' ? '' : 'none'">
+          <option value="all">전체</option>
+          <option value="active">활동 회원만</option>
+          <option value="dormant">휴면 회원만</option>
+          <option value="one">개인</option>
+        </select>
+      </div>
+      <div class="field" id="mpMemberWrap" style="display:none;margin-bottom:8px">
+        <select id="mpMember">${_mpMembers.map(m=>`<option value="${m.id}">${esc(m.name)}</option>`).join('')}</select>
+      </div>
       <div class="field" style="margin-bottom:8px"><input id="mpTitle" placeholder="제목" maxlength="60"></div>
       <div class="field" style="margin-bottom:10px"><textarea id="mpBody" rows="2" placeholder="내용을 입력하세요" maxlength="300"></textarea></div>
-      <button class="btn accent sm" onclick="opsManualPush()">전체에게 보내기</button>
+      <button class="btn accent sm" onclick="opsManualPush()">보내기</button>
     </div>
     <p class="hint" style="margin:0">알림 문구 수정은 팀빌더 → 푸시 문구 탭에서 해요.</p>`;
   const bodyMap = { notice:secNotice, session:secSession, roster:secRoster, dues:secDues, vote:secVote, push:secPush };
@@ -3460,10 +3472,21 @@ async function opsManualPush(){
   const t = (document.getElementById('mpTitle')||{}).value?.trim() || '';
   const bd = (document.getElementById('mpBody')||{}).value?.trim() || '';
   if (!t && !bd) return toast('제목이나 내용을 입력해 주세요');
-  if (!confirm(`알림 켠 멤버 전체에게 보낼까요?\n\n${t||'싸커피'}\n${bd}`)) return;
-  await queuePush(0, t || '싸커피', bd, './member.html#home');
+  const mode = (document.getElementById('mpTarget')||{}).value || 'all';
+  // 대상 코드: 0=전체, -1=활동 회원, -2=휴면 회원, 그 외=개인 id
+  let target = 0, lbl = '전체';
+  if (mode === 'active') { target = -1; lbl = '활동 회원'; }
+  else if (mode === 'dormant') { target = -2; lbl = '휴면 회원'; }
+  else if (mode === 'one') {
+    target = Number((document.getElementById('mpMember')||{}).value || 0);
+    const m = PLAYERS.find(x=>x.id===target);
+    if (!m) return toast('멤버를 선택해 주세요');
+    lbl = m.name + ' 님';
+  }
+  if (!confirm(`${lbl}에게 보낼까요?\n\n${t||'싸커피'}\n${bd}`)) return;
+  await queuePush(target, t || '싸커피', bd, './member.html#home');
   document.getElementById('mpTitle').value=''; document.getElementById('mpBody').value='';
-  toast('발송 예약됐어요 — 15분 내 전송됩니다.');
+  toast(`발송 예약됐어요 (${lbl}) — 15분 내 전송됩니다.`);
 }
 async function opsResetVote(cat) {
   if (!isAdmin()) return;

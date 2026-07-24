@@ -70,6 +70,7 @@ const TPL = {
   dues_urge:   { title:'회비 마감 임박', body:'{월}월 회비가 내일(25일) 마감돼요. 아직 미납 상태예요!' },
   dorm_ask:    { title:'{월}월엔 복귀하시나요?', body:"복귀하려면 홈에서 '활동'을, 계속 쉬려면 '휴면'을 눌러 주세요. 그대로 두면 휴면이 유지돼요." },
   winner:      { title:'축하합니다!', body:'{월}월 {부문}에 선정됐어요!' },
+  results_open: { title:'{월}월 투표 결과 공개', body:'{월}월 이달의 선수·성장상 결과가 공개됐어요. 확인해 보세요!' },
 };
 let TPL_OV = {};
 const fill = (t, v) => { let r = t; for (const k in (v || {})) r = r.split('{' + k + '}').join(v[k]); return r; };
@@ -198,7 +199,7 @@ async function main() {
       if (dom === 1 && once('winner-' + thisMonth)) {
         const pd = new Date(Date.now() + 9 * 3600e3); pd.setUTCDate(0);   // 전월 말일
         const pm = pd.toISOString().slice(0, 7);
-        const votes = await j(await rest(`potm_votes?select=category,candidate_id&month=eq.${pm}`)) || [];
+        const votes = await j(await rest(`potm_votes?select=category,candidate_id,voter_id&month=eq.${pm}`)) || [];
         const CATS = [['mvp', '이달의 선수'], ['growth', '가장 성장한 선수']];
         for (const [cat, catLbl] of CATS) {
           const tally = {};
@@ -208,6 +209,9 @@ async function main() {
           const winners = Object.keys(tally).filter(k => tally[k] === max).map(Number);   // 동률 공동 수상
           msgs.push({ ...T('winner', {'월': Number(pm.slice(5, 7)), '부문': catLbl}), url: './member.html#potm', targets: winners });
         }
+        // 투표 종료 → 투표한 사람 전원에게 결과 공개 알림
+        const voters = [...new Set(votes.map(v => v.voter_id).filter(x => x != null))];
+        if (voters.length) msgs.push({ ...T('results_open', {'월': Number(pm.slice(5, 7))}), url: './member.html#potm', targets: voters });
       }
       // ⑥ 회비 마감(25일) 하루 전 — 미납만 타겟
       if (dom === 24 && once('dues-urge-' + thisMonth)) {

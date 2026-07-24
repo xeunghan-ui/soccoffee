@@ -687,7 +687,8 @@
   .squad.black .sq-cap { background: #ddd6b6; color: #14281b; }
 
   /* ===== 하단 네비게이션 ===== */
-  body { padding-bottom: 76px; }
+  /* 하단 여백은 .wrap 한 곳에서 --navh(safe-area 포함) 기준으로만 준다 — body에 별도 값 주면 기기별로 어긋남 */
+  body { padding-bottom: 0; }
   .bottomnav { position: fixed; left: 0; right: 0; bottom: 0; z-index: 150;
     max-width: 480px; margin: 0 auto;
     display: flex; background: #102016; border-top: 1px solid var(--line);
@@ -807,7 +808,7 @@
       url("../scf_bg.png") center center / cover no-repeat;
     background-color: #15281b;
   }
-  .wrap { padding-bottom: calc(var(--navh) + 30px); }
+  .wrap { padding-bottom: calc(var(--navh) + 16px); }   /* 하단 네비 높이(safe-area 포함) + 여유 — 단일 기준 */
   input, select, textarea { font-size: 16px; }
   .gate-box input { font-size: 16px; }
   a, button { -webkit-tap-highlight-color: transparent; touch-action: manipulation; }

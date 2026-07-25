@@ -3093,23 +3093,23 @@ async function renderDues() {
   const el = document.getElementById('duesContent');
   if (!el.innerHTML.trim()) el.innerHTML = `<div class="empty">불러오는 중...</div>`;
   const month = duesMonth();
-  // 활동 멤버 — 휴면(isDormantFor)은 제외해 미납 인원/명단/집계에서 빠짐
-  const members = activeMembers(month).filter(m => !isDormantFor(m, month));
-  // 휴면이지만 그 외 가입 조건은 충족하는 멤버 — 명단엔 '휴면'으로 표시
+  // ⚠️ 가입 조건 충족 회원을 공통 산출한 뒤 isDormantFor '하나의 기준'으로 활동/휴면을 분할한다.
+  //    (과거 버그: 활동 목록은 activeMembers[dormantMonths 기준], 휴면 목록은 isDormantFor[activeMonths 기준]로
+  //     기준이 달라서, 같은 달이 dormantMonths·activeMonths에 함께 있으면 양쪽 어디에도 안 잡혀 회비 화면에서 사라졌음)
   const [dyN, dmoN] = month.split('-').map(Number);
   const dMonthEnd = new Date(dyN, dmoN, 0);
-  const dormantMembers = ROSTER.filter(p => {
+  const eligibleRoster = ROSTER.filter(p => {
     const st = p.status || 'active';
-    let eligible;
-    if (st === 'former') eligible = false;
-    else if (st === 'friends') eligible = !!(p.friendsSince && month < p.friendsSince);
-    else if (!p.joinDate) eligible = false;
-    else eligible = new Date(p.joinDate) <= dMonthEnd;
-    return eligible && isDormantFor(p, month);
+    if (st === 'former') return false;
+    if (st === 'friends') return !!(p.friendsSince && month < p.friendsSince);
+    if (!p.joinDate) return false;
+    return new Date(p.joinDate) <= dMonthEnd;
   }).map(p => {
     const t = TEAM_SHEET[p.name] || { team: '기타' };
     return { ...p, jersey: t.jersey, eng: t.eng || '', team: t.team, cap: !!t.cap };
-  }).sort(byName);
+  });
+  const members = eligibleRoster.filter(p => !isDormantFor(p, month));          // 활동(납부 대상)
+  const dormantMembers = eligibleRoster.filter(p => isDormantFor(p, month)).sort(byName);   // 휴면(명단 표시)
   const dues = await fetchDues(month);
   const paidMap = {}; dues.forEach(d=>{ paidMap[d.member_id]=d.paid; });
   duesPaidDB = paidMap;

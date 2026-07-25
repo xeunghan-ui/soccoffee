@@ -3978,10 +3978,15 @@ function preloadTabs(){
 async function initApp() {
   updateAdminBtn();
   try { const r = await fetchRoster(); if (r) applyPlayers(r); } catch (e) {}
-  await mergeTbMembers();   // 팀빌더에만 있는 멤버도 로그인 가능하게 병합
+  try { await mergeTbMembers(); } catch (e) {}   // 팀빌더 병합 실패해도 로그인 목록은 뜨게
+  // ⚠️ 로그인 게이트를 먼저 채운다 — 아래 auxiliary await(설정·휴면·롤오버) 중 하나라도 throw하면
+  //    populateGate가 안 돌아 '명단 전체가 안 뜨는' 사고가 났었음(2026-07). 이후 로딩과 무관하게 로그인 가능.
+  if (!((IS_LOCAL || localStorage.getItem(GATE_KEY) === '1') && getMe() != null)) {
+    try { populateGate(); showGate(true); } catch (e) {}
+  }
   try { const s = await fetchSettings(); teamSplitOn = s.teamSplit !== false; CLUB_PINS = s.pins || {}; BANK = s.bank || null; SURVEY = s.survey || null; UNIFORM = s.uniform || null; RESULTS = s.results || null; GUEST_REQS = s.guestReqs || []; GUEST_EXTRA = s.guestExtra || {}; DUES_CONFIRMED = s.duesConfirmed || {}; } catch (e) {}
-  await loadTbDormant();
-  await rolloverDormancyIfNeeded();   // 15일 이후 다음 달 휴면 자동 롤오버(월 1회) — 누가 앱을 열든 자동
+  try { await loadTbDormant(); } catch (e) {}
+  try { await rolloverDormancyIfNeeded(); } catch (e) {}   // 15일 이후 다음 달 휴면 자동 롤오버(월 1회)
   // 로컬 미리보기: 첫 활동 회원으로 자동 로그인
   if (IS_LOCAL && getMe() == null) {
     const ms = activeMembers(potmMonth());

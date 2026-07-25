@@ -10,7 +10,7 @@ if (!PUB || !PRIV) { console.error('VAPID 키 시크릿이 없습니다'); proce
 webpush.setVapidDetails('mailto:tmdgks15@gmail.com', PUB, PRIV);
 
 const H = { apikey: SB_KEY, Authorization: `Bearer ${SB_KEY}`, 'Content-Type': 'application/json' };
-const rest = (p, o = {}) => fetch(`${SB_URL}/rest/v1/${p}`, { headers: { ...H, ...(o.headers || {}) }, ...o });
+const rest = (p, o = {}) => fetch(`${SB_URL}/rest/v1/${p}`, { ...o, headers: { ...H, ...(o.headers || {}) } });   // 주의: headers를 o 뒤에 병합해야 apikey가 유지됨
 const j = async r => { try { return await r.json(); } catch (e) { return null; } };
 
 // ---- KST 시간 유틸 ----
@@ -242,8 +242,9 @@ async function main() {
     if (dead.length) console.log('만료 구독', new Set(dead).size, '건 정리');
   } else { console.log('보낼 메시지 없음'); for (const qid of qIds) await rest(`push_queue?id=eq.${qid}`, { method: 'DELETE' }); }
 
-  await rest('club_settings', { method: 'POST', headers: { Prefer: 'resolution=merge-duplicates' },
+  const saveRes = await rest('club_settings', { method: 'POST', headers: { Prefer: 'resolution=merge-duplicates' },
     body: JSON.stringify({ id: 'push_state', data: st, updated_at: new Date().toISOString() }) });
+  if (!saveRes.ok) { console.error('push_state 저장 실패 — 다음 실행에서 중복 발송됩니다:', saveRes.status, await saveRes.text()); process.exit(1); }
   console.log('완료');
 }
 main().catch(e => { console.error(e); process.exit(1); });

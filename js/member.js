@@ -2113,12 +2113,12 @@ async function renderSquad() {
   const hasProfile = id => !!profMap[id];
   const w = await getPrevWinners();
   const chip = p => {
-    const r = MEMBER_ROLES[p.name]; const rc = r ? (r.type==='admin'?' role-admin':' role-other') : '';
+    const rc = '';   // 역할 색 구분 제거
     const sk = hasProfile(p.id) ? ' has-skill' : '';
     const wb = `${p.id===w.mvp?'<span class="win-badge mvp" style="flex-shrink:0">MVP</span>':''}${p.id===w.growth?'<span class="win-badge grow" style="flex-shrink:0">성장</span>':''}`;
     return `<button class="sq-chip${rc}${sk}" onclick="openMemberCard(${p.id})"><span class="sq-no">${p.jersey!=null?p.jersey:'–'}</span><span class="sq-nm">${esc(p.name)}</span>${wb}<span class="sq-dot" title="${hasProfile(p.id)?'프로필 있음':'프로필 없음'}"></span></button>`;
   };
-  const staff = players.filter(p => MEMBER_ROLES[p.name]).sort(sortJ);   // 운영진 = 역할 있는 멤버(활동/휴면 무관)
+  const staff = players.filter(p => (MEMBER_ROLES[p.name]||{}).type==='admin').sort(sortJ);   // 운영진 = admin 역할만(김균원·조은애·김이연 제외)
   const gridOf = (arr, dim) => arr.length ? `<div class="sq-grid${dim?' dim':''}">${arr.map(chip).join('')}</div>` : '<div class="empty" style="font-size:13px;padding:20px 0;text-align:center">해당 인원이 없어요.</div>';
   _squadGroups = { active: gridOf(active,false), dormant: gridOf(dormant,true), staff: gridOf(staff,false) };
   if (!['active','dormant','staff'].includes(squadFilter)) squadFilter = 'active';
@@ -2212,7 +2212,7 @@ function renderMemberCard(){
   let h=document.getElementById('mmHost'); if(!h){ h=document.createElement('div'); h.id='mmHost'; document.body.appendChild(h); }
   if(!mmState){ h.innerHTML=''; return; }
   const s=mmState;
-  const roleHtml = s.role ? `<span class="mm-role ${s.role.type==='admin'?'admin':'other'}" style="font-size:10px;padding:2px 8px;margin-top:0;vertical-align:middle">${esc(s.role.role)}</span>` : '';
+  const roleHtml = s.role ? `<span class="mm-role" style="font-size:10px;padding:2px 8px;margin-top:0;vertical-align:middle">${esc(s.role.role)}</span>` : '';
   const winHtml = (s.wins && s.wins.length) ? ' ' + s.wins.map(t=>`<span class="win-badge ${t==='MVP'?'mvp':'grow'}">${t}</span>`).join(' ') : '';
   let body;
   if(s.edit){

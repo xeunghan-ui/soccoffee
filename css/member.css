@@ -829,8 +829,8 @@
     padding: calc(10px + env(safe-area-inset-top)) 2px 6px; }
   .tb-mark { font-family: var(--disp); font-size:19px; letter-spacing:1px; color:var(--gold); }
   .tb-mark .tb-sub { font-family:"Pretendard",sans-serif; font-size:11px; font-weight:800; color:var(--muted); letter-spacing:2px; }
-  .bell-btn { position:relative; width:40px; height:40px; border-radius:50%;
-    border:1px solid var(--line); background:#1e3526; color:var(--gold);
+  .bell-btn { position:relative; width:40px; height:40px;
+    border:none; background:transparent; color:var(--gold); padding:0;
     display:flex; align-items:center; justify-content:center; cursor:pointer; }
   .bell-btn:active { opacity:.72; }
   .bell-dot { position:absolute; top:3px; right:2px; min-width:17px; height:17px; padding:0 4px;

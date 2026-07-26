@@ -2923,7 +2923,7 @@ async function renderAtt() {
       <div class="att-cnt no ${attFilter==='no'?'sel':''}" onclick="setAttFilter('no')"><div class="num">${no}</div><div class="cap">불참</div></div>
       <div class="att-cnt maybe ${attFilter==='maybe'?'sel':''}" onclick="setAttFilter('maybe')"><div class="num">${maybe}</div><div class="cap">미정</div></div>
       <div class="att-cnt none ${attFilter==='none'?'sel':''}" onclick="setAttFilter('none')"><div class="num">${none}</div><div class="cap">미응답</div></div>
-      <div class="att-cnt guest ${attFilter==='guest'?'sel':''}" onclick="setAttFilter('guest')"><div class="num" id="attGuestNum" style="color:var(--win)">${gaCount}</div><div class="cap">게스트</div></div>
+      ${gaCount>0 ? `<div class="att-cnt guest ${attFilter==='guest'?'sel':''}" onclick="setAttFilter('guest')"><div class="num" id="attGuestNum" style="color:var(--win)">${gaCount}</div><div class="cap">게스트</div></div>` : ''}
     </div>
     <div class="card" style="margin-top:10px">
       <div class="section-title" style="margin:0 0 8px;display:flex;justify-content:space-between;align-items:center">
@@ -2934,7 +2934,7 @@ async function renderAtt() {
     </div>
     ${(()=>{ const gp=GUEST_REQS.filter(g=>g.sid===sess.id&&g.status==='pending'); const ga=GUEST_REQS.filter(g=>g.sid===sess.id&&g.status==='approved'); const gx=GUEST_EXTRA[sess.id]||0; let s='';
       if(admin&&gp.length) s+=`<div class="card" style="margin-top:12px"><div style="font-size:12px;font-weight:800;color:var(--accent);margin-bottom:8px">게스트 신청 · 승인 대기 ${gp.length}명</div>${gp.map(g=>`<div style="display:flex;align-items:center;justify-content:space-between;gap:8px;padding:6px 0"><span style="color:var(--cream);font-size:14px">${esc(g.name)}</span><span style="display:flex;gap:6px"><button class="btn accent sm" onclick="approveGuest('${sess.id}',${g.mid})">승인</button><button class="btn ghost sm" style="color:var(--red)" onclick="cancelGuest('${sess.id}',${g.mid})">거절</button></span></div>`).join('')}</div>`;
-      if(ga.length||gx>0||admin) s+=`<div class="card" style="margin-top:12px"><div id="gHdr" style="font-size:12px;font-weight:800;color:var(--win);margin-bottom:8px">게스트 ${ga.length+gx}명</div>${ga.map(g=>`<div style="display:flex;align-items:center;justify-content:space-between;gap:8px;padding:5px 0"><span style="color:var(--cream);font-size:14px">${esc(g.name)} <span style="font-size:11px;color:var(--win);font-weight:800">게스트</span></span>${admin?`<button class="btn ghost sm" style="color:var(--red)" onclick="cancelGuest('${sess.id}',${g.mid})">취소</button>`:''}</div>`).join('')}${(gx>0&&!admin)?`<div style="padding:5px 0;color:var(--cream);font-size:14px">외부 게스트 <b>${gx}명</b></div>`:''}${admin?`<div style="display:flex;align-items:center;justify-content:space-between;gap:8px;padding:8px 0 2px;${ga.length?'border-top:1px solid var(--line);margin-top:6px':''}"><span style="color:var(--muted);font-size:13px">외부 게스트(명단 외)</span><span style="display:flex;align-items:center;gap:12px"><button class="btn ghost sm" id="gxMinus" onclick="changeGuestExtra('${sess.id}',-1)" ${gx<=0?'disabled':''}>−</button><b id="gxNum" style="min-width:18px;text-align:center;color:var(--cream)">${gx}</b><button class="btn ghost sm" onclick="changeGuestExtra('${sess.id}',1)">＋</button></span></div>`:''}</div>`;
+      if(ga.length||gx>0) s+=`<div class="card" style="margin-top:12px"><div id="gHdr" style="font-size:12px;font-weight:800;color:var(--win);margin-bottom:8px">게스트 ${ga.length+gx}명</div>${ga.map(g=>`<div style="display:flex;align-items:center;justify-content:space-between;gap:8px;padding:5px 0"><span style="color:var(--cream);font-size:14px">${esc(g.name)} <span style="font-size:11px;color:var(--win);font-weight:800">게스트</span></span>${admin?`<button class="btn ghost sm" style="color:var(--red)" onclick="cancelGuest('${sess.id}',${g.mid})">취소</button>`:''}</div>`).join('')}${gx>0?`<div style="padding:5px 0;color:var(--cream);font-size:14px">외부 게스트 <b>${gx}명</b>${admin?' <span style="font-size:11px;color:var(--muted)">(세션 수정에서 조절)</span>':''}</div>`:''}</div>`;
       return s; })()}
     ${nDraft ? `<div class="save-bar"><span class="save-n">변경 ${nDraft}건 (미저장)</span><span class="sb-actions"><button class="cancel" onclick="attCancelDraft()">취소</button><button class="ok" onclick="attSaveDraft()">저장</button></span></div>` : ''}`;
   el.innerHTML = html;
@@ -3441,6 +3441,7 @@ async function renderOps() {
             <div class="field"><label>참석 조건 <span style="color:var(--muted);font-weight:400">(선택)</span></label>
               <label style="display:flex;align-items:center;gap:7px;font-size:13px;color:var(--cream);margin-top:2px"><input type="checkbox" id="esDuesOnly" ${s.duesOnly?'checked':''}> 회비 납부자만 참석</label>
               <label style="display:flex;align-items:center;gap:7px;font-size:13px;color:var(--cream);margin-top:6px"><input type="checkbox" id="esAllowDorm" ${s.allowDormant?'checked':''}> 휴면도 참석 가능</label></div>
+            <div class="field"><label>외부 게스트 인원 <span style="color:var(--muted);font-weight:400">(명단 외 · 선택)</span></label><input type="number" id="esGuestExtra" value="${GUEST_EXTRA[s.id]||0}" min="0" max="30"></div>
             <div class="n-actions"><button class="btn accent sm" onclick="opsSaveSession('${s.id}')">저장</button><button class="btn ghost sm" onclick="opsCancelSessionEdit()">취소</button></div>
           </div>`;
         }
@@ -3699,7 +3700,10 @@ async function opsSaveSession(id) {
   s.desc = document.getElementById('esDesc').value.trim();
   s.duesOnly = document.getElementById('esDuesOnly').checked;
   s.allowDormant = document.getElementById('esAllowDorm').checked;
-  if (!(await saveSettings({ sessions: list }))) return;
+  // 외부 게스트 인원(명단 외) — settings.guestExtra 저장
+  const _gx = Math.max(0, parseInt((document.getElementById('esGuestExtra')||{}).value) || 0);
+  const _nextGx = { ...GUEST_EXTRA }; if (_gx > 0) _nextGx[s.id] = _gx; else delete _nextGx[s.id]; GUEST_EXTRA = _nextGx;
+  if (!(await saveSettings({ sessions: list, guestExtra: _nextGx }))) return;
   // 날짜·시간·장소가 바뀌면 신청자(참석/미정 응답자)에게 변경 알림
   const _changed = (_old.date!==s.date) || (_old.time!==s.time) || (_old.place!==s.place);
   if (_changed) {

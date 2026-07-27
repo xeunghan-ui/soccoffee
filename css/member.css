@@ -66,6 +66,8 @@
     background: #fdfbf8; color: var(--text); transition: border .15s;
   }
   input:focus, select:focus, textarea:focus { outline: none; border-color: var(--accent); }
+  input[type="checkbox"], input[type="radio"] { width: auto; min-width: 0; flex: none; accent-color: var(--accent); }
+  input:disabled { opacity: .4; cursor: not-allowed; }
   .hint { font-size: 12px; color: var(--muted); margin-top: 5px; }
   .row { display: flex; gap: 12px; }
   .row .field { flex: 1; min-width: 0; }

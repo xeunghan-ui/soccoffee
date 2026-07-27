@@ -1256,6 +1256,11 @@ function endPlus2(startId, endId){
   const eh = (h + 2) % 24;
   e.value = `${String(eh).padStart(2,'0')}:${String(m).padStart(2,'0')}`;
 }
+// 하루 종일 체크 시 시작·종료 시간 입력 비활성화(구체 시간 없음)
+function toggleAllDayInputs(cb, startId, endId){
+  const on = !!cb.checked;
+  [startId, endId].forEach(id => { const el = document.getElementById(id); if (el) el.disabled = on; });
+}
 function fmtSessionDate(ds, time, endTime, allDay, endDate) {
   if (!ds) return '';
   const days=['일','월','화','수','목','금','토'];
@@ -3445,10 +3450,10 @@ async function renderOps() {
           return `<div class="ops-row" style="flex-direction:column;align-items:stretch;gap:0">
             <div class="field"><label>날짜</label><input id="esD" type="date" value="${s.date||''}"></div>
             <div class="field"><label>종료 날짜 <span style="color:var(--muted);font-weight:400">(여러 날 행사 · 선택)</span></label><input id="esEndDate" type="date" value="${s.endDate||''}"></div>
-            <label style="display:flex;align-items:center;gap:7px;font-size:13px;color:var(--cream);margin:-8px 0 14px"><input type="checkbox" id="esAllDay" ${s.allDay?'checked':''}> 하루 종일 (시간 미정)</label>
-            <div class="row"><div class="field"><label>시작</label><input id="esT" type="time" value="${s.time||'21:00'}" onchange="endPlus2('esT','esTe')"></div><div class="field"><label>종료</label><input id="esTe" type="time" value="${s.endTime||''}"></div></div>
+            <label style="display:flex;align-items:center;gap:8px;font-size:14px;color:var(--cream);margin:0 2px 12px"><input type="checkbox" id="esAllDay" ${s.allDay?'checked':''} onchange="toggleAllDayInputs(this,'esT','esTe')"> 하루 종일 (시간 미정)</label>
+            <div class="row"><div class="field"><label>시작</label><input id="esT" type="time" value="${s.time||'21:00'}" onchange="endPlus2('esT','esTe')" ${s.allDay?'disabled':''}></div><div class="field"><label>종료</label><input id="esTe" type="time" value="${s.endTime||''}" ${s.allDay?'disabled':''}></div></div>
             <div class="field"><label>유형</label><select id="esType">${[['풋살','풋살 경기'],['축구','축구 경기'],['회식','회식'],['야유회','야유회'],['기타','기타']].map(([v,l])=>`<option value="${v}"${(s.type||'풋살')===v?' selected':''}>${l}</option>`).join('')}</select></div>
-            <div class="field"><label>장소</label><input id="esP" value="${esc(s.place||'')}" maxlength="40"><label style="display:flex;align-items:center;gap:7px;font-size:13px;color:var(--cream);margin-top:8px"><input type="checkbox" id="esTbd" onchange="if(this.checked)document.getElementById('esP').value='미정 (TBD)'"> 장소 미정(TBD)</label></div>
+            <div class="field"><label>장소</label><input id="esP" value="${esc(s.place||'')}" maxlength="40" ${(s.place||'')==='미정 (TBD)'?'disabled':''}><label style="display:flex;align-items:center;gap:8px;font-size:14px;color:var(--cream);margin-top:10px"><input type="checkbox" id="esTbd" ${(s.place||'')==='미정 (TBD)'?'checked':''} onchange="var p=document.getElementById('esP');if(this.checked){p.value='미정 (TBD)';p.disabled=true}else{p.disabled=false;if(p.value==='미정 (TBD)')p.value=''}"> 장소 미정(TBD)</label></div>
             <div class="field"><label>장소 링크 <span style="color:var(--muted);font-weight:400">(선택)</span></label><input id="esPu" value="${esc(s.placeUrl||'')}" placeholder="https://naver.me/..." maxlength="300"></div>
             <div class="field"><label>게스트 신청 링크 <span style="color:var(--muted);font-weight:400">(선택 · 소개 페이지 버튼)</span></label><input id="esGu" value="${esc(s.guestUrl||'')}" placeholder="https://forms.gle/..." maxlength="300"></div>
             <div class="field"><label>참석 신청 마감</label><input id="esDl" type="date" value="${s.deadline||autoDeadlineStr(s.date)}"></div>
@@ -3467,10 +3472,10 @@ async function renderOps() {
     ${opsEditSessionId ? '' : (opsAddSessionOpen ? `
     <div class="field"><label>날짜 <span style="color:var(--muted);font-weight:400">(<span id="opsSessSeasonLbl">${seasonLabel(defDate)} 시즌</span>)</span></label><input id="opsSessDate" type="date" value="${defDate}" onchange="opsSyncDeadline()"></div>
     <div class="field"><label>종료 날짜 <span style="color:var(--muted);font-weight:400">(여러 날 행사 · 선택)</span></label><input id="opsSessEndDate" type="date"></div>
-    <label style="display:flex;align-items:center;gap:7px;font-size:13px;color:var(--cream);margin:-8px 0 14px"><input type="checkbox" id="opsSessAllDay"> 하루 종일 (시간 미정)</label>
+    <label style="display:flex;align-items:center;gap:8px;font-size:14px;color:var(--cream);margin:0 2px 12px"><input type="checkbox" id="opsSessAllDay" onchange="toggleAllDayInputs(this,'opsSessTime','opsSessEnd')"> 하루 종일 (시간 미정)</label>
     <div class="row"><div class="field"><label>시작</label><input id="opsSessTime" type="time" value="${seasonDefaultTime(defDate).start}" onchange="endPlus2('opsSessTime','opsSessEnd')"></div><div class="field"><label>종료</label><input id="opsSessEnd" type="time" value="${seasonDefaultTime(defDate).end}"></div></div>
     <div class="field"><label>유형 <span style="color:var(--muted);font-weight:400">(팀빌더 통계 유형)</span></label><select id="opsSessType">${[['풋살','풋살 경기'],['축구','축구 경기'],['회식','회식'],['야유회','야유회'],['기타','기타']].map(([v,l])=>`<option value="${v}"${v==='풋살'?' selected':''}>${l}</option>`).join('')}</select></div>
-    <div class="field"><label>장소</label><input id="opsSessPlace" value="상암 풋살장" maxlength="40"><label style="display:flex;align-items:center;gap:7px;font-size:13px;color:var(--cream);margin-top:8px"><input type="checkbox" id="opsSessTbd" onchange="if(this.checked)document.getElementById('opsSessPlace').value='미정 (TBD)'"> 장소 미정(TBD)</label></div>
+    <div class="field"><label>장소</label><input id="opsSessPlace" value="상암 풋살장" maxlength="40"><label style="display:flex;align-items:center;gap:8px;font-size:14px;color:var(--cream);margin-top:10px"><input type="checkbox" id="opsSessTbd" onchange="var p=document.getElementById('opsSessPlace');if(this.checked){p.value='미정 (TBD)';p.disabled=true}else{p.disabled=false;if(p.value==='미정 (TBD)')p.value=''}"> 장소 미정(TBD)</label></div>
     <div class="field"><label>장소 링크 <span style="color:var(--muted);font-weight:400">(지도 URL · 선택)</span></label><input id="opsSessPlaceUrl" placeholder="https://naver.me/..." maxlength="300"></div>
     <div class="field"><label>게스트 신청 링크 <span style="color:var(--muted);font-weight:400">(선택 · 소개 페이지에 '게스트 신청' 버튼 노출)</span></label><input id="opsSessGuestUrl" placeholder="https://forms.gle/..." maxlength="300"></div>
     <div class="field"><label>참석 신청 마감 <span style="color:var(--muted);font-weight:400">(기본: 전주 일요일 23:59)</span></label><input id="opsSessDeadline" type="date" value="${autoDeadlineStr(defDate)}"></div>

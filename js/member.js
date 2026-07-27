@@ -2755,8 +2755,9 @@ function setAttFilter(st){
 function guestRowsHtml(sid){
   const ga = GUEST_REQS.filter(g=>g.sid===sid&&g.status==='approved');
   const gx = GUEST_EXTRA[sid]||0;
-  let r = ga.map(g=>`<div class="att-row"><span class="js"></span><span class="nm">${esc(g.name)} <span style="font-size:11px;color:var(--win);font-weight:800">게스트</span></span><span class="st"></span></div>`).join('');
-  if (gx>0) r += `<div class="att-row"><span class="js"></span><span class="nm">외부 게스트</span><span class="st" style="color:var(--win);font-weight:800;font-size:13px">${gx}명</span></div>`;
+  const gLabel = `<span class="js" style="width:auto;flex-shrink:0;color:var(--win);font-weight:800;font-size:11px">게스트</span>`;
+  let r = ga.map(g=>`<div class="att-row">${gLabel}<span class="nm">${esc(g.name)}</span><span class="st"></span></div>`).join('');
+  if (gx>0) r += `<div class="att-row">${gLabel}<span class="nm">외부 게스트</span><span class="st" style="color:var(--win);font-weight:800;font-size:13px">${gx}명</span></div>`;
   return r || '<div class="empty" style="font-size:13px;padding:16px 0;text-align:center">게스트가 없어요.</div>';
 }
 // 참석 신청 마감: 세션에 deadline이 있으면 그 날 23:59, 없으면 매치일 직전 일요일(전주 일요일)

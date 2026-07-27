@@ -2792,7 +2792,13 @@ async function renderAtt() {
     members = ROSTER.filter(p => { const st = p.status||'active'; if (st==='former'||st==='friends') return false; return p.joinDate && new Date(p.joinDate) <= sessMonthEnd; })
       .map(p => { const t = TEAM_SHEET[p.name] || { team:'기타' }; return { ...p, jersey:t.jersey, eng:t.eng||'', team:t.team, cap:!!t.cap }; });
   } else {
-    members = activeMembers(sessMonth).filter(m => !isDormantFor(m, sessMonth));
+    // ⚠️ activeMembers()는 dormantMonths 기준이라 '휴면→활동(activeMonths 예외)' 전환자를 놓친다.
+    //    가입 조건 명단을 isDormantFor(activeMonths 반영)로 걸러 활동 회원을 산출한다.
+    const TEAM_ORDER = { 'WHITE':0, 'BLACK':1, '기타':2 };
+    members = ROSTER.filter(p => { const st = p.status||'active'; if (st==='former'||st==='friends') return false; return p.joinDate && new Date(p.joinDate) <= sessMonthEnd; })
+      .filter(p => !isDormantFor(p, sessMonth))
+      .map(p => { const t = TEAM_SHEET[p.name] || { team:'기타' }; return { ...p, jersey:t.jersey, eng:t.eng||'', team:t.team, cap:!!t.cap }; })
+      .sort((a,b)=> (TEAM_ORDER[a.team]-TEAM_ORDER[b.team]) || ((a.jersey??999)-(b.jersey??999)) || a.name.localeCompare(b.name,'ko'));
   }
   let duesPaidSet = null;
   if (sess.duesOnly) {

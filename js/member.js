@@ -1333,10 +1333,11 @@ async function upcomingSessions() {
 // 세션이 끝났는지(종료시간 경과). 종료시간 없으면 시작+2시간, 그것도 없으면 그날 끝.
 function sessionEnded(s){
   if(!s || !s.date) return false;
+  const endD = (s.endDate && s.endDate > s.date) ? s.endDate : s.date;   // 여러 날 행사는 종료 날짜 기준
   let end = s.endTime;
-  if(!end && s.time){ const [h,m]=s.time.split(':').map(Number); end = String((h+2)%24).padStart(2,'0')+':'+String(m||0).padStart(2,'0'); }
+  if(!s.allDay && !end && s.time){ const [h,m]=s.time.split(':').map(Number); end = String((h+2)%24).padStart(2,'0')+':'+String(m||0).padStart(2,'0'); }
   if(!end) end = '23:59';
-  return new Date(s.date+'T'+end) < new Date();
+  return new Date(endD+'T'+end) < new Date();
 }
 // 세션 장소 — 링크 있으면 클릭 시 이동
 function sessPlaceHtml(s){
@@ -1580,7 +1581,7 @@ async function bellFeed(){
       const at = _sessCreatedMs(String(sx.id||''));
       if (!at || at < cutoff) return;
       if ((sx.date||'') < todayStr()) return;
-      items.push({ id:'s'+sx.id, tag:'세션', title:`${fmtSessionDate(sx.date, sx.time)} · ${sx.place||''}`, at, go:'att' });
+      items.push({ id:'s'+sx.id, tag:'세션', title:`${fmtSessionDate(sx.date, sx.time, sx.endTime, sx.allDay, sx.endDate)} · ${sx.place||''}`, at, go:'att' });
     });
   } catch(e){}
   return items.sort((a,b) => (b.pinned?1:0)-(a.pinned?1:0) || b.at - a.at).slice(0, 12);
@@ -2000,7 +2001,7 @@ async function renderHome() {
       : targetBlockedDues
         ? `<div style="margin-top:14px;padding-top:14px;border-top:1px solid var(--line)"><div style="font-size:11px;color:var(--muted);font-weight:800;letter-spacing:.04em;margin-bottom:9px">${sessLabel} 참석</div><div style="font-size:12px;color:var(--muted);line-height:1.6;margin-bottom:9px">${targetMoNum}월 회비를 납부해야 이 세션에 참석 신청할 수 있어요.</div><button class="btn accent" style="width:100%" onclick="switchTab('dues')">회비 납부하러 가기</button></div>`
         : `<div style="margin-top:14px;padding-top:14px;border-top:1px solid var(--line)"><div style="font-size:11px;color:var(--muted);font-weight:800;letter-spacing:.04em;margin-bottom:9px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${sessLabel} 참석</div><div style="display:flex;gap:6px">${qbtn('yes','참석','var(--win)','var(--cream)')}${qbtn('no','불참','var(--alert)','var(--cream)')}${qbtn('maybe','미정','var(--accent)','#14281b')}</div></div>`) : '';
-    const upcomingHtml = myYes.length ? `<div style="margin-top:12px;padding-top:12px;border-top:1px solid var(--line)"><div style="font-size:11px;color:var(--muted);font-weight:800;letter-spacing:.04em;margin-bottom:4px">참석 예정 ${myYes.length}개</div>${myYes.map(s => `<div style="padding:5px 0;font-size:13px;color:var(--cream)"><div style="display:flex;align-items:center;gap:8px"><span style="color:var(--cream);font-size:7px;opacity:.7">●</span><span style="min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(sessChipLabel(s))}</span><span style="margin-left:auto;flex-shrink:0;color:var(--muted);font-size:12px">${esc((s.time||'').slice(0,5))}${s.endTime?'–'+esc(s.endTime.slice(0,5)):''}</span></div>${s.place ? `<div style="margin-left:17px;color:var(--muted);font-size:12px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(s.place)}</div>` : ''}</div>`).join('')}</div>` : '';
+    const upcomingHtml = myYes.length ? `<div style="margin-top:12px;padding-top:12px;border-top:1px solid var(--line)"><div style="font-size:11px;color:var(--muted);font-weight:800;letter-spacing:.04em;margin-bottom:4px">참석 예정 ${myYes.length}개</div>${myYes.map(s => `<div style="padding:5px 0;font-size:13px;color:var(--cream)"><div style="display:flex;align-items:center;gap:8px"><span style="color:var(--cream);font-size:7px;opacity:.7">●</span><span style="min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(sessChipLabel(s))}</span><span style="margin-left:auto;flex-shrink:0;color:var(--muted);font-size:12px">${s.allDay?'하루 종일':(esc((s.time||'').slice(0,5))+(s.endTime?'–'+esc(s.endTime.slice(0,5)):''))}</span></div>${s.place ? `<div style="margin-left:17px;color:var(--muted);font-size:12px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(s.place)}</div>` : ''}</div>`).join('')}</div>` : '';
     const pendingHtml = pending.length ? `<div style="margin-top:12px;padding-top:12px;border-top:1px solid var(--line)"><button onclick="openAtt('${pending[0].id}')" style="width:100%;text-align:left;cursor:pointer;font-family:inherit;border:none;background:transparent;padding:0;display:flex;align-items:center;justify-content:space-between;gap:10px"><span style="font-size:13px;font-weight:600;color:#ece6d2">미응답한 일정 ${pending.length}개</span><span style="font-size:12px;font-weight:800;color:var(--accent)">응답하기 →</span></button></div>` : '';
     const profileHtml = myProfile
         ? `${(myProfile.bio||'').trim()?`<div class="pf-bio">"${esc(myProfile.bio.trim())}"</div>`:''}${profileSkillsHtml(myProfile)}`

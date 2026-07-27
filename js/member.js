@@ -2063,12 +2063,23 @@ async function renderHome() {
       </button>`;
     }
   }
+  // 투표 기간(25일~말일)이면 홈에 투표 카드 표시
+  let voteHome = '';
+  if (meActive && me != null && isVotingOpen() && votingMembers(potmMonth()).some(m=>m.id===me)) {
+    let voted = false;
+    try { const mo=potmMonth(); const [vm,vg]=await Promise.all([fetchVotes(mo,'mvp'),fetchVotes(mo,'growth')]); voted = vm.some(v=>v.voter_id===me) && vg.some(v=>v.voter_id===me); } catch(e){}
+    const vmoNum = parseInt(potmMonth().split('-')[1]);
+    voteHome = `<button class="card" style="width:100%;box-sizing:border-box;padding:14px 16px;margin-bottom:12px;display:flex;align-items:center;justify-content:space-between;gap:12px;cursor:pointer;font-family:inherit;text-align:left" onclick="switchTab('potm')">
+      <span style="min-width:0"><span style="display:block;font-size:14px;font-weight:800;color:#ece6d2">${vmoNum}월 이달의 선수 투표${voted?'':' <span style="font-size:11px;color:var(--alert);font-weight:800">진행중</span>'}</span><span style="display:block;font-size:12px;color:${voted?'var(--muted)':'var(--accent)'};margin-top:2px">${voted?'투표 완료 · 결과는 종료 후 공개':'MVP·성장상 두 부문을 뽑아 주세요'}</span></span>
+      <span style="font-size:12px;font-weight:800;color:var(--accent);white-space:nowrap">${voted?'확인':'투표'} →</span>
+    </button>`;
+  }
   const _lgNow = isLeague();
   const seasonBanner = `<div style="display:flex;align-items:center;gap:9px;padding:10px 14px;margin-bottom:12px;border-radius:12px;background:${_lgNow?'rgba(224,165,48,.12)':'transparent'};border:1px solid ${_lgNow?'var(--gold)':'var(--line)'}">
       <span style="flex-shrink:0;font-size:11px;font-weight:800;letter-spacing:.04em;padding:3px 9px;border-radius:999px;background:${_lgNow?'var(--gold)':'var(--muted)'};color:${_lgNow?'#14281b':'#0d1420'}">${_lgNow?'팀 리그':'일반'}</span>
       <span style="font-size:12.5px;color:var(--cream);line-height:1.4">${_lgNow?'이번 달은 <b>팀 리그</b> · 20–23시 · 감독이 팀 선발':'이번 달은 <b>일반 경기</b> · 21–23시'}</span>
     </div>`;
-  let html = seasonBanner + dash + uniHome + `<div class="section-title">다가오는 매치</div>`;
+  let html = seasonBanner + dash + voteHome + uniHome + `<div class="section-title">다가오는 매치</div>`;
   html += sessions.length > 1
     ? `<div class="sess-carousel" id="sessCarousel" onscroll="updateSessDots()">${sessCards.join('')}</div>
        <div class="sess-dots">

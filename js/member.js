@@ -1767,17 +1767,23 @@ async function renderMore() {
   el.innerHTML = html;
 }
 
-// 일정 하단탭 배지: 내 미응답(none) 일정 개수 — 미정/참석/불참은 응답으로 간주
+// 일정 하단탭 배지: 내 '미응답(none) 또는 미정(maybe)' 일정 개수 — 참석/불참만 응답 완료로 간주
 async function refreshAttBadge(){
   const b = document.getElementById('attBadge'); if (!b) return;
   const me = getMe(); let cnt = 0;
   try{
     const meP = me != null ? PLAYERS.find(x=>x.id===me) : null;
-    if (me != null && Array.isArray(sessions) && sessions.length && activeMembers(potmMonth()).some(m=>m.id===me)){
-      const arr = await Promise.all(sessions.map(s=>fetchAttendance(s.id)));
-      sessions.forEach((s,i)=>{
-        if (meP && isDormantFor(meP, (s.date||'').slice(0,7))) return;   // 휴면 달 제외
-        const a=(arr[i]||[]).find(x=>x.member_id===me); const st=a?a.status:'none'; if(st==='none') cnt++;
+    const st0 = meP ? (meP.status||'active') : null;
+    if (meP && st0!=='former' && st0!=='friends'){
+      const sess = (await upcomingSessions()).filter(s => !sessionEnded(s));   // 다가오는(안 끝난) 세션
+      const arr = await Promise.all(sess.map(s=>fetchAttendance(s.id)));
+      sess.forEach((s,i)=>{
+        const sm = (s.date||'').slice(0,7);
+        if (!s.allowDormant && isDormantFor(meP, sm)) return;   // 휴면 달 제외(휴면 허용 세션은 포함)
+        const dl = sessionDeadline(s);
+        if (dl && new Date() > dl && !isAdmin()) return;         // 마감된 세션 제외(운영진은 예외)
+        const a=(arr[i]||[]).find(x=>x.member_id===me); const st=a?a.status:'none';
+        if(st==='none'||st==='maybe') cnt++;                      // 미응답 또는 미정
       });
     }
   }catch(e){}

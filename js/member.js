@@ -1256,13 +1256,20 @@ function endPlus2(startId, endId){
   const eh = (h + 2) % 24;
   e.value = `${String(eh).padStart(2,'0')}:${String(m).padStart(2,'0')}`;
 }
-function fmtSessionDate(ds, time, endTime) {
+function fmtSessionDate(ds, time, endTime, allDay, endDate) {
   if (!ds) return '';
-  const dt = new Date(ds + 'T' + (time||'20:00'));
   const days=['일','월','화','수','목','금','토'];
+  const d1 = new Date(ds + 'T12:00');
+  const base = `${d1.getMonth()+1}월 ${d1.getDate()}일 (${days[d1.getDay()]})`;
+  if (endDate && endDate > ds) {   // 여러 날(1박2일 등)
+    const d2 = new Date(endDate + 'T12:00');
+    const range = `${base} ~ ${d2.getMonth()+1}월 ${d2.getDate()}일 (${days[d2.getDay()]})`;
+    return allDay ? range : `${range} ${fmtClock(time||'20:00')}`;
+  }
+  if (allDay) return `${base} 하루 종일`;
   const start = fmtClock(time||'20:00');
   const end = endTime ? ' - ' + fmtClock(endTime) : '';
-  return `${dt.getMonth()+1}월 ${dt.getDate()}일 (${days[dt.getDay()]}) ${start}${end}`;
+  return `${base} ${start}${end}`;
 }
 
 /* ---------- 클럽 설정(이번 세션 등) — jsonb 단일 행 ---------- */
@@ -2020,7 +2027,7 @@ async function renderHome() {
     return `
     <div class="session-card">
       ${s.label?`<div class="lbl">${esc(s.label)}</div>`:''}
-      <div class="when">${fmtSessionDate(s.date, s.time, s.endTime)}</div>
+      <div class="when">${fmtSessionDate(s.date, s.time, s.endTime, s.allDay, s.endDate)}</div>
       <div class="where">${sessPlaceHtml(s)}</div>
       <div class="att-mini">
         ${isAdmin()
@@ -2849,7 +2856,7 @@ async function renderAtt() {
     <div class="session-card">
       <span style="display:inline-block;font-size:10px;font-weight:800;padding:2px 8px;border-radius:999px;margin-bottom:6px;background:${_alg?'var(--gold)':'rgba(255,255,255,.12)'};color:${_alg?'#14281b':'var(--cream)'}">${_alg?'팀 리그':'일반'}</span>
       <div class="lbl">${sess.label?esc(sess.label):'참석 체크'}</div>
-      <div class="when">${fmtSessionDate(sess.date, sess.time, sess.endTime)}</div>
+      <div class="when">${fmtSessionDate(sess.date, sess.time, sess.endTime, sess.allDay, sess.endDate)}</div>
       <div class="where">${sessPlaceHtml(sess)}</div>
     </div>`;
 
@@ -3436,9 +3443,12 @@ async function renderOps() {
   const _sessRow = (s)=>{
         if (String(s.id)===opsEditSessionId) {
           return `<div class="ops-row" style="flex-direction:column;align-items:stretch;gap:0">
-            <div class="row"><div class="field"><label>날짜</label><input id="esD" type="date" value="${s.date||''}"></div><div class="field"><label>시작</label><input id="esT" type="time" value="${s.time||'21:00'}" onchange="endPlus2('esT','esTe')"></div><div class="field"><label>종료 <span style="color:var(--muted);font-weight:400">(시작+2시간 기본)</span></label><input id="esTe" type="time" value="${s.endTime||''}"></div></div>
+            <div class="field"><label>날짜</label><input id="esD" type="date" value="${s.date||''}"></div>
+            <div class="field"><label>종료 날짜 <span style="color:var(--muted);font-weight:400">(여러 날 행사 · 선택)</span></label><input id="esEndDate" type="date" value="${s.endDate||''}"></div>
+            <label style="display:flex;align-items:center;gap:7px;font-size:13px;color:var(--cream);margin:-8px 0 14px"><input type="checkbox" id="esAllDay" ${s.allDay?'checked':''}> 하루 종일 (시간 미정)</label>
+            <div class="row"><div class="field"><label>시작</label><input id="esT" type="time" value="${s.time||'21:00'}" onchange="endPlus2('esT','esTe')"></div><div class="field"><label>종료</label><input id="esTe" type="time" value="${s.endTime||''}"></div></div>
             <div class="field"><label>유형</label><select id="esType">${[['풋살','풋살 경기'],['축구','축구 경기'],['회식','회식'],['야유회','야유회'],['기타','기타']].map(([v,l])=>`<option value="${v}"${(s.type||'풋살')===v?' selected':''}>${l}</option>`).join('')}</select></div>
-            <div class="field"><label>장소</label><input id="esP" value="${esc(s.place||'')}" maxlength="40"></div>
+            <div class="field"><label>장소</label><input id="esP" value="${esc(s.place||'')}" maxlength="40"><label style="display:flex;align-items:center;gap:7px;font-size:13px;color:var(--cream);margin-top:8px"><input type="checkbox" id="esTbd" onchange="if(this.checked)document.getElementById('esP').value='미정 (TBD)'"> 장소 미정(TBD)</label></div>
             <div class="field"><label>장소 링크 <span style="color:var(--muted);font-weight:400">(선택)</span></label><input id="esPu" value="${esc(s.placeUrl||'')}" placeholder="https://naver.me/..." maxlength="300"></div>
             <div class="field"><label>게스트 신청 링크 <span style="color:var(--muted);font-weight:400">(선택 · 소개 페이지 버튼)</span></label><input id="esGu" value="${esc(s.guestUrl||'')}" placeholder="https://forms.gle/..." maxlength="300"></div>
             <div class="field"><label>참석 신청 마감</label><input id="esDl" type="date" value="${s.deadline||autoDeadlineStr(s.date)}"></div>
@@ -3451,13 +3461,16 @@ async function renderOps() {
             <div class="n-actions"><button class="btn accent sm" onclick="opsSaveSession('${s.id}')">저장</button><button class="btn ghost sm" onclick="opsCancelSessionEdit()">취소</button></div>
           </div>`;
         }
-        return `<div class="ops-row"><div style="min-width:0"><b>${fmtSessionDate(s.date,s.time,s.endTime)}</b>${s.label?` · ${esc(s.label)}`:''}<div class="hint" style="margin:0">${esc(s.place)} · 마감 ${deadlineLabel(sessionDeadline(s))}</div></div><span style="display:flex;gap:6px;flex-shrink:0"><button class="btn ghost sm" onclick="opsEditSession('${s.id}')">수정</button><button class="btn ghost sm" style="color:var(--red)" onclick="opsDelSession('${s.id}')">삭제</button></span></div>`;
+        return `<div class="ops-row"><div style="min-width:0"><b>${fmtSessionDate(s.date,s.time,s.endTime,s.allDay,s.endDate)}</b>${s.label?` · ${esc(s.label)}`:''}<div class="hint" style="margin:0">${esc(s.place)} · 마감 ${deadlineLabel(sessionDeadline(s))}</div></div><span style="display:flex;gap:6px;flex-shrink:0"><button class="btn ghost sm" onclick="opsEditSession('${s.id}')">수정</button><button class="btn ghost sm" style="color:var(--red)" onclick="opsDelSession('${s.id}')">삭제</button></span></div>`;
       };
   const secSession = `
     ${opsEditSessionId ? '' : (opsAddSessionOpen ? `
-    <div class="row"><div class="field"><label>날짜 <span style="color:var(--muted);font-weight:400">(<span id="opsSessSeasonLbl">${seasonLabel(defDate)} 시즌</span>)</span></label><input id="opsSessDate" type="date" value="${defDate}" onchange="opsSyncDeadline()"></div><div class="field"><label>시작</label><input id="opsSessTime" type="time" value="${seasonDefaultTime(defDate).start}" onchange="endPlus2('opsSessTime','opsSessEnd')"></div><div class="field"><label>종료 <span style="color:var(--muted);font-weight:400">(팀 리그 20–23시 · 일반 21–23시 자동)</span></label><input id="opsSessEnd" type="time" value="${seasonDefaultTime(defDate).end}"></div></div>
+    <div class="field"><label>날짜 <span style="color:var(--muted);font-weight:400">(<span id="opsSessSeasonLbl">${seasonLabel(defDate)} 시즌</span>)</span></label><input id="opsSessDate" type="date" value="${defDate}" onchange="opsSyncDeadline()"></div>
+    <div class="field"><label>종료 날짜 <span style="color:var(--muted);font-weight:400">(여러 날 행사 · 선택)</span></label><input id="opsSessEndDate" type="date"></div>
+    <label style="display:flex;align-items:center;gap:7px;font-size:13px;color:var(--cream);margin:-8px 0 14px"><input type="checkbox" id="opsSessAllDay"> 하루 종일 (시간 미정)</label>
+    <div class="row"><div class="field"><label>시작</label><input id="opsSessTime" type="time" value="${seasonDefaultTime(defDate).start}" onchange="endPlus2('opsSessTime','opsSessEnd')"></div><div class="field"><label>종료</label><input id="opsSessEnd" type="time" value="${seasonDefaultTime(defDate).end}"></div></div>
     <div class="field"><label>유형 <span style="color:var(--muted);font-weight:400">(팀빌더 통계 유형)</span></label><select id="opsSessType">${[['풋살','풋살 경기'],['축구','축구 경기'],['회식','회식'],['야유회','야유회'],['기타','기타']].map(([v,l])=>`<option value="${v}"${v==='풋살'?' selected':''}>${l}</option>`).join('')}</select></div>
-    <div class="field"><label>장소</label><input id="opsSessPlace" value="상암 풋살장" maxlength="40"></div>
+    <div class="field"><label>장소</label><input id="opsSessPlace" value="상암 풋살장" maxlength="40"><label style="display:flex;align-items:center;gap:7px;font-size:13px;color:var(--cream);margin-top:8px"><input type="checkbox" id="opsSessTbd" onchange="if(this.checked)document.getElementById('opsSessPlace').value='미정 (TBD)'"> 장소 미정(TBD)</label></div>
     <div class="field"><label>장소 링크 <span style="color:var(--muted);font-weight:400">(지도 URL · 선택)</span></label><input id="opsSessPlaceUrl" placeholder="https://naver.me/..." maxlength="300"></div>
     <div class="field"><label>게스트 신청 링크 <span style="color:var(--muted);font-weight:400">(선택 · 소개 페이지에 '게스트 신청' 버튼 노출)</span></label><input id="opsSessGuestUrl" placeholder="https://forms.gle/..." maxlength="300"></div>
     <div class="field"><label>참석 신청 마감 <span style="color:var(--muted);font-weight:400">(기본: 전주 일요일 23:59)</span></label><input id="opsSessDeadline" type="date" value="${autoDeadlineStr(defDate)}"></div>
@@ -3642,8 +3655,10 @@ async function opsAddSession() {
   const desc = document.getElementById('opsSessDesc').value.trim();
   const duesOnly = document.getElementById('opsSessDuesOnly').checked;
   const allowDormant = document.getElementById('opsSessAllowDorm').checked;
+  const allDay = !!(document.getElementById('opsSessAllDay')||{}).checked;
+  const endDate = ((document.getElementById('opsSessEndDate')||{}).value) || '';
   const list = await getSessions();
-  list.push({ id:'s'+Date.now().toString(36)+Math.random().toString(36).slice(2,5), date, time, endTime, type, place, placeUrl, guestUrl, deadline, label, desc, duesOnly, allowDormant });
+  list.push({ id:'s'+Date.now().toString(36)+Math.random().toString(36).slice(2,5), date, endDate, time: allDay?'':time, endTime: allDay?'':endTime, allDay, type, place, placeUrl, guestUrl, deadline, label, desc, duesOnly, allowDormant });
   if (!(await saveSettings({ sessions: list }))) return;
   opsAddSessionOpen = false;
   await rerender(renderOps); toast('세션을 추가했어요');
@@ -3695,8 +3710,10 @@ async function opsSaveSession(id) {
   const date = document.getElementById('esD').value;
   if (!date) return toast('날짜를 선택해 주세요');
   s.date = date;
-  s.time = document.getElementById('esT').value || '21:00';
-  s.endTime = document.getElementById('esTe').value || '';
+  s.endDate = (document.getElementById('esEndDate')||{}).value || '';
+  s.allDay = !!(document.getElementById('esAllDay')||{}).checked;
+  s.time = s.allDay ? '' : (document.getElementById('esT').value || '21:00');
+  s.endTime = s.allDay ? '' : (document.getElementById('esTe').value || '');
   s.type = document.getElementById('esType').value || '풋살';
   s.place = document.getElementById('esP').value.trim() || '상암 풋살장';
   s.placeUrl = document.getElementById('esPu').value.trim();

@@ -2750,6 +2750,7 @@ function setAttFilter(st){
   const b = document.getElementById('attListBody'); if (b && _attRows) b.innerHTML = _attRows[st] || '';
   const lbl = document.getElementById('attFilterLabel'); if (lbl) lbl.textContent = ({yes:'참석',no:'불참',maybe:'미정',none:'미응답',guest:'게스트'})[st] || '명단';
   document.querySelectorAll('.att-counts .att-cnt').forEach(c=>c.classList.toggle('sel', c.classList.contains(st)));
+  const gw = document.getElementById('apGuestWrap'); if (gw) gw.style.display = (st==='yes'||st==='guest') ? 'block' : 'none';   // 게스트 카드는 참석·게스트에서만
 }
 // 게스트 명단 행(승인된 멤버 게스트 + 외부 게스트) — 게스트 필터 표시용
 function guestRowsHtml(sid){
@@ -2959,7 +2960,8 @@ async function renderAtt() {
     </div>
     ${(()=>{ const gp=GUEST_REQS.filter(g=>g.sid===sess.id&&g.status==='pending'); const ga=GUEST_REQS.filter(g=>g.sid===sess.id&&g.status==='approved'); const gx=GUEST_EXTRA[sess.id]||0; let s='';
       if(admin&&gp.length) s+=`<div class="card" style="margin-top:12px"><div style="font-size:12px;font-weight:800;color:var(--accent);margin-bottom:8px">게스트 신청 · 승인 대기 ${gp.length}명</div>${gp.map(g=>`<div style="display:flex;align-items:center;justify-content:space-between;gap:8px;padding:6px 0"><span style="color:var(--cream);font-size:14px">${esc(g.name)}</span><span style="display:flex;gap:6px"><button class="btn accent sm" onclick="approveGuest('${sess.id}',${g.mid})">승인</button><button class="btn ghost sm" style="color:var(--red)" onclick="cancelGuest('${sess.id}',${g.mid})">거절</button></span></div>`).join('')}</div>`;
-      if(ga.length||gx>0) s+=`<div class="card" style="margin-top:12px"><div id="gHdr" style="font-size:12px;font-weight:800;color:var(--win);margin-bottom:8px">게스트 ${ga.length+gx}명</div>${ga.map(g=>`<div style="display:flex;align-items:center;justify-content:space-between;gap:8px;padding:5px 0"><span style="color:var(--cream);font-size:14px">${esc(g.name)} <span style="font-size:11px;color:var(--win);font-weight:800">게스트</span></span>${admin?`<button class="btn ghost sm" style="color:var(--red)" onclick="cancelGuest('${sess.id}',${g.mid})">취소</button>`:''}</div>`).join('')}${gx>0?`<div style="padding:5px 0;color:var(--cream);font-size:14px">외부 게스트 <b>${gx}명</b>${admin?' <span style="font-size:11px;color:var(--muted)">(세션 수정에서 조절)</span>':''}</div>`:''}</div>`;
+      // 게스트 카드는 '참석'·'게스트' 필터에서만 노출(불참·미정·미응답에선 숨김). setAttFilter가 display 토글.
+      if(ga.length||gx>0) s+=`<div id="apGuestWrap" style="display:${(attFilter==='yes'||attFilter==='guest')?'block':'none'}"><div class="card" style="margin-top:12px"><div id="gHdr" style="font-size:12px;font-weight:800;color:var(--win);margin-bottom:8px">게스트 ${ga.length+gx}명</div>${ga.map(g=>`<div style="display:flex;align-items:center;justify-content:space-between;gap:8px;padding:5px 0"><span style="color:var(--cream);font-size:14px">${esc(g.name)} <span style="font-size:11px;color:var(--win);font-weight:800">게스트</span></span>${admin?`<button class="btn ghost sm" style="color:var(--red)" onclick="cancelGuest('${sess.id}',${g.mid})">취소</button>`:''}</div>`).join('')}${gx>0?`<div style="padding:5px 0;color:var(--cream);font-size:14px">외부 게스트 <b>${gx}명</b>${admin?' <span style="font-size:11px;color:var(--muted)">(세션 수정에서 조절)</span>':''}</div>`:''}</div></div>`;
       return s; })()}
     ${nDraft ? `<div class="save-bar"><span class="save-n">변경 ${nDraft}건 (미저장)</span><span class="sb-actions"><button class="cancel" onclick="attCancelDraft()">취소</button><button class="ok" onclick="attSaveDraft()">저장</button></span></div>` : ''}`;
   el.innerHTML = html;

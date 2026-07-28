@@ -28,8 +28,18 @@ function deadlineOf(sess) {
   d.setUTCDate(d.getUTCDate() - back);
   return d.toISOString().slice(0, 10);
 }
-// 사이트 isDormantFor와 동일 규칙 — activeMonths 우선, 영구휴면, 해당 월·이번 달 월휴면
+// ---- 활동 정원제 (2026-09분부터) ----
+let CAP_STATE = {};   // current.capacity — { 'YYYY-MM': { confirm:{id:{s,at}}, result:{active:[],finalized} } }
+const CAP_LIMIT = { '남': 24, '여': 12 };
+const CAP_START = '2026-09';
+const GENDER_FIX = { '심지수': '여' };   // 명단 성별 누락 보정
+const capGender = p => p.gender || GENDER_FIX[p.name] || '남';
+const capResultFor = m => { const r = (CAP_STATE[m] || {}).result; return (r && Array.isArray(r.active)) ? r : null; };
+
+// 사이트 isDormantFor와 동일 규칙 — 정원제 확정 결과 최우선, activeMonths, 영구휴면, 해당 월·이번 달 월휴면
 function isDormantLike(p, m, curM) {
+  const _r = (typeof m === 'string' && m >= CAP_START) ? capResultFor(m) : null;
+  if (_r) return !_r.active.includes(p.id);
   if ((p.activeMonths || []).includes(m)) return false;
   if ((p.status || 'active') === 'dormant') return true;
   const dm = p.dormantMonths || [];
@@ -66,8 +76,8 @@ const TPL = {
   tomorrow:    { title:'내일 세션', body:'{날짜} {시간} {장소} — 내일이에요!' },
   deadline:    { title:'참석 마감 임박', body:'{날짜} 세션 참석 응답이 내일 마감돼요. 참석/불참을 정해 주세요!' },
   vote:        { title:'이달의 선수 투표 시작', body:'이번 달 MVP와 성장상을 뽑아 주세요!' },
-  dues_open:   { title:'회비 안내', body:'{월}월 회비 납부가 시작됐어요. 25일까지 입금 부탁드려요!' },
-  dues_urge:   { title:'회비 마감 임박', body:'{월}월 회비가 내일(25일) 마감돼요. 아직 미납 상태예요!' },
+  dues_open:   { title:'다음 달 활동 확인', body:'{월}월에도 뛰려면 25일까지 활동 확인과 회비 납부를 모두 해주세요. 휴면 회원은 같은 기간에 복귀 신청할 수 있어요.' },
+  dues_urge:   { title:'자리 확정 마감 임박', body:'{월}월 자리 확정이 내일(25일) 마감돼요. 활동 확인이나 회비 납부가 아직이에요!' },
   dorm_ask:    { title:'{월}월엔 복귀하시나요?', body:"복귀하려면 홈에서 '활동'을, 계속 쉬려면 '휴면'을 눌러 주세요. 그대로 두면 휴면이 유지돼요." },
   winner:      { title:'축하합니다!', body:'{월}월 {부문}에 선정됐어요!' },
   vote_close:  { title:'{월}월 투표 마감 임박', body:'투표가 오늘 밤 마감돼요. 아직 참여 전이에요!' },
@@ -97,6 +107,7 @@ async function main() {
   const cur = (curRow && curRow[0] && curRow[0].data) || {};
   const sessions = cur.sessions || [];
   TPL_OV = cur.pushTemplates || {};
+  CAP_STATE = cur.capacity || {};
   const tbRow = await j(await rest('club_settings?select=data&id=eq.teambuilder'));
   const players = ((tbRow && tbRow[0] && tbRow[0].data) || {}).players || [];
 
@@ -105,6 +116,58 @@ async function main() {
   const dom = Number(today.slice(8, 10));
   const thisMonth = monthOf(today);
   const msgs = [];   // { title, body, url, targets?: [memberId] }  targets 없으면 전체
+
+  // ── 활동 정원제: 26일 0시(KST) 경과 → 다음 달 잠정 확정(확인+자가신고 필요) · 5일 이후 입금확인 기준 최종 확정 ──
+  async function capSave(m, patch){
+    const row = await j(await rest('club_settings?select=data&id=eq.current'));
+    const c2 = (row && row[0] && row[0].data) || {};
+    const cap = Object.assign({}, c2.capacity || {});
+    cap[m] = Object.assign({}, cap[m] || {}, patch);
+    c2.capacity = cap;
+    const res = await rest('club_settings', { method:'POST', headers:{ Prefer:'resolution=merge-duplicates' },
+      body: JSON.stringify({ id:'current', data:c2, updated_at:new Date().toISOString() }) });
+    if (!res.ok) { console.error('정원제 저장 실패:', res.status, await res.text()); process.exit(1); }
+    CAP_STATE = cap;
+  }
+  function capRank(m, okFn){   // 자리 배정: 유지 우선 → 신청 시각 순, 성별 정원 컷
+    const conf = (CAP_STATE[m] || {}).confirm || {};
+    const pool = { '남':[], '여':[] };
+    players.forEach(p => {
+      const st = p.status || 'active';
+      if (st === 'former' || st === 'friends') return;
+      const c = conf[String(p.id)];
+      if (!c || c.s !== 'active' || !okFn(p)) return;
+      pool[capGender(p)].push({ id:p.id, at:c.at||0, keep: !isDormantLike(p, thisMonth, thisMonth) });
+    });
+    const active = [];
+    ['남','여'].forEach(g => {
+      pool[g].sort((a,b) => (b.keep?1:0)-(a.keep?1:0) || a.at-b.at);
+      pool[g].slice(0, CAP_LIMIT[g]).forEach(x => active.push(x.id));
+    });
+    return active;
+  }
+  if (dom >= 26) {
+    let ny = Number(today.slice(0,4)), nmo = Number(today.slice(5,7)) + 1; if (nmo > 12) { nmo = 1; ny++; }
+    const capM = `${ny}-${String(nmo).padStart(2,'0')}`;
+    if (capM >= CAP_START && !capResultFor(capM)) {
+      const dd = await j(await rest(`dues?select=member_id,paid&month=eq.${capM}`)) || [];
+      const cpaid = new Set(dd.filter(d => d.paid).map(d => d.member_id));
+      const active = capRank(capM, p => cpaid.has(p.id));
+      await capSave(capM, { result: { active, at: new Date().toISOString() } });
+      console.log('정원제 롤오버', capM, '— 잠정 활동', active.length, '명');
+    }
+  }
+  if (dom >= 5 && dom < 15) {
+    const r5 = capResultFor(thisMonth);
+    const dc5 = new Set(((cur.duesConfirmed || {})[thisMonth]) || []);
+    if (thisMonth >= CAP_START && r5 && !r5.finalized && dc5.size) {
+      const dd = await j(await rest(`dues?select=member_id,paid&month=eq.${thisMonth}`)) || [];
+      const cpaid = new Set(dd.filter(d => d.paid).map(d => d.member_id));
+      const active = capRank(thisMonth, p => cpaid.has(p.id) && dc5.has(p.id));
+      await capSave(thisMonth, { result: { active, finalized: true, at: new Date().toISOString() } });
+      console.log('정원제 최종 확정', thisMonth, '— 활동', active.length, '명');
+    }
+  }
 
   // ⓠ 개인 알림 큐 (입금 확인·관리자 변경 등) — 매 실행마다 비움
   const queue = await j(await rest('push_queue?select=id,target_member_id,title,body,url&order=created_at.asc&limit=50')) || [];
@@ -211,11 +274,25 @@ async function main() {
       }
       // ⑥ 회비 마감(25일) 하루 전 — 미납만 타겟
       if (dom === 24 && once('dues-urge-' + thisMonth)) {
-        const dm = dom >= 15 ? `${thisMonth.slice(0, 4)}-${String(Number(thisMonth.slice(5, 7)) % 12 + 1).padStart(2, '0')}` : thisMonth;
+        let uy = Number(thisMonth.slice(0,4)), umo = Number(thisMonth.slice(5,7)) + 1; if (umo > 12) { umo = 1; uy++; }
+        const dm = `${uy}-${String(umo).padStart(2,'0')}`;
         const dues = await j(await rest(`dues?select=member_id,paid&month=eq.${dm}`)) || [];
         const paid = new Set(dues.filter(d => d.paid).map(d => d.member_id));
-        const unpaid = activeFor(players, dm, thisMonth).filter(p => !paid.has(p.id)).map(p => p.id);
-        if (unpaid.length) msgs.push({ cat:'dues_urge', legacy:'dues', ...T('dues_urge', {'월': Number(dm.slice(5, 7))}), url: './member.html#dues', targets: unpaid });
+        const conf = (CAP_STATE[dm] || {}).confirm || {};
+        const capOnDm = dm >= CAP_START;
+        // 활동 회원: (정원제) 미확인 또는 미납 / (이전) 미납만. 복귀 신청자: 미납이면 포함
+        const need = activeFor(players, dm, thisMonth).filter(p => {
+          const c = conf[String(p.id)];
+          return capOnDm ? (!(c && c.s === 'active') || !paid.has(p.id)) : !paid.has(p.id);
+        }).map(p => p.id);
+        const extra = capOnDm ? players.filter(p => {
+          const st = p.status || 'active';
+          if (st === 'former' || st === 'friends') return false;
+          const c = conf[String(p.id)];
+          return c && c.s === 'active' && !paid.has(p.id) && isDormantLike(p, thisMonth, thisMonth);
+        }).map(p => p.id) : [];
+        const urgeTo = [...new Set([...need, ...extra])];
+        if (urgeTo.length) msgs.push({ cat:'dues_urge', legacy:'dues', ...T('dues_urge', {'월': Number(dm.slice(5, 7))}), url: './member.html#dues', targets: urgeTo });
       }
     }
     st.noticeIds = st.noticeIds.slice(-100); st.rideIds = st.rideIds.slice(-50);

@@ -724,7 +724,7 @@ async function mergeTbMembers() {
     if (seen.has(tp.name)) return;                     // 중복 이름 방지
     seen.add(tp.name);
     const t = TEAM_SHEET[tp.name] || {};               // 팀(WHITE/BLACK)은 사이트 배정 유지
-    players.push({ id:tp.id, name:tp.name, tier:tp.tier, status:tp.status||'active',
+    players.push({ id:tp.id, name:tp.name, tier:tp.tier, status:tp.status||'active', gender:tp.gender||null,
       joinDate:tp.joinDate||'', friendsSince:tp.friendsSince||null,
       dormantMonths:(tp.dormantMonths||[]).slice(), activeMonths:(tp.activeMonths||[]).slice(),
       jersey:(tp.jersey!=null?tp.jersey:null), eng:tp.engName||'',
@@ -898,10 +898,76 @@ function nowMonthStr(){ const d=new Date(); return `${d.getFullYear()}-${String(
 // 휴면 판정(회비·출석 공용): ⓪ 활동 예외 월이면 활동 ① 영구 휴면(status:'dormant') ② 대상 월 휴면 ③ 이번 달 휴면.
 // ③은 팀빌더가 보통 이번 달까지만 휴면을 갱신하므로, 대상 월이 다음 달일 때 기존 휴면 회원이 누락되지 않게 함.
 function isDormantFor(p, monthStr){
+  const _cr = capOn(monthStr) ? capResult(monthStr) : null;   // 정원제 확정 결과가 있으면 그게 최종 기준
+  if (_cr) return !_cr.active.includes(p.id);
   if (activeMonthsOf(p).includes(monthStr)) return false;   // 멤버가 이 달을 '활동'으로 지정
   if ((p.status||'active')==='dormant') return true;
   const dm = dormantMonthsOf(p);
   return dm.includes(monthStr) || dm.includes(nowMonthStr());
+}
+
+
+/* ---------- 활동 정원제 (2026-09분부터) — 저장은 club_settings.current.capacity, 자리는 계산으로 도출 ---------- */
+const CAP_LIMIT = { '남': 24, '여': 12 };
+const CAP_START = '2026-09';                 // 이 달(다음 달 기준)부터 정원제 적용
+const GENDER_FIX = { '심지수': '여' };        // 명단에 성별 누락 시 보정(팀빌더 값이 생기면 그쪽 우선)
+let CAPACITY = {};                            // { 'YYYY-MM': { confirm:{id:{s,at}}, result:{active:[],finalized} } }
+function capGender(p){ return p.gender || GENDER_FIX[p.name] || '남'; }
+function capOn(m){ return typeof m === 'string' && m >= CAP_START; }
+function capMonthData(m){ return CAPACITY[m] || {}; }
+function capConfirmOf(m, id){ return (capMonthData(m).confirm || {})[String(id)] || null; }
+function capResult(m){ const r = capMonthData(m).result; return (r && Array.isArray(r.active)) ? r : null; }
+// 다음 달 자리 신청 기록 — 신청 시각이 선착순 기준. 같은 상태 재클릭은 시각 유지(순번 보존)
+async function capRecordConfirm(m, id, state){
+  if (!capOn(m)) return true;
+  let cur = {};
+  try { if (USE_DB){ const {data:row}=await sb.from('club_settings').select('data').eq('id','current').maybeSingle(); cur=(row&&row.data)||{}; } else cur=await fetchSettings(); } catch(e){}
+  const cap = Object.assign({}, cur.capacity || {});
+  const mo = Object.assign({}, cap[m] || {});
+  const cf = Object.assign({}, mo.confirm || {});
+  const prev = cf[String(id)];
+  cf[String(id)] = { s: state, at: (prev && prev.s === state && prev.at) ? prev.at : Date.now() };
+  mo.confirm = cf; cap[m] = mo;
+  CAPACITY = cap;
+  return await saveSettings({ capacity: cap });
+}
+// 잠정 판정(계산형): '확정'을 저장하지 않고 신청 시각 순위로 항상 도출 — 마지막 자리 동시 신청 경합에도 안전
+function capCompute(m, duesRows){
+  const paid = new Set((duesRows||[]).filter(d=>d.paid).map(d=>d.member_id));
+  const conf = capMonthData(m).confirm || {};
+  const curM = nowMonthStr();
+  const states = {}, counts = { '남':{used:0,cap:CAP_LIMIT['남']}, '여':{used:0,cap:CAP_LIMIT['여']} };
+  const pool = { '남':[], '여':[] };
+  PLAYERS.forEach(p => {
+    const st = p.status || 'active';
+    if (st === 'former' || st === 'friends') return;
+    const c = conf[String(p.id)];
+    if (!c || c.s !== 'active') { states[p.id] = (c && c.s === 'dormant') ? 'dormant' : 'unconfirmed'; return; }
+    pool[capGender(p)].push({ id:p.id, at:c.at||0, keep: !isDormantFor(p, curM) });
+  });
+  const waitRank = {};
+  ['남','여'].forEach(g => {
+    pool[g].sort((a,b) => (b.keep?1:0)-(a.keep?1:0) || a.at-b.at);   // 유지 우선, 그 안에서 신청 시각 순
+    pool[g].forEach((x,i) => {
+      if (i < CAP_LIMIT[g]) { states[x.id] = x.keep ? 'kept' : 'returning'; counts[g].used++; }
+      else { states[x.id] = 'waiting'; waitRank[x.id] = i - CAP_LIMIT[g] + 1; }
+    });
+  });
+  return { states, counts, waitRank, paid };
+}
+// 홈 토글 진입점: 정원제 달이면 신청 기록 후 팀빌더 반영(정원 초과 복귀는 대기만 등록)
+async function capSetNext(memberId, month, dormant){
+  if (!capOn(month)) { await setMyDormancy(memberId, month, dormant); return; }
+  if (!(await capRecordConfirm(month, memberId, dormant ? 'dormant' : 'active'))) { toast('저장 중 오류가 났어요'); return; }
+  const meP = PLAYERS.find(x=>x.id===memberId);
+  if (!dormant && meP && isDormantFor(meP, nowMonthStr())) {
+    let info; try { info = capCompute(month, await fetchDues(month)); } catch(e){ info = null; }
+    if (info && info.states[memberId] === 'waiting') {
+      toast('정원이 가득 찼어요 — 대기 ' + info.waitRank[memberId] + '번으로 등록했어요');
+      await rerender(renderHome); return;
+    }
+  }
+  await setMyDormancy(memberId, month, dormant);
 }
 
 function activeMembers(monthStr) {
@@ -1501,8 +1567,8 @@ const PUSH_TPL_DEFAULTS = {
   tomorrow:     { name:'내일 세션 리마인드(참석 응답자)', vars:'{날짜} {시간} {장소}',            title:'내일 세션', body:'{날짜} {시간} {장소} — 내일이에요!' },
   deadline:     { name:'참석 마감 임박(미응답·미정)', vars:'{날짜}',                 title:'참석 마감 임박', body:'{날짜} 세션 참석 응답이 내일 마감돼요. 참석/불참을 정해 주세요!' },
   vote:         { name:'투표 시작(25일)',    vars:'',                               title:'이달의 선수 투표 시작', body:'이번 달 MVP와 성장상을 뽑아 주세요!' },
-  dues_open:    { name:'회비 시작(15일)',    vars:'{월}',                           title:'회비 안내', body:'{월}월 회비 납부가 시작됐어요. 25일까지 입금 부탁드려요!' },
-  dues_urge:    { name:'회비 마감 임박(미납·24일)', vars:'{월}',                     title:'회비 마감 임박', body:'{월}월 회비가 내일(25일) 마감돼요. 아직 미납 상태예요!' },
+  dues_open:    { name:'다음 달 확인·회비(15일)', vars:'{월}',                      title:'다음 달 활동 확인', body:'{월}월에도 뛰려면 25일까지 활동 확인과 회비 납부를 모두 해주세요. 휴면 회원은 같은 기간에 복귀 신청할 수 있어요.' },
+  dues_urge:    { name:'자리 확정 마감(미확인·미납·24일)', vars:'{월}',              title:'자리 확정 마감 임박', body:'{월}월 자리 확정이 내일(25일) 마감돼요. 활동 확인이나 회비 납부가 아직이에요!' },
   dorm_ask:     { name:'휴면 복귀 확인(15일)', vars:'{월}',                          title:'{월}월엔 복귀하시나요?', body:"복귀하려면 홈에서 '활동'을, 계속 쉬려면 '휴면'을 눌러 주세요. 그대로 두면 휴면이 유지돼요." },
   dues_confirm: { name:'입금 확인(개인)',    vars:'{월}',                           title:'입금 확인', body:'{월}월 회비 입금이 확인됐어요. 감사합니다!' },
   att_change:   { name:'참석 상태 변경(개인)', vars:'{세션} {상태}',                 title:'참석 상태 변경', body:"운영진이 {세션} 참석 상태를 '{상태}'(으)로 변경했어요." },
@@ -1654,8 +1720,8 @@ async function queuePush(targetId, title, body, url){   // targetId 0 = 전체 �
 let _notifOpen = false;   // 알림 설정 펼침 상태(재렌더에도 유지)
 const PUSH_CATS = [
   ['session_new', '세션 추가',        '세션이 등록될 때'],
-  ['dues_open',   '다음달 회비 납부',  '매월 15일'],
-  ['dues_urge',   '회비 납부 마감',    '매월 24일 · 미납일 때'],
+  ['dues_open',   '다음 달 활동·회비', '매월 15일'],
+  ['dues_urge',   '자리 확정 마감',    '매월 24일 · 미확인·미납'],
   ['vote',        '투표 시작',        '매월 25일'],
   ['vote_close',  '투표 마감',        '말일 · 미투표일 때'],
   // 새 공지·내일 세션·참석 마감·개인·수동 알림은 항상 발송. 카풀 전체 푸시는 제거(드라이버 개인 알림만)
@@ -1989,10 +2055,22 @@ async function renderHome() {
     const sBadge = (ns === 'yes' || ns === 'no') ? ['done', '완료'] : ['no', '미완'];
     const myYes = sessions.filter(s => myStatusOf(s.id) === 'yes');
     // ── 묶음 ① 신원·스킬 / ② 현황(상태·참석예정·미확정) ──
+    const capApplies = confirmPhase && capOn(dMonth);
+    const capInfo = capApplies ? capCompute(dMonth, myDues) : null;
+    const myCapSt = capInfo ? (capInfo.states[me] || 'unconfirmed') : null;
+    const capActOn = capApplies ? (myCapSt==='kept'||myCapSt==='returning'||myCapSt==='waiting') : !dormStatus;
+    const capDorOn = capApplies ? (myCapSt==='dormant') : dormStatus;
+    const _cn = t => `<div style="font-size:12px;color:var(--muted);line-height:1.6;margin-bottom:6px">${t}</div>`;
+    const capNote = !capApplies ? '' :
+      myCapSt==='unconfirmed' ? _cn(`<b style="color:#ece6d2">${moNum}월 자리 확인</b> — 25일까지 '활동' 확인과 회비 납부를 모두 해야 자리가 유지돼요.${dormStatus?` 휴면 중이라면 '활동'이 복귀 신청이에요.`:''}`) :
+      myCapSt==='kept' ? (capInfo.paid.has(me) ? _cn(`${moNum}월 자리 확인 완료.`) : _cn(`${moNum}월 자리 확인됨 — <b style="color:#ece6d2">회비를 25일까지 납부</b>해야 유지돼요.`)) :
+      myCapSt==='returning' ? (capInfo.paid.has(me) ? _cn(`복귀 신청 완료 — ${moNum}월 자리 잠정 확보.`) : _cn(`복귀 신청 완료 — <b style="color:#ece6d2">회비를 25일까지 납부</b>해야 확정돼요.`)) :
+      myCapSt==='waiting' ? _cn(`${moNum}월 정원이 가득 찼어요 — 대기 ${capInfo.waitRank[me]}번. 자리가 나면 신청 순서대로 올라가요.`) : '';
+    const capCount = capApplies ? `<div class="pc-stat"><span class="lbl">${moNum}월 정원</span><span style="font-size:12px;color:var(--muted)">남 ${capInfo.counts['남'].used}/${CAP_LIMIT['남']} · 여 ${capInfo.counts['여'].used}/${CAP_LIMIT['여']}</span></div>` : '';
     const statusHtml = `${confirmPhase
-        ? `${dormStatus ? `<div style="font-size:12px;color:var(--muted);line-height:1.6;margin-bottom:6px"><b style="color:#ece6d2">${moNum}월엔 복귀하시나요?</b> 복귀하면 '활동', 계속 쉬면 '휴면'을 눌러 주세요.</div>` : ''}<div class="pc-stat"><span class="lbl">${moNum}월</span><span class="act-toggle"><button class="${!dormStatus?'on':''}" onclick="setMyDormancy(${me},'${dMonth}',false)">활동</button><button class="${dormStatus?'on':''}" onclick="setMyDormancy(${me},'${dMonth}',true)">휴면</button></span></div>`
+        ? `${capApplies ? capNote : (dormStatus ? `<div style="font-size:12px;color:var(--muted);line-height:1.6;margin-bottom:6px"><b style="color:#ece6d2">${moNum}월엔 복귀하시나요?</b> 복귀하면 '활동', 계속 쉬면 '휴면'을 눌러 주세요.</div>` : '')}<div class="pc-stat"><span class="lbl">${moNum}월</span><span class="act-toggle"><button class="${capActOn?'on':''}" onclick="capSetNext(${me},'${dMonth}',false)">활동</button><button class="${capDorOn?'on':''}" onclick="capSetNext(${me},'${dMonth}',true)">휴면</button></span></div>${capCount}`
         : `<div class="pc-stat"><span class="lbl">${moNum}월</span><span class="pc-badge ${dormStatus?'neutral':'done'}">${dormStatus?'휴면 중':'활동 중'}</span></div>`}
-      ${!dormStatus
+      ${(capApplies ? myCapSt!=='dormant' : !dormStatus)
         ? `<div class="pc-stat"><span class="lbl">${moNum}월 회비${myConfd?' <span style="color:var(--win);font-weight:800;font-size:11px;margin-left:2px">✓ 입금확인</span>':(myPaid?'':' <span class="mini-dot"></span>')}</span><span class="act-toggle dues"><button class="paid ${myPaid?'on':''}" onclick="homeSetDue(${me},'${dMonth}',true)">납부</button><button class="unpaid ${!myPaid?'on':''}" onclick="homeSetDue(${me},'${dMonth}',false)">미납</button></span></div>`
         : ''}`;
     const respondHtml = targetSess ? (
@@ -4037,7 +4115,7 @@ async function initApp() {
   if (!((IS_LOCAL || localStorage.getItem(GATE_KEY) === '1') && getMe() != null)) {
     try { populateGate(); showGate(true); } catch (e) {}
   }
-  try { const s = await fetchSettings(); teamSplitOn = s.teamSplit !== false; CLUB_PINS = s.pins || {}; BANK = s.bank || null; SURVEY = s.survey || null; UNIFORM = s.uniform || null; RESULTS = s.results || null; GUEST_REQS = s.guestReqs || []; GUEST_EXTRA = s.guestExtra || {}; DUES_CONFIRMED = s.duesConfirmed || {}; } catch (e) {}
+  try { const s = await fetchSettings(); teamSplitOn = s.teamSplit !== false; CLUB_PINS = s.pins || {}; BANK = s.bank || null; SURVEY = s.survey || null; UNIFORM = s.uniform || null; RESULTS = s.results || null; GUEST_REQS = s.guestReqs || []; GUEST_EXTRA = s.guestExtra || {}; DUES_CONFIRMED = s.duesConfirmed || {}; CAPACITY = s.capacity || {}; } catch (e) {}
   try { await loadTbDormant(); } catch (e) {}
   try { await rolloverDormancyIfNeeded(); } catch (e) {}   // 15일 이후 다음 달 휴면 자동 롤오버(월 1회)
   // 로컬 미리보기: 첫 활동 회원으로 자동 로그인

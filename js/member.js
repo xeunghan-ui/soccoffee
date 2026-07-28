@@ -1046,7 +1046,8 @@ function activeMembers(monthStr) {
     return new Date(p.joinDate) <= monthEnd;
   });
   const TEAM_ORDER = { 'WHITE': 0, 'BLACK': 1, '기타': 2 };
-  return relevant.filter(p => !dormantMonthsOf(p).includes(monthStr))
+  const _cr = capOn(monthStr) ? capResult(monthStr) : null;   // 정원제 확정 결과 최우선(회비 탭 isDormantFor와 기준 일치)
+  return relevant.filter(p => _cr ? _cr.active.includes(p.id) : !dormantMonthsOf(p).includes(monthStr))
                  .map(p => {
                    const t = TEAM_SHEET[p.name] || { team: '기타' };
                    return { ...p, jersey: t.jersey, eng: t.eng || '', team: t.team, cap: !!t.cap };
@@ -2100,7 +2101,9 @@ async function renderHome() {
     const meT = TEAM_SHEET[meP.name] || {};
     const jersey = (meP.jersey != null) ? meP.jersey : ((meT.jersey != null) ? meT.jersey : '–');
     // 박스는 '해당 월'만 본다(isDormantFor의 이번달 고정 규칙 제외) — 다음 달 토글이 작동하도록
-    const dormStatus = !activeMonthsOf(meP).includes(dMonth) && (((meP.status||'active')==='dormant') || dormantMonthsOf(meP).includes(dMonth));
+    const _capRes = capOn(dMonth) ? capResult(dMonth) : null;   // 정원제 확정 결과(26일 롤오버 이후)
+    const dormStatus = _capRes ? !_capRes.active.includes(me)
+      : (!activeMonthsOf(meP).includes(dMonth) && (((meP.status||'active')==='dormant') || dormantMonthsOf(meP).includes(dMonth)));
     const confirmPhase = dormFeatureOn() && new Date().getDate() >= 15;   // 2026-07-15부터, 매월 15일 이후 다음 달 활동/휴면 확인
     const myTeam = (teamSplitOn && (meT.team === 'WHITE' || meT.team === 'BLACK')) ? meT.team : null;
     const teamPill = myTeam ? ` <span class="team-pill ${myTeam.toLowerCase()}">${myTeam}</span>` : '';
@@ -2120,7 +2123,7 @@ async function renderHome() {
     const sBadge = (ns === 'yes' || ns === 'no') ? ['done', '완료'] : ['no', '미완'];
     const myYes = sessions.filter(s => myStatusOf(s.id) === 'yes');
     // ── 묶음 ① 신원·스킬 / ② 현황(상태·참석예정·미확정) ──
-    const capApplies = confirmPhase && capOn(dMonth);
+    const capApplies = confirmPhase && capOn(dMonth) && !_capRes;   // 확정 전(신청 창)에만 신청 UI
     const capInfo = capApplies ? capCompute(dMonth, myDues) : null;
     const myCapSt = capInfo ? (capInfo.states[me] || 'unconfirmed') : null;
     const capActOn = capApplies ? (myCapSt==='kept'||myCapSt==='returning'||myCapSt==='waiting') : !dormStatus;
@@ -2132,9 +2135,9 @@ async function renderHome() {
       myCapSt==='returning' ? (capInfo.paid.has(me) ? _cn(`복귀 신청 완료 — ${moNum}월 자리 잠정 확보.`) : _cn(`복귀 신청 완료 — <b style="color:#ece6d2">회비를 25일까지 납부</b>해야 확정돼요.`)) :
       myCapSt==='waiting' ? _cn(`${moNum}월 정원이 가득 찼어요 — 대기 ${capInfo.waitRank[me]}번. 자리가 나면 신청 순서대로 올라가요.`) : '';
     const capCount = capApplies ? `<div class="pc-stat"><span class="lbl">${moNum}월 정원</span><span style="font-size:12px;color:var(--muted)">남 ${capInfo.counts['남'].used}/${CAP_LIMIT['남']} · 여 ${capInfo.counts['여'].used}/${CAP_LIMIT['여']}</span></div>` : '';
-    const statusHtml = `${confirmPhase
+    const statusHtml = `${(confirmPhase && !_capRes)
         ? `${capApplies ? capNote : (dormStatus ? `<div style="font-size:12px;color:var(--muted);line-height:1.6;margin-bottom:6px"><b style="color:#ece6d2">${moNum}월엔 복귀하시나요?</b> 복귀하면 '활동', 계속 쉬면 '휴면'을 눌러 주세요.</div>` : '')}<div class="pc-stat"><span class="lbl">${moNum}월</span><span class="act-toggle"><button class="${capActOn?'on':''}" onclick="capSetNext(${me},'${dMonth}',false)">활동</button><button class="${capDorOn?'on':''}" onclick="capSetNext(${me},'${dMonth}',true)">휴면</button></span></div>${capCount}`
-        : `<div class="pc-stat"><span class="lbl">${moNum}월</span><span class="pc-badge ${dormStatus?'neutral':'done'}">${dormStatus?'휴면 중':'활동 중'}</span></div>`}
+        : `<div class="pc-stat"><span class="lbl">${moNum}월</span><span class="pc-badge ${dormStatus?'neutral':'done'}">${_capRes?(dormStatus?'휴면 확정':'활동 확정'):(dormStatus?'휴면 중':'활동 중')}</span></div>`}
       ${(capApplies ? myCapSt!=='dormant' : !dormStatus)
         ? `<div class="pc-stat"><span class="lbl">${moNum}월 회비${myConfd?' <span style="color:var(--win);font-weight:800;font-size:11px;margin-left:2px">✓ 입금확인</span>':(myPaid?'':' <span class="mini-dot"></span>')}</span><span class="act-toggle dues"><button class="paid ${myPaid?'on':''}" onclick="homeSetDue(${me},'${dMonth}',true)">납부</button><button class="unpaid ${!myPaid?'on':''}" onclick="homeSetDue(${me},'${dMonth}',false)">미납</button></span></div>`
         : ''}`;

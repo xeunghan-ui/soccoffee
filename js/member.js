@@ -970,6 +970,71 @@ async function capSetNext(memberId, month, dormant){
   await setMyDormancy(memberId, month, dormant);
 }
 
+
+/* ---------- 팀 리그 모드 (3·5·9·11월) — 팀 배정·감독·매치는 current.league 소유(팀빌더 미접촉) ---------- */
+let LEAGUE = {};   // { 'YYYY-MM': { white:[id], black:[id], captains:[id], applicants:[{id,at}], match:{result,at} } }
+function leagueData(m){ return LEAGUE[m] || {}; }
+function leagueTeamOf(m, id){
+  const d = leagueData(m);
+  if ((d.white||[]).includes(id)) return 'WHITE';
+  if ((d.black||[]).includes(id)) return 'BLACK';
+  return null;
+}
+function leagueAssigned(m){ const d = leagueData(m); return (d.white||[]).length + (d.black||[]).length > 0; }
+async function saveLeaguePatch(m, patch){   // 병합 저장: 최신값 재조회 후 해당 월만 갱신
+  let cur = {};
+  try { if (USE_DB){ const {data:row}=await sb.from('club_settings').select('data').eq('id','current').maybeSingle(); cur=(row&&row.data)||{}; } else cur=await fetchSettings(); } catch(e){}
+  const lg = Object.assign({}, cur.league || {});
+  lg[m] = Object.assign({}, lg[m] || {}, patch);
+  LEAGUE = lg;
+  return await saveSettings({ league: lg });
+}
+// 감독 지원/취소 (리그 달 한정) — 2명 초과 지원 시 운영진이 지명
+async function leagueApply(){
+  const m = statusMonth();
+  if (!isLeague(m)) return;
+  const me = getMe(); if (!me) return;
+  let cur = {};
+  try { if (USE_DB){ const {data:row}=await sb.from('club_settings').select('data').eq('id','current').maybeSingle(); cur=(row&&row.data)||{}; } else cur=await fetchSettings(); } catch(e){}
+  const lg = Object.assign({}, cur.league || {});
+  const d = Object.assign({}, lg[m] || {});
+  const apps = (d.applicants || []).slice();
+  const mine = apps.some(a => a.id === me);
+  d.applicants = mine ? apps.filter(a => a.id !== me) : [...apps, { id: me, at: Date.now() }];
+  lg[m] = d; LEAGUE = lg;
+  if (!(await saveSettings({ league: lg }))) { toast('저장 중 오류가 났어요'); return; }
+  toast(mine ? '감독 지원을 취소했어요' : '감독에 지원했어요');
+  await rerender(renderHome);
+}
+// 운영진: 팀 배정 순환 (미정 → WHITE → BLACK → 미정)
+async function opsLgSetTeam(m, id){
+  if (!isAdmin()) return;
+  const cur = leagueTeamOf(m, id);
+  const d = leagueData(m);
+  let w = (d.white||[]).filter(x=>x!==id), b = (d.black||[]).filter(x=>x!==id);
+  if (cur === null) w.push(id);
+  else if (cur === 'WHITE') b.push(id);
+  if (!(await saveLeaguePatch(m, { white:w, black:b }))) { toast('저장 중 오류가 났어요'); return; }
+  await rerender(renderOps);
+}
+// 운영진: 감독 지명 토글 (최대 2명)
+async function opsLgToggleCaptain(m, id){
+  if (!isAdmin()) return;
+  const d = leagueData(m);
+  let caps = (d.captains||[]).slice();
+  if (caps.includes(id)) caps = caps.filter(x=>x!==id);
+  else { if (caps.length >= 2) { toast('감독은 2명까지예요'); return; } caps.push(id); }
+  if (!(await saveLeaguePatch(m, { captains: caps }))) { toast('저장 중 오류가 났어요'); return; }
+  await rerender(renderOps);
+}
+// 운영진: 매치 결과 기록 (월 1매치 — 결과만)
+async function opsLgResult(m, r){
+  if (!isAdmin()) return;
+  if (!(await saveLeaguePatch(m, { match: r ? { result: r, at: Date.now() } : null }))) { toast('저장 중 오류가 났어요'); return; }
+  toast(r ? '매치 결과를 기록했어요' : '매치 결과를 지웠어요');
+  await rerender(renderOps);
+}
+
 function activeMembers(monthStr) {
   const [yN, moN] = monthStr.split('-').map(Number);
   const monthEnd = new Date(yN, moN, 0);
@@ -2153,11 +2218,33 @@ async function renderHome() {
     </button>`;
   }
   const _lgNow = isLeague();
+  const _lgM = nowMonthStr();
+  const _lgD = _lgNow ? leagueData(_lgM) : {};
+  const _lgMy = (_lgNow && me != null) ? leagueTeamOf(_lgM, me) : null;
+  const _lgCaps = (_lgD.captains||[]).map(id => { const p = ROSTER.find(x=>x.id===id); return p ? p.name : null; }).filter(Boolean);
+  const _lgRes = (_lgD.match && _lgD.match.result) ? _lgD.match.result : null;
+  const _lgTxt = _lgNow
+    ? `이번 달은 <b>팀 리그</b> · 20–23시${_lgCaps.length?` · 감독 ${esc(_lgCaps.join(' · '))}`:''}${_lgMy?` · 내 팀 <b>${_lgMy}</b>`:''}${_lgRes?` · 매치 <b>${_lgRes==='draw'?'무승부':_lgRes+' 승'}</b>`:''}`
+    : '이번 달은 <b>일반 경기</b> · 21–23시';
   const seasonBanner = `<div style="display:flex;align-items:center;gap:9px;padding:10px 14px;margin-bottom:12px;border-radius:12px;background:${_lgNow?'rgba(224,165,48,.12)':'transparent'};border:1px solid ${_lgNow?'var(--gold)':'var(--line)'}">
       <span style="flex-shrink:0;font-size:11px;font-weight:800;letter-spacing:.04em;padding:3px 9px;border-radius:999px;background:${_lgNow?'var(--gold)':'var(--muted)'};color:${_lgNow?'#14281b':'#0d1420'}">${_lgNow?'팀 리그':'일반'}</span>
-      <span style="font-size:12.5px;color:var(--cream);line-height:1.4">${_lgNow?'이번 달은 <b>팀 리그</b> · 20–23시 · 감독이 팀 선발':'이번 달은 <b>일반 경기</b> · 21–23시'}</span>
+      <span style="font-size:12.5px;color:var(--cream);line-height:1.4">${_lgTxt}</span>
     </div>`;
-  let html = seasonBanner + dash + voteHome + uniHome + `<div class="section-title">다가오는 매치</div>`;
+  let lgApplyHome = '';
+  const _lgNext = statusMonth();
+  if (isLeague(_lgNext) && dormFeatureOn() && new Date().getDate() >= 15 && meActive) {
+    const dN = leagueData(_lgNext);
+    if ((dN.captains||[]).length < 2) {
+      const apps = dN.applicants || [];
+      const mineApp = apps.some(a => a.id === me);
+      const nmN = parseInt(_lgNext.split('-')[1], 10);
+      lgApplyHome = `<button class="card" style="width:100%;box-sizing:border-box;padding:14px 16px;margin-bottom:12px;display:flex;align-items:center;justify-content:space-between;gap:12px;cursor:pointer;font-family:inherit;text-align:left" onclick="leagueApply()">
+        <span style="min-width:0"><span style="display:block;font-size:14px;font-weight:800;color:#ece6d2">${nmN}월 팀 리그 감독 지원</span><span style="display:block;font-size:12px;color:var(--muted);margin-top:2px">${apps.length?`지원 ${apps.length}명`:'아직 지원자가 없어요'}${mineApp?' · 지원 완료':''} · 2명 초과면 운영진이 지명해요</span></span>
+        <span style="font-size:12px;font-weight:800;color:var(--accent);white-space:nowrap">${mineApp?'지원 취소':'지원하기'} →</span>
+      </button>`;
+    }
+  }
+  let html = seasonBanner + lgApplyHome + dash + voteHome + uniHome + `<div class="section-title">다가오는 매치</div>`;
   html += sessions.length > 1
     ? `<div class="sess-carousel" id="sessCarousel" onscroll="updateSessDots()">${sessCards.join('')}</div>
        <div class="sess-dots">
@@ -2830,6 +2917,7 @@ async function setAttendance(sessionId, memberId, status) {
 let attMe = null;
 let attSessionId = null;
 let attTeamView = false;     // 참석 탭: 팀별 보기 on/off
+let _attLgAutoSid = null;    // 리그 세션 팀별 보기 자동 ON 1회 처리(세션별)
 let teamSplitOn = true;      // 이번 달 팀 구분(WHITE/BLACK) 사용 여부 (운영진 설정)
 let attFilter = 'yes';       // 명단 현황 상태 필터: yes(참석)/no(불참)/maybe(미정)/none(미응답). 기본 참석
 let _attRows = null;         // 상태별 명단 행 캐시(필터 즉시 전환용 · 재렌더 없이)
@@ -3021,10 +3109,14 @@ async function renderAtt() {
   // 상태별 명단 행 미리 생성(카운트 클릭 시 즉시 전환)
   _attRows = {}; ['yes','no','maybe','none'].forEach(st=>{ _attRows[st] = sortedM.filter(m=>eff(m.id)===st).map(rosterRow).join('') || _emptyRow; });
   _attRows.guest = guestRowsHtml(sess.id);
+  const _sm = (sess.date||'').slice(0,7);
+  const _lgSess = isLeague(_sm) && leagueAssigned(_sm);   // 리그 세션 + 팀 배정 존재
+  const _teamOf = mm => _lgSess ? (leagueTeamOf(_sm, mm.id) || '기타') : (mm.team || '기타');
+  if (_lgSess && _attLgAutoSid !== sess.id) { _attLgAutoSid = sess.id; attTeamView = true; }   // 리그 세션은 팀별 보기 기본
   let listHtml;
-  if (teamSplitOn && attTeamView) {
-    listHtml = [['WHITE','WHITE'],['BLACK','BLACK'],['기타','기타']].map(([key,label])=>{
-      const gm = sortedM.filter(m=>(m.team||'기타')===key);
+  if ((teamSplitOn || _lgSess) && attTeamView) {
+    listHtml = [['WHITE','WHITE'],['BLACK','BLACK'],['기타',_lgSess?'팀 미정':'기타']].map(([key,label])=>{
+      const gm = sortedM.filter(m=>_teamOf(m)===key);
       if (!gm.length) return '';
       const gy = gm.filter(m=>eff(m.id)==='yes').length;
       return `<div class="att-grp${attCollapsed[key]?' collapsed':''}"><div class="att-grp-h" onclick="toggleAttGrp('${key}',this)">${label} <span>참석 ${gy} / ${gm.length}명</span><span class="grp-caret"></span></div><div class="att-grp-body">${gm.map(rosterRow).join('')}</div></div>`;
@@ -3033,7 +3125,12 @@ async function renderAtt() {
     listHtml = _attRows[attFilter] || _emptyRow;   // 선택된 상태(기본 참석)만 표시
   }
 
-  html += `
+  const lgCntHtml = _lgSess ? (()=>{
+    const wy = sortedM.filter(m=>_teamOf(m)==='WHITE'&&eff(m.id)==='yes').length;
+    const by = sortedM.filter(m=>_teamOf(m)==='BLACK'&&eff(m.id)==='yes').length;
+    return `<div style="display:flex;gap:16px;margin-top:10px;padding:9px 14px;border:1px solid var(--gold);border-radius:12px;background:rgba(224,165,48,.08);font-size:12.5px;color:var(--cream)"><span style="font-weight:800">팀 리그</span><span>WHITE 참석 <b>${wy}</b></span><span>BLACK 참석 <b>${by}</b></span></div>`;
+  })() : '';
+  html += lgCntHtml + `
     <div class="att-counts">
       <div class="att-cnt yes ${attFilter==='yes'?'sel':''}" onclick="setAttFilter('yes')"><div class="num" id="attYesNum">${yesM}</div><div class="cap">참석</div></div>
       <div class="att-cnt no ${attFilter==='no'?'sel':''}" onclick="setAttFilter('no')"><div class="num">${no}</div><div class="cap">불참</div></div>
@@ -3044,7 +3141,7 @@ async function renderAtt() {
     <div class="card" style="margin-top:10px">
       <div class="section-title" style="margin:0 0 8px;display:flex;justify-content:space-between;align-items:center">
         <span><span id="attFilterLabel">${({yes:'참석',no:'불참',maybe:'미정',none:'미응답',guest:'게스트'})[attFilter]||'명단'}</span> 명단 <span id="attRosterStat" style="font-size:12px;color:var(--muted);font-weight: 600">멤버 ${respondedCnt}/${members.length} 응답${gaCount?` · 게스트 ${gaCount}`:''}</span></span>
-        ${teamSplitOn?`<button class="btn ghost sm" onclick="toggleAttTeam()">${attTeamView?'전체 보기':'팀별 보기'}</button>`:''}
+        ${(teamSplitOn||_lgSess)?`<button class="btn ghost sm" onclick="toggleAttTeam()">${attTeamView?'전체 보기':'팀별 보기'}</button>`:''}
       </div>
       <div class="att-list" id="attListBody">${listHtml}</div>
     </div>
@@ -3476,6 +3573,7 @@ async function renderOps() {
     { key:'dues',    label:'회비' },
     { key:'vote',    label:'투표' },
     { key:'push',    label:'푸시' },
+    { key:'league',  label:'리그' },
     { key:'roster',  label:'설정' },
   ];
   if (!OPS_TABS.some(t => t.key === opsTabSel)) opsTabSel = 'notice';
@@ -3641,7 +3739,50 @@ async function renderOps() {
       <button class="btn accent sm" onclick="opsManualPush()">보내기</button>
     </div>
     <p class="hint" style="margin:0">알림 문구 수정은 팀빌더 → 푸시 문구 탭에서 해요.</p>`;
-  const bodyMap = { notice:secNotice, session:secSession, roster:secRoster, dues:secDues, vote:secVote, push:secPush };
+  // ── 리그 관리 (팀 리그 달: 감독 지명 · 팀 배정 · 매치 결과) ──
+  const _lgOpsM = isLeague(statusMonth()) ? statusMonth() : (isLeague(nowMonthStr()) ? nowMonthStr() : null);
+  let secLeague;
+  if (!_lgOpsM) {
+    secLeague = `<p class="hint" style="margin:0">지금은 팀 리그 달이 아니에요. 리그 달(3·5·9·11월)이 대상 월이 되면 여기서 감독 지명·팀 배정·매치 결과를 관리해요.</p>`;
+  } else {
+    const _ld = leagueData(_lgOpsM);
+    const _lmo = parseInt(_lgOpsM.split('-')[1], 10);
+    const _lCaps = _ld.captains || [];
+    const _lApps = (_ld.applicants || []).slice().sort((a,b)=>(a.at||0)-(b.at||0));
+    const _nameOf = id => { const p = ROSTER.find(x=>x.id===id); return p ? p.name : ('#'+id); };
+    const _lPool = activeMembers(_lgOpsM);
+    const _asgn = _lPool.filter(p => leagueTeamOf(_lgOpsM, p.id)).length;
+    const _capRows = _lApps.length
+      ? _lApps.map(a=>`<div class="dues-row"><span class="nm">${esc(_nameOf(a.id))}${_lCaps.includes(a.id)?' <span class="dues-badge paid" style="margin-left:4px">감독</span>':''}</span><button class="btn ghost sm" onclick="opsLgToggleCaptain('${_lgOpsM}',${a.id})">${_lCaps.includes(a.id)?'지명 해제':'감독 지명'}</button></div>`).join('')
+      : `<p class="hint" style="margin:6px 0 0">아직 지원자가 없어요. 지원 없이 직접 지명하려면 아래 팀 배정에서 이름 옆 별표를 눌러요.</p>`;
+    const _teamRows = _lPool.map(p => {
+      const t = leagueTeamOf(_lgOpsM, p.id);
+      const isCap = _lCaps.includes(p.id);
+      return `<div class="dues-row"><span class="nm">${esc(p.name)}${isCap?' <span class="dues-badge paid" style="margin-left:4px">감독</span>':''}</span>
+        <span style="display:flex;gap:6px;align-items:center">
+          <button class="btn ghost sm" style="min-width:64px;${t==='WHITE'?'border-color:var(--cream);color:#fff;font-weight:800':''}${t==='BLACK'?'border-color:var(--gold);color:var(--gold);font-weight:800':''}" onclick="opsLgSetTeam('${_lgOpsM}',${p.id})">${t||'미정'}</button>
+          <button class="btn ghost sm" title="감독 지명" onclick="opsLgToggleCaptain('${_lgOpsM}',${p.id})">${isCap?'★':'☆'}</button>
+        </span></div>`;
+    }).join('');
+    const _mr = (_ld.match && _ld.match.result) || null;
+    const _mrBtn = (v,l)=>`<button class="btn ghost sm" style="${_mr===v?'border-color:var(--gold);color:var(--gold);font-weight:800':''}" onclick="opsLgResult('${_lgOpsM}','${v}')">${l}</button>`;
+    secLeague = `
+      <p class="hint" style="margin:0 0 12px"><b style="color:#ece6d2">${_lmo}월 팀 리그</b> — 감독 확정 ${_lCaps.length}/2 · 팀 배정 ${_asgn}/${_lPool.length}명</p>
+      <b style="color:#ece6d2;font-size:13px">감독 지원 ${_lApps.length}명</b>
+      <div class="hint" style="margin:2px 0 8px">2명 초과 지원 시 여기서 지명해요. 드래프트 캡틴으로 사용.</div>
+      ${_capRows}
+      <div style="margin-top:16px;border-top:1px solid #2a3d30;padding-top:14px">
+        <b style="color:#ece6d2;font-size:13px">팀 배정</b>
+        <div class="hint" style="margin:2px 0 8px">버튼을 눌러 미정 → WHITE → BLACK 순환. 드래프트 결과를 여기에 입력하고, 중도 변동도 여기서 조정해요.</div>
+        ${_teamRows}
+      </div>
+      <div style="margin-top:16px;border-top:1px solid #2a3d30;padding-top:14px">
+        <b style="color:#ece6d2;font-size:13px">매치 결과 (월 1매치)</b>
+        <div class="hint" style="margin:2px 0 8px">경기 후 결과만 기록해요. 홈 배너에 표시됩니다.</div>
+        <div style="display:flex;gap:6px;flex-wrap:wrap">${_mrBtn('WHITE','WHITE 승')}${_mrBtn('draw','무승부')}${_mrBtn('BLACK','BLACK 승')}${_mr?`<button class="btn ghost sm" style="color:var(--red)" onclick="opsLgResult('${_lgOpsM}',null)">지우기</button>`:''}</div>
+      </div>`;
+  }
+  const bodyMap = { notice:secNotice, session:secSession, roster:secRoster, dues:secDues, vote:secVote, push:secPush, league:secLeague };
 
   el.innerHTML = `
     ${_todoHtml}
@@ -4115,7 +4256,7 @@ async function initApp() {
   if (!((IS_LOCAL || localStorage.getItem(GATE_KEY) === '1') && getMe() != null)) {
     try { populateGate(); showGate(true); } catch (e) {}
   }
-  try { const s = await fetchSettings(); teamSplitOn = s.teamSplit !== false; CLUB_PINS = s.pins || {}; BANK = s.bank || null; SURVEY = s.survey || null; UNIFORM = s.uniform || null; RESULTS = s.results || null; GUEST_REQS = s.guestReqs || []; GUEST_EXTRA = s.guestExtra || {}; DUES_CONFIRMED = s.duesConfirmed || {}; CAPACITY = s.capacity || {}; } catch (e) {}
+  try { const s = await fetchSettings(); teamSplitOn = s.teamSplit !== false; CLUB_PINS = s.pins || {}; BANK = s.bank || null; SURVEY = s.survey || null; UNIFORM = s.uniform || null; RESULTS = s.results || null; GUEST_REQS = s.guestReqs || []; GUEST_EXTRA = s.guestExtra || {}; DUES_CONFIRMED = s.duesConfirmed || {}; CAPACITY = s.capacity || {}; LEAGUE = s.league || {}; } catch (e) {}
   try { await loadTbDormant(); } catch (e) {}
   try { await rolloverDormancyIfNeeded(); } catch (e) {}   // 15일 이후 다음 달 휴면 자동 롤오버(월 1회)
   // 로컬 미리보기: 첫 활동 회원으로 자동 로그인

@@ -258,7 +258,10 @@
   .cand .nm { font-size: 14px; font-weight: 600; color: var(--coffee); }
   .cand .tr { font-size: 11px; color: var(--muted); margin-top: 2px; }
 
-  .vote-cta { position: sticky; bottom: 12px; margin-top: 16px; }
+  /* ⚠️ 하단에 붙는 요소는 반드시 --navh(하단 네비 높이 + safe-area) 위로 띄운다.
+     bottom:12px 이었을 때 투표 버튼이 뷰포트 바닥 12px에 붙어 62px+safe-area 짜리 네비 뒤로
+     들어가 '버튼이 어중간한 높이에 뜬' 것처럼 보였다. toast(186)·save-bar(360)는 원래 이 기준을 씀. */
+  .vote-cta { position: sticky; bottom: calc(var(--navh) + 12px); margin-top: 16px; z-index: 60; }
   .potm-note { font-size: 12px; color: var(--muted); text-align: center; margin: 12px 4px 0; line-height: 1.5; }
 
   /* 결과 */

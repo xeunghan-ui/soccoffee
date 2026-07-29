@@ -790,6 +790,10 @@ function votingOpensAt() {
 }
 // 투표 가능: 매월 25일 0시 ~ 말일 끝(1~24일은 잠금). 다음 달 25일 전까지 닫혀 있어 "그 달까지만" 투표됨.
 function isVotingOpen() { return Date.now() >= votingOpensAt().getTime(); }
+// 투표 결과가 '확정'된 달인지 — 그 달 투표는 25일~말일이라 달이 끝나야 확정된다.
+// ⚠️ 진행 중인 달을 집계에 넣으면 중간 1위가 '수상자'로 새어 나가고(결과는 종료 후 공개 원칙 위반)
+//    모범생 점수(+수상×2)가 투표 도중 요동친다. 수상 집계는 반드시 이걸 통과한 달만 쓴다.
+function voteMonthFinal(m){ return !!m && String(m) < potmMonth(); }
 function fmtOpenTime(d) {
   const days = ['일', '월', '화', '수', '목', '금', '토'];
   return `${d.getMonth() + 1}월 ${d.getDate()}일(${days[d.getDay()]})`;
@@ -841,7 +845,7 @@ async function getWinCounts(){
     else { rows = JSON.parse(localStorage.getItem(POTM_STORE)) || []; }
   } catch(e) {}
   const top = (m,c) => { const t={}; rows.filter(v=>v.month===m&&v.category===c).forEach(v=>{ t[v.candidate_id]=(t[v.candidate_id]||0)+1; }); let b=null,bc=0; for(const k in t){ if(t[k]>bc){bc=t[k]; b=Number(k);} } return b; };
-  const months = [...new Set(rows.map(v=>v.month))];
+  const months = [...new Set(rows.map(v=>v.month))].filter(voteMonthFinal);   // 확정된 달만
   const map = {};
   months.forEach(m => ['mvp','growth'].forEach(c => { const w = top(m,c); if (w!=null) map[w] = (map[w]||0)+1; }));
   _winCounts = map;
@@ -857,6 +861,7 @@ async function getVoteStats(yearPrefix){
     else { rows = JSON.parse(localStorage.getItem(POTM_STORE)) || []; }
   } catch(e) {}
   if (yearPrefix) rows = rows.filter(v => String(v.month||'').startsWith(yearPrefix));
+  rows = rows.filter(v => voteMonthFinal(v.month));   // 진행 중인 달 제외(수상 누출·미투표 조기 감점 방지)
   const voterByMonth = {}, byMC = {};
   rows.forEach(v => {
     (voterByMonth[v.month] = voterByMonth[v.month] || new Set()).add(v.voter_id);
@@ -2113,8 +2118,8 @@ async function renderHome() {
   const myProfile = meActive ? await getProfile(me) : null;
   const myWins = meActive ? myWinTitles(me, await getPrevWinners()) : [];
   // 참여 세션·출석률·최근3개월·수상: 팀빌더 데이터 기반 (사이트 attendance 테이블은 최근분만 있음)
-  let myAttended = 0, myAttRate = null, myRecent3 = null, myWinPct = null;
-  if (meActive) { try { const _tb = await fetchTeamBuilder(); const _tp = (_tb && _tb.players || []).find(x => x.id === me); if (_tp) { myAttended = _tp.attCountAll ?? _tp.attCount ?? 0; myAttRate = _tp.attendanceAll ?? _tp.attendance ?? null; myRecent3 = recent3Rate(_tp, _tb.sessions); } const _mw = computeWinStats(_tb && _tb.matches)[me]; if (_mw && _mw.played) myWinPct = Math.round((_mw.w + _mw.d*0.5)/_mw.played*100); } catch(e){} }
+  let myStats = null;
+  if (meActive) { try { myStats = await memberStats(me, (PLAYERS.find(x => x.id === me) || {}).joinDate); } catch(e){} }
   const myStatusOf = sid => { const a = (attBySess[sid]||[]).find(x=>x.member_id===me); return a ? a.status : 'none'; };
   const meP0 = me != null ? PLAYERS.find(x => x.id === me) : null;
   const pending = meActive ? sessions.filter(s => {
@@ -2181,17 +2186,7 @@ async function renderHome() {
         ? `${(myProfile.bio||'').trim()?`<div class="pf-bio">"${esc(myProfile.bio.trim())}"</div>`:''}${profileSkillsHtml(myProfile)}`
         : '';
     // 카드 ① 신원 + 스킬
-    const joinFmt = meP.joinDate ? meP.joinDate.slice(0,7).replace('-','.') : '—';
-    const monthsTogether = monthsSince(meP.joinDate);
-    const monthsLabel = monthsTogether > 0 ? `${monthsTogether}개월` : '이번 달';
-    const miniHtml = `<div class="pc-mini">
-        <div><div class="v">${joinFmt}</div><div class="k">가입월</div></div>
-        <div><div class="v">${monthsLabel}</div><div class="k">함께한 기간</div></div>
-        <div><div class="v">${myAttended}회</div><div class="k">참여 세션</div></div>
-        <div><div class="v">${myAttRate!=null?Math.round(myAttRate)+'%':'—'}</div><div class="k">전체 출석률</div></div>
-        <div><div class="v">${myRecent3!=null?myRecent3+'%':'—'}</div><div class="k">최근 3개월</div></div>
-        <div><div class="v">${myWinPct!=null?myWinPct+'%':'—'}</div><div class="k">승률</div></div>
-      </div>`;
+    const miniHtml = memberStatsHtml(myStats);   // 멤버 카드와 동일 지표·마크업
     dash += `<div class="card" style="padding:16px;margin-bottom:12px">
       <div style="display:flex;align-items:center;gap:14px">
         <div class="pc-jersey" style="font-size:38px">${jersey}</div>
@@ -2325,7 +2320,7 @@ async function renderSquad() {
   const el = document.getElementById('squadContent');
   if (!el.innerHTML.trim()) el.innerHTML = `<div class="empty">불러오는 중...</div>`;
   let tb = null;
-  try { tb = await fetchTeamBuilder(); } catch(e) {}
+  try { tb = await tbForStats(); } catch(e) {}   // 캐시를 채워 카드 클릭 시 지표가 바로 뜨게
   const month = potmMonth();
   const players = (tb && Array.isArray(tb.players) ? tb.players : []).filter(p => (p.status||'active') !== 'former');
   if (!players.length) { el.innerHTML = `<div class="section-title">팀 현황</div><div class="card"><div class="empty">명단을 불러오지 못했어요.</div></div>`; return; }
@@ -2361,7 +2356,47 @@ async function renderSquad() {
     <div id="squadListBody">${_squadGroups[squadFilter]}</div>`;
 }
 
-/* ===== 멤버 카드 모달 (역할 + 프로필) ===== */
+/* ===== 멤버 지표 6종 (가입월·함께한 기간·참여 세션·전체 출석률·최근 3개월·승률) =====
+   홈 '내 프로필'과 멤버 현황 카드가 같은 산식·같은 마크업을 쓰도록 공용화.
+   팀빌더 블롭은 크니까 60초 캐시 — 멤버를 연달아 눌러도 매번 재조회하지 않는다. */
+let _tbStats = null, _tbStatsAt = 0;
+async function tbForStats(){
+  if (_tbStats && (Date.now() - _tbStatsAt) < 60000) return _tbStats;
+  const tb = await fetchTeamBuilder();
+  if (tb) { _tbStats = tb; _tbStatsAt = Date.now(); }
+  return tb;
+}
+async function memberStats(id, joinDate){
+  const st = { join: joinDate || null, months: monthsSince(joinDate), att: 0, rate: null, r3: null, win: null };
+  try {
+    const tb = await tbForStats();
+    const tp = (tb && tb.players || []).find(x => x.id === id);
+    if (tp) {
+      if (!st.join && tp.joinDate) { st.join = tp.joinDate; st.months = monthsSince(tp.joinDate); }
+      st.att  = tp.attCountAll ?? tp.attCount ?? 0;
+      st.rate = tp.attendanceAll ?? tp.attendance ?? null;
+      st.r3   = recent3Rate(tp, tb.sessions);
+    }
+    const w = computeWinStats(tb && tb.matches)[id];
+    if (w && w.played) st.win = Math.round((w.w + w.d*0.5)/w.played*100);
+  } catch(e){}
+  return st;
+}
+function memberStatsHtml(st){
+  if (!st) return '';
+  const joinFmt = st.join ? st.join.slice(0,7).replace('-','.') : '—';
+  const monthsLabel = st.months > 0 ? `${st.months}개월` : '이번 달';
+  return `<div class="pc-mini">
+        <div><div class="v">${joinFmt}</div><div class="k">가입월</div></div>
+        <div><div class="v">${monthsLabel}</div><div class="k">함께한 기간</div></div>
+        <div><div class="v">${st.att}회</div><div class="k">참여 세션</div></div>
+        <div><div class="v">${st.rate!=null?Math.round(st.rate)+'%':'—'}</div><div class="k">전체 출석률</div></div>
+        <div><div class="v">${st.r3!=null?st.r3+'%':'—'}</div><div class="k">최근 3개월</div></div>
+        <div><div class="v">${st.win!=null?st.win+'%':'—'}</div><div class="k">승률</div></div>
+      </div>`;
+}
+
+/* ===== 멤버 카드 모달 (역할 + 프로필 + 지표) ===== */
 let mmState = null;
 async function openMemberCard(id, startEdit){
   let p = (typeof PLAYERS!=='undefined'?PLAYERS:[]).find(x=>x.id===id);
@@ -2371,8 +2406,9 @@ async function openMemberCard(id, startEdit){
   const wins = myWinTitles(id, await getPrevWinners());
   const own = (getMe()===id);
   const edit = !!startEdit && own;
+  const stats = await memberStats(id, p.joinDate);
   mmState = { id, name:p.name, jersey:(p.jersey!=null?p.jersey:null), role:(MEMBER_ROLES[p.name]||null),
-    wins, pf: pf ? {pos:pf.pos||null, tags:(pf.tags||[]).slice(), weaks:(pf.weaks||[]).slice(), bio:pf.bio||''} : {pos:null, tags:[], weaks:[], bio:''}, hasPf:!!pf, edit, own };
+    wins, pf: pf ? {pos:pf.pos||null, tags:(pf.tags||[]).slice(), weaks:(pf.weaks||[]).slice(), bio:pf.bio||''} : {pos:null, tags:[], weaks:[], bio:''}, hasPf:!!pf, edit, own, stats };
   renderMemberCard();
 }
 function closeMemberCard(){ mmState=null; const h=document.getElementById('mmHost'); if(h) h.innerHTML=''; }
@@ -2455,6 +2491,7 @@ function renderMemberCard(){
     const skills = profileSkillsHtml(s.pf);
     const bio = (s.pf.bio||'').trim() ? `<div class="pf-bio">"${esc(s.pf.bio.trim())}"</div>` : '';
     body = (skills || bio) ? bio + skills : `<div class="empty" style="font-size:13px;padding:14px 0">${s.own?'포지션·스타일·한 줄 소개를 채워보세요.':'아직 프로필이 없어요.'}</div>`;
+    body += memberStatsHtml(s.stats);   // 가입월·함께한 기간·참여 세션·전체 출석률·최근 3개월·승률
     if(s.own) body += `<button class="btn ghost sm" onclick="mmEdit(true)" style="margin-top:10px;width:100%">프로필 편집</button>`;
   }
   h.innerHTML = `<div class="mm-back" onclick="if(event.target===this)closeMemberCard()"><div class="mm-box"><div class="mm-head"><span class="mm-no">${s.jersey!=null?s.jersey:'–'}</span><div><div class="mm-name">${esc(s.name)}${winHtml}${!s.edit&&roleHtml?` ${roleHtml}`:''}</div>${!s.edit?profilePosHtml(s.pf):''}</div><button class="mm-x" onclick="closeMemberCard()">×</button></div>${body}</div></div>`;

@@ -5,7 +5,7 @@ on:
   workflow_dispatch:
     inputs:
       title:
-        description: '수동 발송 제목 (예: 📣 싸커피)'
+        description: '수동 발송 제목 (예: 싸커피 공지) — 이모지 쓰지 말 것'
         required: false
       body:
         description: '수동 발송 내용'

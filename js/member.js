@@ -907,34 +907,61 @@ function isDormantFor(p, monthStr){
 }
 
 
-/* ---------- 활동 정원제 (2026-09분부터) — 저장은 club_settings.current.capacity, 자리는 계산으로 도출 ---------- */
+/* ---------- 활동 정원제 (2026-09분부터) ----------
+   ⚠️ 자리 확인(confirm)은 **cap_confirm 테이블(PK: month+member_id)** 에 멤버별 행으로 저장한다.
+      예전엔 club_settings.current.capacity.confirm 한 덩어리에 넣었는데, saveSettings가 최상위 키를
+      '얕은 병합'으로 통째 교체하기 때문에 15일 알림 직후 여러 명이 동시에 누르면 남의 신청이 조용히
+      사라졌다(그리고 26일 롤오버에서 미확인=자동 휴면으로 처리됐다). 멤버별 행이면 서로 덮을 수 없다.
+   확정 결과(result)는 발송기(send-push.mjs) 단독 기록이라 current.capacity에 그대로 둔다.
+   자리 배정은 저장하지 않고 신청 시각 순으로 매번 계산해 도출한다. */
 const CAP_LIMIT = { '남': 24, '여': 12 };
 const CAP_START = '2026-09';                 // 이 달(다음 달 기준)부터 정원제 적용
 const GENDER_FIX = { '심지수': '여' };        // 명단에 성별 누락 시 보정(팀빌더 값이 생기면 그쪽 우선)
-let CAPACITY = {};                            // { 'YYYY-MM': { confirm:{id:{s,at}}, result:{active:[],finalized} } }
+const CAPC_STORE = 'socoffee_capconfirm';     // 로컬(file://) 폴백 저장소
+let CAPACITY = {};                            // { 'YYYY-MM': { result:{active:[],finalized} } } — 확정 결과
+let CAP_CONFIRM = {};                         // { 'YYYY-MM': { id: {s,at} } } — 자리 확인(cap_confirm 테이블)
 function capGender(p){ return p.gender || GENDER_FIX[p.name] || '남'; }
 function capOn(m){ return typeof m === 'string' && m >= CAP_START; }
 function capMonthData(m){ return CAPACITY[m] || {}; }
-function capConfirmOf(m, id){ return (capMonthData(m).confirm || {})[String(id)] || null; }
+function capConfirmOf(m, id){ return (CAP_CONFIRM[m] || {})[String(id)] || null; }
 function capResult(m){ const r = capMonthData(m).result; return (r && Array.isArray(r.active)) ? r : null; }
-// 다음 달 자리 신청 기록 — 신청 시각이 선착순 기준. 같은 상태 재클릭은 시각 유지(순번 보존)
+// 자리 확인 읽기 — cap_confirm 테이블. 예전 current.capacity[m].confirm은 읽기 폴백(별도 마이그레이션 불필요)
+async function loadCapConfirm(m){
+  if (!capOn(m)) return {};
+  const map = Object.assign({}, capMonthData(m).confirm || {});   // 레거시 blob(있으면)을 먼저 깔고
+  let rows = [];
+  if (USE_DB) {
+    try { const { data } = await sb.from('cap_confirm').select('member_id,state,at').eq('month', m); rows = data || []; }
+    catch(e) { rows = []; }
+  } else {
+    try { rows = (JSON.parse(localStorage.getItem(CAPC_STORE)) || {})[m] || []; } catch(e) { rows = []; }
+  }
+  rows.forEach(r => { map[String(r.member_id)] = { s: r.state, at: Date.parse(r.at) || 0 }; });   // 테이블 값이 우선
+  CAP_CONFIRM[m] = map;
+  return map;
+}
+// 자리 확인 기록 — 본인 행만 upsert라 다른 멤버 신청과 충돌하지 않는다.
+// 같은 상태를 다시 눌러도 at(선착순 시각)은 DB 트리거가 유지한다. 시각은 서버 now() 기준(기기 시계 무관).
 async function capRecordConfirm(m, id, state){
   if (!capOn(m)) return true;
-  let cur = {};
-  try { if (USE_DB){ const {data:row}=await sb.from('club_settings').select('data').eq('id','current').maybeSingle(); cur=(row&&row.data)||{}; } else cur=await fetchSettings(); } catch(e){}
-  const cap = Object.assign({}, cur.capacity || {});
-  const mo = Object.assign({}, cap[m] || {});
-  const cf = Object.assign({}, mo.confirm || {});
-  const prev = cf[String(id)];
-  cf[String(id)] = { s: state, at: (prev && prev.s === state && prev.at) ? prev.at : Date.now() };
-  mo.confirm = cf; cap[m] = mo;
-  CAPACITY = cap;
-  return await saveSettings({ capacity: cap });
+  if (USE_DB) {
+    const { error } = await sb.from('cap_confirm').upsert({ month: m, member_id: id, state }, { onConflict: 'month,member_id' });
+    if (error) { toast('자리 신청 저장 오류: ' + error.message); return false; }
+  } else {
+    let all = {}; try { all = JSON.parse(localStorage.getItem(CAPC_STORE)) || {}; } catch(e){}
+    const list = all[m] || [];
+    const prev = list.find(r => r.member_id === id);
+    all[m] = list.filter(r => r.member_id !== id)
+      .concat([{ member_id: id, state, at: (prev && prev.state === state && prev.at) ? prev.at : new Date().toISOString() }]);
+    try { localStorage.setItem(CAPC_STORE, JSON.stringify(all)); } catch(e){}
+  }
+  await loadCapConfirm(m);   // 방금 쓴 값 + 그 사이 들어온 남의 신청까지 다시 읽어 순번을 맞춘다
+  return true;
 }
 // 잠정 판정(계산형): '확정'을 저장하지 않고 신청 시각 순위로 항상 도출 — 마지막 자리 동시 신청 경합에도 안전
 function capCompute(m, duesRows){
   const paid = new Set((duesRows||[]).filter(d=>d.paid).map(d=>d.member_id));
-  const conf = capMonthData(m).confirm || {};
+  const conf = CAP_CONFIRM[m] || {};
   const curM = nowMonthStr();
   const states = {}, counts = { '남':{used:0,cap:CAP_LIMIT['남']}, '여':{used:0,cap:CAP_LIMIT['여']} };
   const pool = { '남':[], '여':[] };
@@ -2124,6 +2151,7 @@ async function renderHome() {
     const myYes = sessions.filter(s => myStatusOf(s.id) === 'yes');
     // ── 묶음 ① 신원·스킬 / ② 현황(상태·참석예정·미확정) ──
     const capApplies = confirmPhase && capOn(dMonth) && !_capRes;   // 확정 전(신청 창)에만 신청 UI
+    if (capApplies) { try { await loadCapConfirm(dMonth); } catch(e){} }   // 남은 자리·대기 순번은 항상 최신값으로
     const capInfo = capApplies ? capCompute(dMonth, myDues) : null;
     const myCapSt = capInfo ? (capInfo.states[me] || 'unconfirmed') : null;
     const capActOn = capApplies ? (myCapSt==='kept'||myCapSt==='returning'||myCapSt==='waiting') : !dormStatus;
@@ -4260,6 +4288,7 @@ async function initApp() {
     try { populateGate(); showGate(true); } catch (e) {}
   }
   try { const s = await fetchSettings(); teamSplitOn = s.teamSplit !== false; CLUB_PINS = s.pins || {}; BANK = s.bank || null; SURVEY = s.survey || null; UNIFORM = s.uniform || null; RESULTS = s.results || null; GUEST_REQS = s.guestReqs || []; GUEST_EXTRA = s.guestExtra || {}; DUES_CONFIRMED = s.duesConfirmed || {}; CAPACITY = s.capacity || {}; LEAGUE = s.league || {}; } catch (e) {}
+  try { await loadCapConfirm(statusMonth()); } catch (e) {}   // 정원제 자리 확인(cap_confirm) — 정원제 달에만 실제 조회
   try { await loadTbDormant(); } catch (e) {}
   try { await rolloverDormancyIfNeeded(); } catch (e) {}   // 15일 이후 다음 달 휴면 자동 롤오버(월 1회)
   // 로컬 미리보기: 첫 활동 회원으로 자동 로그인

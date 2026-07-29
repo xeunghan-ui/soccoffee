@@ -136,6 +136,44 @@ alter table bell_reads enable row level security;
 create policy "bell_reads_open" on bell_reads for all using (true) with check (true);
 ```
 
+## cap_confirm — 활동 정원제 자리 확인 (2026-07-29 추가) ⚠️ 9월 정원제 시작 전 필수
+
+정원제(2026-09분부터)의 **"다음 달 활동/휴면" 확인**을 멤버별 행으로 저장합니다.
+원래 `club_settings.current.capacity.confirm` 안에 넣었는데, 그 저장 경로가 최상위 키를 통째로
+바꾸는 방식이라 **15일 알림 직후 여러 명이 동시에 누르면 남의 신청이 조용히 사라졌습니다**
+(그리고 26일 롤오버에서 미확인=자동 휴면 처리). 멤버별 행이면 서로 덮을 수 없습니다.
+
+`at`(선착순 기준 시각)은 **서버 시각**이고, 같은 상태를 다시 눌러도 트리거가 유지합니다
+— 상태가 실제로 바뀔 때만 새로 찍힙니다(기기 시계가 틀려도 순번이 공정).
+
+```sql
+create table if not exists public.cap_confirm (
+  month      text        not null,               -- 'YYYY-MM' (신청 대상 달)
+  member_id  bigint      not null,
+  state      text        not null check (state in ('active','dormant')),
+  at         timestamptz not null default now(), -- 선착순 기준(상태 변경 시에만 갱신)
+  updated_at timestamptz not null default now(),
+  primary key (month, member_id)
+);
+
+-- 상태가 바뀔 때만 at 갱신(같은 상태 재클릭·클라이언트가 at을 보내도 순번 보존)
+create or replace function public.cap_confirm_touch() returns trigger language plpgsql as $$
+begin
+  if new.state is distinct from old.state then new.at = now(); else new.at = old.at; end if;
+  new.updated_at = now();
+  return new;
+end $$;
+drop trigger if exists trg_cap_confirm_touch on public.cap_confirm;
+create trigger trg_cap_confirm_touch before update on public.cap_confirm
+  for each row execute function public.cap_confirm_touch();
+
+alter table public.cap_confirm enable row level security;
+drop policy if exists "cap_confirm all" on public.cap_confirm;
+create policy "cap_confirm all" on public.cap_confirm for all using (true) with check (true);
+```
+
+확정 결과(`result`: 26일 잠정 · 5일 최종)는 발송기만 쓰므로 `club_settings.current.capacity`에 그대로 둡니다.
+
 ## 보안 참고
 모든 정책이 "익명 키로 누구나 읽기/쓰기"(링크 기반 신뢰 그룹용)입니다.
 회비·명단 등 민감 데이터를 더 엄격히 막으려면 정책을 손봐야 합니다(필요 시 도와드림).

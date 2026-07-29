@@ -29,12 +29,21 @@ function deadlineOf(sess) {
   return d.toISOString().slice(0, 10);
 }
 // ---- 활동 정원제 (2026-09분부터) ----
-let CAP_STATE = {};   // current.capacity — { 'YYYY-MM': { confirm:{id:{s,at}}, result:{active:[],finalized} } }
+// 자리 확인(confirm)은 cap_confirm 테이블(PK: month+member_id)에서 읽는다. 확정 결과(result)만 current.capacity에 쓴다.
+// (예전엔 confirm도 current.capacity 안에 있었는데 동시 신청이 서로를 덮어써서 테이블로 분리함 — 레거시 값은 읽기 폴백)
+let CAP_STATE = {};   // current.capacity — { 'YYYY-MM': { result:{active:[],finalized} } }
 const CAP_LIMIT = { '남': 24, '여': 12 };
 const CAP_START = '2026-09';
 const GENDER_FIX = { '심지수': '여' };   // 명단 성별 누락 보정
 const capGender = p => p.gender || GENDER_FIX[p.name] || '남';
 const capResultFor = m => { const r = (CAP_STATE[m] || {}).result; return (r && Array.isArray(r.active)) ? r : null; };
+// 그 달 자리 확인 맵 { id: {s,at} } — 테이블 값이 레거시 blob보다 우선
+async function capConfirmFor(m) {
+  const map = Object.assign({}, (CAP_STATE[m] || {}).confirm || {});
+  const rows = await j(await rest(`cap_confirm?select=member_id,state,at&month=eq.${m}`)) || [];
+  rows.forEach(r => { map[String(r.member_id)] = { s: r.state, at: Date.parse(r.at) || 0 }; });
+  return map;
+}
 
 // 사이트 isDormantFor와 동일 규칙 — 정원제 확정 결과 최우선, activeMonths, 영구휴면, 해당 월·이번 달 월휴면
 function isDormantLike(p, m, curM) {
@@ -129,8 +138,7 @@ async function main() {
     if (!res.ok) { console.error('정원제 저장 실패:', res.status, await res.text()); process.exit(1); }
     CAP_STATE = cap;
   }
-  function capRank(m, okFn){   // 자리 배정: 유지 우선 → 신청 시각 순, 성별 정원 컷
-    const conf = (CAP_STATE[m] || {}).confirm || {};
+  function capRank(conf, okFn){   // 자리 배정: 유지 우선 → 신청 시각 순, 성별 정원 컷
     const pool = { '남':[], '여':[] };
     players.forEach(p => {
       const st = p.status || 'active';
@@ -152,7 +160,7 @@ async function main() {
     if (capM >= CAP_START && !capResultFor(capM)) {
       const dd = await j(await rest(`dues?select=member_id,paid&month=eq.${capM}`)) || [];
       const cpaid = new Set(dd.filter(d => d.paid).map(d => d.member_id));
-      const active = capRank(capM, p => cpaid.has(p.id));
+      const active = capRank(await capConfirmFor(capM), p => cpaid.has(p.id));
       await capSave(capM, { result: { active, at: new Date().toISOString() } });
       console.log('정원제 롤오버', capM, '— 잠정 활동', active.length, '명');
     }
@@ -163,7 +171,7 @@ async function main() {
     if (thisMonth >= CAP_START && r5 && !r5.finalized && dc5.size) {
       const dd = await j(await rest(`dues?select=member_id,paid&month=eq.${thisMonth}`)) || [];
       const cpaid = new Set(dd.filter(d => d.paid).map(d => d.member_id));
-      const active = capRank(thisMonth, p => cpaid.has(p.id) && dc5.has(p.id));
+      const active = capRank(await capConfirmFor(thisMonth), p => cpaid.has(p.id) && dc5.has(p.id));
       await capSave(thisMonth, { result: { active, finalized: true, at: new Date().toISOString() } });
       console.log('정원제 최종 확정', thisMonth, '— 활동', active.length, '명');
     }
@@ -278,8 +286,8 @@ async function main() {
         const dm = `${uy}-${String(umo).padStart(2,'0')}`;
         const dues = await j(await rest(`dues?select=member_id,paid&month=eq.${dm}`)) || [];
         const paid = new Set(dues.filter(d => d.paid).map(d => d.member_id));
-        const conf = (CAP_STATE[dm] || {}).confirm || {};
         const capOnDm = dm >= CAP_START;
+        const conf = capOnDm ? await capConfirmFor(dm) : {};
         // 활동 회원: (정원제) 미확인 또는 미납 / (이전) 미납만. 복귀 신청자: 미납이면 포함
         const need = activeFor(players, dm, thisMonth).filter(p => {
           const c = conf[String(p.id)];

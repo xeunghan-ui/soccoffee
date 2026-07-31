@@ -824,14 +824,26 @@ async function getPrevWinners(){
   if (_prevWinners) return _prevWinners;
   const d = new Date(); d.setDate(1); d.setMonth(d.getMonth()-1);
   const pm = `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}`;
-  const topId = votes => { const t={}; (votes||[]).forEach(v=>{ t[v.candidate_id]=(t[v.candidate_id]||0)+1; }); let b=null,bc=0; for(const k in t){ if(t[k]>bc){bc=t[k]; b=Number(k);} } return b; };
   try {
     const [mvp, growth] = await Promise.all([fetchVotes(pm,'mvp'), fetchVotes(pm,'growth')]);
-    _prevWinners = { mvp: topId(mvp), growth: topId(growth), month: pm };
-  } catch(e){ _prevWinners = { mvp:null, growth:null, month:pm }; }
+    _prevWinners = { mvp: topIds(mvp), growth: topIds(growth), month: pm };
+  } catch(e){ _prevWinners = { mvp:[], growth:[], month:pm }; }
   return _prevWinners;
 }
-function myWinTitles(id, w){ return [(id!=null&&id===w.mvp)?'MVP':'', (id!=null&&id===w.growth)?'성장':''].filter(Boolean); }
+// 최다 득표자 — 동점이면 전원(공동 수상). 표가 없으면 빈 배열.
+// ⚠️ 예전엔 한 명만 반환했는데 동점 시 사실상 회원 id 순으로 잘려서 임의 선정이었다.
+//    발송기(send-push.mjs)는 처음부터 공동 수상으로 알림을 보내고 있어 화면과 어긋났다.
+function topIds(votes){
+  const t = {};
+  (votes||[]).forEach(v => { t[v.candidate_id] = (t[v.candidate_id]||0) + 1; });
+  let bc = 0; for (const k in t) { if (t[k] > bc) bc = t[k]; }
+  return bc > 0 ? Object.keys(t).filter(k => t[k] === bc).map(Number) : [];
+}
+// 수상 배지 — w.mvp / w.growth 는 공동 수상을 담는 배열
+function myWinTitles(id, w){
+  if (id == null || !w) return [];
+  return [ (w.mvp||[]).includes(id) ? 'MVP' : '', (w.growth||[]).includes(id) ? '성장' : '' ].filter(Boolean);
+}
 
 // 올해 모범생 랭킹 등수 (renderRank model과 동일 계산) — {rank,total} 또는 null
 async function getModelRank(memberId){
@@ -863,10 +875,10 @@ async function getWinCounts(){
     if (typeof USE_DB !== 'undefined' && USE_DB) { const { data } = await sb.from('potm_votes').select('month,category,candidate_id'); rows = data || []; }
     else { rows = JSON.parse(localStorage.getItem(POTM_STORE)) || []; }
   } catch(e) {}
-  const top = (m,c) => { const t={}; rows.filter(v=>v.month===m&&v.category===c).forEach(v=>{ t[v.candidate_id]=(t[v.candidate_id]||0)+1; }); let b=null,bc=0; for(const k in t){ if(t[k]>bc){bc=t[k]; b=Number(k);} } return b; };
+  const top = (m,c) => topIds(rows.filter(v=>v.month===m&&v.category===c));   // 동점이면 공동 수상 전원
   const months = [...new Set(rows.map(v=>v.month))].filter(voteMonthFinal);   // 확정된 달만
   const map = {};
-  months.forEach(m => ['mvp','growth'].forEach(c => { const w = top(m,c); if (w!=null) map[w] = (map[w]||0)+1; }));
+  months.forEach(m => ['mvp','growth'].forEach(c => { top(m,c).forEach(w => { map[w] = (map[w]||0)+1; }); }));
   _winCounts = map;
   return map;
 }
@@ -888,7 +900,11 @@ async function getVoteStats(yearPrefix){
     (byMC[key] = byMC[key] || {}); byMC[key][v.candidate_id] = (byMC[key][v.candidate_id]||0) + 1;
   });
   const winsByMember = {};
-  Object.keys(byMC).forEach(key => { const t=byMC[key]; let b=null,bc=0; for(const k in t){ if(t[k]>bc){bc=t[k]; b=Number(k);} } if(b!=null) winsByMember[b]=(winsByMember[b]||0)+1; });
+  Object.keys(byMC).forEach(key => {   // 동점이면 공동 수상 — 전원 1회씩 인정
+    const t = byMC[key];
+    let bc = 0; for (const k in t) { if (t[k] > bc) bc = t[k]; }
+    if (bc > 0) Object.keys(t).filter(k => t[k] === bc).forEach(k => { winsByMember[Number(k)] = (winsByMember[Number(k)]||0) + 1; });
+  });
   return { voteMonths: Object.keys(voterByMonth), voterByMonth, winsByMember };
 }
 
@@ -2363,7 +2379,7 @@ async function renderSquad() {
   const chip = p => {
     const rc = '';   // 역할 색 구분 제거
     const sk = hasProfile(p.id) ? ' has-skill' : '';
-    const wb = `${p.id===w.mvp?'<span class="win-badge mvp" style="flex-shrink:0">MVP</span>':''}${p.id===w.growth?'<span class="win-badge grow" style="flex-shrink:0">성장</span>':''}`;
+    const wb = `${(w.mvp||[]).includes(p.id)?'<span class="win-badge mvp" style="flex-shrink:0">MVP</span>':''}${(w.growth||[]).includes(p.id)?'<span class="win-badge grow" style="flex-shrink:0">성장</span>':''}`;
     return `<button class="sq-chip${rc}${sk}" onclick="openMemberCard(${p.id})"><span class="sq-no">${p.jersey!=null?p.jersey:'–'}</span><span class="sq-nm">${esc(p.name)}</span>${wb}<span class="sq-dot" title="${hasProfile(p.id)?'프로필 있음':'프로필 없음'}"></span></button>`;
   };
   const staff = players.filter(p => (MEMBER_ROLES[p.name]||{}).type==='admin').sort(sortJ);   // 운영진 = admin 역할만(김균원·조은애·김이연 제외)

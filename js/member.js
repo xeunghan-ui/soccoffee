@@ -2324,9 +2324,17 @@ async function renderSquad() {
   const month = potmMonth();
   const players = (tb && Array.isArray(tb.players) ? tb.players : []).filter(p => (p.status||'active') !== 'former');
   if (!players.length) { el.innerHTML = `<div class="section-title">팀 현황</div><div class="card"><div class="empty">명단을 불러오지 못했어요.</div></div>`; return; }
-  const isDorm = p => (p.status === 'dormant') || (p.dormantMonths||[]).includes(month);
+  // ⚠️ 휴면 판정은 반드시 정본(isDormantFor)을 쓴다. 예전엔 여기서 status/dormantMonths만 보는 자체 판정을
+  //    써서, 영구 휴면(status:'dormant') 회원이 홈에서 그 달을 '활동'으로 되돌려도(activeMonths 기록)
+  //    팀 현황에서는 계속 휴면 칸에 남았다. 회비·참석·랭킹은 정본을 쓰므로 화면끼리 서로 어긋났다.
+  const isDorm = p => isDormantFor(p, month);
   const active = [], friends = [], dormant = [];
-  players.forEach(p => { isDorm(p) ? dormant.push(p) : (p.status === 'friends' ? friends.push(p) : active.push(p)); });
+  // 친구(friends)는 휴면 판정 대상이 아니다 — 먼저 걸러낸다.
+  // (정원제 확정 이후 isDormantFor는 result.active 기준인데 친구는 애초에 그 목록에 없어서, 순서를 안 지키면 휴면으로 밀린다)
+  players.forEach(p => {
+    if (p.status === 'friends') { friends.push(p); return; }
+    isDorm(p) ? dormant.push(p) : active.push(p);
+  });
   const sortJ = (a,b) => ((a.jersey==null?999:a.jersey) - (b.jersey==null?999:b.jersey)) || a.name.localeCompare(b.name,'ko');
   [active, friends, dormant].forEach(g => g.sort(sortJ));
   let profMap = {};

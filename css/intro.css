@@ -146,7 +146,7 @@
   .mcal{display:grid; grid-template-columns:repeat(6,1fr); gap:8px; max-width:540px; margin:18px auto 0;}
   .mon{padding:10px 4px; border-radius:10px; text-align:center; background:rgba(255,255,255,.05); border:1px solid rgba(255,255,255,.12);}
   .mon-n{font-size:15px; font-weight:800; color:#ddd6b6;}
-  .mon-t{font-size:10px; color:#9fb0a3; margin-top:2px;}
+  .mon-t{font-size:10px; color:#a4b39a; margin-top:2px;}
   .mon.lg{background:rgba(224,165,48,.16); border-color:#e0a530;}
   .mon.lg .mon-n,.mon.lg .mon-t{color:#e0a530;}
   @media(max-width:420px){ .mcal{grid-template-columns:repeat(4,1fr);} }

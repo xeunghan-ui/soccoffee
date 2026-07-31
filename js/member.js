@@ -780,6 +780,25 @@ function statusMonth() {
   if (d.getDate() >= 15) { m += 1; if (m > 11) { m = 0; y += 1; } }
   return `${y}-${String(m + 1).padStart(2, '0')}`;
 }
+// 그 달의 마지막 수요일(= 그 달 마지막 정기 세션) — m0는 0-indexed 월
+function lastWedOf(y, m0){
+  const d = new Date(y, m0 + 1, 0);                      // 그 달 마지막 날
+  d.setDate(d.getDate() - ((d.getDay() - 3 + 7) % 7));   // 3 = 수요일
+  return d;
+}
+// 팀 현황 기준월: 그 달 마지막 수요일이 '지나야' 다음 달 명단으로 넘어간다.
+// 회비·홈 상태는 15일부터 다음 달(statusMonth)이지만, 팀 현황은 "이번 달에 누가 뛰나"를 보는
+// 화면이라 그 달 경기가 남아 있는 15일 전환은 이르다 — 마지막 세션이 끝난 뒤 넘긴다(2026-07-31 결정).
+// 마지막 수요일 '당일'은 그날 경기가 남았으므로 아직 이번 달로 본다.
+function squadMonth(){
+  const n = new Date();
+  const y = n.getFullYear(), m = n.getMonth();
+  if (n.getDate() > lastWedOf(y, m).getDate()) {
+    let ny = y, nm = m + 1; if (nm > 11) { nm = 0; ny += 1; }
+    return `${ny}-${String(nm + 1).padStart(2, '0')}`;
+  }
+  return `${y}-${String(m + 1).padStart(2, '0')}`;
+}
 
 // 투표 오픈 시각: 그 달 25일 0시 (= 매월 25일부터 말일까지 그 달 MVP·성장 투표)
 function votingOpensAt() {
@@ -2321,7 +2340,7 @@ async function renderSquad() {
   if (!el.innerHTML.trim()) el.innerHTML = `<div class="empty">불러오는 중...</div>`;
   let tb = null;
   try { tb = await tbForStats(); } catch(e) {}   // 캐시를 채워 카드 클릭 시 지표가 바로 뜨게
-  const month = potmMonth();
+  const month = squadMonth();   // 이번 달 마지막 수요일이 지나면 다음 달 명단
   const players = (tb && Array.isArray(tb.players) ? tb.players : []).filter(p => (p.status||'active') !== 'former');
   if (!players.length) { el.innerHTML = `<div class="section-title">팀 현황</div><div class="card"><div class="empty">명단을 불러오지 못했어요.</div></div>`; return; }
   // ⚠️ 휴면 판정은 반드시 정본(isDormantFor)을 쓴다. 예전엔 여기서 status/dormantMonths만 보는 자체 판정을
@@ -2351,7 +2370,9 @@ async function renderSquad() {
   const gridOf = (arr, dim) => arr.length ? `<div class="sq-grid${dim?' dim':''}">${arr.map(chip).join('')}</div>` : '<div class="empty" style="font-size:13px;padding:20px 0;text-align:center">해당 인원이 없어요.</div>';
   _squadGroups = { active: gridOf(active,false), dormant: gridOf(dormant,true), staff: gridOf(staff,false) };
   if (!['active','dormant','staff'].includes(squadFilter)) squadFilter = 'active';
-  el.innerHTML = `<div class="section-title">${potmMonthLabel(month)} 팀 현황</div>
+  const _nextView = month !== nowMonthStr();   // 마지막 세션이 끝나 다음 달을 미리 보는 중
+  el.innerHTML = `<div class="section-title">${potmMonthLabel(month)} 팀 현황${_nextView ? ` <span style="font-size:11px;font-weight:800;color:var(--muted);letter-spacing:.02em">다음 달</span>` : ''}</div>
+    ${_nextView ? `<div style="font-size:12px;color:var(--muted);margin:0 2px 8px;line-height:1.5">이번 달 마지막 경기가 끝나 <b style="color:#ece6d2">다음 달 명단</b>을 보여드려요. 활동·휴면은 홈에서 바꿀 수 있어요.</div>` : ''}
     <div class="att-counts" style="margin:6px 0 8px">
       <div class="att-cnt yes ${squadFilter==='active'?'sel':''}" data-sf="active" onclick="setSquadFilter('active')"><div class="num">${active.length}</div><div class="cap">활동</div></div>
       <div class="att-cnt none ${squadFilter==='dormant'?'sel':''}" data-sf="dormant" onclick="setSquadFilter('dormant')"><div class="num">${dormant.length}</div><div class="cap">휴면</div></div>

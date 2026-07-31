@@ -4120,7 +4120,13 @@ async function fetchTeamBuilder(){
 }
 async function saveTeamBuilder(data){
   if (!USE_DB) return false;
-  try { const { error } = await sb.from('club_settings').upsert({ id:'teambuilder', data, updated_at:new Date().toISOString() }); return !error; }
+  try {
+    const { error } = await sb.from('club_settings').upsert({ id:'teambuilder', data, updated_at:new Date().toISOString() });
+    // ⚠️ 지표용 60초 캐시(tbForStats)를 방금 쓴 값으로 갱신한다. 안 하면 홈에서 활동/휴면을 바꾼 뒤
+    //    바로 멤버 탭에 들어갔을 때 최대 60초 동안 예전 명단(=바뀌기 전 상태)이 보인다.
+    if (!error) { _tbStats = data; _tbStatsAt = Date.now(); }
+    return !error;
+  }
   catch(e){ return false; }
 }
 // 멤버 셀프: 해당 월 휴면 여부를 팀빌더 명단에 직접 반영

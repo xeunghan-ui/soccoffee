@@ -1896,7 +1896,7 @@ function renderMonthlyStatus(){
     return new Date(p.joinDate)<=monthEnd;
   });
 
-  const isDorm=p=>(p.dormantMonths||[]).includes(monthStr);
+  const isDorm=p=>isDormMonth(p,monthStr);
   const dormant=relevant.filter(p=>isDorm(p));
   const active=relevant.filter(p=>!isDorm(p));
   const activeRate=relevant.length>0?Math.round(active.length/relevant.length*100):0;
@@ -2937,7 +2937,7 @@ function renderAttendeeGrid(){
 
   const mkItem=p=>{
     const st=p.status||'active';
-    const isDormantThisMonth=sessionMo&&(p.dormantMonths||[]).includes(sessionMo);
+    const isDormantThisMonth=sessionMo&&isDormMonth(p,sessionMo);
     const extraCls=isDormantThisMonth?' dormant-item':st==='former'?' former-item':'';
     return`<label class="attendee-item${extraCls} ${sfChecked.has(p.id)?'checked':''}" onclick="toggleAttendee(${p.id},this)">
       <input type="checkbox" ${sfChecked.has(p.id)?'checked':''} onclick="event.stopPropagation();toggleAttendee(${p.id},this.parentElement)"/>
@@ -2992,7 +2992,7 @@ function selectActive(){
   players.filter(p=>{
     const st=p.status||'active';
     if(st==='former'||st==='friends') return false;
-    if(sessionMo&&(p.dormantMonths||[]).includes(sessionMo)) return false;
+    if(sessionMo&&isDormMonth(p,sessionMo)) return false;
     if(dateVal&&!isInPool(p,dateVal)) return false;
     return true;
   }).forEach(p=>sfChecked.add(p.id));
@@ -3208,7 +3208,7 @@ function renderSessions(resetLimit){
       .map(id=>playerMap[id]).filter(Boolean)
       .filter(p=>(p.status||'active')!=='friends')
       .sort((a,b)=>a.gender!==b.gender?(a.gender==='남'?-1:1):a.tier-b.tier);
-    const dormantSet=new Set(sessionMembers.filter(p=>(p.dormantMonths||[]).includes(sessionMo)).map(p=>p.id));
+    const dormantSet=new Set(sessionMembers.filter(p=>isDormMonth(p,sessionMo)).map(p=>p.id));
     const denom=Math.max(1,sessionMembers.length-dormantSet.size); // 친구·휴면 제외한 분모 (sessionMembers는 이미 friends 제외)
     const lmaSet=new Set(s.lastMinuteAbsentIds||[]);
     const presentList=sessionMembers.filter(p=>s.attendees.includes(p.id));
@@ -4082,10 +4082,15 @@ function isInPool(player, sessionDate){
   }
   return true;
 }
-// 선수가 특정 월(YYYY-MM)에 휴면인지 확인 — dormantMonths 기반
+// 선수가 특정 월(YYYY-MM)에 휴면인지 확인 — dormantMonths 기반, 단 activeMonths(활동 예외)가 최우선
+function isDormMonth(p, ym){
+  if(!p) return false;
+  if((p.activeMonths||[]).includes(ym)) return false;   // 활동 예외: 멤버가 그 달을 '활동'으로 되돌린 경우
+  return (p.dormantMonths||[]).includes(ym);
+}
 function isPlayerDormantInMonth(pid, yyyyMm){
   const p=players.find(x=>x.id===pid);
-  return p ? (p.dormantMonths||[]).includes(yyyyMm) : false;
+  return isDormMonth(p, yyyyMm);
 }
 function calcAttForSessions(player, targetSessions){
   let attended=0,counted=0;

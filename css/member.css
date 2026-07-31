@@ -850,7 +850,7 @@
   .bell-panel .bp-row { display:block; width:100%; text-align:left; background:none; border:none;
     font-family:inherit; cursor:pointer; padding:9px 0; border-top:1px solid var(--line);
     color:var(--cream); }   /* 버튼 UA 기본색(검정) 차단 */
-  .bell-panel .bp-t { font-size:13px; font-weight:600; color:#c8cdb6; display:flex; gap:7px; align-items:center; }
+  .bell-panel .bp-t { font-size:13px; font-weight:600; color:#d6cfb4; display:flex; gap:7px; align-items:center; }
   .bell-panel .bp-row.unread .bp-t { color:#fff; font-weight:800; }
   .bell-panel .bp-t .new { flex-shrink:0; width:6px; height:6px; border-radius:50%; background:var(--alert); }
   .bell-panel .bp-d { font-size:11px; color:var(--muted); margin-top:2px; }

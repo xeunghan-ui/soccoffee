@@ -1140,8 +1140,8 @@ function showToast(msg){
 /* ─ Tab ─ */
 const ALL_TABS=['players','attendance','teams','matches','tier','monthly','ranking','supplies','fee','push'];
 const TAB_GROUPS={
-  '선수':['players','tier','ranking'],
-  '경기':['attendance','teams','matches','monthly'],
+  '선수':['players','tier','ranking','monthly'],
+  '경기':['attendance','teams','matches'],
   '운영':['supplies','fee']
 };
 let activeCategory='선수';
@@ -1982,16 +1982,28 @@ function renderMonthlyStatus(){
     body+='</div></div>';
   }
 
+  // 남/여로 나눠 카드 그리드 렌더 (남=파랑, 여=핑크)
+  const genderGrid=(list,dorm)=>{
+    const males=list.filter(p=>p.gender==='남');
+    const females=list.filter(p=>p.gender==='여');
+    const others=list.filter(p=>p.gender!=='남'&&p.gender!=='여');
+    const sec=(label,color,arr)=> arr.length?`<div style="margin-bottom:8px">
+        <div style="font-size:10px;font-weight:800;color:${color};letter-spacing:0.3px;margin-bottom:4px">${label} ${arr.length}명</div>
+        <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:5px">${arr.map(p=>memberCard(p,dorm)).join('')}</div>
+      </div>`:'';
+    const html=sec('남','#2563eb',males)+sec('여','#db2777',females)+sec('기타','#64748b',others);
+    return html||'<span style="color:#a0aec0;font-size:12px">없음</span>';
+  };
+
   // 활동 회원
   body+=`<div style="margin-bottom:14px">
     <div style="display:flex;align-items:center;gap:7px;margin-bottom:8px">
       <span style="font-size:12px;font-weight:800;color:#15803d">✅ 활동</span>
       <span style="font-size:11px;padding:2px 8px;border-radius:10px;background:#dcfce7;color:#15803d;font-weight:700">${active.length}명</span>
+      <span style="font-size:10px;color:#94a3b8">남 ${active.filter(p=>p.gender==='남').length} · 여 ${active.filter(p=>p.gender==='여').length}</span>
       ${monthSessions.length?`<span style="margin-left:auto;font-size:9px;color:#94a3b8">● 출석&nbsp;&nbsp;● 불참</span>`:''}
     </div>
-    <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:5px">
-      ${active.map(p=>memberCard(p,false)).join('')||'<span style="color:#a0aec0;font-size:12px">없음</span>'}
-    </div>
+    ${genderGrid(active,false)}
   </div>`;
 
   // 휴면 회원
@@ -2000,10 +2012,9 @@ function renderMonthlyStatus(){
       <div style="display:flex;align-items:center;gap:7px;margin-bottom:8px">
         <span style="font-size:12px;font-weight:800;color:#7e22ce">💤 휴면</span>
         <span style="font-size:11px;padding:2px 8px;border-radius:10px;background:#f3e8ff;color:#7e22ce;font-weight:700">${dormant.length}명</span>
+        <span style="font-size:10px;color:#94a3b8">남 ${dormant.filter(p=>p.gender==='남').length} · 여 ${dormant.filter(p=>p.gender==='여').length}</span>
       </div>
-      <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:5px">
-        ${dormant.map(p=>memberCard(p,true)).join('')}
-      </div>
+      ${genderGrid(dormant,true)}
     </div>`;
   }
 

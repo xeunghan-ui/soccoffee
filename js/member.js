@@ -2179,7 +2179,7 @@ async function renderHome() {
         ? `<div style="margin-top:14px;padding-top:14px;border-top:1px solid var(--line)"><div style="font-size:12px;color:var(--muted);line-height:1.6;margin-bottom:9px">이번 달 휴면이에요. 게스트로 참여하려면 일정에서 신청할 수 있어요.</div><button class="btn accent" style="width:100%" onclick="openAtt('${targetSess.id}')">게스트로 신청 →</button></div>`
       : targetBlockedDues
         ? `<div style="margin-top:14px;padding-top:14px;border-top:1px solid var(--line)"><div style="font-size:11px;color:var(--muted);font-weight:800;letter-spacing:.04em;margin-bottom:9px">${sessLabel} 참석</div><div style="font-size:12px;color:var(--muted);line-height:1.6;margin-bottom:9px">${targetMoNum}월 회비를 납부해야 이 세션에 참석 신청할 수 있어요.</div><button class="btn accent" style="width:100%" onclick="switchTab('dues')">회비 납부하러 가기</button></div>`
-        : `<div style="margin-top:14px;padding-top:14px;border-top:1px solid var(--line)"><div style="font-size:11px;color:var(--muted);font-weight:800;letter-spacing:.04em;margin-bottom:9px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${sessLabel} 참석</div><div style="display:flex;gap:6px">${qbtn('yes','참석','var(--win)','var(--cream)')}${qbtn('no','불참','var(--alert)','var(--cream)')}${qbtn('maybe','미정','var(--accent)','#14281b')}</div></div>`) : '';
+        : `<div style="margin-top:14px;padding-top:14px;border-top:1px solid var(--line)"><div style="font-size:11px;color:var(--muted);font-weight:800;letter-spacing:.04em;margin-bottom:9px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${sessLabel} 참석</div><div style="display:flex;gap:6px">${qbtn('yes','참석','var(--win)','var(--cream)')}${qbtn('no','불참','var(--alert)','var(--cream)')}${qbtn('maybe','미정','var(--accent)','#15281b')}</div></div>`) : '';
     const upcomingHtml = myYes.length ? `<div style="margin-top:12px;padding-top:12px;border-top:1px solid var(--line)"><div style="font-size:11px;color:var(--muted);font-weight:800;letter-spacing:.04em;margin-bottom:4px">참석 예정 ${myYes.length}개</div>${myYes.map(s => `<div style="padding:5px 0;font-size:13px;color:var(--cream)"><div style="display:flex;align-items:center;gap:8px"><span style="color:var(--cream);font-size:7px;opacity:.7">●</span><span style="min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(sessChipLabel(s))}</span><span style="margin-left:auto;flex-shrink:0;color:var(--muted);font-size:12px">${s.allDay?'하루 종일':(esc((s.time||'').slice(0,5))+(s.endTime?'–'+esc(s.endTime.slice(0,5)):''))}</span></div>${s.place ? `<div style="margin-left:17px;color:var(--muted);font-size:12px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(s.place)}</div>` : ''}</div>`).join('')}</div>` : '';
     const pendingHtml = pending.length ? `<div style="margin-top:12px;padding-top:12px;border-top:1px solid var(--line)"><button onclick="openAtt('${pending[0].id}')" style="width:100%;text-align:left;cursor:pointer;font-family:inherit;border:none;background:transparent;padding:0;display:flex;align-items:center;justify-content:space-between;gap:10px"><span style="font-size:13px;font-weight:600;color:#ece6d2">미응답한 일정 ${pending.length}개</span><span style="font-size:12px;font-weight:800;color:var(--accent)">응답하기 →</span></button></div>` : '';
     const profileHtml = myProfile
@@ -2214,7 +2214,7 @@ async function renderHome() {
         ${isAdmin()
           ? `<span><b>${c.yes}</b> 참석</span><span><b>${c.no}</b> 불참</span><span><b>${c.maybe}</b> 미정</span><span style="opacity:.6">응답 ${c.responded}/${c.total}</span>`
           : `<span><b>${c.yes}</b> 참석</span><span><b>${c.maybe}</b> 미정</span>`}
-        <span style="margin-left:auto"><a href="#" onclick="openAtt('${s.id}');return false;" style="color:#14281b;text-decoration:underline">참석 체크 →</a></span>
+        <span style="margin-left:auto"><a href="#" onclick="openAtt('${s.id}');return false;" style="color:#15281b;text-decoration:underline">참석 체크 →</a></span>
       </div>
     </div>`;
   });
@@ -2253,7 +2253,7 @@ async function renderHome() {
     ? `이번 달은 <b>팀 리그</b> · 20–23시${_lgCaps.length?` · 감독 ${esc(_lgCaps.join(' · '))}`:''}${_lgMy?` · 내 팀 <b>${_lgMy}</b>`:''}${_lgRes?` · 매치 <b>${_lgRes==='draw'?'무승부':_lgRes+' 승'}</b>`:''}`
     : '이번 달은 <b>일반 경기</b> · 21–23시';
   const seasonBanner = `<div style="display:flex;align-items:center;gap:9px;padding:10px 14px;margin-bottom:12px;border-radius:12px;background:${_lgNow?'rgba(224,165,48,.12)':'transparent'};border:1px solid ${_lgNow?'var(--gold)':'var(--line)'}">
-      <span style="flex-shrink:0;font-size:11px;font-weight:800;letter-spacing:.04em;padding:3px 9px;border-radius:999px;background:${_lgNow?'var(--gold)':'var(--muted)'};color:${_lgNow?'#14281b':'#0d1420'}">${_lgNow?'팀 리그':'일반'}</span>
+      <span style="flex-shrink:0;font-size:11px;font-weight:800;letter-spacing:.04em;padding:3px 9px;border-radius:999px;background:${_lgNow?'var(--gold)':'var(--muted)'};color:${_lgNow?'#15281b':'#0d1420'}">${_lgNow?'팀 리그':'일반'}</span>
       <span style="font-size:12.5px;color:var(--cream);line-height:1.4">${_lgTxt}</span>
     </div>`;
   let lgApplyHome = '';
@@ -3113,7 +3113,7 @@ async function renderAtt() {
   const _alg = isLeague(sess.date);
   html += `
     <div class="session-card">
-      <span style="display:inline-block;font-size:10px;font-weight:800;padding:2px 8px;border-radius:999px;margin-bottom:6px;background:${_alg?'var(--gold)':'rgba(255,255,255,.12)'};color:${_alg?'#14281b':'var(--cream)'}">${_alg?'팀 리그':'일반'}</span>
+      <span style="display:inline-block;font-size:10px;font-weight:800;padding:2px 8px;border-radius:999px;margin-bottom:6px;background:${_alg?'var(--gold)':'rgba(255,255,255,.12)'};color:${_alg?'#15281b':'var(--cream)'}">${_alg?'팀 리그':'일반'}</span>
       <div class="lbl">${sess.label?esc(sess.label):'참석 체크'}</div>
       <div class="when">${fmtSessionDate(sess.date, sess.time, sess.endTime, sess.allDay, sess.endDate)}</div>
       <div class="where">${sessPlaceHtml(sess)}</div>

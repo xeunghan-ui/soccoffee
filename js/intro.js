@@ -14,7 +14,7 @@
       var r=await sb.from('club_settings').select('data').eq('id','current').maybeSingle();
       var sessions=(r && r.data && r.data.data && r.data.data.sessions) || [];
       var t=todayStr();
-      sessions=sessions.filter(function(s){return (s.date||'')>=t;})
+      sessions=sessions.filter(function(s){return ((s.endDate||s.date)||'')>=t;})   // 다일 세션은 종료일까지 노출(멤버앱과 동일)
         .sort(function(a,b){return ((a.date||'')+(a.time||'')).localeCompare((b.date||'')+(b.time||''));});
       if(!sessions.length){ box.innerHTML='<p class="muted" style="font-size:13px">예정된 경기가 아직 없어요.</p>'; return; }
       var m=parseInt((sessions[0].date||'').split('-')[1],10);
@@ -67,12 +67,20 @@
       players.sort(function(a,b){var ja=a.jersey==null?999:a.jersey, jb=b.jersey==null?999:b.jersey; return ja-jb || esc(a.name).localeCompare(esc(b.name));});
       if(!players.length){ box.innerHTML='<p class="muted" style="font-size:13px">명단을 준비 중이에요.</p>'; return; }
       // 이번 달 기준(팀 현황과 동일: 그 달 마지막 수요일이 지나야 다음 달로 넘어감) + 월 단위 휴면 판정
-      // ⚠️ 멤버앱 squadMonth()/isDormantFor()의 축약판. 정원제(cap) 확정 결과는 미반영.
+      // 멤버앱 squadMonth()/isDormantFor()의 축약판. 정원제 확정 결과(capRes)가 있으면 그게 우선.
       function _lastWed(y,m0){ var d=new Date(y,m0+1,0); d.setDate(d.getDate()-((d.getDay()-3+7)%7)); return d.getDate(); }
       function _squadMonth(){ var n=new Date(),y=n.getFullYear(),m=n.getMonth(); if(n.getDate()>_lastWed(y,m)){ var nm=m+1,ny=y; if(nm>11){nm=0;ny++;} return ny+'-'+('0'+(nm+1)).slice(-2); } return y+'-'+('0'+(m+1)).slice(-2); }
       function _nowMonth(){ var n=new Date(); return n.getFullYear()+'-'+('0'+(n.getMonth()+1)).slice(-2); }
       function _isDormant(p,ym){ var am=p.activeMonths||[]; if(am.indexOf(ym)>=0) return false; if((p.status||'active')==='dormant') return true; var dm=p.dormantMonths||[]; return dm.indexOf(ym)>=0 || dm.indexOf(_nowMonth())>=0; }
       var sqm=_squadMonth();
+      // 정원제(2026-09~) 확정 결과가 있으면 그게 활동/휴면 최종 기준 — 멤버앱 isDormantFor와 일치
+      var capRes=null;
+      try{
+        var cr=await sb.from('club_settings').select('data').eq('id','current').maybeSingle();
+        var _cap=((cr&&cr.data&&cr.data.data)||{}).capacity||{};
+        var _cm=_cap[sqm];
+        if(sqm>='2026-09'&&_cm&&_cm.result&&Array.isArray(_cm.result.active)) capRes=_cm.result.active;
+      }catch(e){}
       // 전 달(확정) MVP·성장 — 동점이면 공동 수상 전원(멤버앱 topIds와 동일)
       var mvpIds=[], growthIds=[];
       try{
@@ -85,7 +93,7 @@
       }catch(e){}
       var BST='font-size:9px;font-weight:800;border-radius:5px;padding:1px 5px;margin-left:6px;vertical-align:middle;';
       box.innerHTML=players.map(function(p){
-        var dorm=_isDormant(p,sqm)?' dorm':'';
+        var dorm=(capRes ? capRes.indexOf(p.id)<0 : _isDormant(p,sqm))?' dorm':'';
         var no=(p.jersey!=null)?p.jersey:'-';
         var badge='';
         if(mvpIds.indexOf(p.id)>=0) badge+=' <span style="'+BST+'background:#e0a530;color:#3a2600">MVP</span>';

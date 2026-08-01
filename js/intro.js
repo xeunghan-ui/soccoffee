@@ -66,23 +66,30 @@
       players=players.filter(function(p){var s=p.status||'active'; return s!=='former'&&s!=='friends';});
       players.sort(function(a,b){var ja=a.jersey==null?999:a.jersey, jb=b.jersey==null?999:b.jersey; return ja-jb || esc(a.name).localeCompare(esc(b.name));});
       if(!players.length){ box.innerHTML='<p class="muted" style="font-size:13px">명단을 준비 중이에요.</p>'; return; }
-      // 최신 투표월의 MVP·성장캐 집계
-      var mvpId=null, growthId=null;
+      // 이번 달 기준(팀 현황과 동일: 그 달 마지막 수요일이 지나야 다음 달로 넘어감) + 월 단위 휴면 판정
+      // ⚠️ 멤버앱 squadMonth()/isDormantFor()의 축약판. 정원제(cap) 확정 결과는 미반영.
+      function _lastWed(y,m0){ var d=new Date(y,m0+1,0); d.setDate(d.getDate()-((d.getDay()-3+7)%7)); return d.getDate(); }
+      function _squadMonth(){ var n=new Date(),y=n.getFullYear(),m=n.getMonth(); if(n.getDate()>_lastWed(y,m)){ var nm=m+1,ny=y; if(nm>11){nm=0;ny++;} return ny+'-'+('0'+(nm+1)).slice(-2); } return y+'-'+('0'+(m+1)).slice(-2); }
+      function _nowMonth(){ var n=new Date(); return n.getFullYear()+'-'+('0'+(n.getMonth()+1)).slice(-2); }
+      function _isDormant(p,ym){ var am=p.activeMonths||[]; if(am.indexOf(ym)>=0) return false; if((p.status||'active')==='dormant') return true; var dm=p.dormantMonths||[]; return dm.indexOf(ym)>=0 || dm.indexOf(_nowMonth())>=0; }
+      var sqm=_squadMonth();
+      // 전 달(확정) MVP·성장 — 동점이면 공동 수상 전원(멤버앱 topIds와 동일)
+      var mvpIds=[], growthIds=[];
       try{
         var _d=new Date(); _d.setDate(1); _d.setMonth(_d.getMonth()-1);
         var pm=_d.getFullYear()+'-'+('0'+(_d.getMonth()+1)).slice(-2);   // 전 달(확정)만 표시
         var vr=await sb.from('potm_votes').select('category,candidate_id').eq('month', pm);
         var votes=(vr&&vr.data)||[];
-        function topOf(cat){ var t={}; votes.forEach(function(v){ if(v.category===cat) t[v.candidate_id]=(t[v.candidate_id]||0)+1; }); var b=null,bc=0; for(var k in t){ if(t[k]>bc){bc=t[k]; b=Number(k);} } return b; }
-        mvpId=topOf('mvp'); growthId=topOf('growth');
+        function topIds(cat){ var t={}; votes.forEach(function(v){ if(v.category===cat) t[v.candidate_id]=(t[v.candidate_id]||0)+1; }); var bc=0; for(var k in t){ if(t[k]>bc) bc=t[k]; } return bc>0?Object.keys(t).filter(function(k){return t[k]===bc;}).map(Number):[]; }
+        mvpIds=topIds('mvp'); growthIds=topIds('growth');
       }catch(e){}
       var BST='font-size:9px;font-weight:800;border-radius:5px;padding:1px 5px;margin-left:6px;vertical-align:middle;';
       box.innerHTML=players.map(function(p){
-        var dorm=(p.status==='dormant')?' dorm':'';
+        var dorm=_isDormant(p,sqm)?' dorm':'';
         var no=(p.jersey!=null)?p.jersey:'-';
         var badge='';
-        if(p.id===mvpId) badge+=' <span style="'+BST+'background:#e0a530;color:#3a2600">MVP</span>';
-        if(p.id===growthId) badge+=' <span style="'+BST+'background:var(--win);color:#fff">성장</span>';
+        if(mvpIds.indexOf(p.id)>=0) badge+=' <span style="'+BST+'background:#e0a530;color:#3a2600">MVP</span>';
+        if(growthIds.indexOf(p.id)>=0) badge+=' <span style="'+BST+'background:var(--win);color:#fff">성장</span>';
         return '<div class="pl'+dorm+'"><span class="no">'+no+'</span><span class="nm">'+esc(p.name)+badge+'</span></div>';
       }).join('');
     }catch(e){ box.innerHTML='<p class="muted" style="font-size:13px">명단을 불러오지 못했어요.</p>'; }

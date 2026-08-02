@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+<html lang="ko"><head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta name="robots" content="noindex">
+<title>싸커피 하단 네비 진단</title>
+<style>
+  :root { --navh: calc(62px + env(safe-area-inset-bottom)); }
+  * { box-sizing: border-box; }
+  html { background:#15281b; -webkit-text-size-adjust:100%; }
+  body { margin:0; background:none; font-family:-apple-system,BlinkMacSystemFont,"Pretendard",sans-serif; color:#ece6d2; }
+  body::before { content:""; position:fixed; inset:0; z-index:-1; background:#15281b; }
+  .wrap { max-width:480px; margin:0 auto; padding:16px 16px calc(var(--navh) + 16px); }
+  h1 { font-size:17px; margin:8px 0 4px; }
+  p  { font-size:13px; color:#a4b39a; line-height:1.6; margin:4px 0 14px; }
+  .box { background:#1e3526; border:1px solid #33492f; border-radius:12px; padding:14px; margin-bottom:12px; }
+  .row { display:flex; justify-content:space-between; gap:10px; font-size:13px; padding:5px 0; border-bottom:1px solid #33492f; }
+  .row:last-child { border-bottom:none; }
+  .k { color:#a4b39a; } .v { font-weight:800; font-variant-numeric:tabular-nums; text-align:right; }
+  .ok { color:#5a9277; } .bad { color:#bd6452; }
+  /* 지금 사이트와 동일한 하단 네비 */
+  .bottomnav { position:fixed; left:0; right:0; bottom:0; z-index:150; max-width:480px; margin:0 auto;
+    display:flex; background:#102016; border-top:1px solid #33492f;
+    padding:6px 4px calc(6px + env(safe-area-inset-bottom)); }
+  .bnav-item { flex:1; text-align:center; color:#8c9a7c; font-size:11px; font-weight:600; padding:6px 2px; }
+  .bnav-item .ico { display:block; font-size:19px; line-height:1; margin-bottom:3px; }
+  /* 바닥선 — 네비가 진짜 화면 바닥에 붙었는지 눈으로 확인 */
+  .floor { position:fixed; left:0; right:0; bottom:0; height:3px; background:#bd6452; z-index:200; }
+</style></head><body>
+<div class="wrap">
+  <h1>하단 네비 진단</h1>
+  <p>이 페이지는 <b>내용이 아주 적은</b> 상태입니다. 아래 네비가 화면 바닥에서 떠 보이면 그 증상이 재현된 것입니다.
+     빨간 선이 진짜 화면 바닥입니다 — 네비 아래에 <b>빨간 선이 보이면 떠 있는 것</b>이고, 안 보이면 정상입니다.</p>
+  <div class="box" id="out"></div>
+  <p>이 화면을 캡처해서 보내주세요. 숫자만으로 원인이 확정됩니다.</p>
+</div>
+<nav class="bottomnav" id="nav">
+  <div class="bnav-item"><span class="ico">⌂</span>홈</div>
+  <div class="bnav-item"><span class="ico">◷</span>일정</div>
+  <div class="bnav-item"><span class="ico">▦</span>멤버</div>
+  <div class="bnav-item"><span class="ico">≡</span>더보기</div>
+</nav>
+<div class="floor"></div>
+<script>
+(function(){
+  function px(n){ return Math.round(n) + 'px'; }
+  function render(){
+    var nav = document.getElementById('nav');
+    var r = nav.getBoundingClientRect();
+    var vv = window.visualViewport;
+    var probe = document.createElement('div');
+    probe.style.cssText = 'position:fixed;bottom:0;height:env(safe-area-inset-bottom);width:0';
+    document.body.appendChild(probe);
+    var sab = probe.getBoundingClientRect().height; probe.remove();
+    var scrollable = document.documentElement.scrollHeight > window.innerHeight + 1;
+    var gap = window.innerHeight - r.bottom;             // 0이어야 정상
+    var rows = [
+      ['네비 아래 빈 공간', px(gap), Math.abs(gap) < 1 ? 'ok' : 'bad'],
+      ['이게 0이 아니면', gap > 0 ? '네비가 떠 있음' : (gap < 0 ? '네비가 화면 밖' : '정상'), Math.abs(gap) < 1 ? 'ok' : 'bad'],
+      ['innerHeight (레이아웃)', px(window.innerHeight), ''],
+      ['visualViewport 높이', vv ? px(vv.height) : '미지원', ''],
+      ['두 뷰포트 차이', vv ? px(window.innerHeight - vv.height) : '-', ''],
+      ['safe-area-inset-bottom', px(sab), ''],
+      ['네비 높이', px(r.height), ''],
+      ['페이지 스크롤 가능', scrollable ? '예' : '아니오 (내용 적음)', ''],
+      ['문서 높이', px(document.documentElement.scrollHeight), ''],
+      ['PWA(홈화면 앱) 여부', (window.navigator.standalone || matchMedia('(display-mode: standalone)').matches) ? '예 — 앱' : '아니오 — 브라우저', ''],
+      ['devicePixelRatio', String(window.devicePixelRatio), ''],
+      ['화면', window.screen.width + ' x ' + window.screen.height, ''],
+      ['UA', navigator.userAgent.slice(0, 60), '']
+    ];
+    document.getElementById('out').innerHTML = rows.map(function(x){
+      return '<div class="row"><span class="k">'+x[0]+'</span><span class="v '+x[2]+'">'+x[1]+'</span></div>';
+    }).join('');
+  }
+  render();
+  window.addEventListener('resize', render);
+  window.addEventListener('scroll', render);
+  if (window.visualViewport) { visualViewport.addEventListener('resize', render); visualViewport.addEventListener('scroll', render); }
+})();
+</script>
+</body></html>

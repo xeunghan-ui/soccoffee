@@ -2105,6 +2105,12 @@ async function homeQuickAtt(sid, status){
 // 홈 상태박스: 본인 회비를 해당 월 납부/미납으로 토글 표시 (활동/휴면과 동일한 버튼 방식)
 async function homeSetDue(memberId, month, paid){
   if (!getMe() || (memberId !== getMe() && !isAdmin())) return;
+  // 총무 입금확인이 끝난 회비는 멤버가 되돌릴 수 없다. 입금확인은 정원제 자리 판정의 최종 근거라
+  // 임의 되돌림이 판정을 흔든다. 예외 처리는 총괄(ADMIN_NAMES)이 회비 탭에서 한다.
+  if (isDuesConfirmed(month, memberId) && !isAdmin()) {
+    toast('입금 확인이 끝난 회비예요 — 변경은 운영진에게 문의해 주세요');
+    return;
+  }
   const m = ROSTER.find(x=>x.id===memberId);
   const ok = await setDuesPaid(month, memberId, paid, dueAmount(m?m.name:''));
   if (!ok) return;
@@ -2203,11 +2209,17 @@ async function renderHome() {
       myCapSt==='returning' ? (capInfo.paid.has(me) ? _cn(`복귀 신청 완료 — ${moNum}월 자리 잠정 확보.`) : _cn(`복귀 신청 완료 — <b style="color:#ece6d2">회비를 25일까지 납부</b>해야 확정돼요.`)) :
       myCapSt==='waiting' ? _cn(`${moNum}월 정원이 가득 찼어요 — 대기 ${capInfo.waitRank[me]}번. 자리가 나면 신청 순서대로 올라가요.`) : '';
     const capCount = capApplies ? `<div class="pc-stat"><span class="lbl">${moNum}월 정원</span><span style="font-size:12px;color:var(--muted)">남 ${capInfo.counts['남'].used}/${CAP_LIMIT['남']} · 여 ${capInfo.counts['여'].used}/${CAP_LIMIT['여']}</span></div>` : '';
-    const statusHtml = `${(confirmPhase && !_capRes)
+    // 이번 달 할 일이 다 끝났으면(활동 + 납부 + 입금확인) 상태 두 줄을 통째로 감춘다 — 볼 것도 누를 것도 없음.
+    // 15일부터 다음 달 신청 토글이 뜨면 자연히 다시 나타난다.
+    // 미납·확인대기·휴면은 계속 노출한다(각각 조치·상태 확인이 필요하다).
+    const _allDone = !confirmPhase && !dormStatus && myPaid && myConfd;
+    const statusHtml = _allDone ? '' : `${(confirmPhase && !_capRes)
         ? `${capApplies ? capNote : (dormStatus ? `<div style="font-size:12px;color:var(--muted);line-height:1.6;margin-bottom:6px"><b style="color:#ece6d2">${moNum}월엔 복귀하시나요?</b> 복귀하면 '활동', 계속 쉬면 '휴면'을 눌러 주세요.</div>` : '')}<div class="pc-stat"><span class="lbl">${moNum}월</span><span class="act-toggle"><button class="${capActOn?'on':''}" onclick="capSetNext(${me},'${dMonth}',false)">활동</button><button class="${capDorOn?'on':''}" onclick="capSetNext(${me},'${dMonth}',true)">휴면</button></span></div>${capCount}`
         : `<div class="pc-stat"><span class="lbl">${moNum}월</span><span class="pc-badge ${dormStatus?'neutral':'done'}">${_capRes?(dormStatus?'휴면 확정':'활동 확정'):(dormStatus?'휴면 중':'활동 중')}</span></div>`}
       ${(capApplies ? myCapSt!=='dormant' : !dormStatus)
-        ? `<div class="pc-stat"><span class="lbl">${moNum}월 회비${myConfd?' <span style="color:var(--win);font-weight:800;font-size:11px;margin-left:2px">✓ 입금확인</span>':(myPaid?'':' <span class="mini-dot"></span>')}</span><span class="act-toggle dues"><button class="paid ${myPaid?'on':''}" onclick="homeSetDue(${me},'${dMonth}',true)">납부</button><button class="unpaid ${!myPaid?'on':''}" onclick="homeSetDue(${me},'${dMonth}',false)">미납</button></span></div>`
+        ? `<div class="pc-stat"><span class="lbl">${moNum}월 회비${myConfd?' <span style="color:var(--win);font-weight:800;font-size:11px;margin-left:2px">✓ 입금확인</span>':(myPaid?'':' <span class="mini-dot"></span>')}</span>${myConfd
+            ? `<button class="pc-badge done" style="border:none;font-family:inherit;cursor:pointer" onclick="toast('입금 확인이 끝난 회비예요 — 변경은 운영진에게 문의해 주세요')">납부 완료</button>`
+            : `<span class="act-toggle dues"><button class="paid ${myPaid?'on':''}" onclick="homeSetDue(${me},'${dMonth}',true)">납부</button><button class="unpaid ${!myPaid?'on':''}" onclick="homeSetDue(${me},'${dMonth}',false)">미납</button></span>`}</div>`
         : ''}`;
     const respondHtml = targetSess ? (
       targetBlockedDorm
@@ -2232,10 +2244,8 @@ async function renderHome() {
       ${miniHtml}
     </div>`;
     // 카드 ② 현황(상태 · 참석예정 · 미확정)
-    dash += `<div class="card" style="padding:16px;margin-bottom:12px">
-      <div class="pc-right">${statusHtml}</div>
-      ${respondHtml}${upcomingHtml}${pendingHtml}
-    </div>`;
+    const _c2 = [ statusHtml ? `<div class="pc-right">${statusHtml}</div>` : '', respondHtml, upcomingHtml, pendingHtml ].filter(Boolean);
+    if (_c2.length) dash += `<div class="card home-c2" style="padding:16px;margin-bottom:12px">${_c2.join('')}</div>`;
   }
 
   const sessCards = sessions.map((s,i)=>{

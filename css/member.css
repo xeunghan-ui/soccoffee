@@ -704,6 +704,8 @@
      .wrap 이 '내용 크기'로 줄어든다 → 탭마다 페이지 가로폭이 들쭉날쭉해진다.
      width:100% 를 줘야 max-width:480px 까지 채운 뒤 가운데 정렬된다. (.bottomnav 도 같은 이유) */
   .wrap { flex: 1 0 auto; width: 100%; }
+  /* 홈 현황 카드: 상태 줄이 감춰지면 첫 블록의 상단 구분선이 카드 맨 위에 떠 보인다 — 제거 */
+  .home-c2 > *:first-child { margin-top: 0 !important; padding-top: 0 !important; border-top: none !important; }
   .bottomnav { position: sticky; bottom: 0; z-index: 150;
     width: 100%; max-width: 480px; margin: 0 auto; flex-shrink: 0;
     display: flex; background: #102016; border-top: 1px solid var(--line);

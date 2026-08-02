@@ -8,9 +8,10 @@
   :root { --navh: calc(62px + env(safe-area-inset-bottom)); }
   * { box-sizing: border-box; }
   html { background:#15281b; -webkit-text-size-adjust:100%; }
-  body { margin:0; background:none; font-family:-apple-system,BlinkMacSystemFont,"Pretendard",sans-serif; color:#ece6d2; }
+  body { margin:0; background:none; font-family:-apple-system,BlinkMacSystemFont,"Pretendard",sans-serif; color:#ece6d2;
+         min-height:100vh; min-height:100dvh; display:flex; flex-direction:column; }
   body::before { content:""; position:fixed; inset:0; z-index:-1; background:#15281b; }
-  .wrap { max-width:480px; margin:0 auto; padding:16px 16px calc(var(--navh) + 16px); }
+  .wrap { max-width:480px; margin:0 auto; padding:16px 16px 20px; flex:1 0 auto; }
   h1 { font-size:17px; margin:8px 0 4px; }
   p  { font-size:13px; color:#a4b39a; line-height:1.6; margin:4px 0 14px; }
   .box { background:#1e3526; border:1px solid #33492f; border-radius:12px; padding:14px; margin-bottom:12px; }
@@ -19,7 +20,7 @@
   .k { color:#a4b39a; } .v { font-weight:800; font-variant-numeric:tabular-nums; text-align:right; }
   .ok { color:#5a9277; } .bad { color:#bd6452; }
   /* 지금 사이트와 동일한 하단 네비 */
-  .bottomnav { position:fixed; left:0; right:0; bottom:0; z-index:150; max-width:480px; margin:0 auto;
+  .bottomnav { position:sticky; bottom:0; z-index:150; width:100%; max-width:480px; margin:0 auto; flex-shrink:0;
     display:flex; background:#102016; border-top:1px solid #33492f;
     padding:6px 4px calc(6px + env(safe-area-inset-bottom)); }
   .bnav-item { flex:1; text-align:center; color:#8c9a7c; font-size:11px; font-weight:600; padding:6px 2px; }
@@ -28,8 +29,8 @@
   .floor { position:fixed; left:0; right:0; bottom:0; height:3px; background:#bd6452; z-index:200; }
 </style></head><body>
 <div class="wrap">
-  <h1>하단 네비 진단</h1>
-  <p>이 페이지는 <b>내용이 아주 적은</b> 상태입니다. 아래 네비가 화면 바닥에서 떠 보이면 그 증상이 재현된 것입니다.
+  <h1>하단 네비 수정 확인</h1>
+  <p>이 페이지는 <b>내용이 아주 적은</b> 상태이고, 수정된 구조(흐름 기반 + sticky)를 그대로 씁니다.
      빨간 선이 진짜 화면 바닥입니다 — 네비 아래에 <b>빨간 선이 보이면 떠 있는 것</b>이고, 안 보이면 정상입니다.</p>
   <div class="box" id="out"></div>
   <p>이 화면을 캡처해서 보내주세요. 숫자만으로 원인이 확정됩니다.</p>

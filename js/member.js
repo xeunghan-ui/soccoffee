@@ -4277,10 +4277,24 @@ async function renderRank(){
 
   let html = hero + tabsHtml;
   html += `<div class="rk-years">${['전체',...years].map(y=>{ const v=y==='전체'?'':y; return `<button class="rk-year ${rankYear===v?'on':''}" onclick="changeRankYear('${v}')">${y}</button>`; }).join('')}</div>`;
+  const RANK_SHOW = 10;                       // 상위 10명만 노출
+  if (data.length > RANK_SHOW) note += ` · 상위 ${RANK_SHOW}명 표시`;
   html += `<div class="rk-note">${note}</div>`;
   if (!data.length){ el.innerHTML = html + `<div class="card"><div class="empty">${yearLabel} 대상이 없어요.</div></div>`; return; }
 
-  const top = data.slice(0,3);
+  const shown = data.slice(0, RANK_SHOW);
+  const _me = getMe();
+  const rkRowHtml = (x, rk, mine) => `
+      <div class="rk-row">
+        <div class="rk-main">
+          <span class="rkr">${rk}</span>
+          <span class="rkn">${esc(x.p.name)}${mine?` <span style="font-size:10px;font-weight:800;color:var(--accent);vertical-align:middle">나</span>`:''}</span>
+          <span class="rkbar"><div style="width:${Math.max(2,Math.min(100,pctFn(x)))}%"></div></span>
+          <span class="rkv">${valFn(x)}</span>
+        </div>
+        <div class="rk-sub">${subFn(x)}</div>
+      </div>`;
+  const top = shown.slice(0,3);
   html += `<div class="rk-podium" style="grid-template-columns:repeat(${top.length},1fr)">` + top.map((x,i)=>`
     <div class="rk-card">
       <div class="rkrank">${ranks[i]}</div>
@@ -4288,17 +4302,14 @@ async function renderRank(){
       <div class="rkval">${valFn(x)}</div>
       <div class="rksub">${subFn(x)}</div>
     </div>`).join('') + `</div>`;
-  if (data.length>3){
-    html += data.slice(3).map((x,i)=>`
-      <div class="rk-row">
-        <div class="rk-main">
-          <span class="rkr">${ranks[i+3]}</span>
-          <span class="rkn">${esc(x.p.name)}</span>
-          <span class="rkbar"><div style="width:${Math.max(2,Math.min(100,pctFn(x)))}%"></div></span>
-          <span class="rkv">${valFn(x)}</span>
-        </div>
-        <div class="rk-sub">${subFn(x)}</div>
-      </div>`).join('');
+  if (shown.length>3){
+    html += shown.slice(3).map((x,i)=>rkRowHtml(x, ranks[i+3], x.p.id===_me)).join('');
+  }
+  // 내가 상위 10명 밖이면 내 순위만 따로 덧붙인다 — 안 그러면 10위 밖 멤버는 자기 기록을 볼 방법이 없다
+  const _meIdx = data.findIndex(x => x.p.id === _me);
+  if (_meIdx >= RANK_SHOW) {
+    html += `<div style="text-align:center;color:var(--muted);font-size:13px;letter-spacing:3px;padding:8px 0">···</div>`
+          + rkRowHtml(data[_meIdx], ranks[_meIdx], true);
   }
   el.innerHTML = html;
 }

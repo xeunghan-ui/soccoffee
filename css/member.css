@@ -700,7 +700,10 @@
      내용이 적으면 .wrap이 늘어나 네비를 바닥까지 밀고, 길면 sticky가 바닥에 붙인다.
      어느 경우든 네비는 '화면 바닥' 아니면 '문서 바닥'이라 뜰 자리가 없다. */
   body { padding-bottom: 0; min-height: 100vh; min-height: 100dvh; display: flex; flex-direction: column; }
-  .wrap { flex: 1 0 auto; }
+  /* ⚠️ width:100% 필수. 세로 flex에서 좌우 margin:auto 가 있으면 align-items:stretch 가 무효가 되어
+     .wrap 이 '내용 크기'로 줄어든다 → 탭마다 페이지 가로폭이 들쭉날쭉해진다.
+     width:100% 를 줘야 max-width:480px 까지 채운 뒤 가운데 정렬된다. (.bottomnav 도 같은 이유) */
+  .wrap { flex: 1 0 auto; width: 100%; }
   .bottomnav { position: sticky; bottom: 0; z-index: 150;
     width: 100%; max-width: 480px; margin: 0 auto; flex-shrink: 0;
     display: flex; background: #102016; border-top: 1px solid var(--line);

@@ -1023,8 +1023,80 @@ function capCompute(m, duesRows){
       if (!x.keep) { rn += 1; retRank[x.id] = rn; retQueue[g].push({ id:x.id, at:x.at, rank:rn, state:states[x.id] }); }
     });
   });
-  return { states, counts, waitRank, retRank, retQueue, paid };
+  // applied = 성별별 '활동'을 누른 총 인원(자리 확보 + 대기 전부). 아직 안 누른 사람이
+  // 지금 누르면 이 뒤에 붙으므로, 예상 순번 계산의 기준이 된다.
+  const applied = { '남': pool['남'].length, '여': pool['여'].length };
+  return { states, counts, waitRank, retRank, retQueue, applied, paid };
 }
+// 아직 신청하지 않은 사람이 '지금' 신청하면 자기 성별 안에서 몇 번째가 되는지 — 남/여 정원이 다르므로 성별 기준
+function capPreview(info, p){
+  const g = capGender(p), cap = CAP_LIMIT[g];
+  const applied = (info.applied || {})[g] || 0;
+  const used = (info.counts && info.counts[g] ? info.counts[g].used : 0);
+  const inSeat = applied < cap;                 // 지금 누르면 정원 안에 드는가
+  return { g, cap, used, left: Math.max(0, cap - used),
+           rank: applied + 1,                   // 정원 안일 때의 순번
+           inSeat, waitNo: inSeat ? 0 : (applied - cap + 1) };
+}
+/* ---------- 15~25일 '다음 달 활동 여부' 팝업 ----------
+   무응답이 자동 휴면이라 응답률이 곧 정원 정확도다. 홈 상태박스 토글만으로는 놓치는 사람이 생기므로
+   신청 창(15~25일) 동안 아직 안 누른 사람에게만 띄운다. '오늘은 넘기기'는 그날 하루만 숨긴다. */
+const CAPASK_SKIP = 'socoffee_capask_skip';
+let capAskM = null;
+async function maybeAskCapConfirm(){
+  try {
+    const me = getMe(); if (me == null) return;
+    if (!dormFeatureOn()) return;
+    const d = new Date().getDate(); if (d < 15 || d > 25) return;      // 신청 창에만
+    const m = statusMonth(); if (!capOn(m)) return;                     // 정원제 달만
+    if (capResult(m)) return;                                           // 이미 확정된 달이면 묻지 않음
+    const p = PLAYERS.find(x => x.id === me); if (!p) return;
+    const st = p.status || 'active'; if (st === 'former' || st === 'friends') return;
+    await loadCapConfirm(m);
+    if (capConfirmOf(m, me)) return;                                    // 이미 응답함
+    const today = new Date().toISOString().slice(0,10);
+    if (localStorage.getItem(CAPASK_SKIP) === today) return;             // 오늘은 넘겼음
+    let info = null; try { info = capCompute(m, await fetchDues(m)); } catch(e){}
+    if (!info) return;
+    capAskM = m;
+    renderCapAsk(m, isDormantFor(p, nowMonthStr()), capPreview(info, p));
+  } catch(e){}
+}
+function renderCapAsk(m, dorm, pv){
+  let h = document.getElementById('mmHost');
+  if (!h) { h = document.createElement('div'); h.id = 'mmHost'; document.body.appendChild(h); }
+  const moNum = parseInt(m.split('-')[1], 10);
+  const gl = pv.g === '여' ? '여성' : '남성';
+  const line = t => `<div style="font-size:13px;color:var(--coffee-2);line-height:1.65;margin-top:8px">${t}</div>`;
+  const body = dorm
+    ? line(`${gl} 정원 ${pv.cap}명 중 <b style="color:#ece6d2">${pv.left}자리</b> 남았어요.`)
+      + line(pv.inSeat
+          ? `지금 신청하면 <b style="color:var(--accent)">${pv.rank}번</b>이에요 — <b style="color:#ece6d2">먼저 신청한 순서</b>로 자리가 정해집니다.`
+          : `${gl} 자리가 다 찼어요. 지금 신청하면 <b style="color:var(--accent)">대기 ${pv.waitNo}번</b>이에요 — 앞사람이 회비를 안 내면 순서대로 올라갑니다.`)
+      + line(`회비는 자리가 확정된 뒤(26일) <b style="color:#ece6d2">말일까지</b> 내면 됩니다.`)
+    : line(`지금 활동 회원이에요. ${moNum}월 자리를 지키려면 <b style="color:#ece6d2">'활동'을 누르고 25일까지 회비를 납부</b>해 주세요.`)
+      + line(`둘 중 하나라도 안 하면 ${moNum}월은 자동 휴면이 됩니다.`);
+  h.innerHTML = `<div class="mm-back" onclick="if(event.target===this)capAskSkip()"><div class="mm-box">
+      <div class="mm-head"><div><div class="mm-name">${moNum}월에 ${dorm ? '복귀하시나요?' : '도 뛰시나요?'}</div></div><button class="mm-x" onclick="capAskSkip()">×</button></div>
+      ${body}
+      <div style="display:flex;gap:8px;margin-top:16px">
+        <button class="btn accent sm" style="flex:1" onclick="capAskAnswer(false)">${dorm ? `${moNum}월에 복귀` : `${moNum}월에도 활동`}</button>
+        <button class="btn ghost sm" style="flex:1" onclick="capAskAnswer(true)">${dorm ? '계속 휴면' : `${moNum}월은 휴면`}</button>
+      </div>
+      <button class="pf-edit-link" style="width:100%;margin-top:10px;text-align:center" onclick="capAskSkip()">오늘은 넘기기</button>
+    </div></div>`;
+}
+function capAskClose(){ const h = document.getElementById('mmHost'); if (h) h.innerHTML = ''; }
+function capAskSkip(){
+  try { localStorage.setItem(CAPASK_SKIP, new Date().toISOString().slice(0,10)); } catch(e){}
+  capAskClose();
+}
+async function capAskAnswer(dormant){
+  const m = capAskM; capAskClose();
+  if (!m) return;
+  await capSetNext(getMe(), m, dormant);
+}
+
 // 홈 토글 진입점: 정원제 달이면 신청 기록 후 팀빌더 반영(정원 초과 복귀는 대기만 등록)
 async function capSetNext(memberId, month, dormant){
   if (!capOn(month)) { await setMyDormancy(memberId, month, dormant); return; }
@@ -4426,6 +4498,7 @@ async function initApp() {
   bellReadSync();      // 읽음 상태 DB 동기화(기기 간 유지) 후 종 배지 각신
   bellDotRefresh();    // 상단 종 새 공지 점
   if (loggedIn) setTimeout(()=>{ try{ preloadTabs(); }catch(e){} }, 300);   // 주요 탭 미리 렌더
+  if (loggedIn) setTimeout(()=>{ maybeAskCapConfirm(); }, 600);   // 15~25일 다음 달 활동 여부 팝업(첫 렌더 후)
 }
 // 뒤로/앞으로 가기(해시 변경) → 해당 탭으로(히스토리 조작 없이)
 window.addEventListener('hashchange', () => {

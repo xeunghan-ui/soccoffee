@@ -138,14 +138,18 @@ async function main() {
     if (!res.ok) { console.error('정원제 저장 실패:', res.status, await res.text()); process.exit(1); }
     CAP_STATE = cap;
   }
-  function capRank(conf, okFn){   // 자리 배정: 유지 우선 → 신청 시각 순, 성별 정원 컷
+  // 자리 배정: 유지 우선 → 신청 시각 순, 성별 정원 컷
+  // okFn(p, keep) — 유지자와 복귀자의 자격 조건이 다르므로 keep 을 함께 넘긴다.
+  function capRank(conf, okFn){
     const pool = { '남':[], '여':[] };
     players.forEach(p => {
       const st = p.status || 'active';
       if (st === 'former' || st === 'friends') return;
       const c = conf[String(p.id)];
-      if (!c || c.s !== 'active' || !okFn(p)) return;
-      pool[capGender(p)].push({ id:p.id, at:c.at||0, keep: !isDormantLike(p, thisMonth, thisMonth) });
+      if (!c || c.s !== 'active') return;
+      const keep = !isDormantLike(p, thisMonth, thisMonth);
+      if (!okFn(p, keep)) return;
+      pool[capGender(p)].push({ id:p.id, at:c.at||0, keep });
     });
     const active = [];
     ['남','여'].forEach(g => {
@@ -160,7 +164,10 @@ async function main() {
     if (capM >= CAP_START && !capResultFor(capM)) {
       const dd = await j(await rest(`dues?select=member_id,paid&month=eq.${capM}`)) || [];
       const cpaid = new Set(dd.filter(d => d.paid).map(d => d.member_id));
-      const active = capRank(await capConfirmFor(capM), p => cpaid.has(p.id));
+      // 유지자는 25일까지 회비 자가신고가 있어야 자리를 지킨다.
+      // 복귀자는 '신청 순서'만으로 자리를 받는다 — 입금은 자리가 확정된 뒤(26일~말일)에 한다.
+      // 정책: "복귀 신청은 15일 이후, 입금은 25일 확정된 이후" (2026-08 확정)
+      const active = capRank(await capConfirmFor(capM), (p, keep) => keep ? cpaid.has(p.id) : true);
       await capSave(capM, { result: { active, at: new Date().toISOString() } });
       console.log('정원제 롤오버', capM, '— 잠정 활동', active.length, '명');
     }
@@ -171,6 +178,8 @@ async function main() {
     if (thisMonth >= CAP_START && r5 && !r5.finalized && dc5.size) {
       const dd = await j(await rest(`dues?select=member_id,paid&month=eq.${thisMonth}`)) || [];
       const cpaid = new Set(dd.filter(d => d.paid).map(d => d.member_id));
+      // 최종 확정은 유지자·복귀자 공통으로 '실제 입금확인'을 요구한다.
+      // 복귀자 입금 기한은 말일이고, 총무가 1~5일에 확인하므로 5일 이후 판정이면 시간이 충분하다.
       const active = capRank(await capConfirmFor(thisMonth), p => cpaid.has(p.id) && dc5.has(p.id));
       await capSave(thisMonth, { result: { active, finalized: true, at: new Date().toISOString() } });
       console.log('정원제 최종 확정', thisMonth, '— 활동', active.length, '명');

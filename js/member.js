@@ -4540,6 +4540,76 @@ function meName() {
 }
 
 // 주요 탭을 백그라운드로 미리 렌더 → 탭 전환 시 즉시 표시(깜빡임 없음). 숨겨진 탭 div에 채워둠.
+/* ---------- 데이터 새로고침 ----------
+   PWA(standalone)에서는 브라우저 기본 '당겨서 새로고침'이 동작하지 않아, 앱을 완전히 닫지 않으면
+   낡은 데이터를 계속 보게 된다. 정원제(남은 자리·복귀 순번)·참석·회비는 낡으면 잘못된 판단으로
+   이어지므로 ① 앱 복귀 시 자동 갱신 ② 최상단에서 당겨서 새로고침 두 경로를 둔다. */
+const TAB_RENDERERS = { home:renderHome, att:renderAtt, dues:renderDues, list:render, potm:renderPotm,
+                        rank:renderRank, ops:renderOps, more:renderMore, mine:renderMine, faq:renderFaq,
+                        squad:renderSquad };
+function currentTab(){
+  return ALL_TABS.find(t => { const el = document.getElementById('tab-' + t); return el && !el.classList.contains('hidden'); }) || 'home';
+}
+function modalOpen(){ const h = document.getElementById('mmHost'); return !!(h && h.innerHTML.trim()); }
+let _refreshing = false;
+// 현재 탭을 다시 그린다. 캐시(설정·팀빌더 지표)도 비워 실제 최신값을 가져오게 한다.
+async function refreshCurrent(){
+  if (_refreshing) return;
+  _refreshing = true;
+  try {
+    _settingsCache = null; _tbStats = null; _tbStatsAt = 0; _prevWinners = null; _winCounts = null;
+    try { const s = await fetchSettings(); teamSplitOn = s.teamSplit !== false; CLUB_PINS = s.pins || {};
+      BANK = s.bank || null; SURVEY = s.survey || null; UNIFORM = s.uniform || null; RESULTS = s.results || null;
+      GUEST_REQS = s.guestReqs || []; GUEST_EXTRA = s.guestExtra || {}; DUES_CONFIRMED = s.duesConfirmed || {};
+      CAPACITY = s.capacity || {}; LEAGUE = s.league || {}; } catch(e){}
+    try { await loadCapConfirm(statusMonth()); } catch(e){}
+    try { await loadTbDormant(); } catch(e){}
+    const fn = TAB_RENDERERS[currentTab()];
+    if (fn) await rerender(fn);
+    try { refreshAttBadge(); refreshNewBadges(); bellDotRefresh(); } catch(e){}
+  } finally { _refreshing = false; }
+}
+// ① 앱 복귀 시 자동 갱신 — 백그라운드에 30초 이상 있었을 때만(잠깐 전환에는 반응 안 함)
+(function(){
+  let hiddenAt = 0;
+  document.addEventListener('visibilitychange', () => {
+    if (document.hidden) { hiddenAt = Date.now(); return; }
+    if (!hiddenAt || Date.now() - hiddenAt < 30000) return;
+    hiddenAt = 0;
+    if (modalOpen()) return;
+    if (document.getElementById('gate') && !document.getElementById('gate').classList.contains('hidden')) return;
+    refreshCurrent();
+  });
+})();
+// ② 당겨서 새로고침 — 스크롤 최상단에서 아래로 당길 때만. 일반 스크롤을 막지 않으려 preventDefault 안 씀
+(function(){
+  const TRIG = 70;                   // 이 거리 이상 당기면 발동
+  let y0 = -1, pulling = false, bar = null;
+  function ind(){
+    if (!bar) { bar = document.createElement('div'); bar.id = 'ptrBar'; document.body.appendChild(bar); }
+    return bar;
+  }
+  function set(d){ const b = ind(); b.style.height = Math.min(d, TRIG + 20) + 'px'; b.classList.toggle('ready', d >= TRIG); }
+  function clear(){ if (bar) { bar.style.height = '0px'; bar.classList.remove('ready'); } }
+  document.addEventListener('touchstart', e => {
+    if (modalOpen() || _refreshing || e.touches.length !== 1) { y0 = -1; return; }
+    y0 = (window.scrollY <= 0) ? e.touches[0].clientY : -1;
+    pulling = false;
+  }, { passive: true });
+  document.addEventListener('touchmove', e => {
+    if (y0 < 0 || e.touches.length !== 1) return;
+    const d = e.touches[0].clientY - y0;
+    if (d <= 0 || window.scrollY > 0) { if (pulling) { pulling = false; clear(); } return; }
+    pulling = true; set(d);
+  }, { passive: true });
+  document.addEventListener('touchend', () => {
+    if (y0 < 0 || !pulling) { y0 = -1; clear(); return; }
+    const ready = bar && bar.classList.contains('ready');
+    y0 = -1; pulling = false; clear();
+    if (ready) refreshCurrent();
+  }, { passive: true });
+})();
+
 function preloadTabs(){
   [renderAtt, renderMine, renderSquad, renderRank, renderPotm, renderFaq, renderMore].forEach(fn=>{ try{ fn(); }catch(e){} });
   if (isDuesViewer()) { try{ renderDues(); }catch(e){} }

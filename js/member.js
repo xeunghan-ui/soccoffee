@@ -1043,6 +1043,7 @@ function capPreview(info, p){
    신청 창(15~25일) 동안 아직 안 누른 사람에게만 띄운다. '오늘은 넘기기'는 그날 하루만 숨긴다. */
 const CAPASK_SKIP = 'socoffee_capask_skip';
 let capAskM = null;
+let capAskDry = false;   // 운영진 미리보기 — 응답을 저장하지 않는다
 async function maybeAskCapConfirm(){
   try {
     const me = getMe(); if (me == null) return;
@@ -1058,7 +1059,7 @@ async function maybeAskCapConfirm(){
     if (localStorage.getItem(CAPASK_SKIP) === today) return;             // 오늘은 넘겼음
     let info = null; try { info = capCompute(m, await fetchDues(m)); } catch(e){}
     if (!info) return;
-    capAskM = m;
+    capAskM = m; capAskDry = false;
     renderCapAsk(m, isDormantFor(p, nowMonthStr()), capPreview(info, p));
   } catch(e){}
 }
@@ -1076,25 +1077,47 @@ function renderCapAsk(m, dorm, pv){
       + line(`회비는 자리가 확정된 뒤(26일) <b style="color:#ece6d2">말일까지</b> 내면 됩니다.`)
     : line(`지금 활동 회원이에요. ${moNum}월 자리를 지키려면 <b style="color:#ece6d2">'활동'을 누르고 25일까지 회비를 납부</b>해 주세요.`)
       + line(`둘 중 하나라도 안 하면 ${moNum}월은 자동 휴면이 됩니다.`);
+  const dryTag = capAskDry ? ` <span class="dues-badge" style="margin-left:6px">미리보기</span>` : '';
+  const foot = capAskDry
+    ? `<div style="display:flex;gap:8px;margin-top:10px">
+         <button class="pf-edit-link" style="flex:1;text-align:center" onclick="capAskPreview(${dorm ? 'false' : 'true'})">${dorm ? '활동 회원 문구 보기' : '휴면 회원 문구 보기'}</button>
+         <button class="pf-edit-link" style="flex:1;text-align:center" onclick="capAskSkip()">닫기</button>
+       </div>
+       <p class="hint" style="margin:8px 0 0;text-align:center">미리보기라 어느 버튼을 눌러도 저장되지 않아요.</p>`
+    : `<button class="pf-edit-link" style="width:100%;margin-top:10px;text-align:center" onclick="capAskSkip()">오늘은 넘기기</button>`;
   h.innerHTML = `<div class="mm-back" onclick="if(event.target===this)capAskSkip()"><div class="mm-box">
-      <div class="mm-head"><div><div class="mm-name">${moNum}월에 ${dorm ? '복귀하시나요?' : '도 뛰시나요?'}</div></div><button class="mm-x" onclick="capAskSkip()">×</button></div>
+      <div class="mm-head"><div><div class="mm-name">${moNum}월에 ${dorm ? '복귀하시나요?' : '도 뛰시나요?'}${dryTag}</div></div><button class="mm-x" onclick="capAskSkip()">×</button></div>
       ${body}
       <div style="display:flex;gap:8px;margin-top:16px">
         <button class="btn accent sm" style="flex:1" onclick="capAskAnswer(false)">${dorm ? `${moNum}월에 복귀` : `${moNum}월에도 활동`}</button>
         <button class="btn ghost sm" style="flex:1" onclick="capAskAnswer(true)">${dorm ? '계속 휴면' : `${moNum}월은 휴면`}</button>
       </div>
-      <button class="pf-edit-link" style="width:100%;margin-top:10px;text-align:center" onclick="capAskSkip()">오늘은 넘기기</button>
+      ${foot}
     </div></div>`;
 }
 function capAskClose(){ const h = document.getElementById('mmHost'); if (h) h.innerHTML = ''; }
 function capAskSkip(){
+  if (capAskDry) { capAskDry = false; capAskClose(); return; }   // 미리보기는 '오늘 넘김'으로 기록하지 않는다
   try { localStorage.setItem(CAPASK_SKIP, new Date().toISOString().slice(0,10)); } catch(e){}
   capAskClose();
 }
 async function capAskAnswer(dormant){
+  if (capAskDry) { capAskDry = false; capAskClose(); toast('미리보기예요 — 저장되지 않았습니다'); return; }
   const m = capAskM; capAskClose();
   if (!m) return;
   await capSetNext(getMe(), m, dormant);
+}
+// 운영진 전용 미리보기 — 날짜 조건을 풀지 않고 총괄만 열어본다.
+// (날짜 가드를 임시로 풀어 배포하면 다른 멤버에게도 떠서, 신청 창이 열리기 전에 선착순이 시작돼버린다)
+async function capAskPreview(dorm){
+  if (!isAdmin()) return;
+  const m = capOn(statusMonth()) ? statusMonth() : CAP_START;   // 정원제 달이 아니면 시작 달로 미리보기
+  let info = null;
+  try { await loadCapConfirm(m); info = capCompute(m, await fetchDues(m)); } catch(e){}
+  if (!info) { toast('정원 데이터를 불러오지 못했어요'); return; }
+  const me = PLAYERS.find(x => x.id === getMe()) || { gender: '남' };
+  capAskM = m; capAskDry = true;
+  renderCapAsk(m, !!dorm, capPreview(info, me));
 }
 
 // 홈 토글 진입점: 정원제 달이면 신청 기록 후 팀빌더 반영(정원 초과 복귀는 대기만 등록)
@@ -4060,7 +4083,12 @@ async function renderOps() {
       ${_sec('복귀 신청 순서', (capInfo.retQueue['남']||[]).length + (capInfo.retQueue['여']||[]).length, _qRows, true)}
       ${_sec('복귀 확정자 미입금 — 말일까지', _retUnpaid.length, _ruRows)}
       ${_sec('휴면 선택', _dorm.length, _dorm.length ? _dorm.sort((a,b)=>a.name.localeCompare(b.name,'ko')).map(x=>_row(x.name, _gtag(capGender(x)))).join('') : `<p class="hint" style="margin:6px 0 0">없어요.</p>`)}
-      <p class="hint" style="margin:12px 2px 0">복귀는 <b style="color:var(--coffee-2)">먼저 신청한 순서</b>로 자리가 정해져요(입금 순서 아님). 유지자가 미납으로 자리를 반납하면 대기 순서대로 올라갑니다.</p>`;
+      <p class="hint" style="margin:12px 2px 0">복귀는 <b style="color:var(--coffee-2)">먼저 신청한 순서</b>로 자리가 정해져요(입금 순서 아님). 유지자가 미납으로 자리를 반납하면 대기 순서대로 올라갑니다.</p>
+      <div style="display:flex;gap:8px;margin-top:12px">
+        <button class="btn ghost sm" style="flex:1" onclick="capAskPreview(false)">팝업 미리보기 · 활동 회원</button>
+        <button class="btn ghost sm" style="flex:1" onclick="capAskPreview(true)">팝업 미리보기 · 휴면 회원</button>
+      </div>
+      <p class="hint" style="margin:6px 2px 0">15~25일에 미응답자에게 뜨는 팝업이에요. 미리보기는 <b style="color:var(--coffee-2)">저장되지 않고 나만 보입니다.</b></p>`;
   }
 
   const bodyMap = { notice:secNotice, session:secSession, cap:secCap, roster:secRoster, dues:secDues, vote:secVote, push:secPush, league:secLeague };

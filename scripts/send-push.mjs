@@ -86,7 +86,7 @@ const TPL = {
   deadline:    { title:'참석 마감 임박', body:'{날짜} 세션 참석 응답이 내일 마감돼요. 참석/불참을 정해 주세요!' },
   vote:        { title:'이달의 선수 투표 시작', body:'이번 달 MVP와 성장상을 뽑아 주세요!' },
   dues_open:   { title:'다음 달 활동 확인', body:'{월}월에도 뛰려면 25일까지 활동 확인과 회비 납부를 모두 해주세요. 휴면 회원은 같은 기간에 복귀 신청할 수 있어요.' },
-  dues_urge:   { title:'자리 확정 마감 임박', body:'{월}월 자리 확정이 내일(25일) 마감돼요. 활동 확인이나 회비 납부가 아직이에요!' },
+  dues_urge:   { title:'자리 확정 마감 임박', body:'{월}월 자리 확정이 내일(25일) 마감돼요. 활동 확인·회비 입금확인이 아직이에요!' },
   dorm_ask:    { title:'{월}월엔 복귀하시나요?', body:"복귀하려면 홈에서 '활동'을, 계속 쉬려면 '휴면'을 눌러 주세요. 그대로 두면 휴면이 유지돼요." },
   winner:      { title:'축하합니다!', body:'{월}월 {부문}에 선정됐어요!' },
   vote_close:  { title:'{월}월 투표 마감 임박', body:'투표가 오늘 밤 마감돼요. 아직 참여 전이에요!' },
@@ -162,12 +162,10 @@ async function main() {
     let ny = Number(today.slice(0,4)), nmo = Number(today.slice(5,7)) + 1; if (nmo > 12) { nmo = 1; ny++; }
     const capM = `${ny}-${String(nmo).padStart(2,'0')}`;
     if (capM >= CAP_START && !capResultFor(capM)) {
-      const dd = await j(await rest(`dues?select=member_id,paid&month=eq.${capM}`)) || [];
-      const cpaid = new Set(dd.filter(d => d.paid).map(d => d.member_id));
-      // 유지자는 25일까지 회비 자가신고가 있어야 자리를 지킨다.
+      // 정책 v3(2026-08-15): 유지자는 25일까지 '총무 입금확인'까지 완료돼야 자리를 지킨다(자가신고 납부만으론 부족).
       // 복귀자는 '신청 순서'만으로 자리를 받는다 — 입금은 자리가 확정된 뒤(26일~말일)에 한다.
-      // 정책: "복귀 신청은 15일 이후, 입금은 25일 확정된 이후" (2026-08 확정)
-      const active = capRank(await capConfirmFor(capM), (p, keep) => keep ? cpaid.has(p.id) : true);
+      const dconfR = new Set(((cur.duesConfirmed || {})[capM]) || []);
+      const active = capRank(await capConfirmFor(capM), (p, keep) => keep ? dconfR.has(p.id) : true);
       await capSave(capM, { result: { active, at: new Date().toISOString() } });
       console.log('정원제 롤오버', capM, '— 잠정 활동', active.length, '명');
     }
@@ -297,18 +295,14 @@ async function main() {
         const paid = new Set(dues.filter(d => d.paid).map(d => d.member_id));
         const capOnDm = dm >= CAP_START;
         const conf = capOnDm ? await capConfirmFor(dm) : {};
-        // 활동 회원: (정원제) 미확인 또는 미납 / (이전) 미납만. 복귀 신청자: 미납이면 포함
+        const dconfU = new Set(((cur.duesConfirmed || {})[dm]) || []);
+        // 활동 회원: (정원제) 미확인 또는 입금확인 전(자리 미확정) / (이전) 미납만.
+        // 복귀 신청자는 재촉하지 않는다 — 순번제라 입금은 26일 배정 후 말일까지가 정상 동선.
         const need = activeFor(players, dm, thisMonth).filter(p => {
           const c = conf[String(p.id)];
-          return capOnDm ? (!(c && c.s === 'active') || !paid.has(p.id)) : !paid.has(p.id);
+          return capOnDm ? (!(c && c.s === 'active') || !dconfU.has(p.id)) : !paid.has(p.id);
         }).map(p => p.id);
-        const extra = capOnDm ? players.filter(p => {
-          const st = p.status || 'active';
-          if (st === 'former' || st === 'friends') return false;
-          const c = conf[String(p.id)];
-          return c && c.s === 'active' && !paid.has(p.id) && isDormantLike(p, thisMonth, thisMonth);
-        }).map(p => p.id) : [];
-        const urgeTo = [...new Set([...need, ...extra])];
+        const urgeTo = [...new Set(need)];
         if (urgeTo.length) msgs.push({ cat:'dues_urge', legacy:'dues', ...T('dues_urge', {'월': Number(dm.slice(5, 7))}), url: './member.html#dues', targets: urgeTo });
       }
     }

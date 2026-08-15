@@ -1038,14 +1038,15 @@ function capCompute(m, duesRows){
     if (!c || c.s !== 'active') { states[p.id] = (c && c.s === 'dormant') ? 'dormant' : 'unconfirmed'; return; }
     pool[capGender(p)].push({ id:p.id, at:c.at||0, keep: !isDormantFor(p, curM) });
   });
-  // 정책(2026-08 확정): 유지 확인은 즉시 정원 점유, 복귀 신청은 자리를 점유하지 않고 순번만 받는다.
-  // 자리 배정은 26일 롤오버가 '남은 자리를 복귀 순번대로' 채울 때 확정된다(발송기 capRank와 동일 순서).
+  // 정책(2026-08 확정): 유지는 확인+입금확인 완료 시 정원 점유, 복귀 신청은 자리를 점유하지 않고 순번만 받는다.
+  // 자리 배정은 26일 롤오버가 '남은 자리를 복귀 순번대로' 채울 때 확정된다(발송기 capRank와 동일 순서·동일 입금확인 기준).
   const waitRank = {}, retRank = {}, retQueue = { '남':[], '여':[] };
   ['남','여'].forEach(g => {
     let rn = 0;
     pool[g].sort((a,b) => a.at-b.at);
     pool[g].forEach(x => {
-      if (x.keep) { states[x.id] = 'kept'; counts[g].used++; }   // 유지 = 즉시 정원(활동 인원≤정원이라 초과 불가)
+      // 정책 v3(2026-08-15): '활동' 클릭만으론 정원 미포함 — 총무 입금확인까지 완료해야 자리를 센다.
+      if (x.keep) { states[x.id] = 'kept'; if (isDuesConfirmed(m, x.id)) counts[g].used++; }
       else { rn += 1; states[x.id] = 'queue'; retRank[x.id] = rn; waitRank[x.id] = rn;
              retQueue[g].push({ id:x.id, at:x.at, rank:rn, state:'queue' }); }
     });
@@ -2341,7 +2342,9 @@ async function renderHome() {
       myCapSt==='unconfirmed' ? (dormStatus
           ? _cn(`<b style="color:#ece6d2">${moNum}월 복귀 신청</b> — '활동'을 누르면 복귀 순번을 받아요. 26일에 <b style="color:#ece6d2">남은 자리를 순번대로 배정</b>합니다. 회비는 자리가 확정된 뒤에 내면 됩니다.`)
           : _cn(`<b style="color:#ece6d2">${moNum}월 자리 확인</b> — 25일까지 '활동' 확인과 회비 납부를 모두 해야 자리가 유지돼요.`)) :
-      myCapSt==='kept' ? (capInfo.paid.has(me) ? _cn(`${moNum}월 자리 확인 완료.`) : _cn(`${moNum}월 자리 확인됨 — <b style="color:#ece6d2">회비를 25일까지 납부</b>해야 유지돼요.`)) :
+      myCapSt==='kept' ? (isDuesConfirmed(dMonth, me) ? _cn(`${moNum}월 자리 확정 — 입금확인까지 완료됐어요.`)
+          : capInfo.paid.has(me) ? _cn(`${moNum}월 자리 확인·납부 완료 — <b style="color:#ece6d2">총무 입금확인</b>이 되면 정원에 확정돼요.`)
+          : _cn(`${moNum}월 자리 확인됨 — <b style="color:#ece6d2">25일까지 회비 납부와 입금확인</b>까지 완료돼야 자리가 확정돼요.`)) :
       myCapSt==='queue' ? _cn(`복귀 신청 완료 — 순번 <b style="color:#ece6d2">${(capInfo.retRank&&capInfo.retRank[me])||1}번</b>. 26일에 남은 자리를 순번대로 배정하고, 확정되면 <b style="color:#ece6d2">말일까지 입금</b>해 주세요.`) : '';
     const _rq = g => ((capInfo.retQueue||{})[g]||[]).length;
     const capCount = capApplies ? `<div class="pc-stat"><span class="lbl">${moNum}월 정원</span><span style="font-size:12px;color:var(--muted)">남 ${capInfo.counts['남'].used}/${CAP_LIMIT['남']}${_rq('남')?` (+복귀 ${_rq('남')})`:''} · 여 ${capInfo.counts['여'].used}/${CAP_LIMIT['여']}${_rq('여')?` (+복귀 ${_rq('여')})`:''}</span></div>` : '';
@@ -3591,7 +3594,7 @@ async function capBoardHtml(){
   // 요약: 남 유지/정원(+복귀 대기) · 여 …
   const _sum = ['남','여'].map(g => { const c=capInfo.counts[g], rq=((capInfo.retQueue||{})[g]||[]).length; return `${g} ${c.used}/${c.cap}${rq?` <span style="color:var(--accent)">+${rq}</span>`:''}`; }).join(' · ');
   const _un = _pool.filter(x => _st(x.id)==='unconfirmed');
-  const _ku = _pool.filter(x => _st(x.id)==='kept' && _pay(x.id)==='미입금');
+  const _ku = _pool.filter(x => _st(x.id)==='kept' && _pay(x.id)!=='입금확인');   // 입금확인 전 = 정원 미포함
   const _dorm = _pool.filter(x => _st(x.id)==='dormant');
   // 복귀 큐: 순번·이름·입금을 한 항목으로 (확정 후엔 순번 자리에 배정/미배정)
   const _qg = g => (capInfo.retQueue[g]||[]).map(r => {
@@ -3605,7 +3608,7 @@ async function capBoardHtml(){
       <span class="hint" style="margin:0">${_res ? (_res.finalized ? '최종 확정' : '잠정 확정 · 5일 최종') : '접수 중 · 25일 마감'} — ${_sum}</span>
     </div>
     ${_line(`미응답 ${_un.length}`, 'var(--red)', _un.length?_names(_un):'', _res?'':'→ 25일까지 없으면 자동 휴면')}
-    ${_line(`유지 미납 ${_ku.length}`, 'var(--alert)', _ku.length?_names(_ku):'', _res?'':'→ 25일까지 미납 시 자리 반납')}
+    ${_line(`유지 미확정 ${_ku.length}`, 'var(--alert)', _ku.length?[..._ku].sort((a,b)=>a.name.localeCompare(b.name,'ko')).map(x=>esc(x.name)+(_pay(x.id)==='납부'?' <span style="color:var(--muted);font-size:12px">(납부)</span>':'')).join(', '):'', _res?'':'→ 25일까지 입금확인 없으면 자리 반납')}
     ${_line('복귀'+(_qF?' 남':''), 'var(--accent)', _qM, _res?'· 말일까지 입금':'')}
     ${_line('복귀 여', 'var(--accent)', _qF, _res?'· 말일까지 입금':'')}
     ${_line(`휴면 ${_dorm.length}`, 'var(--muted)', _dorm.length?`<span style="color:var(--muted)">${_names(_dorm)}</span>`:'')}

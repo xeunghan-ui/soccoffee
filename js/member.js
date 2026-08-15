@@ -2450,8 +2450,12 @@ async function renderHome() {
       const apps = dN.applicants || [];
       const mineApp = apps.some(a => a.id === me);
       const nmN = parseInt(_lgNext.split('-')[1], 10);
+      // 지원자 이름은 운영진·일반 관리자에게만 (2026-08-15, 홍순인 등 스태프 열람용)
+      const appNames = (isAdmin() || isSubAdmin()) && apps.length
+        ? ' · ' + apps.slice().sort((a,b)=>(a.at||0)-(b.at||0)).map(a=>{const p=ROSTER.find(x=>x.id===a.id);return p?esc(p.name):'#'+a.id;}).join(', ')
+        : '';
       lgApplyHome = `<button class="card" style="width:100%;box-sizing:border-box;padding:14px 16px;margin-bottom:12px;display:flex;align-items:center;justify-content:space-between;gap:12px;cursor:pointer;font-family:inherit;text-align:left" onclick="leagueApply()">
-        <span style="min-width:0"><span style="display:block;font-size:14px;font-weight:800;color:#ece6d2">${nmN}월 팀 리그 감독 지원</span><span style="display:block;font-size:12px;color:var(--muted);margin-top:2px">${apps.length?`지원 ${apps.length}명`:'아직 지원자가 없어요'}${mineApp?' · 지원 완료':''} · 2명 초과면 운영진이 지명해요</span></span>
+        <span style="min-width:0"><span style="display:block;font-size:14px;font-weight:800;color:#ece6d2">${nmN}월 팀 리그 감독 지원</span><span style="display:block;font-size:12px;color:var(--muted);margin-top:2px">${apps.length?`지원 ${apps.length}명`:'아직 지원자가 없어요'}${appNames}${mineApp?' · 지원 완료':''} · 2명 초과면 운영진이 지명해요</span></span>
         <span style="font-size:12px;font-weight:800;color:var(--accent);white-space:nowrap">${mineApp?'지원 취소':'지원하기'} →</span>
       </button>`;
     }

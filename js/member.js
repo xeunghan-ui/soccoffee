@@ -1012,15 +1012,16 @@ function capCompute(m, duesRows){
     if (!c || c.s !== 'active') { states[p.id] = (c && c.s === 'dormant') ? 'dormant' : 'unconfirmed'; return; }
     pool[capGender(p)].push({ id:p.id, at:c.at||0, keep: !isDormantFor(p, curM) });
   });
+  // 정책(2026-08 확정): 유지 확인은 즉시 정원 점유, 복귀 신청은 자리를 점유하지 않고 순번만 받는다.
+  // 자리 배정은 26일 롤오버가 '남은 자리를 복귀 순번대로' 채울 때 확정된다(발송기 capRank와 동일 순서).
   const waitRank = {}, retRank = {}, retQueue = { '남':[], '여':[] };
   ['남','여'].forEach(g => {
-    pool[g].sort((a,b) => (b.keep?1:0)-(a.keep?1:0) || a.at-b.at);   // 유지 우선, 그 안에서 신청 시각 순
     let rn = 0;
-    pool[g].forEach((x,i) => {
-      if (i < CAP_LIMIT[g]) { states[x.id] = x.keep ? 'kept' : 'returning'; counts[g].used++; }
-      else { states[x.id] = 'waiting'; waitRank[x.id] = i - CAP_LIMIT[g] + 1; }
-      // 복귀 신청자만 따로 순번을 매긴다 — 선착순이므로 순서가 곧 우선권
-      if (!x.keep) { rn += 1; retRank[x.id] = rn; retQueue[g].push({ id:x.id, at:x.at, rank:rn, state:states[x.id] }); }
+    pool[g].sort((a,b) => a.at-b.at);
+    pool[g].forEach(x => {
+      if (x.keep) { states[x.id] = 'kept'; counts[g].used++; }   // 유지 = 즉시 정원(활동 인원≤정원이라 초과 불가)
+      else { rn += 1; states[x.id] = 'queue'; retRank[x.id] = rn; waitRank[x.id] = rn;
+             retQueue[g].push({ id:x.id, at:x.at, rank:rn, state:'queue' }); }
     });
   });
   // applied = 성별별 '활동'을 누른 총 인원(자리 확보 + 대기 전부). 아직 안 누른 사람이
@@ -1031,12 +1032,10 @@ function capCompute(m, duesRows){
 // 아직 신청하지 않은 사람이 '지금' 신청하면 자기 성별 안에서 몇 번째가 되는지 — 남/여 정원이 다르므로 성별 기준
 function capPreview(info, p){
   const g = capGender(p), cap = CAP_LIMIT[g];
-  const applied = (info.applied || {})[g] || 0;
-  const used = (info.counts && info.counts[g] ? info.counts[g].used : 0);
-  const inSeat = applied < cap;                 // 지금 누르면 정원 안에 드는가
+  const used = (info.counts && info.counts[g] ? info.counts[g].used : 0);   // 유지 확인 인원
+  const retApplied = ((info.retQueue || {})[g] || []).length;
   return { g, cap, used, left: Math.max(0, cap - used),
-           rank: applied + 1,                   // 정원 안일 때의 순번
-           inSeat, waitNo: inSeat ? 0 : (applied - cap + 1) };
+           rank: retApplied + 1 };   // 지금 신청하면 받을 복귀 순번
 }
 /* ---------- 15~25일 '다음 달 활동 여부' 팝업 ----------
    무응답이 자동 휴면이라 응답률이 곧 정원 정확도다. 홈 상태박스 토글만으로는 놓치는 사람이 생기므로
@@ -1070,10 +1069,8 @@ function renderCapAsk(m, dorm, pv){
   const gl = pv.g === '여' ? '여성' : '남성';
   const line = t => `<div style="font-size:13px;color:var(--coffee-2);line-height:1.65;margin-top:8px">${t}</div>`;
   const body = dorm
-    ? line(`${gl} 정원 ${pv.cap}명 중 <b style="color:#ece6d2">${pv.left}자리</b> 남았어요.`)
-      + line(pv.inSeat
-          ? `지금 신청하면 <b style="color:var(--accent)">${pv.rank}번</b>이에요 — <b style="color:#ece6d2">먼저 신청한 순서</b>로 자리가 정해집니다.`
-          : `${gl} 자리가 다 찼어요. 지금 신청하면 <b style="color:var(--accent)">대기 ${pv.waitNo}번</b>이에요 — 앞사람이 회비를 안 내면 순서대로 올라갑니다.`)
+    ? line(`복귀는 <b style="color:#ece6d2">순번제</b>예요 — 지금 신청하면 ${gl} <b style="color:var(--accent)">${pv.rank}번</b>입니다.`)
+      + line(`26일에 유지 확인이 끝난 뒤 <b style="color:#ece6d2">남은 자리를 순번대로 배정</b>해요. 신청이 자리를 미리 차지하지는 않습니다.`)
       + line(`회비는 자리가 확정된 뒤(26일) <b style="color:#ece6d2">말일까지</b> 내면 됩니다.`)
     : line(`지금 활동 회원이에요. ${moNum}월 자리를 지키려면 <b style="color:#ece6d2">'활동'을 누르고 25일까지 회비를 납부</b>해 주세요.`)
       + line(`둘 중 하나라도 안 하면 ${moNum}월은 자동 휴면이 됩니다.`);
@@ -1126,11 +1123,11 @@ async function capSetNext(memberId, month, dormant){
   if (!(await capRecordConfirm(month, memberId, dormant ? 'dormant' : 'active'))) { toast('저장 중 오류가 났어요'); return; }
   const meP = PLAYERS.find(x=>x.id===memberId);
   if (!dormant && meP && isDormantFor(meP, nowMonthStr())) {
-    let info; try { info = capCompute(month, await fetchDues(month)); } catch(e){ info = null; }
-    if (info && info.states[memberId] === 'waiting') {
-      toast('정원이 가득 찼어요 — 대기 ' + info.waitRank[memberId] + '번으로 등록했어요');
-      await rerender(renderHome); return;
-    }
+    // 복귀 신청 = 순번만 부여, 자리는 26일 확정 때 순번대로 배정(팀빌더 활동 예외는 기록하지 않음)
+    let info; try { await loadCapConfirm(month); info = capCompute(month, await fetchDues(month)); } catch(e){ info = null; }
+    const rn = info && info.retRank ? info.retRank[memberId] : null;
+    toast(rn ? ('복귀 순번 ' + rn + '번으로 신청했어요 — 26일에 남은 자리를 순번대로 배정해요') : '복귀 신청을 접수했어요');
+    await rerender(renderHome); return;
   }
   await setMyDormancy(memberId, month, dormant);
 }
@@ -2298,19 +2295,19 @@ async function renderHome() {
     if (capApplies) { try { await loadCapConfirm(dMonth); } catch(e){} }   // 남은 자리·대기 순번은 항상 최신값으로
     const capInfo = capApplies ? capCompute(dMonth, myDues) : null;
     const myCapSt = capInfo ? (capInfo.states[me] || 'unconfirmed') : null;
-    const capActOn = capApplies ? (myCapSt==='kept'||myCapSt==='returning'||myCapSt==='waiting') : !dormStatus;
+    const capActOn = capApplies ? (myCapSt==='kept'||myCapSt==='queue') : !dormStatus;
     const capDorOn = capApplies ? (myCapSt==='dormant') : dormStatus;
     const _cn = t => `<div style="font-size:12px;color:var(--muted);line-height:1.6;margin-bottom:6px">${t}</div>`;
     // 유지자와 복귀자의 안내가 다르다. 유지자는 25일까지 확인+회비 납부를 해야 자리를 지키고,
     // 복귀자는 '신청 순서'로 자리를 받은 뒤 26일 확정 후 말일까지 입금한다.
     const capNote = !capApplies ? '' :
       myCapSt==='unconfirmed' ? (dormStatus
-          ? _cn(`<b style="color:#ece6d2">${moNum}월 복귀 신청</b> — '활동'을 누르면 복귀 신청이에요. 남은 자리 안에서 <b style="color:#ece6d2">먼저 신청한 순서</b>로 확정돼요. 회비는 자리가 확정된 뒤에 내면 됩니다.`)
+          ? _cn(`<b style="color:#ece6d2">${moNum}월 복귀 신청</b> — '활동'을 누르면 복귀 순번을 받아요. 26일에 <b style="color:#ece6d2">남은 자리를 순번대로 배정</b>합니다. 회비는 자리가 확정된 뒤에 내면 됩니다.`)
           : _cn(`<b style="color:#ece6d2">${moNum}월 자리 확인</b> — 25일까지 '활동' 확인과 회비 납부를 모두 해야 자리가 유지돼요.`)) :
       myCapSt==='kept' ? (capInfo.paid.has(me) ? _cn(`${moNum}월 자리 확인 완료.`) : _cn(`${moNum}월 자리 확인됨 — <b style="color:#ece6d2">회비를 25일까지 납부</b>해야 유지돼요.`)) :
-      myCapSt==='returning' ? _cn(`복귀 신청 완료 — 신청 순서 <b style="color:#ece6d2">${(capInfo.retRank&&capInfo.retRank[me])||1}번</b>으로 ${moNum}월 자리 잠정 확보. 26일 확정 후 <b style="color:#ece6d2">말일까지 입금</b>해 주세요.`) :
-      myCapSt==='waiting' ? _cn(`${moNum}월 정원이 가득 찼어요 — 대기 ${capInfo.waitRank[me]}번. 자리가 나면 신청 순서대로 올라가요.`) : '';
-    const capCount = capApplies ? `<div class="pc-stat"><span class="lbl">${moNum}월 정원</span><span style="font-size:12px;color:var(--muted)">남 ${capInfo.counts['남'].used}/${CAP_LIMIT['남']} · 여 ${capInfo.counts['여'].used}/${CAP_LIMIT['여']}</span></div>` : '';
+      myCapSt==='queue' ? _cn(`복귀 신청 완료 — 순번 <b style="color:#ece6d2">${(capInfo.retRank&&capInfo.retRank[me])||1}번</b>. 26일에 남은 자리를 순번대로 배정하고, 확정되면 <b style="color:#ece6d2">말일까지 입금</b>해 주세요.`) : '';
+    const _rq = g => ((capInfo.retQueue||{})[g]||[]).length;
+    const capCount = capApplies ? `<div class="pc-stat"><span class="lbl">${moNum}월 정원</span><span style="font-size:12px;color:var(--muted)">남 ${capInfo.counts['남'].used}/${CAP_LIMIT['남']}${_rq('남')?` (+복귀 ${_rq('남')})`:''} · 여 ${capInfo.counts['여'].used}/${CAP_LIMIT['여']}${_rq('여')?` (+복귀 ${_rq('여')})`:''}</span></div>` : '';
     // 이번 달 할 일이 다 끝났으면(활동 + 납부 + 입금확인) 상태 두 줄을 통째로 감춘다 — 볼 것도 누를 것도 없음.
     // 15일부터 다음 달 신청 토글이 뜨면 자연히 다시 나타난다.
     // 미납·확인대기·휴면은 계속 노출한다(각각 조치·상태 확인이 필요하다).
@@ -4036,8 +4033,8 @@ async function renderOps() {
 
     // 현황 요약
     const _sum = ['남','여'].map(g => {
-      const c = capInfo.counts[g], ap = (capInfo.applied||{})[g]||0, wait = Math.max(0, ap - c.cap);
-      return `<div class="dues-row"><span class="nm">${g === '여' ? '여성' : '남성'}</span><span style="flex-shrink:0;font-size:13px;font-weight:800;color:var(--cream)">${c.used} / ${c.cap}${wait?` <span class="cnt-tag">대기 ${wait}</span>`:''}</span></div>`;
+      const c = capInfo.counts[g], rq = ((capInfo.retQueue||{})[g]||[]).length;
+      return `<div class="dues-row"><span class="nm">${g === '여' ? '여성' : '남성'}</span><span style="flex-shrink:0;font-size:13px;font-weight:800;color:var(--cream)">유지 ${c.used} / ${c.cap}${rq?` <span class="cnt-tag">복귀 신청 ${rq}</span>`:''}</span></div>`;
     }).join('');
 
     // ① 미응답 — 26일에 자동 휴면이 될 사람들(가장 급한 목록)
@@ -4052,14 +4049,14 @@ async function renderOps() {
       ? _keptUnpaid.sort((a,b)=>a.name.localeCompare(b.name,'ko')).map(x => _row(x.name, _gtag(capGender(x)))).join('')
       : `<p class="hint" style="margin:6px 0 0">확인한 회원은 모두 납부했어요.</p>`;
 
-    // ③ 복귀 신청 큐 — 성별별, 신청 순서. 선착순이라 순서가 곧 우선권
+    // ③ 복귀 신청 큐 — 순번제: 신청은 자리를 점유하지 않고, 26일에 남은 자리를 순번대로 배정
     const _q = ['남','여'].map(g => {
       const rows = (capInfo.retQueue[g] || []);
       if (!rows.length) return '';
       return `<div class="hint" style="margin:10px 0 2px;font-weight:800;color:var(--coffee-2)">${g === '여' ? '여성' : '남성'} · ${rows.length}명</div>`
         + rows.map(r => {
             const m = _byId(r.id); if (!m) return '';
-            const seat = r.state === 'waiting' ? `대기 ${capInfo.waitRank[r.id]}번` : '자리 확보';
+            const seat = (_res && Array.isArray(_res.active)) ? (_res.active.includes(r.id) ? '배정 확정' : '미배정') : `순번 ${r.rank}번`;
             const pay = _confd(r.id) ? _chip('입금확인','paid') : (_paid(r.id) ? _chip('납부','paid') : _chip('미입금'));
             return _row(`${r.rank}. ${m.name}`, `${seat}${pay}`, _ft(r.at));
           }).join('');
@@ -4067,7 +4064,7 @@ async function renderOps() {
     const _qRows = _q.trim() ? _q : `<p class="hint" style="margin:6px 0 0">복귀 신청자가 없어요.</p>`;
 
     // ④ 복귀 확정자 중 미입금 — 26일 확정 후 말일까지 입금 대상(총무 확인용)
-    const _retUnpaid = _pool.filter(x => _st(x.id) === 'returning' && !_confd(x.id));
+    const _retUnpaid = _pool.filter(x => _res && Array.isArray(_res.active) && _res.active.includes(x.id) && capInfo.retRank && capInfo.retRank[x.id] && !_confd(x.id));
     const _ruRows = _retUnpaid.length
       ? _retUnpaid.map(x => _row(x.name, `${_gtag(capGender(x))}${_paid(x.id) ? _chip('납부 표시','paid') : _chip('미입금')}`)).join('')
       : `<p class="hint" style="margin:6px 0 0">복귀 확정자 입금이 모두 확인됐어요.</p>`;

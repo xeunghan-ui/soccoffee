@@ -3736,6 +3736,24 @@ async function renderDues() {
   } else {
     listHtml = [...members].sort((a,b)=>{ const rk=s=>s==='unpaid'?0:(s==='paid'?1:2); return rk(effState(a.id))-rk(effState(b.id)) || byName(a,b); }).map(_rowOf).join('');
   }
+  // 운영진·총무 상단 요약 — 납부/미납 대신 '남/여 정원이 몇 명 찼는지' (2026-08-15 총괄 요청)
+  let _capTiles = '', _capPct = 0;
+  if (_opsView && capOn(month)) {
+    try { await loadCapConfirm(month); } catch(e){}
+    const _resD = capResult(month);
+    let _mU, _fU;
+    if (_resD) {   // 확정 후: result가 정본
+      const _ids = new Set(_resD.active);
+      _mU = ROSTER.filter(p=>_ids.has(p.id)&&capGender(p)==='남').length;
+      _fU = ROSTER.filter(p=>_ids.has(p.id)&&capGender(p)==='여').length;
+    } else {       // 확정 전: 유지 확인 + 입금확인 완료(정책 v3) 기준
+      const _ci = capCompute(month, dues);
+      _mU = _ci.counts['남'].used; _fU = _ci.counts['여'].used;
+    }
+    _capPct = Math.round((_mU+_fU)/(CAP_LIMIT['남']+CAP_LIMIT['여'])*100);
+    const _tile = (g,u) => `<div class="dues-stat paid"><div class="num">${u}<span style="font-size:15px;color:var(--muted);font-weight:600">/${CAP_LIMIT[g]}</span></div><div class="cap">${g==='여'?'여성':'남성'} 정원</div></div>`;
+    _capTiles = `<div class="dues-summary">${_tile('남',_mU)}${_tile('여',_fU)}</div>`;
+  }
   const dormListHtml = (dormantMembers.length && _opsView ? `<div style="font-size:12px;font-weight:800;color:var(--muted);margin:14px 2px 4px">휴면 <span class="cnt-tag">${dormantMembers.length}</span></div>` : '')
     + dormantMembers.map(m=>{
       const isMe = me===m.id;
@@ -3752,11 +3770,11 @@ async function renderDues() {
       <h2>${potmMonthLabel(month)} 회비</h2>
       <div class="month">납부 ${paidCount}/${total}명 · 입금확인 ${confirmedCount}명</div>
     </div>
-    <div class="dues-progress"><div style="width:${pct}%"></div></div>
-    <div class="dues-summary">
+    <div class="dues-progress"><div style="width:${_capTiles?_capPct:pct}%"></div></div>
+    ${_capTiles || `<div class="dues-summary">
       <div class="dues-stat paid"><div class="num">${paidCount}</div><div class="cap">납부</div></div>
       <div class="dues-stat unpaid"><div class="num">${total-paidCount}</div><div class="cap">미납</div></div>
-    </div>
+    </div>`}
     ${admin ? _capBoard : ''}
     ${transCard}
     ${myCard}

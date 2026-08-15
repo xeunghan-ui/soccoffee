@@ -3704,6 +3704,54 @@ async function renderDues() {
       ${toDormant.length?`<div style="font-size:13px;line-height:1.7"><span style="color:var(--alert);font-weight:800">활동→휴면</span> <span style="color:var(--muted)">${toDormant.length}명</span> · ${[...toDormant].sort(byName).map(m=>esc(m.name)).join(', ')}</div>`:''}
     </div>` : '';
 
+  // ---- 명단 렌더 — 운영진·총무는 '할 일' 순 그룹(입금확인 대기 → 미납 → 완료), 멤버는 기존 정렬 (2026-08-15)
+  const _rowOf = m => {
+    const stt = effState(m.id);
+    const isMe = me===m.id;
+    const dirty = admin && (m.id in duesDraft);
+    const confd = isDuesConfirmed(month, m.id);
+    const confChip = (stt==='paid')
+      ? (isDuesConfirmer()
+          ? `<button class="dues-conf ${confd?'on':''}" onclick="toggleDuesConfirm('${month}',${m.id})">${confd?'✓ 입금확인':'입금확인'}</button>`
+          : (confd ? `<span class="dues-conf on ro">✓ 입금확인</span>` : ''))
+      : '';
+    const statusEl = admin
+      ? `<span class="st-set"><button class="st paid ${stt==='paid'?'on':''}" onclick="duesDraftSet(${m.id},'paid')">납부</button><button class="st unpaid ${stt==='unpaid'?'on':''}" onclick="duesDraftSet(${m.id},'unpaid')">미납</button><button class="st dormant ${stt==='dormant'?'on':''}" onclick="duesDraftSet(${m.id},'dormant')">휴면</button></span>`
+      : `<span style="flex-shrink:0;font-size:12px;font-weight:800;padding:4px 12px;border-radius:20px;background:${stt==='paid'?'rgba(70,179,129,.92)':'rgba(217,97,74,.92)'};color:#fff">${stt==='paid'?'납부':'미납'}</span>`;
+    return `<div class="dues-row ${isMe?'me':''}${dirty?' dirty':''}">
+      <span class="nm">${esc(m.name)}${isMe?' <span style="font-size:11px;color:var(--accent)">(나)</span>':''}${dirty?' <span class="dirty-dot">●</span>':''}</span>
+      <span style="display:flex;align-items:center;gap:8px;flex-shrink:0">${confChip}${statusEl}</span>
+    </div>`;
+  };
+  const _opsView = admin || isDuesConfirmer();
+  let listHtml;
+  if (_opsView) {
+    const gWait = [], gUnpaid = [], gDone = [], gDorm = [];
+    [...members].sort(byName).forEach(m => {
+      const stt = effState(m.id);
+      if (stt === 'paid') (isDuesConfirmed(month, m.id) ? gDone : gWait).push(m);
+      else if (stt === 'dormant') gDorm.push(m);
+      else gUnpaid.push(m);
+    });
+    const gh = (t, n, color, first) => `<div style="font-size:12px;font-weight:800;color:${color};margin:${first?'0':'14px'} 2px 4px">${t} <span class="cnt-tag">${n}</span></div>`;
+    listHtml =
+      (gWait.length ? gh('입금확인 대기 — 계좌 대조', gWait.length, 'var(--accent)', true) + gWait.map(_rowOf).join('') : '') +
+      (gUnpaid.length ? gh('미납', gUnpaid.length, 'var(--red)', !gWait.length) + gUnpaid.map(_rowOf).join('') : '') +
+      (gDone.length ? gh('입금확인 완료', gDone.length, 'var(--win)', !gWait.length && !gUnpaid.length) + gDone.map(_rowOf).join('') : '') +
+      (gDorm.length ? gh('휴면 전환 (저장 전)', gDorm.length, 'var(--muted)', false) + gDorm.map(_rowOf).join('') : '');
+  } else {
+    listHtml = [...members].sort((a,b)=>{ const rk=s=>s==='unpaid'?0:(s==='paid'?1:2); return rk(effState(a.id))-rk(effState(b.id)) || byName(a,b); }).map(_rowOf).join('');
+  }
+  const dormListHtml = (dormantMembers.length && _opsView ? `<div style="font-size:12px;font-weight:800;color:var(--muted);margin:14px 2px 4px">휴면 <span class="cnt-tag">${dormantMembers.length}</span></div>` : '')
+    + dormantMembers.map(m=>{
+      const isMe = me===m.id;
+      return `<div class="dues-row ${isMe?'me':''}" style="opacity:.55">
+        <span class="nm">${esc(m.name)}${isMe?' <span style="font-size:11px;color:var(--accent)">(나)</span>':''}</span>
+        <span class="amt">—</span>
+        <span class="dues-badge" style="background:#555;color:#ddd">휴면</span>
+      </div>`;
+    }).join('');
+
   let html = `
     <div class="potm-hero" style="background:linear-gradient(135deg,#2f7a4f,#245f3e)">
       <div class="trophy"></div>
@@ -3718,39 +3766,15 @@ async function renderDues() {
     ${admin ? _capBoard : ''}
     ${transCard}
     ${myCard}
-    ${(total-paidCount)>0 ? `<div class="card" style="padding:12px 14px;margin-bottom:12px">
+    ${((total-paidCount)>0 && !_opsView) ? `<div class="card" style="padding:12px 14px;margin-bottom:12px">
       <div style="font-size:12px;font-weight:800;color:var(--red);margin-bottom:6px">미납 ${total-paidCount}명</div>
       <div style="font-size:14px;line-height:1.7;color:var(--text)">${[...payMembers].filter(m=>effState(m.id)==='unpaid').sort(byName).map(m=>esc(m.name)).join(', ')}</div>
     </div>` : ''}
     <div class="ops-note">${admin ? '운영진 모드 — <b>납부/미납/휴면</b>은 멤버 자가신고 상태, <b>입금확인</b>은 총무가 계좌에서 확인한 표시예요. 변경 후 아래 \'저장\' 필요.' : (isDuesConfirmer() ? '<b>입금확인</b> — 계좌에서 실제 입금 확인 후 눌러주세요. (상태 변경은 총괄만)' : '읽기전용 — 납부는 멤버가 홈에서 직접 표시해요.')}</div>
     <div class="card">
       <div class="att-list dues-grid">
-        ${[...members].sort((a,b)=>{ const rk=s=>s==='unpaid'?0:(s==='paid'?1:2); return rk(effState(a.id))-rk(effState(b.id)) || byName(a,b); }).map(m=>{
-          const stt = effState(m.id);
-          const isMe = me===m.id;
-          const dirty = admin && (m.id in duesDraft);
-          const confd = isDuesConfirmed(month, m.id);
-          const confChip = (stt==='paid')
-            ? (isDuesConfirmer()
-                ? `<button class="dues-conf ${confd?'on':''}" onclick="toggleDuesConfirm('${month}',${m.id})">${confd?'✓ 입금확인':'입금확인'}</button>`
-                : (confd ? `<span class="dues-conf on ro">✓ 입금확인</span>` : ''))
-            : '';
-          const statusEl = admin
-            ? `<span class="st-set"><button class="st paid ${stt==='paid'?'on':''}" onclick="duesDraftSet(${m.id},'paid')">납부</button><button class="st unpaid ${stt==='unpaid'?'on':''}" onclick="duesDraftSet(${m.id},'unpaid')">미납</button><button class="st dormant ${stt==='dormant'?'on':''}" onclick="duesDraftSet(${m.id},'dormant')">휴면</button></span>`
-            : `<span style="flex-shrink:0;font-size:12px;font-weight:800;padding:4px 12px;border-radius:20px;background:${stt==='paid'?'rgba(70,179,129,.92)':'rgba(217,97,74,.92)'};color:#fff">${stt==='paid'?'납부':'미납'}</span>`;
-          return `<div class="dues-row ${isMe?'me':''}${dirty?' dirty':''}">
-            <span class="nm">${esc(m.name)}${isMe?' <span style="font-size:11px;color:var(--accent)">(나)</span>':''}${dirty?' <span class="dirty-dot">●</span>':''}</span>
-            <span style="display:flex;align-items:center;gap:8px;flex-shrink:0">${confChip}${statusEl}</span>
-          </div>`;
-        }).join('')}
-        ${dormantMembers.map(m=>{
-          const isMe = me===m.id;
-          return `<div class="dues-row ${isMe?'me':''}" style="opacity:.55">
-            <span class="nm">${esc(m.name)}${isMe?' <span style="font-size:11px;color:var(--accent)">(나)</span>':''}</span>
-            <span class="amt">—</span>
-            <span class="dues-badge" style="background:#555;color:#ddd">휴면</span>
-          </div>`;
-        }).join('')}
+        ${listHtml}
+        ${dormListHtml}
       </div>
     </div>
     ${nDraft ? `<div class="save-bar"><span class="save-n">변경 ${nDraft}건 (미저장)</span><span class="sb-actions"><button class="cancel" onclick="duesCancelDraft()">취소</button><button class="ok" onclick="duesSaveDraft()">저장</button></span></div>` : ''}`;

@@ -34,9 +34,7 @@
         var isEtc = typeVal === '기타';
         var TYPE_LABEL = {'풋살':'풋살 경기','축구':'축구 경기'};
         var typeText = isEtc ? (hasLabel ? label : '기타') : esc(TYPE_LABEL[typeVal]||typeVal);
-        var metaHtml = '<span class="meta"><span class="type">'+typeText+'</span>'
-                     + ((!isEtc && hasLabel) ? '<span class="wk">'+label+'</span>' : '')
-                     + '</span>';
+        var metaHtml = '<span class="meta"><span class="type">'+typeText+'</span></span>';
         var purl=(s.placeUrl||'').trim(); var plink=/^https?:\/\//i.test(purl);
         var gurl=(s.guestUrl||'').trim(); var glink=/^https?:\/\//i.test(gurl);
         var hasDetail = !!(s.desc && String(s.desc).trim()) && !oatly;

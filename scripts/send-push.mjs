@@ -158,6 +158,37 @@ async function main() {
     });
     return active;
   }
+  // 매월 15일: 다음 달 수요일 정기 세션 자동 등록 (2026-08-15 총괄 지시)
+  // 리그 달(3·5·9·11) 20:00, 일반 21:00 — 종료 23:00 · 상암 풋살장 · 마감 직전 일요일.
+  // 이미 있는 날짜는 건너뛰므로 운영진 수동 등록과 충돌하지 않는다. 15일 실행이 누락돼도 다음 실행이 잡는다(>=15 + once).
+  {
+    let sy = Number(today.slice(0,4)), smo = Number(today.slice(5,7)) + 1; if (smo > 12) { smo = 1; sy++; }
+    const sM = `${sy}-${String(smo).padStart(2,'0')}`;
+    if (dom >= 15 && once('sessions-auto-' + sM)) {
+      const isLg = [3,5,9,11].includes(smo);
+      const wed = [];
+      const dt = new Date(Date.UTC(sy, smo-1, 1));
+      while (dt.getUTCMonth() === smo-1) { if (dt.getUTCDay() === 3) wed.push(`${sM}-${String(dt.getUTCDate()).padStart(2,'0')}`); dt.setUTCDate(dt.getUTCDate()+1); }
+      const dl = ds => { const d = new Date(ds+'T12:00:00Z'); const back = d.getUTCDay()===0 ? 7 : d.getUTCDay(); d.setUTCDate(d.getUTCDate()-back); return d.toISOString().slice(0,10); };
+      const row3 = await j(await rest('club_settings?select=data&id=eq.current'));
+      const c3 = (row3 && row3[0] && row3[0].data) || {};
+      const list3 = Array.isArray(c3.sessions) ? c3.sessions : [];
+      const exist3 = new Set(list3.map(s => s.date));
+      const add3 = wed.filter(ds => !exist3.has(ds));
+      if (add3.length) {
+        add3.forEach(ds => list3.push({ id:'s'+Date.now().toString(36)+Math.random().toString(36).slice(2,5)+ds.slice(-2),
+          date:ds, time:isLg?'20:00':'21:00', endTime:'23:00', type:'풋살', place:'상암 풋살장', placeUrl:'', guestUrl:'',
+          deadline:dl(ds), label:'', desc:'', duesOnly:false, allowDormant:false }));
+        c3.sessions = list3;
+        const sres = await rest('club_settings', { method:'POST', headers:{ Prefer:'resolution=merge-duplicates' },
+          body: JSON.stringify({ id:'current', data:c3, updated_at:new Date().toISOString() }) });
+        if (!sres.ok) { console.error('세션 자동 등록 실패:', sres.status, await sres.text()); process.exit(1); }
+        console.log('세션 자동 등록', sM, add3.join(','));
+      } else {
+        console.log('세션 자동 등록', sM, '— 수요일 세션 이미 전부 존재');
+      }
+    }
+  }
   if (dom >= 26) {
     let ny = Number(today.slice(0,4)), nmo = Number(today.slice(5,7)) + 1; if (nmo > 12) { nmo = 1; ny++; }
     const capM = `${ny}-${String(nmo).padStart(2,'0')}`;

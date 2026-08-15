@@ -987,10 +987,10 @@ async function loadCapConfirmForSessions(sessions){
 // 자격 게이트 안내문 — sessAttEligible의 reason('cap-…')을 사람 말로
 function capBlockMsg(reason, month){
   const mo = month ? parseInt(month.split('-')[1], 10) : '';
-  return reason==='cap-unconfirmed' ? `${mo}월에도 활동하는지 아직 안 알려주셨어요. 홈에서 <b>'활동'</b>을 누르고 <b>회비 납부</b>까지 마치면 참석 체크가 열려요. (25일까지)`
-       : reason==='cap-unpaid' ? `${mo}월 활동 신청은 완료! 이제 <b>회비만 내면</b> 돼요. 총무가 입금을 확인하는 대로 참석 체크가 자동으로 열려요. (25일까지)`
-       : reason==='cap-queue' ? `${mo}월 복귀 신청 순번 대기 중이에요. 26일에 자리가 배정되면 참석 체크가 열려요.`
-       : reason==='cap-optout' ? `${mo}월은 휴면을 선택하셨어요. 마음이 바뀌면 25일까지 홈에서 '활동'으로 바꿀 수 있어요.`
+  return reason==='cap-unconfirmed' ? `${mo}월 활동 여부 미선택. 홈에서 <b>'활동'</b> 선택 + <b>회비 납부</b> 후 참석 체크 가능. (25일까지)`
+       : reason==='cap-unpaid' ? `활동 신청 완료. <b>회비 입금 확인</b>되면 참석 체크 자동으로 열림. (납부 25일까지)`
+       : reason==='cap-queue' ? `복귀 순번 대기 중. 26일 자리 배정 후 참석 체크 가능.`
+       : reason==='cap-optout' ? `${mo}월 휴면 선택함. 변경은 25일까지 홈에서.`
        : null;
 }
 // 자리 확인 읽기 — cap_confirm 테이블. 예전 current.capacity[m].confirm은 읽기 폴백(별도 마이그레이션 불필요)
@@ -2342,12 +2342,12 @@ async function renderHome() {
     // 복귀자는 '신청 순서'로 자리를 받은 뒤 26일 확정 후 말일까지 입금한다.
     const capNote = !capApplies ? '' :
       myCapSt==='unconfirmed' ? (dormStatus
-          ? _cn(`<b style="color:#ece6d2">${moNum}월 복귀 신청</b> — '활동'을 누르면 복귀 순번을 받아요. 26일에 <b style="color:#ece6d2">남은 자리를 순번대로 배정</b>합니다. 회비는 자리가 확정된 뒤에 내면 됩니다.`)
-          : _cn(`<b style="color:#ece6d2">${moNum}월 자리 확인</b> — 25일까지 '활동' 확인과 회비 납부를 모두 해야 자리가 유지돼요.`)) :
-      myCapSt==='kept' ? (isDuesConfirmed(dMonth, me) ? _cn(`${moNum}월 자리 확정 — 입금확인까지 완료됐어요.`)
-          : capInfo.paid.has(me) ? _cn(`${moNum}월 자리 확인·납부 완료 — <b style="color:#ece6d2">총무 입금확인</b>이 되면 정원에 확정돼요.`)
-          : _cn(`${moNum}월 자리 확인됨 — <b style="color:#ece6d2">25일까지 회비 납부와 입금확인</b>까지 완료돼야 자리가 확정돼요.`)) :
-      myCapSt==='queue' ? _cn(`복귀 신청 완료 — 순번 <b style="color:#ece6d2">${(capInfo.retRank&&capInfo.retRank[me])||1}번</b>. 26일에 남은 자리를 순번대로 배정하고, 확정되면 <b style="color:#ece6d2">말일까지 입금</b>해 주세요.`) : '';
+          ? _cn(`<b style="color:#ece6d2">${moNum}월 복귀 신청</b> — '활동' 선택 시 순번 부여. 26일 <b style="color:#ece6d2">남은 자리를 순번대로 배정</b>. 회비는 확정 후.`)
+          : _cn(`<b style="color:#ece6d2">${moNum}월 자리 확인</b> — 25일까지 '활동' + 회비 납부 시 자리 유지.`)) :
+      myCapSt==='kept' ? (isDuesConfirmed(dMonth, me) ? _cn(`${moNum}월 자리 확정 완료.`)
+          : capInfo.paid.has(me) ? _cn(`${moNum}월 확인·납부 완료 — <b style="color:#ece6d2">입금 확인 후 확정</b>.`)
+          : _cn(`${moNum}월 자리 확인됨 — <b style="color:#ece6d2">25일까지 납부</b> 시 확정.`)) :
+      myCapSt==='queue' ? _cn(`복귀 신청 완료 — 순번 <b style="color:#ece6d2">${(capInfo.retRank&&capInfo.retRank[me])||1}번</b>. 26일 순번대로 배정, 확정 후 <b style="color:#ece6d2">말일까지 입금</b>.`) : '';
     // 전체 정원 카운트는 홈에서 노출하지 않는다(2026-08-15 총괄 결정) — 회원에게 필요한 건 자기 상태·순번뿐이고,
     // v3 기준(입금확인 완료) 카운트는 신청 창 중엔 낮게 보여 오해만 부른다. 운영진은 회비판 현황판에서 본다.
     // 이번 달 할 일이 다 끝났으면(활동 + 납부 + 입금확인) 상태 두 줄을 통째로 감춘다 — 볼 것도 누를 것도 없음.
@@ -2355,7 +2355,7 @@ async function renderHome() {
     // 미납·확인대기·휴면은 계속 노출한다(각각 조치·상태 확인이 필요하다).
     const _allDone = !confirmPhase && !dormStatus && myPaid && myConfd;
     const statusHtml = _allDone ? '' : `${(confirmPhase && !_capRes)
-        ? `${capApplies ? capNote : (dormStatus ? `<div style="font-size:12px;color:var(--muted);line-height:1.6;margin-bottom:6px"><b style="color:#ece6d2">${moNum}월엔 복귀하시나요?</b> 복귀하면 '활동', 계속 쉬면 '휴면'을 눌러 주세요.</div>` : '')}<div class="pc-stat"><span class="lbl">${moNum}월</span><span class="act-toggle"><button class="${capActOn?'on':''}" onclick="capSetNext(${me},'${dMonth}',false)">활동</button><button class="${capDorOn?'on':''}" onclick="capSetNext(${me},'${dMonth}',true)">휴면</button></span></div>`
+        ? `${capApplies ? capNote : (dormStatus ? `<div style="font-size:12px;color:var(--muted);line-height:1.6;margin-bottom:6px"><b style="color:#ece6d2">${moNum}월 복귀 여부</b> — 복귀는 '활동', 계속 쉬면 '휴면'.</div>` : '')}<div class="pc-stat"><span class="lbl">${moNum}월</span><span class="act-toggle"><button class="${capActOn?'on':''}" onclick="capSetNext(${me},'${dMonth}',false)">활동</button><button class="${capDorOn?'on':''}" onclick="capSetNext(${me},'${dMonth}',true)">휴면</button></span></div>`
         : `<div class="pc-stat"><span class="lbl">${moNum}월</span><span class="pc-badge ${dormStatus?'neutral':'done'}">${_capRes?(dormStatus?'휴면 확정':'활동 확정'):(dormStatus?'휴면 중':'활동 중')}</span></div>`}
       ${(capApplies ? myCapSt!=='dormant' : !dormStatus)
         ? `<div class="pc-stat"><span class="lbl">${moNum}월 회비${myConfd?' <span style="color:var(--win);font-weight:800;font-size:11px;margin-left:2px">✓ 입금확인</span>':(myPaid?'':' <span class="mini-dot"></span>')}</span>${myConfd
@@ -3324,9 +3324,9 @@ async function renderAtt() {
     const _capBlk = (_joined && !sess.allowDormant && !_dormBlocked) ? capSeatBlock(_meP, sessMonth) : null;
     if (_capBlk) {
       const _cm = capBlockMsg('cap-'+_capBlk, sessMonth);
-      const _capBtn = _capBlk==='unconfirmed' ? `<button class="btn accent" style="margin-top:10px;width:100%" onclick="switchTab('home')">홈에서 '활동' 누르러 가기</button>`
-        : _capBlk==='unpaid' ? `<button class="btn accent" style="margin-top:10px;width:100%" onclick="switchTab('dues')">회비 내러 가기</button>`
-        : _capBlk==='optout' ? `<button class="btn ghost sm" style="margin-top:10px;width:100%" onclick="switchTab('home')">'활동'으로 바꾸러 가기</button>` : '';
+      const _capBtn = _capBlk==='unconfirmed' ? `<button class="btn accent" style="margin-top:10px;width:100%" onclick="switchTab('home')">활동 선택하기</button>`
+        : _capBlk==='unpaid' ? `<button class="btn accent" style="margin-top:10px;width:100%" onclick="switchTab('dues')">회비 내기</button>`
+        : _capBlk==='optout' ? `<button class="btn ghost sm" style="margin-top:10px;width:100%" onclick="switchTab('home')">활동으로 변경</button>` : '';
       html += `<div class="card"><h2>${esc(meName())} 님</h2><p class="sub">${_cm}</p>${_capBtn}</div>`;
     } else if (_dormBlocked) {
       const gs = guestStatusOf(sess.id, attMe);

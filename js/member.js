@@ -987,10 +987,10 @@ async function loadCapConfirmForSessions(sessions){
 // 자격 게이트 안내문 — sessAttEligible의 reason('cap-…')을 사람 말로
 function capBlockMsg(reason, month){
   const mo = month ? parseInt(month.split('-')[1], 10) : '';
-  return reason==='cap-unconfirmed' ? `${mo}월 세션은 자리 확인(활동/휴면) 후 참석 체크할 수 있어요. 자리 확인은 15일부터 홈 화면에서 할 수 있어요.`
-       : reason==='cap-unpaid' ? `${mo}월 자리 확인은 됐고, <b>회비 입금확인</b>이 완료되면 참석 체크할 수 있어요. 아직 납부 전이면 25일까지 납부해 주세요.`
-       : reason==='cap-queue' ? `${mo}월 복귀 순번 대기 중이에요. 26일 자리 배정 후 참석 체크할 수 있어요.`
-       : reason==='cap-optout' ? `${mo}월 휴면을 선택해서 참석 체크 대상이 아니에요. 홈 화면에서 변경할 수 있어요.`
+  return reason==='cap-unconfirmed' ? `${mo}월에도 활동하는지 아직 안 알려주셨어요. 홈에서 <b>'활동'</b>을 누르고 <b>회비 납부</b>까지 마치면 참석 체크가 열려요. (25일까지)`
+       : reason==='cap-unpaid' ? `${mo}월 활동 신청은 완료! 이제 <b>회비만 내면</b> 돼요. 총무가 입금을 확인하는 대로 참석 체크가 자동으로 열려요. (25일까지)`
+       : reason==='cap-queue' ? `${mo}월 복귀 신청 순번 대기 중이에요. 26일에 자리가 배정되면 참석 체크가 열려요.`
+       : reason==='cap-optout' ? `${mo}월은 휴면을 선택하셨어요. 마음이 바뀌면 25일까지 홈에서 '활동'으로 바꿀 수 있어요.`
        : null;
 }
 // 자리 확인 읽기 — cap_confirm 테이블. 예전 current.capacity[m].confirm은 읽기 폴백(별도 마이그레이션 불필요)
@@ -3324,7 +3324,10 @@ async function renderAtt() {
     const _capBlk = (_joined && !sess.allowDormant && !_dormBlocked) ? capSeatBlock(_meP, sessMonth) : null;
     if (_capBlk) {
       const _cm = capBlockMsg('cap-'+_capBlk, sessMonth);
-      html += `<div class="card"><h2>${esc(meName())} 님</h2><p class="sub">${_cm}</p>${_capBlk!=='queue' ? `<button class="btn accent" style="margin-top:10px;width:100%" onclick="switchTab('home')">자리 확인하러 가기</button>` : ''}</div>`;
+      const _capBtn = _capBlk==='unconfirmed' ? `<button class="btn accent" style="margin-top:10px;width:100%" onclick="switchTab('home')">홈에서 '활동' 누르러 가기</button>`
+        : _capBlk==='unpaid' ? `<button class="btn accent" style="margin-top:10px;width:100%" onclick="switchTab('dues')">회비 내러 가기</button>`
+        : _capBlk==='optout' ? `<button class="btn ghost sm" style="margin-top:10px;width:100%" onclick="switchTab('home')">'활동'으로 바꾸러 가기</button>` : '';
+      html += `<div class="card"><h2>${esc(meName())} 님</h2><p class="sub">${_cm}</p>${_capBtn}</div>`;
     } else if (_dormBlocked) {
       const gs = guestStatusOf(sess.id, attMe);
       if (gs === 'approved') html += `<div class="card"><h2>${esc(meName())} 님</h2><p class="sub">게스트 참석이 <b style="color:var(--win)">확정</b>됐어요. 아래 명단 '게스트'에 표시돼요.</p></div>`;

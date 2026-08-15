@@ -2346,14 +2346,14 @@ async function renderHome() {
           : capInfo.paid.has(me) ? _cn(`${moNum}월 자리 확인·납부 완료 — <b style="color:#ece6d2">총무 입금확인</b>이 되면 정원에 확정돼요.`)
           : _cn(`${moNum}월 자리 확인됨 — <b style="color:#ece6d2">25일까지 회비 납부와 입금확인</b>까지 완료돼야 자리가 확정돼요.`)) :
       myCapSt==='queue' ? _cn(`복귀 신청 완료 — 순번 <b style="color:#ece6d2">${(capInfo.retRank&&capInfo.retRank[me])||1}번</b>. 26일에 남은 자리를 순번대로 배정하고, 확정되면 <b style="color:#ece6d2">말일까지 입금</b>해 주세요.`) : '';
-    const _rq = g => ((capInfo.retQueue||{})[g]||[]).length;
-    const capCount = capApplies ? `<div class="pc-stat"><span class="lbl">${moNum}월 정원</span><span style="font-size:12px;color:var(--muted)">남 ${capInfo.counts['남'].used}/${CAP_LIMIT['남']}${_rq('남')?` (+복귀 ${_rq('남')})`:''} · 여 ${capInfo.counts['여'].used}/${CAP_LIMIT['여']}${_rq('여')?` (+복귀 ${_rq('여')})`:''}</span></div>` : '';
+    // 전체 정원 카운트는 홈에서 노출하지 않는다(2026-08-15 총괄 결정) — 회원에게 필요한 건 자기 상태·순번뿐이고,
+    // v3 기준(입금확인 완료) 카운트는 신청 창 중엔 낮게 보여 오해만 부른다. 운영진은 회비판 현황판에서 본다.
     // 이번 달 할 일이 다 끝났으면(활동 + 납부 + 입금확인) 상태 두 줄을 통째로 감춘다 — 볼 것도 누를 것도 없음.
     // 15일부터 다음 달 신청 토글이 뜨면 자연히 다시 나타난다.
     // 미납·확인대기·휴면은 계속 노출한다(각각 조치·상태 확인이 필요하다).
     const _allDone = !confirmPhase && !dormStatus && myPaid && myConfd;
     const statusHtml = _allDone ? '' : `${(confirmPhase && !_capRes)
-        ? `${capApplies ? capNote : (dormStatus ? `<div style="font-size:12px;color:var(--muted);line-height:1.6;margin-bottom:6px"><b style="color:#ece6d2">${moNum}월엔 복귀하시나요?</b> 복귀하면 '활동', 계속 쉬면 '휴면'을 눌러 주세요.</div>` : '')}<div class="pc-stat"><span class="lbl">${moNum}월</span><span class="act-toggle"><button class="${capActOn?'on':''}" onclick="capSetNext(${me},'${dMonth}',false)">활동</button><button class="${capDorOn?'on':''}" onclick="capSetNext(${me},'${dMonth}',true)">휴면</button></span></div>${capCount}`
+        ? `${capApplies ? capNote : (dormStatus ? `<div style="font-size:12px;color:var(--muted);line-height:1.6;margin-bottom:6px"><b style="color:#ece6d2">${moNum}월엔 복귀하시나요?</b> 복귀하면 '활동', 계속 쉬면 '휴면'을 눌러 주세요.</div>` : '')}<div class="pc-stat"><span class="lbl">${moNum}월</span><span class="act-toggle"><button class="${capActOn?'on':''}" onclick="capSetNext(${me},'${dMonth}',false)">활동</button><button class="${capDorOn?'on':''}" onclick="capSetNext(${me},'${dMonth}',true)">휴면</button></span></div>`
         : `<div class="pc-stat"><span class="lbl">${moNum}월</span><span class="pc-badge ${dormStatus?'neutral':'done'}">${_capRes?(dormStatus?'휴면 확정':'활동 확정'):(dormStatus?'휴면 중':'활동 중')}</span></div>`}
       ${(capApplies ? myCapSt!=='dormant' : !dormStatus)
         ? `<div class="pc-stat"><span class="lbl">${moNum}월 회비${myConfd?' <span style="color:var(--win);font-weight:800;font-size:11px;margin-left:2px">✓ 입금확인</span>':(myPaid?'':' <span class="mini-dot"></span>')}</span>${myConfd

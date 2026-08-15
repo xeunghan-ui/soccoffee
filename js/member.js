@@ -965,6 +965,32 @@ function capOn(m){ return typeof m === 'string' && m >= CAP_START; }
 function capMonthData(m){ return CAPACITY[m] || {}; }
 function capConfirmOf(m, id){ return (CAP_CONFIRM[m] || {})[String(id)] || null; }
 function capResult(m){ const r = capMonthData(m).result; return (r && Array.isArray(r.active)) ? r : null; }
+// 정원제 달 세션 응답 자격 게이트 — 그 달 자리 '등록자'만 참석 체크할 수 있다.
+// 확정 전: 유지(현재 활동 + 자리 확인 '활동')만 즉시 자리. 복귀 신청자는 순번 대기라 아직 아니다.
+// 확정(26일 롤오버) 후: result.active가 정본 → isDormantFor가 이미 거르므로 여기선 null.
+// ⚠️ 호출 전에 loadCapConfirm(m)이 되어 있어야 정확하다(안 됐으면 '확인 안 함'으로 보수 판정).
+// 반환: null=응답 가능 | 'unconfirmed'(자리 확인 안 함) | 'queue'(복귀 순번 대기) | 'optout'(휴면 선택)
+function capSeatBlock(p, m){
+  if (!p || !capOn(m) || capResult(m)) return null;
+  const c = capConfirmOf(m, p.id);
+  if (c && c.s === 'dormant') return 'optout';
+  const retTrack = isDormantFor(p, nowMonthStr());   // 지금 휴면이면 복귀 트랙(자리 미점유)
+  if (c && c.s === 'active') return retTrack ? 'queue' : null;
+  return retTrack ? 'queue' : 'unconfirmed';
+}
+// 세션 목록이 걸치는 '확정 전 정원제 달'의 자리 확인을 한 번에 읽는다(응답 자격 게이트용)
+async function loadCapConfirmForSessions(sessions){
+  const ms = [...new Set((sessions||[]).map(s => ((s.date||'')).slice(0,7)))].filter(m => capOn(m) && !capResult(m));
+  try { await Promise.all(ms.map(m => loadCapConfirm(m))); } catch(e){}
+}
+// 자격 게이트 안내문 — sessAttEligible의 reason('cap-…')을 사람 말로
+function capBlockMsg(reason, month){
+  const mo = month ? parseInt(month.split('-')[1], 10) : '';
+  return reason==='cap-unconfirmed' ? `${mo}월 세션은 자리 확인(활동/휴면) 후 참석 체크할 수 있어요. 자리 확인은 15일부터 홈 화면에서 할 수 있어요.`
+       : reason==='cap-queue' ? `${mo}월 복귀 순번 대기 중이에요. 26일 자리 배정 후 참석 체크할 수 있어요.`
+       : reason==='cap-optout' ? `${mo}월 휴면을 선택해서 참석 체크 대상이 아니에요. 홈 화면에서 변경할 수 있어요.`
+       : null;
+}
 // 자리 확인 읽기 — cap_confirm 테이블. 예전 current.capacity[m].confirm은 읽기 폴백(별도 마이그레이션 불필요)
 async function loadCapConfirm(m){
   if (!capOn(m)) return {};
@@ -1247,6 +1273,11 @@ async function sessAttEligible(sess, memberId){
   const monthEnd = new Date(yN, moN, 0);
   if (!(meP.joinDate && new Date(meP.joinDate) <= monthEnd)) return { ok:false, reason:'notjoined' };
   if (!(sess && sess.allowDormant) && isDormantFor(meP, sm)) return { ok:false, reason:'dormant', month:sm };
+  if (!(sess && sess.allowDormant)) {                       // 정원제 달: 그 달 등록자만(확정 전엔 유지 확정자)
+    try { await loadCapConfirm(sm); } catch(e){}
+    const _blk = capSeatBlock(meP, sm);
+    if (_blk) return { ok:false, reason:'cap-'+_blk, month:sm };
+  }
   if (sess && sess.duesOnly) {
     const dd = await fetchDues(sm);
     if (!dd.some(d => d.member_id === memberId && d.paid)) return { ok:false, reason:'unpaid', month:sm };
@@ -2071,10 +2102,12 @@ async function refreshAttBadge(){
     const st0 = meP ? (meP.status||'active') : null;
     if (meP && st0!=='former' && st0!=='friends'){
       const sess = (await upcomingSessions()).filter(s => !sessionEnded(s));   // 다가오는(안 끝난) 세션
+      await loadCapConfirmForSessions(sess);
       const arr = await Promise.all(sess.map(s=>fetchAttendance(s.id)));
       sess.forEach((s,i)=>{
         const sm = (s.date||'').slice(0,7);
         if (!s.allowDormant && isDormantFor(meP, sm)) return;   // 휴면 달 제외(휴면 허용 세션은 포함)
+        if (!s.allowDormant && capSeatBlock(meP, sm)) return;   // 정원제 달 미등록(미확인·순번 대기) 제외
         const dl = sessionDeadline(s);
         if (dl && new Date() > dl && !isAdmin()) return;         // 마감된 세션 제외(운영진은 예외)
         const a=(arr[i]||[]).find(x=>x.member_id===me); const st=a?a.status:'none';
@@ -2183,9 +2216,10 @@ async function homeQuickAtt(sid, status){
   if (!isAdmin()) {
     const _el = await sessAttEligible(sess, me);
     if (!_el.ok) {
-      toast(_el.reason==='unpaid' ? `${parseInt(_el.month.split('-')[1])}월 회비 납부 완료 후 참석 신청할 수 있어요.`
+      toast(capBlockMsg(_el.reason, _el.month)
+          || (_el.reason==='unpaid' ? `${parseInt(_el.month.split('-')[1])}월 회비 납부 완료 후 참석 신청할 수 있어요.`
           : _el.reason==='dormant' ? '이번 달 휴면이라 참석 신청 대상이 아니에요.'
-          : '참석 신청 대상이 아니에요.');
+          : '참석 신청 대상이 아니에요.'));
       return;
     }
   }
@@ -2258,8 +2292,10 @@ async function renderHome() {
   if (meActive) { try { myStats = await memberStats(me, (PLAYERS.find(x => x.id === me) || {}).joinDate); } catch(e){} }
   const myStatusOf = sid => { const a = (attBySess[sid]||[]).find(x=>x.member_id===me); return a ? a.status : 'none'; };
   const meP0 = me != null ? PLAYERS.find(x => x.id === me) : null;
+  await loadCapConfirmForSessions(sessions);   // 정원제 달 응답 자격 게이트용
   const pending = meActive ? sessions.filter(s => {
     if (meP0 && isDormantFor(meP0, (s.date||'').slice(0,7))) return false;   // 휴면 달 일정은 미응답에서 제외
+    if (meP0 && !s.allowDormant && capSeatBlock(meP0, (s.date||'').slice(0,7))) return false;   // 정원제 달 미등록 제외
     const st = myStatusOf(s.id); return st === 'none';   // 미정/참석/불참은 응답으로 간주
   }) : [];
   const nextSess = sessions[0];
@@ -2279,6 +2315,7 @@ async function renderHome() {
     const targetSess = sessions.find(s => { const dl = sessionDeadline(s); return !(dl && new Date() > dl); }) || nextSess;
     const targetSessMonth = targetSess ? (targetSess.date||'').slice(0,7) : null;
     const targetBlockedDorm = targetSess ? (isDormantFor(meP, targetSessMonth) && !targetSess.allowDormant) : false;
+    const targetCapBlk = (targetSess && !targetSess.allowDormant && !targetBlockedDorm) ? capSeatBlock(meP, targetSessMonth) : null;   // 정원제 달 미등록
     let targetPaid = true;
     if (targetSess && targetSess.duesOnly) { const _td = await fetchDues(targetSessMonth); targetPaid = _td.some(d => d.member_id === me && d.paid); }
     const targetBlockedDues = targetSess ? (!!targetSess.duesOnly && !targetPaid && !targetBlockedDorm) : false;
@@ -2323,6 +2360,8 @@ async function renderHome() {
     const respondHtml = targetSess ? (
       targetBlockedDorm
         ? `<div style="margin-top:14px;padding-top:14px;border-top:1px solid var(--line)"><div style="font-size:12px;color:var(--muted);line-height:1.6;margin-bottom:9px">이번 달 휴면이에요. 게스트로 참여하려면 일정에서 신청할 수 있어요.</div><button class="btn accent" style="width:100%" onclick="openAtt('${targetSess.id}')">게스트로 신청 →</button></div>`
+      : targetCapBlk
+        ? `<div style="margin-top:14px;padding-top:14px;border-top:1px solid var(--line)"><div style="font-size:11px;color:var(--muted);font-weight:800;letter-spacing:.04em;margin-bottom:9px">${sessLabel} 참석</div><div style="font-size:12px;color:var(--muted);line-height:1.6">${capBlockMsg('cap-'+targetCapBlk, targetSessMonth)}</div></div>`
       : targetBlockedDues
         ? `<div style="margin-top:14px;padding-top:14px;border-top:1px solid var(--line)"><div style="font-size:11px;color:var(--muted);font-weight:800;letter-spacing:.04em;margin-bottom:9px">${sessLabel} 참석</div><div style="font-size:12px;color:var(--muted);line-height:1.6;margin-bottom:9px">${targetMoNum}월 회비를 납부해야 이 세션에 참석 신청할 수 있어요.</div><button class="btn accent" style="width:100%" onclick="switchTab('dues')">회비 납부하러 가기</button></div>`
         : `<div style="margin-top:14px;padding-top:14px;border-top:1px solid var(--line)"><div style="font-size:11px;color:var(--muted);font-weight:800;letter-spacing:.04em;margin-bottom:9px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${sessLabel} 참석</div><div style="display:flex;gap:6px">${qbtn('yes','참석','var(--win)','var(--cream)')}${qbtn('no','불참','var(--alert)','var(--cream)')}${qbtn('maybe','미정','var(--accent)','#15281b')}</div></div>`) : '';
@@ -3196,6 +3235,7 @@ async function renderAtt() {
   if (!el.innerHTML.trim()) el.innerHTML = `<div class="empty">불러오는 중...</div>`;   // 첫 로드만 로딩 표시(세션 전환 시 깜빡임 방지)
   await freshGuestReqs();   // 게스트 신청 최신화
   const sessions = await upcomingSessions();
+  await loadCapConfirmForSessions(sessions);   // 정원제 달 응답 자격 게이트용
   if (attSessionId == null || !sessions.some(s=>s.id===attSessionId)) attSessionId = sessions[0].id;
   const sess = sessions.find(s=>s.id===attSessionId);
   const dl = sessionDeadline(sess);
@@ -3217,6 +3257,7 @@ async function renderAtt() {
     const TEAM_ORDER = { 'WHITE':0, 'BLACK':1, '기타':2 };
     members = ROSTER.filter(p => { const st = p.status||'active'; if (st==='former'||st==='friends') return false; return p.joinDate && new Date(p.joinDate) <= sessMonthEnd; })
       .filter(p => !isDormantFor(p, sessMonth))
+      .filter(p => !capSeatBlock(p, sessMonth))   // 정원제 달: 확정 전엔 유지 확정자만 명단에 (확정 후엔 isDormantFor가 result 기준으로 거름)
       .map(p => { const t = TEAM_SHEET[p.name] || { team:'기타' }; return { ...p, jersey:t.jersey, eng:t.eng||'', team:t.team, cap:!!t.cap }; })
       .sort((a,b)=> (TEAM_ORDER[a.team]-TEAM_ORDER[b.team]) || ((a.jersey??999)-(b.jersey??999)) || a.name.localeCompare(b.name,'ko'));
   }
@@ -3253,6 +3294,7 @@ async function renderAtt() {
         if ((a ? a.status : 'none') !== 'none') return;               // 이미 응답함
         const sm = (s.date||'').slice(0,7);
         if (_meP && !s.allowDormant && isDormantFor(_meP, sm)) return;  // 참여 대상 아님
+        if (_meP && !s.allowDormant && capSeatBlock(_meP, sm)) return;  // 정원제 달 미등록 — 응답 못 하니 빨간 점도 안 찍음
         const _dl2 = sessionDeadline(s);
         if (_dl2 && new Date() > _dl2 && !isAdmin()) return;            // 마감됨
         sessNeedResp[s.id] = true;
@@ -3282,7 +3324,11 @@ async function renderAtt() {
     const _joined = _meP && _st!=='former' && _st!=='friends' && _meP.joinDate && new Date(_meP.joinDate) <= sessMonthEnd;
     const _dormBlocked = _joined && !sess.allowDormant && isDormantFor(_meP, sessMonth);
     const _baseOK = _joined && (sess.allowDormant || !isDormantFor(_meP, sessMonth));
-    if (_dormBlocked) {
+    const _capBlk = (_joined && !sess.allowDormant && !_dormBlocked) ? capSeatBlock(_meP, sessMonth) : null;
+    if (_capBlk) {
+      const _cm = capBlockMsg('cap-'+_capBlk, sessMonth);
+      html += `<div class="card"><h2>${esc(meName())} 님</h2><p class="sub">${_cm}</p>${_capBlk!=='queue' ? `<button class="btn accent" style="margin-top:10px;width:100%" onclick="switchTab('home')">자리 확인하러 가기</button>` : ''}</div>`;
+    } else if (_dormBlocked) {
       const gs = guestStatusOf(sess.id, attMe);
       if (gs === 'approved') html += `<div class="card"><h2>${esc(meName())} 님</h2><p class="sub">게스트 참석이 <b style="color:var(--win)">확정</b>됐어요. 아래 명단 '게스트'에 표시돼요.</p></div>`;
       else if (gs === 'pending') html += `<div class="card"><h2>${esc(meName())} 님</h2><p class="sub">게스트 신청 완료 · <b>운영진 승인 대기중</b>이에요.</p><button class="btn ghost sm" style="margin-top:10px;width:100%" onclick="cancelGuest('${sess.id}',${attMe})">신청 취소</button></div>`;
@@ -3458,9 +3504,10 @@ async function markAtt(status){
   if (!isAdmin()) {
     const _el = await sessAttEligible(_sess, attMe);
     if (!_el.ok) {
-      toast(_el.reason==='unpaid' ? `${parseInt(_el.month.split('-')[1])}월 회비 납부 완료 후 참석 신청할 수 있어요.`
+      toast(capBlockMsg(_el.reason, _el.month)
+          || (_el.reason==='unpaid' ? `${parseInt(_el.month.split('-')[1])}월 회비 납부 완료 후 참석 신청할 수 있어요.`
           : _el.reason==='dormant' ? '이번 달 휴면이라 참석 신청 대상이 아니에요.'
-          : '참석 신청 대상이 아니에요.');
+          : '참석 신청 대상이 아니에요.'));
       return;
     }
   }

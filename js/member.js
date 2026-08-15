@@ -2044,7 +2044,7 @@ async function renderMore() {
   const teamLink = `<a class="more-item" href="team/" target="_blank" rel="noopener"><div class="mi-name">팀빌더 ↗</div><div class="mi-desc">명단 · 등번호 · 휴면 · 팀 배분</div></a>`;
   const guideBtn = `<button class="more-item" onclick="showAddHomeGuide()"><div class="mi-name">홈 화면에 추가</div><div class="mi-desc">앱처럼 바로 열기 (설치 가이드)</div></button>`;
   const introLink = `<a class="more-item" href="index.html"><div class="mi-name">싸커피 소개</div><div class="mi-desc">소개(랜딩) 페이지로 이동 · 로그인 유지</div></a>`;
-  const uniformBtn = `<button class="more-item" onclick="showUniform()"><div class="mi-name">유니폼 사이즈 조사</div><div class="mi-desc">2026 SS 유니폼 · 내 사이즈 입력·수정</div></button>`;
+  const uniformBtn = isAdmin() ? `<button class="more-item" onclick="showUniform()"><div class="mi-name">유니폼 사이즈 기록</div><div class="mi-desc">2026 SS 주문 확정분 · 열람 전용</div></button>` : '';   // 조사 종료 — 회원 노출 중단(2026-08-15)
   const bankBtn = `<button class="more-item" onclick="showBankInfo()"><div class="mi-name">회비 계좌 안내</div><div class="mi-desc">입금 계좌 확인 · 복사</div></button>`;
   const pinBtn = `<button class="more-item" onclick="changeMyPin()"><div class="mi-name">내 PIN 변경</div><div class="mi-desc">로그인 PIN 4자리 바꾸기</div></button>`;
   let _pushOn = false; try { _pushOn = !!(await getPushSub()) && Notification.permission==='granted'; } catch(e){}
@@ -2405,19 +2405,7 @@ async function renderHome() {
     </div>`;
   });
 
-  let uniHome = '';
-  if (meActive && me != null) {
-    const _um = uniformRoster().find(x=>x.id===me);
-    if (_um) {
-      const _sz = uniformSizeOf(_um);
-      const _conf = ((UNIFORM && UNIFORM.confirmedIds)||[]).includes(me);
-      const _rt = _sz ? `내 사이즈 <b style="color:var(--accent)">${esc(_sz)}</b>${_conf?' · 확정됨':' · 수정 가능'}` : '아직 입력 안 함 — 눌러서 입력';
-      uniHome = `<button class="card" style="width:100%;box-sizing:border-box;padding:14px 16px;margin-bottom:12px;display:flex;align-items:center;justify-content:space-between;gap:12px;cursor:pointer;font-family:inherit;text-align:left" onclick="showUniform()">
-        <span style="min-width:0"><span style="display:block;font-size:14px;font-weight:800;color:#ece6d2">2026 SS 유니폼 사이즈</span><span style="display:block;font-size:12px;color:${_sz?'var(--muted)':'var(--accent)'};margin-top:2px">${_rt}</span></span>
-        <span style="font-size:12px;font-weight:800;color:var(--accent);white-space:nowrap">${_sz?(_conf?'확인':'수정'):'입력'} →</span>
-      </button>`;
-    }
-  }
+  const uniHome = '';   // 유니폼 사이즈 카드 — 주문 확정·조사 종료로 홈 노출 중단(2026-08-15). 기록은 총괄 더보기에서.
   // 투표 기간(25일~말일)이면 홈에 투표 카드 표시
   let voteHome = '';
   if (meActive && me != null && isVotingOpen() && votingMembers(potmMonth()).some(m=>m.id===me)) {

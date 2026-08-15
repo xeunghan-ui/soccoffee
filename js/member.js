@@ -2030,7 +2030,7 @@ async function renderMore() {
   const adminItems = [
     ['notice',  '공지',   '공지 작성 · 노출 기간', 'ops'],
     ['session', '세션',   '세션 추가 · 마감 설정', 'ops'],
-    ['dues',    '회비',   '이번 달 납부 현황',     'dues'],
+    ['dues',    '회비',   '납부 현황 · 정원 순번',  'dues'],
     ['vote',    '투표',   '투표 결과 · 투표자',   'ops'],
     ['roster',  '설정',   'PIN 관리 · 팀 구분',   'ops'],
   ];
@@ -3572,6 +3572,88 @@ async function toggleDuesConfirm(month, id){
 }
 let duesDraft = {};     // memberId -> bool(paid)
 let duesPaidDB = {};
+// ---- 정원 현황판 (회비 탭에 합침) — 미응답·미납·복귀 순번을 한 화면에서 (26일 자동 휴면 전에 손쓸 수 있게) ----
+// 예전엔 운영진 콘솔의 '정원' 서브탭이었는데, 매달 15~26일 총무 동선이 회비판이라 그리로 옮겼다(2026-08-15).
+async function capBoardHtml(){
+  const capM = statusMonth();
+  let capInfo = null;
+  if (capOn(capM)) {
+    try { await loadCapConfirm(capM); capInfo = capCompute(capM, await fetchDues(capM)); } catch(e){}
+  }
+  if (!capOn(capM)) return '';   // 정원제 시작 전엔 회비판에 아무것도 안 붙인다
+  if (!capInfo) {
+    return `<p class="hint" style="margin:0">정원 데이터를 불러오지 못했어요. 새로고침해 주세요.</p>`;
+  } else {
+    const _cmo = parseInt(capM.split('-')[1], 10);
+    const _res = capResult(capM);
+    const _ft = ms => { if(!ms) return '—'; const d=new Date(ms); const z=n=>String(n).padStart(2,'0'); return `${z(d.getMonth()+1)}/${z(d.getDate())} ${z(d.getHours())}:${z(d.getMinutes())}`; };
+    const _pool = PLAYERS.filter(x => { const st = x.status||'active'; return st!=='former' && st!=='friends'; });
+    const _byId = id => _pool.find(x => x.id === id);
+    const _st = id => capInfo.states[id] || 'unconfirmed';
+    const _paid = id => capInfo.paid.has(id);
+    const _confd = id => isDuesConfirmed(capM, id);
+    const _gtag = g => `<span class="cnt-tag">${g}</span>`;
+    const _chip = (t, cls) => `<span class="dues-badge ${cls||''}" style="margin-left:4px">${t}</span>`;
+    const _row = (nm, right, sub) => `<div class="dues-row"><span class="nm" style="min-width:0">${esc(nm)}${sub?`<span class="hint" style="display:block;margin:0">${sub}</span>`:''}</span><span style="flex-shrink:0;font-size:12px;color:var(--muted);text-align:right">${right}</span></div>`;
+
+    // 현황 요약
+    const _sum = ['남','여'].map(g => {
+      const c = capInfo.counts[g], rq = ((capInfo.retQueue||{})[g]||[]).length;
+      return `<div class="dues-row"><span class="nm">${g === '여' ? '여성' : '남성'}</span><span style="flex-shrink:0;font-size:13px;font-weight:800;color:var(--cream)">유지 ${c.used} / ${c.cap}${rq?` <span class="cnt-tag">복귀 신청 ${rq}</span>`:''}</span></div>`;
+    }).join('');
+
+    // ① 미응답 — 26일에 자동 휴면이 될 사람들(가장 급한 목록)
+    const _un = _pool.filter(x => _st(x.id) === 'unconfirmed');
+    const _unRows = _un.length
+      ? _un.sort((a,b)=>a.name.localeCompare(b.name,'ko')).map(x => _row(x.name, _gtag(capGender(x)))).join('')
+      : `<p class="hint" style="margin:6px 0 0">전원 응답했어요.</p>`;
+
+    // ② 유지 확인했지만 미납 — 25일까지 안 내면 자리 반납
+    const _keptUnpaid = _pool.filter(x => _st(x.id) === 'kept' && !_paid(x.id));
+    const _kuRows = _keptUnpaid.length
+      ? _keptUnpaid.sort((a,b)=>a.name.localeCompare(b.name,'ko')).map(x => _row(x.name, _gtag(capGender(x)))).join('')
+      : `<p class="hint" style="margin:6px 0 0">확인한 회원은 모두 납부했어요.</p>`;
+
+    // ③ 복귀 신청 큐 — 순번제: 신청은 자리를 점유하지 않고, 26일에 남은 자리를 순번대로 배정
+    const _q = ['남','여'].map(g => {
+      const rows = (capInfo.retQueue[g] || []);
+      if (!rows.length) return '';
+      return `<div class="hint" style="margin:10px 0 2px;font-weight:800;color:var(--coffee-2)">${g === '여' ? '여성' : '남성'} · ${rows.length}명</div>`
+        + rows.map(r => {
+            const m = _byId(r.id); if (!m) return '';
+            const seat = (_res && Array.isArray(_res.active)) ? (_res.active.includes(r.id) ? '배정 확정' : '미배정') : `순번 ${r.rank}번`;
+            const pay = _confd(r.id) ? _chip('입금확인','paid') : (_paid(r.id) ? _chip('납부','paid') : _chip('미입금'));
+            return _row(`${r.rank}. ${m.name}`, `${seat}${pay}`, _ft(r.at));
+          }).join('');
+    }).join('');
+    const _qRows = _q.trim() ? _q : `<p class="hint" style="margin:6px 0 0">복귀 신청자가 없어요.</p>`;
+
+    // ④ 복귀 확정자 중 미입금 — 26일 확정 후 말일까지 입금 대상(총무 확인용)
+    const _retUnpaid = _pool.filter(x => _res && Array.isArray(_res.active) && _res.active.includes(x.id) && capInfo.retRank && capInfo.retRank[x.id] && !_confd(x.id));
+    const _ruRows = _retUnpaid.length
+      ? _retUnpaid.map(x => _row(x.name, `${_gtag(capGender(x))}${_paid(x.id) ? _chip('납부 표시','paid') : _chip('미입금')}`)).join('')
+      : `<p class="hint" style="margin:6px 0 0">복귀 확정자 입금이 모두 확인됐어요.</p>`;
+
+    const _dorm = _pool.filter(x => _st(x.id) === 'dormant');
+    const _sec = (t, n, body, open) => `<details class="ops-sec"${open?' open':''}><summary>${t}${n!=null?` <span class="cnt-tag">${n}</span>`:''}</summary><div class="ops-body">${body}</div></details>`;
+
+    return `<div class="ops-note">${_cmo}월 자리 — ${_res ? (_res.finalized ? '최종 확정됨' : '잠정 확정됨(26일 롤오버 완료)') : '신청 접수 중 (15~25일)'}</div>
+      ${_sum}
+      <div style="margin-top:14px"></div>
+      ${_sec('미응답 — 26일에 자동 휴면', _un.length, _unRows, true)}
+      ${_sec('확인했지만 미납 — 25일까지', _keptUnpaid.length, _kuRows, _keptUnpaid.length>0)}
+      ${_sec('복귀 신청 순서', (capInfo.retQueue['남']||[]).length + (capInfo.retQueue['여']||[]).length, _qRows, true)}
+      ${_sec('복귀 확정자 미입금 — 말일까지', _retUnpaid.length, _ruRows)}
+      ${_sec('휴면 선택', _dorm.length, _dorm.length ? _dorm.sort((a,b)=>a.name.localeCompare(b.name,'ko')).map(x=>_row(x.name, _gtag(capGender(x)))).join('') : `<p class="hint" style="margin:6px 0 0">없어요.</p>`)}
+      <p class="hint" style="margin:12px 2px 0">복귀는 <b style="color:var(--coffee-2)">먼저 신청한 순서</b>로 자리가 정해져요(입금 순서 아님). 유지자가 미납으로 자리를 반납하면 대기 순서대로 올라갑니다.</p>
+      <div style="display:flex;gap:8px;margin-top:12px">
+        <button class="btn ghost sm" style="flex:1" onclick="capAskPreview(false)">팝업 미리보기 · 활동 회원</button>
+        <button class="btn ghost sm" style="flex:1" onclick="capAskPreview(true)">팝업 미리보기 · 휴면 회원</button>
+      </div>
+      <p class="hint" style="margin:6px 2px 0">15~25일에 미응답자에게 뜨는 팝업이에요. 미리보기는 <b style="color:var(--coffee-2)">저장되지 않고 나만 보입니다.</b></p>`;
+  }
+}
+
 async function renderDues() {
   const el = document.getElementById('duesContent');
   if (!el.innerHTML.trim()) el.innerHTML = `<div class="empty">불러오는 중...</div>`;
@@ -3597,6 +3679,8 @@ async function renderDues() {
   const paidMap = {}; dues.forEach(d=>{ paidMap[d.member_id]=d.paid; });
   duesPaidDB = paidMap;
   const admin = isAdmin();
+  const _capBoardRaw = (admin || isDuesConfirmer()) ? await capBoardHtml() : '';   // 정원 현황판(옛 운영진 '정원' 탭) — 운영진·총무에게만
+  const _capBoard = _capBoardRaw ? `<div class="card" style="margin-bottom:12px"><div style="font-size:13px;font-weight:800;color:#ece6d2;margin-bottom:8px">${parseInt(statusMonth().split('-')[1],10)}월 정원 · 복귀 순번</div>${_capBoardRaw}</div>` : '';
   const me = getMe();
   // 운영진 드래프트 우선 적용 (상태: 'paid' | 'unpaid' | 'dormant')
   const effState = id => (id in duesDraft) ? duesDraft[id] : (paidMap[id] ? 'paid' : 'unpaid');
@@ -3667,6 +3751,7 @@ async function renderDues() {
       <div class="dues-stat paid"><div class="num">${paidCount}</div><div class="cap">납부</div></div>
       <div class="dues-stat unpaid"><div class="num">${total-paidCount}</div><div class="cap">미납</div></div>
     </div>
+    ${admin ? _capBoard : ''}
     ${transCard}
     ${myCard}
     ${(total-paidCount)>0 ? `<div class="card" style="padding:12px 14px;margin-bottom:12px">
@@ -3793,13 +3878,6 @@ async function renderOps() {
   const paidCount = members.filter(m=>dues.find(d=>d.member_id===m.id && d.paid)).length;
   const defDate = upcomingSessionDate();
 
-  // ---- 활동 정원(신청 창 대상 월 = statusMonth) ----
-  const capM = statusMonth();
-  let capInfo = null;
-  if (capOn(capM)) {
-    try { await loadCapConfirm(capM); capInfo = capCompute(capM, await fetchDues(capM)); } catch(e){}
-  }
-
   // ---- 할 일 요약 (총괄관리자 대시보드) ----
   const _next = await nearestSession();
   let _noResp = 0, _nextLbl = '';
@@ -3846,7 +3924,6 @@ async function renderOps() {
   const OPS_TABS = [
     { key:'notice',  label:'공지' },
     { key:'session', label:'세션' },
-    { key:'cap',     label:'정원' },
     { key:'dues',    label:'회비' },
     { key:'vote',    label:'투표' },
     { key:'push',    label:'푸시' },
@@ -4059,83 +4136,7 @@ async function renderOps() {
         <div style="display:flex;gap:6px;flex-wrap:wrap">${_mrBtn('WHITE','WHITE 승')}${_mrBtn('draw','무승부')}${_mrBtn('BLACK','BLACK 승')}${_mr?`<button class="btn ghost sm" style="color:var(--red)" onclick="opsLgResult('${_lgOpsM}',null)">지우기</button>`:''}</div>
       </div>`;
   }
-  // ---- 정원 서브탭: 미응답·미납·복귀 큐를 한 화면에서 (26일 자동 휴면 전에 손쓸 수 있게) ----
-  let secCap;
-  if (!capOn(capM)) {
-    secCap = `<p class="hint" style="margin:0">활동 정원제는 ${parseInt(CAP_START.slice(5),10)}월분부터 적용돼요. 그때부터 여기서 미응답·복귀 대기 순번을 관리해요.</p>`;
-  } else if (!capInfo) {
-    secCap = `<p class="hint" style="margin:0">정원 데이터를 불러오지 못했어요. 새로고침해 주세요.</p>`;
-  } else {
-    const _cmo = parseInt(capM.split('-')[1], 10);
-    const _res = capResult(capM);
-    const _ft = ms => { if(!ms) return '—'; const d=new Date(ms); const z=n=>String(n).padStart(2,'0'); return `${z(d.getMonth()+1)}/${z(d.getDate())} ${z(d.getHours())}:${z(d.getMinutes())}`; };
-    const _pool = PLAYERS.filter(x => { const st = x.status||'active'; return st!=='former' && st!=='friends'; });
-    const _byId = id => _pool.find(x => x.id === id);
-    const _st = id => capInfo.states[id] || 'unconfirmed';
-    const _paid = id => capInfo.paid.has(id);
-    const _confd = id => isDuesConfirmed(capM, id);
-    const _gtag = g => `<span class="cnt-tag">${g}</span>`;
-    const _chip = (t, cls) => `<span class="dues-badge ${cls||''}" style="margin-left:4px">${t}</span>`;
-    const _row = (nm, right, sub) => `<div class="dues-row"><span class="nm" style="min-width:0">${esc(nm)}${sub?`<span class="hint" style="display:block;margin:0">${sub}</span>`:''}</span><span style="flex-shrink:0;font-size:12px;color:var(--muted);text-align:right">${right}</span></div>`;
-
-    // 현황 요약
-    const _sum = ['남','여'].map(g => {
-      const c = capInfo.counts[g], rq = ((capInfo.retQueue||{})[g]||[]).length;
-      return `<div class="dues-row"><span class="nm">${g === '여' ? '여성' : '남성'}</span><span style="flex-shrink:0;font-size:13px;font-weight:800;color:var(--cream)">유지 ${c.used} / ${c.cap}${rq?` <span class="cnt-tag">복귀 신청 ${rq}</span>`:''}</span></div>`;
-    }).join('');
-
-    // ① 미응답 — 26일에 자동 휴면이 될 사람들(가장 급한 목록)
-    const _un = _pool.filter(x => _st(x.id) === 'unconfirmed');
-    const _unRows = _un.length
-      ? _un.sort((a,b)=>a.name.localeCompare(b.name,'ko')).map(x => _row(x.name, _gtag(capGender(x)))).join('')
-      : `<p class="hint" style="margin:6px 0 0">전원 응답했어요.</p>`;
-
-    // ② 유지 확인했지만 미납 — 25일까지 안 내면 자리 반납
-    const _keptUnpaid = _pool.filter(x => _st(x.id) === 'kept' && !_paid(x.id));
-    const _kuRows = _keptUnpaid.length
-      ? _keptUnpaid.sort((a,b)=>a.name.localeCompare(b.name,'ko')).map(x => _row(x.name, _gtag(capGender(x)))).join('')
-      : `<p class="hint" style="margin:6px 0 0">확인한 회원은 모두 납부했어요.</p>`;
-
-    // ③ 복귀 신청 큐 — 순번제: 신청은 자리를 점유하지 않고, 26일에 남은 자리를 순번대로 배정
-    const _q = ['남','여'].map(g => {
-      const rows = (capInfo.retQueue[g] || []);
-      if (!rows.length) return '';
-      return `<div class="hint" style="margin:10px 0 2px;font-weight:800;color:var(--coffee-2)">${g === '여' ? '여성' : '남성'} · ${rows.length}명</div>`
-        + rows.map(r => {
-            const m = _byId(r.id); if (!m) return '';
-            const seat = (_res && Array.isArray(_res.active)) ? (_res.active.includes(r.id) ? '배정 확정' : '미배정') : `순번 ${r.rank}번`;
-            const pay = _confd(r.id) ? _chip('입금확인','paid') : (_paid(r.id) ? _chip('납부','paid') : _chip('미입금'));
-            return _row(`${r.rank}. ${m.name}`, `${seat}${pay}`, _ft(r.at));
-          }).join('');
-    }).join('');
-    const _qRows = _q.trim() ? _q : `<p class="hint" style="margin:6px 0 0">복귀 신청자가 없어요.</p>`;
-
-    // ④ 복귀 확정자 중 미입금 — 26일 확정 후 말일까지 입금 대상(총무 확인용)
-    const _retUnpaid = _pool.filter(x => _res && Array.isArray(_res.active) && _res.active.includes(x.id) && capInfo.retRank && capInfo.retRank[x.id] && !_confd(x.id));
-    const _ruRows = _retUnpaid.length
-      ? _retUnpaid.map(x => _row(x.name, `${_gtag(capGender(x))}${_paid(x.id) ? _chip('납부 표시','paid') : _chip('미입금')}`)).join('')
-      : `<p class="hint" style="margin:6px 0 0">복귀 확정자 입금이 모두 확인됐어요.</p>`;
-
-    const _dorm = _pool.filter(x => _st(x.id) === 'dormant');
-    const _sec = (t, n, body, open) => `<details class="ops-sec"${open?' open':''}><summary>${t}${n!=null?` <span class="cnt-tag">${n}</span>`:''}</summary><div class="ops-body">${body}</div></details>`;
-
-    secCap = `<div class="ops-note">${_cmo}월 자리 — ${_res ? (_res.finalized ? '최종 확정됨' : '잠정 확정됨(26일 롤오버 완료)') : '신청 접수 중 (15~25일)'}</div>
-      ${_sum}
-      <div style="margin-top:14px"></div>
-      ${_sec('미응답 — 26일에 자동 휴면', _un.length, _unRows, true)}
-      ${_sec('확인했지만 미납 — 25일까지', _keptUnpaid.length, _kuRows, _keptUnpaid.length>0)}
-      ${_sec('복귀 신청 순서', (capInfo.retQueue['남']||[]).length + (capInfo.retQueue['여']||[]).length, _qRows, true)}
-      ${_sec('복귀 확정자 미입금 — 말일까지', _retUnpaid.length, _ruRows)}
-      ${_sec('휴면 선택', _dorm.length, _dorm.length ? _dorm.sort((a,b)=>a.name.localeCompare(b.name,'ko')).map(x=>_row(x.name, _gtag(capGender(x)))).join('') : `<p class="hint" style="margin:6px 0 0">없어요.</p>`)}
-      <p class="hint" style="margin:12px 2px 0">복귀는 <b style="color:var(--coffee-2)">먼저 신청한 순서</b>로 자리가 정해져요(입금 순서 아님). 유지자가 미납으로 자리를 반납하면 대기 순서대로 올라갑니다.</p>
-      <div style="display:flex;gap:8px;margin-top:12px">
-        <button class="btn ghost sm" style="flex:1" onclick="capAskPreview(false)">팝업 미리보기 · 활동 회원</button>
-        <button class="btn ghost sm" style="flex:1" onclick="capAskPreview(true)">팝업 미리보기 · 휴면 회원</button>
-      </div>
-      <p class="hint" style="margin:6px 2px 0">15~25일에 미응답자에게 뜨는 팝업이에요. 미리보기는 <b style="color:var(--coffee-2)">저장되지 않고 나만 보입니다.</b></p>`;
-  }
-
-  const bodyMap = { notice:secNotice, session:secSession, cap:secCap, roster:secRoster, dues:secDues, vote:secVote, push:secPush, league:secLeague };
+  const bodyMap = { notice:secNotice, session:secSession, roster:secRoster, dues:secDues, vote:secVote, push:secPush, league:secLeague };
 
   el.innerHTML = `
     ${_todoHtml}

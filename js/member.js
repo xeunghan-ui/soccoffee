@@ -966,16 +966,17 @@ function capMonthData(m){ return CAPACITY[m] || {}; }
 function capConfirmOf(m, id){ return (CAP_CONFIRM[m] || {})[String(id)] || null; }
 function capResult(m){ const r = capMonthData(m).result; return (r && Array.isArray(r.active)) ? r : null; }
 // 정원제 달 세션 응답 자격 게이트 — 그 달 자리 '등록자'만 참석 체크할 수 있다.
-// 확정 전: 유지(현재 활동 + 자리 확인 '활동')만 즉시 자리. 복귀 신청자는 순번 대기라 아직 아니다.
+// 확정 전: 유지는 자리 확인 '활동' + 총무 입금확인까지 완료해야 응답 가능(정책 v3과 동일 기준, 2026-08-15 총괄).
+// 복귀 신청자는 순번 대기라 아직 아니다.
 // 확정(26일 롤오버) 후: result.active가 정본 → isDormantFor가 이미 거르므로 여기선 null.
 // ⚠️ 호출 전에 loadCapConfirm(m)이 되어 있어야 정확하다(안 됐으면 '확인 안 함'으로 보수 판정).
-// 반환: null=응답 가능 | 'unconfirmed'(자리 확인 안 함) | 'queue'(복귀 순번 대기) | 'optout'(휴면 선택)
+// 반환: null=응답 가능 | 'unconfirmed'(자리 확인 안 함) | 'unpaid'(입금확인 전) | 'queue'(복귀 순번 대기) | 'optout'(휴면 선택)
 function capSeatBlock(p, m){
   if (!p || !capOn(m) || capResult(m)) return null;
   const c = capConfirmOf(m, p.id);
   if (c && c.s === 'dormant') return 'optout';
   const retTrack = isDormantFor(p, nowMonthStr());   // 지금 휴면이면 복귀 트랙(자리 미점유)
-  if (c && c.s === 'active') return retTrack ? 'queue' : null;
+  if (c && c.s === 'active') return retTrack ? 'queue' : (isDuesConfirmed(m, p.id) ? null : 'unpaid');
   return retTrack ? 'queue' : 'unconfirmed';
 }
 // 세션 목록이 걸치는 '확정 전 정원제 달'의 자리 확인을 한 번에 읽는다(응답 자격 게이트용)
@@ -987,6 +988,7 @@ async function loadCapConfirmForSessions(sessions){
 function capBlockMsg(reason, month){
   const mo = month ? parseInt(month.split('-')[1], 10) : '';
   return reason==='cap-unconfirmed' ? `${mo}월 세션은 자리 확인(활동/휴면) 후 참석 체크할 수 있어요. 자리 확인은 15일부터 홈 화면에서 할 수 있어요.`
+       : reason==='cap-unpaid' ? `${mo}월 자리 확인은 됐고, <b>회비 입금확인</b>이 완료되면 참석 체크할 수 있어요. 아직 납부 전이면 25일까지 납부해 주세요.`
        : reason==='cap-queue' ? `${mo}월 복귀 순번 대기 중이에요. 26일 자리 배정 후 참석 체크할 수 있어요.`
        : reason==='cap-optout' ? `${mo}월 휴면을 선택해서 참석 체크 대상이 아니에요. 홈 화면에서 변경할 수 있어요.`
        : null;

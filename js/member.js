@@ -4224,7 +4224,7 @@ async function renderOps() {
       <b style="color:#ece6d2;font-size:13px">감독 지원 ${_lApps.length}명</b>
       <div class="hint" style="margin:2px 0 8px">2명 초과 지원 시 여기서 지명해요. 드래프트 캡틴으로 사용.</div>
       ${_capRows}
-      ${(_ld.recs||[]).length ? `<div class="hint" style="margin:10px 0 0"><b style="color:var(--coffee-2)">회원 추천</b> ${(()=>{const c={};(_ld.recs||[]).forEach(r=>{c[r.to]=(c[r.to]||0)+1;});const nm=id=>{const p=ROSTER.find(x=>x.id===Number(id));return p?esc(p.name):'#'+id;};return Object.entries(c).sort((a,b)=>b[1]-a[1]).map(([id,n])=>`${nm(id)} ${n}`).join(' · ');})()} — 지명은 아래 팀 배정의 별표로</div>` : ''}
+      ${(_ld.recs||[]).length ? `<div class="hint" style="margin:10px 0 0;line-height:1.8"><b style="color:var(--coffee-2)">회원 추천</b> — 지명은 아래 팀 배정의 별표로<br>${(()=>{const c={};(_ld.recs||[]).forEach(r=>{(c[r.to]=c[r.to]||[]).push(r.by);});const nm=id=>{const p=ROSTER.find(x=>x.id===Number(id));return p?esc(p.name):'#'+id;};return Object.entries(c).sort((a,b)=>b[1].length-a[1].length).map(([id,bys])=>`<b style="color:#ece6d2">${nm(id)} ${bys.length}</b> <span style="opacity:.8">(${bys.map(nm).join(', ')})</span>`).join('<br>');})()}</div>` : ''}
       <div style="margin-top:16px;border-top:1px solid #2a3d30;padding-top:14px">
         <b style="color:#ece6d2;font-size:13px">팀 배정</b>
         <div class="hint" style="margin:2px 0 8px">버튼을 눌러 미정 → WHITE → BLACK 순환. 드래프트 결과를 여기에 입력하고, 중도 변동도 여기서 조정해요.</div>

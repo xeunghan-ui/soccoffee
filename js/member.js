@@ -4011,7 +4011,7 @@ async function opsTodoHtml(){
   const _todoItems = [
     { n:_noResp,            label:'다음 세션 미응답'+(_nextLbl?' ('+_nextLbl+')':''), go:"switchTab('att')" },
     { n:_duesUnpaid, label:parseInt(_dm.split('-')[1])+'월 회비 미납', go:"switchTab('dues')" },
-    { n:_vMissing.length,   label:'이달 투표 미참여', go:"opsSwitch('vote')" },
+    { n:isVotingOpen() ? _vMissing.length : 0,   label:'이달 투표 미참여', go:"opsSwitch('vote')" },   // 투표 창(25일~)이 열린 뒤에만 할 일
     { n:_guestPend,         label:'게스트 신청 대기', go:"switchTab('att')" },
     { n:_pinMissing,        label:'PIN 미설정(미로그인)', go:"opsSwitch('roster')" },
   ].filter(x => x.n > 0);

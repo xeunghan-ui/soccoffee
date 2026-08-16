@@ -4184,6 +4184,10 @@ async function renderOps() {
   const secDues = `
     <button class="btn sm" onclick="switchTab('dues')">회비 현황판 열기</button>`;
 
+  // 투표 현황 (할 일 함수 분리 때 같이 빠졌던 지역 변수 복원 — 2026-08-16 회귀 수정)
+  const _vPool = votingMembers(month);
+  const _vDone = new Set(votesMvp.concat(votesGrowth).map(v=>v.voter_id));
+  const _vMissing = _vPool.filter(m=>!_vDone.has(m.id));
   const secVote = `
     <p class="hint" style="margin:0 0 10px">투표 대상 ${_vPool.length}명 중 <b style="color:#ece6d2">${_vDone.size}명 참여</b>${_vMissing.length?` · 미투표 ${_vMissing.length}명`:''}</p>
     ${_vMissing.length?`<div style="font-size:12px;color:var(--muted);line-height:1.7;margin:0 0 14px;padding-bottom:12px;border-bottom:1px solid var(--line)"><b style="color:var(--coffee-2)">미투표</b> ${_vMissing.map(m=>esc(m.name)).join(', ')}</div>`:''}

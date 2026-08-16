@@ -3567,54 +3567,15 @@ async function toggleDuesConfirm(month, id){
   const arr = new Set(dc[month]||[]); if (arr.has(id)) arr.delete(id); else arr.add(id); dc[month] = [...arr];
   DUES_CONFIRMED = dc;
   if (!(await saveSettings({ duesConfirmed: dc }))) { toast('저장 중 오류가 났어요'); return; }
-  if ((dc[month]||[]).includes(id)) { const t = await pushTpl('dues_confirm', {'월':parseInt(month.split('-')[1])}); queuePush(id, t.title, t.body, './member.html#dues'); }
+  if ((dc[month]||[]).includes(id)) {
+    // 확인 = 정본. 멤버가 납부 표시를 잊었어도 납부 상태를 함께 기록해 미납 그룹에 남지 않게 한다.
+    try { await setDuesPaid(month, id, true, dueAmount((ROSTER.find(x=>x.id===id)||{}).name||'')); } catch(e){}
+    const t = await pushTpl('dues_confirm', {'월':parseInt(month.split('-')[1])}); queuePush(id, t.title, t.body, './member.html#dues');
+  }
   await rerender(renderDues);
 }
 let duesDraft = {};     // memberId -> bool(paid)
 let duesPaidDB = {};
-// ---- 정원 현황판 (회비 탭에 합침) — 자리·순번·입금을 이름 나열식으로 압축해 한 카드에 (2026-08-15)
-// 예전엔 운영진 콘솔 '정원' 서브탭의 섹션식 화면이었는데, 총무 동선(회비판)에 붙이면서 줄글로 줄였다.
-async function capBoardHtml(){
-  const capM = statusMonth();
-  if (!capOn(capM)) return '';   // 정원제 시작 전엔 회비판에 아무것도 안 붙인다
-  let capInfo = null;
-  try { await loadCapConfirm(capM); capInfo = capCompute(capM, await fetchDues(capM)); } catch(e){}
-  if (!capInfo) return `<p class="hint" style="margin:0">정원 데이터를 불러오지 못했어요. 새로고침해 주세요.</p>`;
-  const _cmo = parseInt(capM.split('-')[1], 10);
-  const _res = capResult(capM);
-  const _pool = PLAYERS.filter(x => { const st = x.status||'active'; return st!=='former' && st!=='friends'; });
-  const _byId = id => _pool.find(x => x.id === id);
-  const _st = id => capInfo.states[id] || 'unconfirmed';
-  const _pay = id => isDuesConfirmed(capM, id) ? '입금확인' : (capInfo.paid.has(id) ? '납부' : '미입금');
-  const _names = arr => [...arr].sort((a,b)=>a.name.localeCompare(b.name,'ko')).map(x=>esc(x.name)).join(', ');
-  const _line = (lbl, color, body, note) => body ? `<div style="font-size:13px;line-height:1.7;margin-top:5px"><b style="font-size:12px;color:${color}">${lbl}</b> ${body}${note?` <span class="hint" style="margin:0">${note}</span>`:''}</div>` : '';
-  // 요약: 남 유지/정원(+복귀 대기) · 여 …
-  const _sum = ['남','여'].map(g => { const c=capInfo.counts[g], rq=((capInfo.retQueue||{})[g]||[]).length; return `${g} ${c.used}/${c.cap}${rq?` <span style="color:var(--accent)">+${rq}</span>`:''}`; }).join(' · ');
-  const _un = _pool.filter(x => _st(x.id)==='unconfirmed');
-  const _ku = _pool.filter(x => _st(x.id)==='kept' && _pay(x.id)!=='입금확인');   // 입금확인 전 = 정원 미포함
-  const _dorm = _pool.filter(x => _st(x.id)==='dormant');
-  // 복귀 큐: 순번·이름·입금을 한 항목으로 (확정 후엔 순번 자리에 배정/미배정)
-  const _qg = g => (capInfo.retQueue[g]||[]).map(r => {
-    const m = _byId(r.id); if (!m) return '';
-    const seat = _res ? (_res.active.includes(r.id) ? '<b style="color:var(--win)">배정</b>' : '<b style="color:var(--muted)">미배정</b>') : `<b>${r.rank}.</b>`;
-    return `${seat} ${esc(m.name)} <span style="color:var(--muted);font-size:12px">(${_pay(r.id)})</span>`;
-  }).filter(Boolean).join(' → ');
-  const _qM = _qg('남'), _qF = _qg('여');
-  return `<div style="display:flex;align-items:baseline;justify-content:space-between;gap:8px;flex-wrap:wrap">
-      <b style="color:#ece6d2;font-size:13px">${_cmo}월 자리 · 회비</b>
-      <span class="hint" style="margin:0">${_res ? (_res.finalized ? '최종 확정' : '잠정 확정 · 5일 최종') : '접수 중 · 25일 마감'} — ${_sum}</span>
-    </div>
-    ${_line(`미응답 ${_un.length}`, 'var(--red)', _un.length?_names(_un):'', _res?'':'→ 25일까지 없으면 자동 휴면')}
-    ${_line(`유지 미확정 ${_ku.length}`, 'var(--alert)', _ku.length?[..._ku].sort((a,b)=>a.name.localeCompare(b.name,'ko')).map(x=>esc(x.name)+(_pay(x.id)==='납부'?' <span style="color:var(--muted);font-size:12px">(납부)</span>':'')).join(', '):'', _res?'':'→ 25일까지 입금확인 없으면 자리 반납')}
-    ${_line('복귀'+(_qF?' 남':''), 'var(--accent)', _qM, _res?'· 말일까지 입금':'')}
-    ${_line('복귀 여', 'var(--accent)', _qF, _res?'· 말일까지 입금':'')}
-    ${_line(`휴면 ${_dorm.length}`, 'var(--muted)', _dorm.length?`<span style="color:var(--muted)">${_names(_dorm)}</span>`:'')}
-    <div style="display:flex;gap:8px;margin-top:10px">
-      <button class="btn ghost sm" style="flex:1" onclick="capAskPreview(false)">팝업 미리보기 · 활동</button>
-      <button class="btn ghost sm" style="flex:1" onclick="capAskPreview(true)">팝업 미리보기 · 휴면</button>
-    </div>`;
-}
-
 async function renderDues() {
   const el = document.getElementById('duesContent');
   if (!el.innerHTML.trim()) el.innerHTML = `<div class="empty">불러오는 중...</div>`;
@@ -3640,8 +3601,6 @@ async function renderDues() {
   const paidMap = {}; dues.forEach(d=>{ paidMap[d.member_id]=d.paid; });
   duesPaidDB = paidMap;
   const admin = isAdmin();
-  const _capBoardRaw = (admin || isDuesConfirmer()) ? await capBoardHtml() : '';   // 정원 현황판(옛 운영진 '정원' 탭) — 운영진·총무에게만
-  const _capBoard = _capBoardRaw ? `<div class="card" style="margin-bottom:12px;padding:14px 16px">${_capBoardRaw}</div>` : '';
   const me = getMe();
   // 운영진 드래프트 우선 적용 (상태: 'paid' | 'unpaid' | 'dormant')
   const effState = id => (id in duesDraft) ? duesDraft[id] : (paidMap[id] ? 'paid' : 'unpaid');
@@ -3707,11 +3666,11 @@ async function renderDues() {
     const isMe = me===m.id;
     const dirty = admin && (m.id in duesDraft);
     const confd = isDuesConfirmed(month, m.id);
-    const confChip = (stt==='paid')
-      ? (isDuesConfirmer()
-          ? `<button class="dues-conf ${confd?'on':''}" onclick="toggleDuesConfirm('${month}',${m.id})">${confd?'✓ 입금확인':'입금확인'}</button>`
-          : (confd ? `<span class="dues-conf on ro">✓ 입금확인</span>` : ''))
-      : '';
+    // 멤버가 '납부 표시'를 안 눌러도 총무가 계좌에서 확인했으면 바로 입금확인 가능 (2026-08-15)
+    // — 확인 시 납부 상태도 자동 기록되므로 자가신고 누락이 흐름을 막지 않는다.
+    const confChip = isDuesConfirmer()
+      ? `<button class="dues-conf ${confd?'on':''}" onclick="toggleDuesConfirm('${month}',${m.id})">${confd?'✓ 입금확인':'입금확인'}</button>`
+      : (confd ? `<span class="dues-conf on ro">✓ 입금확인</span>` : '');
     const statusEl = admin
       ? `<span class="st-set"><button class="st paid ${stt==='paid'?'on':''}" onclick="duesDraftSet(${m.id},'paid')">납부</button><button class="st unpaid ${stt==='unpaid'?'on':''}" onclick="duesDraftSet(${m.id},'unpaid')">미납</button><button class="st dormant ${stt==='dormant'?'on':''}" onclick="duesDraftSet(${m.id},'dormant')">휴면</button></span>`
       : `<span style="flex-shrink:0;font-size:12px;font-weight:800;padding:4px 12px;border-radius:20px;background:${stt==='paid'?'rgba(70,179,129,.92)':'rgba(217,97,74,.92)'};color:#fff">${stt==='paid'?'납부':'미납'}</span>`;
@@ -3721,8 +3680,34 @@ async function renderDues() {
     </div>`;
   };
   const _opsView = admin || isDuesConfirmer();
+  // 정원 정보 로드(운영진·총무) — 명단 그룹·상단 타일이 함께 쓴다
+  let _ciD = null, _resD = null;
+  if (_opsView && capOn(month)) {
+    try { await loadCapConfirm(month); } catch(e){}
+    _resD = capResult(month);
+    if (!_resD) _ciD = capCompute(month, dues);
+  }
+  const gh = (t, n, color, first) => `<div style="font-size:12px;font-weight:800;color:${color};margin:${first?'0':'14px'} 2px 4px">${t} <span class="cnt-tag">${n}</span></div>`;
   let listHtml;
-  if (_opsView) {
+  if (_opsView && _ciD) {
+    // ── 정원제 신청 창(15~25일): 옛 '정원 현황판'의 내용을 기존 회비 명단 방식으로 통합 (2026-08-15 총괄) ──
+    // 조치 순서대로: 미응답 → 입금확인 대기 → 미납 → 확정. 각 줄은 기존 회비 행 그대로(변경 버튼·입금확인 포함).
+    const _stC = id => _ciD.states[id] || 'unconfirmed';
+    const gNo = [], gWait = [], gUnpaid = [], gDone = [];
+    [...members].sort(byName).forEach(m => {
+      const cs = _stC(m.id);
+      if (cs !== 'kept') { gNo.push(m); return; }                       // 자리 확인 전(미응답)
+      if (isDuesConfirmed(month, m.id)) gDone.push(m);                  // 확정
+      else if (effState(m.id) === 'paid') gWait.push(m);                // 납부 표시 · 확인 대기
+      else gUnpaid.push(m);                                             // 확인 후 납부 전
+    });
+    listHtml =
+      (gNo.length ? gh('미응답 — 26일 자동 휴면', gNo.length, 'var(--alert)', true) + gNo.map(_rowOf).join('') : '') +
+      (gWait.length ? gh('입금확인 대기 — 계좌 대조', gWait.length, 'var(--accent)', !gNo.length) + gWait.map(_rowOf).join('') : '') +
+      (gUnpaid.length ? gh('미납 — 25일까지', gUnpaid.length, 'var(--red)', false) + gUnpaid.map(_rowOf).join('') : '') +
+      (gDone.length ? gh('확정 — 입금확인 완료', gDone.length, 'var(--win)', false) + gDone.map(_rowOf).join('') : '');
+  } else if (_opsView) {
+    // 정원제 아님 or 확정 후: 회비 할 일 기준 그룹
     const gWait = [], gUnpaid = [], gDone = [], gDorm = [];
     [...members].sort(byName).forEach(m => {
       const stt = effState(m.id);
@@ -3730,7 +3715,6 @@ async function renderDues() {
       else if (stt === 'dormant') gDorm.push(m);
       else gUnpaid.push(m);
     });
-    const gh = (t, n, color, first) => `<div style="font-size:12px;font-weight:800;color:${color};margin:${first?'0':'14px'} 2px 4px">${t} <span class="cnt-tag">${n}</span></div>`;
     listHtml =
       (gWait.length ? gh('입금확인 대기 — 계좌 대조', gWait.length, 'var(--accent)', true) + gWait.map(_rowOf).join('') : '') +
       (gUnpaid.length ? gh('미납', gUnpaid.length, 'var(--red)', !gWait.length) + gUnpaid.map(_rowOf).join('') : '') +
@@ -3739,33 +3723,49 @@ async function renderDues() {
   } else {
     listHtml = [...members].sort((a,b)=>{ const rk=s=>s==='unpaid'?0:(s==='paid'?1:2); return rk(effState(a.id))-rk(effState(b.id)) || byName(a,b); }).map(_rowOf).join('');
   }
-  // 운영진·총무 상단 요약 — 납부/미납 대신 '남/여 정원이 몇 명 찼는지' (2026-08-15 총괄 요청)
+  // 상단 요약 타일 — 남/여 정원 충원 (확정 전: 입금확인 완료 기준 / 확정 후: result 기준)
   let _capTiles = '', _capPct = 0;
   if (_opsView && capOn(month)) {
-    try { await loadCapConfirm(month); } catch(e){}
-    const _resD = capResult(month);
     let _mU, _fU;
-    if (_resD) {   // 확정 후: result가 정본
+    if (_resD) {
       const _ids = new Set(_resD.active);
       _mU = ROSTER.filter(p=>_ids.has(p.id)&&capGender(p)==='남').length;
       _fU = ROSTER.filter(p=>_ids.has(p.id)&&capGender(p)==='여').length;
-    } else {       // 확정 전: 유지 확인 + 입금확인 완료(정책 v3) 기준
-      const _ci = capCompute(month, dues);
-      _mU = _ci.counts['남'].used; _fU = _ci.counts['여'].used;
+    } else {
+      _mU = _ciD ? _ciD.counts['남'].used : 0; _fU = _ciD ? _ciD.counts['여'].used : 0;
     }
     _capPct = Math.round((_mU+_fU)/(CAP_LIMIT['남']+CAP_LIMIT['여'])*100);
     const _tile = (g,u) => `<div class="dues-stat paid"><div class="num">${u}<span style="font-size:15px;color:var(--muted);font-weight:600">/${CAP_LIMIT[g]}</span></div><div class="cap">${g==='여'?'여성':'남성'} 정원</div></div>`;
     _capTiles = `<div class="dues-summary">${_tile('남',_mU)}${_tile('여',_fU)}</div>`;
   }
-  const dormListHtml = (dormantMembers.length && _opsView ? `<div style="font-size:12px;font-weight:800;color:var(--muted);margin:14px 2px 4px">휴면 <span class="cnt-tag">${dormantMembers.length}</span></div>` : '')
-    + dormantMembers.map(m=>{
+  // 휴면 구간 — 정원제 신청 창엔 복귀 신청자(순번순)를 먼저, 그 아래 나머지 휴면
+  let dormListHtml = '';
+  {
+    const _dRow = (m, right) => {
       const isMe = me===m.id;
-      return `<div class="dues-row ${isMe?'me':''}" style="opacity:.55">
+      return `<div class="dues-row ${isMe?'me':''}" style="opacity:.7">
         <span class="nm">${esc(m.name)}${isMe?' <span style="font-size:11px;color:var(--accent)">(나)</span>':''}</span>
-        <span class="amt">—</span>
-        <span class="dues-badge" style="background:#555;color:#ddd">휴면</span>
+        <span style="display:flex;align-items:center;gap:8px;flex-shrink:0">${right}</span>
       </div>`;
-    }).join('');
+    };
+    let rest = dormantMembers.slice();
+    if (_opsView && _ciD) {
+      const q = [..._ciD.retQueue['남'], ..._ciD.retQueue['여']];
+      const qIds = new Set(q.map(r=>r.id));
+      const qRows = q.map(r => {
+        const m = ROSTER.find(x=>x.id===r.id); if (!m) return '';
+        const g = capGender(m);
+        const confd = isDuesConfirmed(month, m.id);
+        const paidQ = effState(m.id) === 'paid' || !!((dues.find(d=>d.member_id===m.id)||{}).paid);
+        const chip = confd ? `<span class="dues-conf on ro">✓ 입금확인</span>` : (paidQ ? `<span class="dues-badge paid">납부</span>` : '');
+        return _dRow(m, `<span class="cnt-tag">${g} 순번 ${r.rank}</span>${chip}`);
+      }).join('');
+      if (q.length) dormListHtml += gh('복귀 신청 — 26일 순번대로 배정', q.length, 'var(--coffee-2)', false) + qRows;
+      rest = rest.filter(m=>!qIds.has(m.id));
+    }
+    if (rest.length && _opsView) dormListHtml += gh('휴면', rest.length, 'var(--muted)', false);
+    dormListHtml += rest.map(m => _dRow(m, `<span class="dues-badge" style="background:#555;color:#ddd">휴면</span>`)).join('');
+  }
 
   let html = `
     <div class="potm-hero" style="background:linear-gradient(135deg,#2f7a4f,#245f3e)">
@@ -3778,7 +3778,6 @@ async function renderDues() {
       <div class="dues-stat paid"><div class="num">${paidCount}</div><div class="cap">납부</div></div>
       <div class="dues-stat unpaid"><div class="num">${total-paidCount}</div><div class="cap">미납</div></div>
     </div>`}
-    ${admin ? _capBoard : ''}
     ${transCard}
     ${myCard}
     ${((total-paidCount)>0 && !_opsView) ? `<div class="card" style="padding:12px 14px;margin-bottom:12px">
@@ -3791,6 +3790,7 @@ async function renderDues() {
         ${listHtml}
         ${dormListHtml}
       </div>
+      ${(admin && _ciD) ? `<div style="display:flex;gap:8px;margin-top:14px"><button class="btn ghost sm" style="flex:1" onclick="capAskPreview(false)">팝업 미리보기 · 활동</button><button class="btn ghost sm" style="flex:1" onclick="capAskPreview(true)">팝업 미리보기 · 휴면</button></div>` : ''}
     </div>
     ${nDraft ? `<div class="save-bar"><span class="save-n">변경 ${nDraft}건 (미저장)</span><span class="sb-actions"><button class="cancel" onclick="duesCancelDraft()">취소</button><button class="ok" onclick="duesSaveDraft()">저장</button></span></div>` : ''}`;
   el.innerHTML = html;

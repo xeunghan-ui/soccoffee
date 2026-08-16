@@ -3009,8 +3009,17 @@ function _umBox(title, body){
 
 /* ===== 팀 뽑기(드래프트) — 팀 리그 현장용. 감독 2명이 번갈아 뽑기 1/2/2/…/2/1 스네이크 ===== */
 let draftState = null;
-function openDraft(){ draftState = null; switchTab('draft'); }   // 전체 화면(탭)으로 열기
-function _draftInit(){ const mo = statusMonth(); return { step:'setup', month:mo, all:activeMembers(mo), capA:null, capB:null, absent:new Set(), poolAll:[], turns:[], picks:[] }; }
+async function openDraft(){ try { await loadCapConfirm(statusMonth()); } catch(e){} draftState = null; switchTab('draft'); }   // 전체 화면(탭)으로 열기 — 자리 확인 최신화 후
+function _draftInit(){
+  const mo = statusMonth();
+  let all = activeMembers(mo);
+  if (capOn(mo)) {   // 정원제 달: 입금확인까지 마친 확정 회원만 명단에 (2026-08-16 총괄)
+    const res = capResult(mo);
+    all = res ? all.filter(m => res.active.includes(m.id))
+              : all.filter(m => { const c = capConfirmOf(mo, m.id); return !!(c && c.s === 'active') && isDuesConfirmed(mo, m.id); });
+  }
+  return { step:'setup', month:mo, all, capA:null, capB:null, absent:new Set(), poolAll:[], turns:[], picks:[] };
+}
 // 팀 뽑기 전체 화면 렌더 (상단 제목 + 닫기)
 function _draftPage(title, body){
   const el = document.getElementById('draftContent'); if(!el) return;
@@ -3038,7 +3047,8 @@ function draftRender(){
     const nPresent = s.all.filter(m=>m.id!==s.capA&&m.id!==s.capB&&!s.absent.has(m.id)).length;
     const nObs = s.all.filter(m=>m.id!==s.capA&&m.id!==s.capB&&s.absent.has(m.id)).length;
     _draftPage('팀 뽑기 · 준비', `
-      <p class="sub" style="margin:0 0 8px">${potmMonthLabel(s.month)} 활동 회원 기준. 감독 2명을 고르고, 경기 안 하고 <b>구경할 사람은 눌러서 관전자</b>로 빼세요. (감독이 1·2·2·…·2·1 순으로 번갈아 뽑아요)</p>
+      <p class="sub" style="margin:0 0 8px">${potmMonthLabel(s.month)} ${capOn(s.month)?'확정(입금확인 완료) 회원':'활동 회원'} 기준. 감독 2명을 고르고, 경기 안 하고 <b>구경할 사람은 눌러서 관전자</b>로 빼세요. (감독이 1·2·2·…·2·1 순으로 번갈아 뽑아요)</p>
+      ${(capOn(s.month) && !s.all.length) ? '<p class="hint" style="margin:0 0 8px">아직 확정 회원이 없어요 — 회비판에서 입금확인이 진행되면 명단이 채워져요.</p>' : ''}
       <div style="font-size:12px;font-weight:800;color:var(--coffee);margin:12px 0 4px">감독 2명 <span style="color:var(--muted);font-weight:600">${(s.capA?1:0)+(s.capB?1:0)}/2</span></div>
       <div>${capChips}</div>
       <div style="font-size:12px;font-weight:800;color:var(--coffee);margin:14px 0 4px">참여 인원 <span style="color:var(--muted);font-weight:600">${nPresent}명 · 관전 ${nObs}명 (탭하면 관전자)</span></div>

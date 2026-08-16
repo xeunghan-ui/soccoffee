@@ -2877,6 +2877,17 @@ function computeWinStats(matches){
   return map;
 }
 const PIN_SALT = 'scf-pin-v1';
+// PIN 저장은 반드시 이걸로 — 최신 pins를 다시 읽어 내 키만 병합한다.
+// (통째 저장은 오래된 기기가 남의 PIN을 지우는 사고를 냈다: 마상현·한재욱·조은애 유실, 2026-08-16 확인)
+async function savePinPatch(id, hash){
+  let latest = null;
+  try { if (USE_DB){ const {data:row}=await sb.from('club_settings').select('data').eq('id','current').maybeSingle(); latest=(row&&row.data&&row.data.pins)||{}; } else latest=(await fetchSettings()).pins||{}; } catch(e){}
+  const merged = Object.assign({}, latest || CLUB_PINS);
+  if (hash == null) delete merged[id]; else merged[id] = hash;
+  const ok = await saveSettings({ pins: merged });
+  if (ok) CLUB_PINS = merged;
+  return ok;
+}
 async function hashPin(id, pin){
   const data = new TextEncoder().encode(PIN_SALT + ':' + id + ':' + pin);
   const buf = await crypto.subtle.digest('SHA-256', data);
@@ -2895,11 +2906,9 @@ async function resetPin(id){
   if (!isAdmin()) return;
   const p = PLAYERS.find(x => x.id === id);
   if (!confirm((p ? p.name : '') + ' 님의 PIN을 초기화할까요? 다음 로그인에서 새로 정하게 돼요.')) return;
-  const bak = CLUB_PINS[id];
-  delete CLUB_PINS[id];
-  const ok = await saveSettings({ pins: CLUB_PINS });
-  if (ok) { toast('PIN을 초기화했어요.'); rerender(renderOps); }
-  else { CLUB_PINS[id] = bak; toast('초기화 중 오류가 났어요.'); }
+  const ok = await savePinPatch(id, null);
+  if (ok) { toast('초기화했어요 — 다음 로그인 때 새 PIN을 정해요'); rerender(renderOps); }
+  else toast('초기화 중 오류가 났어요.');
 }
 
 // 본인 PIN 변경 (현재 PIN 확인 후 새 PIN)
@@ -2913,10 +2922,8 @@ async function changeMyPin(){
   const v = np.trim(); if (!/^\d{4}$/.test(v)) { toast('PIN은 숫자 4자리예요'); return; }
   const np2 = prompt('새 PIN 4자리 확인'); if (np2 == null) return;
   if (np2.trim() !== v) { toast('새 PIN이 서로 달라요'); return; }
-  const bak = CLUB_PINS[me];
-  CLUB_PINS[me] = await hashPin(me, v);
-  const ok = await saveSettings({ pins: CLUB_PINS });
-  if (ok) toast('PIN을 변경했어요'); else { CLUB_PINS[me] = bak; toast('변경 중 오류가 났어요'); }
+  const ok = await savePinPatch(me, await hashPin(me, v));
+  if (ok) toast('PIN을 변경했어요'); else toast('변경 중 오류가 났어요');
 }
 // 회비 계좌 안내 모달
 function showBankInfo(){
@@ -4712,9 +4719,8 @@ async function gateLogin() {
   catch (e) { err.textContent = '이 환경에서는 로그인할 수 없어요(보안 컨텍스트 필요).'; return; }
   const stored = CLUB_PINS[id];
   if (!stored) {
-    CLUB_PINS[id] = h;
-    const ok = await saveSettings({ pins: CLUB_PINS });
-    if (!ok) { delete CLUB_PINS[id]; err.textContent = 'PIN 등록 중 오류가 났어요. 다시 시도해 주세요.'; return; }
+    const ok = await savePinPatch(id, h);
+    if (!ok) { err.textContent = 'PIN 등록 중 오류가 났어요. 다시 시도해 주세요.'; return; }
     toast('PIN이 설정됐어요. 다음부터 이 PIN으로 로그인해요.');
   } else if (stored !== h) {
     err.textContent = 'PIN이 일치하지 않아요.'; document.getElementById('gatePin').value = ''; return;

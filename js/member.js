@@ -1197,6 +1197,59 @@ async function leagueApply(){
   toast(mine ? '감독 지원을 취소했어요' : '감독에 지원했어요');
   await rerender(renderHome);
 }
+/* ---- 감독 추천제 (2026-08-16 총괄) — 지원자가 없을 때, 그 달 확정(입금확인) 회원이 감독을 추천 ----
+   저장: league[월].recs = [{by, to, at}] — by(추천인)당 1건, 다시 누르면 교체·취소.
+   운영진은 홈 카드 집계를 보고 지명 판단에 참고한다(자동 지명 없음). */
+function _lgRecPool(m){
+  const res = capResult(m);
+  if (res) return ROSTER.filter(p => res.active.includes(p.id));
+  const conf = CAP_CONFIRM[m] || {};
+  return ROSTER.filter(p => {
+    const st = p.status || 'active';
+    if (st === 'former' || st === 'friends') return false;
+    const c = conf[String(p.id)];
+    return !!(c && c.s === 'active') && !isDormantFor(p, nowMonthStr()) && isDuesConfirmed(m, p.id);
+  });
+}
+function lgRecClose(){ const h = document.getElementById('mmHost'); if (h) h.innerHTML = ''; }
+async function showLeagueRec(){
+  const m = statusMonth(); if (!isLeague(m)) return;
+  const me = getMe(); if (!me) return;
+  try { await loadCapConfirm(m); } catch(e){}
+  const pool = _lgRecPool(m);
+  const moN = parseInt(m.split('-')[1], 10);
+  if (!pool.some(p => p.id === me)) { toast(`감독 추천은 ${moN}월 확정(입금확인) 회원만 가능`); return; }
+  const d = leagueData(m);
+  const myRec = (d.recs || []).find(r => r.by === me);
+  const rows = pool.filter(p => p.id !== me).sort(byName).map(p =>
+    `<div class="dues-row"><span class="nm">${esc(p.name)}</span><button class="btn ${myRec && myRec.to === p.id ? 'accent' : 'ghost'} sm" onclick="leagueRecommend(${p.id})">${myRec && myRec.to === p.id ? '추천함' : '추천'}</button></div>`
+  ).join('') || `<p class="hint" style="margin:6px 0 0">추천 가능한 확정 회원이 아직 없어요.</p>`;
+  let h = document.getElementById('mmHost');
+  if (!h) { h = document.createElement('div'); h.id = 'mmHost'; document.body.appendChild(h); }
+  h.innerHTML = `<div class="mm-back" onclick="if(event.target===this)lgRecClose()"><div class="mm-box">
+      <div class="mm-head"><div><div class="mm-name">${moN}월 감독 추천</div></div><button class="mm-x" onclick="lgRecClose()">×</button></div>
+      <div style="font-size:12px;color:var(--muted);margin-top:2px">1인 1추천 · 다시 누르면 변경</div>
+      <div style="max-height:55vh;overflow-y:auto;margin-top:10px">${rows}</div>
+      ${myRec ? `<button class="pf-edit-link" style="width:100%;margin-top:10px;text-align:center" onclick="leagueRecommend(null)">추천 취소</button>` : ''}
+    </div></div>`;
+}
+async function leagueRecommend(id){
+  const m = statusMonth(); if (!isLeague(m)) return;
+  const me = getMe(); if (!me) return;
+  if (!isDuesConfirmed(m, me)) { toast('감독 추천은 입금확인 완료 회원만 가능'); return; }
+  let cur = {};
+  try { if (USE_DB){ const {data:row}=await sb.from('club_settings').select('data').eq('id','current').maybeSingle(); cur=(row&&row.data)||{}; } else cur=await fetchSettings(); } catch(e){}
+  const lg = Object.assign({}, cur.league || {});
+  const d = Object.assign({}, lg[m] || {});
+  const recs = (d.recs || []).filter(r => r.by !== me);
+  if (id != null) recs.push({ by: me, to: id, at: Date.now() });
+  d.recs = recs; lg[m] = d; LEAGUE = lg;
+  if (!(await saveSettings({ league: lg }))) { toast('저장 중 오류가 났어요'); return; }
+  const nm = id != null ? ((ROSTER.find(x=>x.id===id)||{}).name || '') : '';
+  toast(id != null ? `${nm} 감독 추천 완료` : '추천 취소함');
+  lgRecClose();
+  await rerender(renderHome);
+}
 // 운영진: 팀 배정 순환 (미정 → WHITE → BLACK → 미정)
 async function opsLgSetTeam(m, id){
   if (!isAdmin()) return;
@@ -2446,10 +2499,33 @@ async function renderHome() {
         : '';
       // 서브 텍스트 최소화(2026-08-15 총괄) — 설명문 없이 지원 수(+관리자에겐 이름)만. 내용 없으면 한 줄 카드.
       const _sub = [apps.length ? `지원 ${apps.length}명` : '', appNames.replace(/^ · /,''), mineApp ? '지원 완료' : ''].filter(Boolean).join(' · ');
+      if (!apps.length) {
+        // 지원자가 없으면 추천제 (2026-08-16 총괄) — 확정(입금확인) 회원이 감독을 추천
+        const recs = dN.recs || [];
+        const cnt = {}; recs.forEach(r => { cnt[r.to] = (cnt[r.to]||0) + 1; });
+        const _nm = id => (ROSTER.find(x=>x.id===Number(id))||{}).name || '';
+        const recAgg = (isAdmin() || isSubAdmin())
+          ? Object.entries(cnt).sort((a,b)=>b[1]-a[1]).map(([id,n])=>`${esc(_nm(id))} ${n}`).join(' · ')
+          : (recs.length ? `추천 ${recs.length}건` : '');
+        const myRecH = recs.find(r => r.by === me);
+        const _sub2 = [recAgg, myRecH ? `내 추천 ${esc(_nm(myRecH.to))}` : ''].filter(Boolean).join(' · ');
+        const canRec = isDuesConfirmed(_lgNext, me);
+        lgApplyHome = `<div class="card" style="padding:14px 16px;margin-bottom:12px">
+          <div style="display:flex;align-items:center;justify-content:space-between;gap:12px">
+            <span style="min-width:0;font-size:14px;font-weight:800;color:#ece6d2">${nmN}월 팀 리그 감독</span>
+            <span style="display:flex;gap:6px;flex-shrink:0">
+              <button class="btn ghost sm" onclick="leagueApply()">지원</button>
+              ${canRec ? `<button class="btn accent sm" onclick="showLeagueRec()">추천</button>` : ''}
+            </span>
+          </div>
+          ${_sub2 ? `<div style="font-size:12px;color:var(--muted);margin-top:6px">${_sub2}</div>` : ''}
+        </div>`;
+      } else {
       lgApplyHome = `<button class="card" style="width:100%;box-sizing:border-box;padding:14px 16px;margin-bottom:12px;display:flex;align-items:center;justify-content:space-between;gap:12px;cursor:pointer;font-family:inherit;text-align:left" onclick="leagueApply()">
         <span style="min-width:0"><span style="display:block;font-size:14px;font-weight:800;color:#ece6d2">${nmN}월 팀 리그 감독 지원</span>${_sub?`<span style="display:block;font-size:12px;color:var(--muted);margin-top:2px">${_sub}</span>`:''}</span>
         <span style="font-size:12px;font-weight:800;color:var(--accent);white-space:nowrap">${mineApp?'지원 취소':'지원하기'} →</span>
       </button>`;
+      }
     }
   }
   let html = seasonBanner + lgApplyHome + dash + voteHome + uniHome + `<div class="section-title">다가오는 매치</div>`;
@@ -4148,6 +4224,7 @@ async function renderOps() {
       <b style="color:#ece6d2;font-size:13px">감독 지원 ${_lApps.length}명</b>
       <div class="hint" style="margin:2px 0 8px">2명 초과 지원 시 여기서 지명해요. 드래프트 캡틴으로 사용.</div>
       ${_capRows}
+      ${(_ld.recs||[]).length ? `<div class="hint" style="margin:10px 0 0"><b style="color:var(--coffee-2)">회원 추천</b> ${(()=>{const c={};(_ld.recs||[]).forEach(r=>{c[r.to]=(c[r.to]||0)+1;});const nm=id=>{const p=ROSTER.find(x=>x.id===Number(id));return p?esc(p.name):'#'+id;};return Object.entries(c).sort((a,b)=>b[1]-a[1]).map(([id,n])=>`${nm(id)} ${n}`).join(' · ');})()} — 지명은 아래 팀 배정의 별표로</div>` : ''}
       <div style="margin-top:16px;border-top:1px solid #2a3d30;padding-top:14px">
         <b style="color:#ece6d2;font-size:13px">팀 배정</b>
         <div class="hint" style="margin:2px 0 8px">버튼을 눌러 미정 → WHITE → BLACK 순환. 드래프트 결과를 여기에 입력하고, 중도 변동도 여기서 조정해요.</div>

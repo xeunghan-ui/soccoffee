@@ -3743,7 +3743,10 @@ async function renderDues() {
           const m = ROSTER.find(x=>x.id===r.id); if (!m) return '';
           const confd = isDuesConfirmed(month, m.id);
           const paidQ = effState(m.id) === 'paid' || !!((dues.find(d=>d.member_id===m.id)||{}).paid);
-          const chip = confd ? `<span class="dues-conf on ro">✓ 입금확인</span>` : (paidQ ? `<span class="dues-badge paid">납부</span>` : '');
+          // 납부/미납을 명시 — 납부 표시자는 총무가 바로 입금확인 가능(유지자와 동일 흐름)
+          const chip = confd ? `<span class="dues-conf on ro">✓ 입금확인</span>`
+            : paidQ ? (isDuesConfirmer() ? `<button class="dues-conf" onclick="toggleDuesConfirm('${month}',${m.id})">입금확인</button>` : `<span class="dues-badge paid">납부</span>`)
+            : `<span class="dues-badge">미납</span>`;
           return _dRow(m, `<span class="cnt-tag">순번 ${r.rank}</span>${chip}`);
         }).join('');
       });

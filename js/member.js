@@ -3570,6 +3570,8 @@ async function toggleDuesConfirm(month, id){
   if ((dc[month]||[]).includes(id)) { const t = await pushTpl('dues_confirm', {'월':parseInt(month.split('-')[1])}); queuePush(id, t.title, t.body, './member.html#dues'); }
   await rerender(renderDues);
 }
+let duesGrpSel = 'wait';   // 회비 명단 탭 (운영진·총무): wait|noresp|unpaid|done|dorm
+function duesGrpSwitch(k){ duesGrpSel = k; rerender(renderDues); }
 let duesDraft = {};     // memberId -> bool(paid)
 let duesPaidDB = {};
 async function renderDues() {
@@ -3686,41 +3688,6 @@ async function renderDues() {
     if (!_resD) _ciD = capCompute(month, dues);
   }
   const gh = (t, n, color, first) => `<div style="font-size:12px;font-weight:800;color:${color};margin:${first?'0':'14px'} 2px 4px">${t} <span class="cnt-tag">${n}</span></div>`;
-  let listHtml;
-  if (_opsView && _ciD) {
-    // ── 정원제 신청 창(15~25일): 옛 '정원 현황판'의 내용을 기존 회비 명단 방식으로 통합 (2026-08-15 총괄) ──
-    // 조치 순서대로: 미응답 → 입금확인 대기 → 미납 → 확정. 각 줄은 기존 회비 행 그대로(변경 버튼·입금확인 포함).
-    const _stC = id => _ciD.states[id] || 'unconfirmed';
-    const gNo = [], gWait = [], gUnpaid = [], gDone = [];
-    [...members].sort(byName).forEach(m => {
-      const cs = _stC(m.id);
-      if (cs !== 'kept') { gNo.push(m); return; }                       // 자리 확인 전(미응답)
-      if (isDuesConfirmed(month, m.id)) gDone.push(m);                  // 확정
-      else if (effState(m.id) === 'paid') gWait.push(m);                // 납부 표시 · 확인 대기
-      else gUnpaid.push(m);                                             // 확인 후 납부 전
-    });
-    listHtml =
-      (gNo.length ? gh('미응답 — 26일 자동 휴면', gNo.length, 'var(--alert)', true) + gNo.map(m=>_rowOf(m,true)).join('') : '') +
-      (gWait.length ? gh('입금확인 대기 — 계좌 대조', gWait.length, 'var(--accent)', !gNo.length) + gWait.map(_rowOf).join('') : '') +
-      (gUnpaid.length ? gh('미납 — 25일까지', gUnpaid.length, 'var(--red)', false) + gUnpaid.map(_rowOf).join('') : '') +
-      (gDone.length ? gh('확정 — 입금확인 완료', gDone.length, 'var(--win)', false) + gDone.map(_rowOf).join('') : '');
-  } else if (_opsView) {
-    // 정원제 아님 or 확정 후: 회비 할 일 기준 그룹
-    const gWait = [], gUnpaid = [], gDone = [], gDorm = [];
-    [...members].sort(byName).forEach(m => {
-      const stt = effState(m.id);
-      if (stt === 'paid') (isDuesConfirmed(month, m.id) ? gDone : gWait).push(m);
-      else if (stt === 'dormant') gDorm.push(m);
-      else gUnpaid.push(m);
-    });
-    listHtml =
-      (gWait.length ? gh('입금확인 대기 — 계좌 대조', gWait.length, 'var(--accent)', true) + gWait.map(_rowOf).join('') : '') +
-      (gUnpaid.length ? gh('미납', gUnpaid.length, 'var(--red)', !gWait.length) + gUnpaid.map(_rowOf).join('') : '') +
-      (gDone.length ? gh('입금확인 완료', gDone.length, 'var(--win)', !gWait.length && !gUnpaid.length) + gDone.map(_rowOf).join('') : '') +
-      (gDorm.length ? gh('휴면 전환 (저장 전)', gDorm.length, 'var(--muted)', false) + gDorm.map(_rowOf).join('') : '');
-  } else {
-    listHtml = [...members].sort((a,b)=>{ const rk=s=>s==='unpaid'?0:(s==='paid'?1:2); return rk(effState(a.id))-rk(effState(b.id)) || byName(a,b); }).map(_rowOf).join('');
-  }
   // 상단 요약 타일 — 남/여 정원 충원 (확정 전: 입금확인 완료 기준 / 확정 후: result 기준)
   let _capTiles = '', _capPct = 0;
   if (_opsView && capOn(month)) {
@@ -3736,33 +3703,83 @@ async function renderDues() {
     const _tile = (g,u) => `<div class="dues-stat paid"><div class="num">${u}<span style="font-size:15px;color:var(--muted);font-weight:600">/${CAP_LIMIT[g]}</span></div><div class="cap">${g==='여'?'여성':'남성'} 정원</div></div>`;
     _capTiles = `<div class="dues-summary">${_tile('남',_mU)}${_tile('여',_fU)}</div>`;
   }
-  // 휴면 구간 — 정원제 신청 창엔 복귀 신청자(순번순)를 먼저, 그 아래 나머지 휴면
-  let dormListHtml = '';
-  {
-    const _dRow = (m, right) => {
+  let listHtml, dormListHtml = '';
+  if (_opsView) {
+    // ── 명단을 5개 탭으로: 입금 확인 → 미응답 → 미납 → 확정 → 휴면 (2026-08-15 총괄 — 스크롤 축소) ──
+    const gNo = [], gWait = [], gUnpaid = [], gDone = [], gDormSel = [];
+    if (_ciD) {   // 정원제 신청 창: 자리 상태 기준
+      const _stC = id => _ciD.states[id] || 'unconfirmed';
+      [...members].sort(byName).forEach(m => {
+        const cs = _stC(m.id);
+        if (cs !== 'kept') { gNo.push(m); return; }
+        if (isDuesConfirmed(month, m.id)) gDone.push(m);
+        else if (effState(m.id) === 'paid') gWait.push(m);
+        else gUnpaid.push(m);
+      });
+    } else {      // 정원제 아님 or 확정 후: 회비 상태 기준
+      [...members].sort(byName).forEach(m => {
+        const stt = effState(m.id);
+        if (stt === 'paid') (isDuesConfirmed(month, m.id) ? gDone : gWait).push(m);
+        else if (stt === 'dormant') gDormSel.push(m);
+        else gUnpaid.push(m);
+      });
+    }
+    // 휴면 탭: 복귀 신청(남/여 구분·순번순) + 휴면 전환(저장 전) + 휴면
+    const _dRow = (m, right, dim) => {
       const isMe = me===m.id;
-      return `<div class="dues-row ${isMe?'me':''}" style="opacity:.7">
+      return `<div class="dues-row ${isMe?'me':''}"${dim?' style="opacity:.6"':''}>
         <span class="nm">${esc(m.name)}${isMe?' <span style="font-size:11px;color:var(--accent)">(나)</span>':''}</span>
         <span style="display:flex;align-items:center;gap:8px;flex-shrink:0">${right}</span>
       </div>`;
     };
-    let rest = dormantMembers.slice();
-    if (_opsView && _ciD) {
-      const q = [..._ciD.retQueue['남'], ..._ciD.retQueue['여']];
-      const qIds = new Set(q.map(r=>r.id));
-      const qRows = q.map(r => {
-        const m = ROSTER.find(x=>x.id===r.id); if (!m) return '';
-        const g = capGender(m);
-        const confd = isDuesConfirmed(month, m.id);
-        const paidQ = effState(m.id) === 'paid' || !!((dues.find(d=>d.member_id===m.id)||{}).paid);
-        const chip = confd ? `<span class="dues-conf on ro">✓ 입금확인</span>` : (paidQ ? `<span class="dues-badge paid">납부</span>` : '');
-        return _dRow(m, `<span class="cnt-tag">${g} 순번 ${r.rank}</span>${chip}`);
-      }).join('');
-      if (q.length) dormListHtml += gh('복귀 신청 — 26일 순번대로 배정', q.length, 'var(--coffee-2)', false) + qRows;
-      rest = rest.filter(m=>!qIds.has(m.id));
+    let dormBody = '', dormCount = 0, qIds = new Set();
+    if (_ciD) {
+      ['남','여'].forEach(g => {
+        const q = _ciD.retQueue[g] || [];
+        if (!q.length) return;
+        dormCount += q.length; q.forEach(r=>qIds.add(r.id));
+        dormBody += gh(`복귀 신청 · ${g==='여'?'여성':'남성'} — 26일 순번대로 배정`, q.length, 'var(--coffee-2)', !dormBody);
+        dormBody += q.map(r => {
+          const m = ROSTER.find(x=>x.id===r.id); if (!m) return '';
+          const confd = isDuesConfirmed(month, m.id);
+          const paidQ = effState(m.id) === 'paid' || !!((dues.find(d=>d.member_id===m.id)||{}).paid);
+          const chip = confd ? `<span class="dues-conf on ro">✓ 입금확인</span>` : (paidQ ? `<span class="dues-badge paid">납부</span>` : '');
+          return _dRow(m, `<span class="cnt-tag">순번 ${r.rank}</span>${chip}`);
+        }).join('');
+      });
     }
-    if (rest.length && _opsView) dormListHtml += gh('휴면', rest.length, 'var(--muted)', false);
-    dormListHtml += rest.map(m => _dRow(m, `<span class="dues-badge" style="background:#555;color:#ddd">휴면</span>`)).join('');
+    if (gDormSel.length) {
+      dormCount += gDormSel.length;
+      dormBody += gh('휴면 전환 (저장 전)', gDormSel.length, 'var(--muted)', !dormBody) + gDormSel.map(m=>_rowOf(m,true)).join('');
+    }
+    const restD = dormantMembers.filter(m=>!qIds.has(m.id));
+    if (restD.length) {
+      dormCount += restD.length;
+      dormBody += gh('휴면', restD.length, 'var(--muted)', !dormBody) + restD.map(m => _dRow(m, `<span class="dues-badge" style="background:#555;color:#ddd">휴면</span>`, true)).join('');
+    }
+    const _empty = `<p class="hint" style="margin:6px 0 0">없어요.</p>`;
+    const TABS = [
+      ['wait',   '입금 확인', gWait.length,  gWait.length ? gWait.map(m=>_rowOf(m)).join('') : _empty],
+      ['noresp', '미응답',    gNo.length,    gNo.length ? gNo.map(m=>_rowOf(m,true)).join('') : _empty],
+      ['unpaid', '미납',      gUnpaid.length, gUnpaid.length ? gUnpaid.map(m=>_rowOf(m,true)).join('') : _empty],
+      ['done',   '확정',      gDone.length,  gDone.length ? gDone.map(m=>_rowOf(m)).join('') : _empty],
+      ['dorm',   '휴면',      dormCount,     dormBody || _empty],
+    ];
+    if (!TABS.some(t => t[0] === duesGrpSel)) duesGrpSel = 'wait';
+    const sel = TABS.find(t => t[0] === duesGrpSel);
+    listHtml = `<div class="ops-subtabs" style="margin:0 0 10px">
+        ${TABS.map(t => `<button class="ops-subtab ${t[0]===duesGrpSel?'on':''}" onclick="duesGrpSwitch('${t[0]}')">${t[1]}${t[2]?` <span style="opacity:.75">${t[2]}</span>`:''}</button>`).join('')}
+      </div>` + sel[3];
+  } else {
+    listHtml = [...members].sort((a,b)=>{ const rk=s=>s==='unpaid'?0:(s==='paid'?1:2); return rk(effState(a.id))-rk(effState(b.id)) || byName(a,b); }).map(m=>_rowOf(m)).join('');
+    dormListHtml = dormantMembers.map(m=>{
+      const isMe = me===m.id;
+      return `<div class="dues-row ${isMe?'me':''}" style="opacity:.55">
+        <span class="nm">${esc(m.name)}${isMe?' <span style="font-size:11px;color:var(--accent)">(나)</span>':''}</span>
+        <span class="amt">—</span>
+        <span class="dues-badge" style="background:#555;color:#ddd">휴면</span>
+      </div>`;
+    }).join('');
   }
 
   let html = `

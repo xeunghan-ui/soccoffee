@@ -2088,6 +2088,7 @@ async function renderMore() {
     ['session', '세션',   '세션 추가 · 마감 설정', 'ops'],
     ['dues',    '회비',   '납부 현황 · 정원 순번',  'dues'],
     ['vote',    '투표',   '투표 결과 · 투표자',   'ops'],
+    ['league',  '리그',   '감독 지원·추천 · 팀 배정', 'ops'],
     ['roster',  '설정',   'PIN 관리 · 팀 구분',   'ops'],
   ];
   const btn = ([t, name, desc]) =>

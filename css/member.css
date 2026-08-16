@@ -590,7 +590,7 @@
   .sdot.on { background: var(--gold); width: 20px; border-radius: 4px; }
 
   /* 운영진 내부 서브탭 */
-  .ops-subtabs { display: flex; gap: 6px; margin-bottom: 12px; overflow-x: auto; scrollbar-width: none; }
+  .ops-subtabs { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 12px; }   /* 탭 7개 — 가로 스크롤 대신 줄바꿈(잘림 방지) */
   .ops-subtabs::-webkit-scrollbar { display: none; }
   .ops-subtab { flex: 1 0 auto; padding: 9px 14px; border-radius: 9px; border: 1px solid var(--line);
     background: #1e3526; color: #ece6d2; font-weight: 800; font-size: 13px; cursor: pointer; font-family: inherit; white-space: nowrap; }

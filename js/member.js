@@ -2136,9 +2136,11 @@ async function renderMore() {
     </div>
     <div class="more-grid">${mt==='set'?setGrid:useGrid}</div>`;
   let html = '';
-  if (admin) {   // 총괄관리자(박승한) — 전체 운영진 메뉴
+  if (admin) {   // 총괄관리자(박승한) — 전체 운영진 메뉴 (할 일이 맨 위)
+    let _todo = ''; try { _todo = await opsTodoHtml(); } catch(e){}
     html += `<div class="more-sec-title">회원 메뉴</div>` + memberTabbed;
     html += `<div class="more-sec-title">운영진 메뉴</div>`;
+    html += _todo;
     html += `<div class="more-grid">` + adminItems.map(adminBtn).join('') + teamLink + `</div>`;
   } else if (isSubAdmin()) {   // 일반 관리자 — 회비 현황(읽기전용)만
     html += memberTabbed;
@@ -3976,19 +3978,13 @@ function duesCancelDraft(){ duesDraft = {}; rerender(renderDues); }
 /* ============================================================
    운영진 — 관리 통합 (공지작성 · 세션설정 · 회비 · 투표)
    ============================================================ */
-async function renderOps() {
-  const el = document.getElementById('opsContent');
-  if (!isAdmin()) { el.innerHTML = `<div class="card"><div class="empty">운영진 모드에서만 보여요.</div></div>`; return; }
-  if (!el.innerHTML.trim()) el.innerHTML = `<div class="empty">불러오는 중...</div>`;
+// ---- 할 일 요약 (총괄관리자) — 운영진 콘솔 상단 + 더보기 운영진 메뉴 상단 공용 (2026-08-16)
+async function opsTodoHtml(){
+  if (!isAdmin()) return '';
   const month = potmMonth();
-  const [allSessions, notices, dues, votesMvp, votesGrowth] = await Promise.all([
-    getSessions(), fetchNotices(), fetchDues(month), fetchVotes(month,'mvp'), fetchVotes(month,'growth')
+  const [allSessions, votesMvp, votesGrowth] = await Promise.all([
+    getSessions(), fetchVotes(month,'mvp'), fetchVotes(month,'growth')
   ]);
-  const members = activeMembers(month);
-  const paidCount = members.filter(m=>dues.find(d=>d.member_id===m.id && d.paid)).length;
-  const defDate = upcomingSessionDate();
-
-  // ---- 할 일 요약 (총괄관리자 대시보드) ----
   const _next = await nearestSession();
   let _noResp = 0, _nextLbl = '';
   if (_next && _next.date) {
@@ -4002,7 +3998,7 @@ async function renderOps() {
     } catch(e) {}
   }
   const _dm = duesMonth();
-  const _duesRows = (_dm === month) ? dues : await fetchDues(_dm);
+  const _duesRows = await fetchDues(_dm);
   const _dMembers = activeMembers(_dm);
   const _duesUnpaid = _dMembers.filter(m => !_duesRows.find(r => r.member_id === m.id && r.paid)).length;
   await freshGuestReqs();
@@ -4030,6 +4026,22 @@ async function renderOps() {
               <span style="flex-shrink:0;display:inline-flex;align-items:center;gap:6px"><span class="dues-badge unpaid">${x.n}명</span><span style="color:var(--muted)">→</span></span>
             </button>`).join('')}</div>`}
     </div>`;
+  return _todoHtml;
+}
+async function renderOps() {
+  const el = document.getElementById('opsContent');
+  if (!isAdmin()) { el.innerHTML = `<div class="card"><div class="empty">운영진 모드에서만 보여요.</div></div>`; return; }
+  if (!el.innerHTML.trim()) el.innerHTML = `<div class="empty">불러오는 중...</div>`;
+  const month = potmMonth();
+  const [allSessions, notices, dues, votesMvp, votesGrowth] = await Promise.all([
+    getSessions(), fetchNotices(), fetchDues(month), fetchVotes(month,'mvp'), fetchVotes(month,'growth')
+  ]);
+  const members = activeMembers(month);
+  const paidCount = members.filter(m=>dues.find(d=>d.member_id===m.id && d.paid)).length;
+  const defDate = upcomingSessionDate();
+
+  const _todoHtml = await opsTodoHtml();
+
 
   const OPS_TABS = [
     { key:'notice',  label:'공지' },

@@ -3567,11 +3567,7 @@ async function toggleDuesConfirm(month, id){
   const arr = new Set(dc[month]||[]); if (arr.has(id)) arr.delete(id); else arr.add(id); dc[month] = [...arr];
   DUES_CONFIRMED = dc;
   if (!(await saveSettings({ duesConfirmed: dc }))) { toast('저장 중 오류가 났어요'); return; }
-  if ((dc[month]||[]).includes(id)) {
-    // 확인 = 정본. 멤버가 납부 표시를 잊었어도 납부 상태를 함께 기록해 미납 그룹에 남지 않게 한다.
-    try { await setDuesPaid(month, id, true, dueAmount((ROSTER.find(x=>x.id===id)||{}).name||'')); } catch(e){}
-    const t = await pushTpl('dues_confirm', {'월':parseInt(month.split('-')[1])}); queuePush(id, t.title, t.body, './member.html#dues');
-  }
+  if ((dc[month]||[]).includes(id)) { const t = await pushTpl('dues_confirm', {'월':parseInt(month.split('-')[1])}); queuePush(id, t.title, t.body, './member.html#dues'); }
   await rerender(renderDues);
 }
 let duesDraft = {};     // memberId -> bool(paid)
@@ -3661,16 +3657,18 @@ async function renderDues() {
     </div>` : '';
 
   // ---- 명단 렌더 — 운영진·총무는 '할 일' 순 그룹(입금확인 대기 → 미납 → 완료), 멤버는 기존 정렬 (2026-08-15)
-  const _rowOf = m => {
+  const _rowOf = (m, noConf) => {
     const stt = effState(m.id);
     const isMe = me===m.id;
     const dirty = admin && (m.id in duesDraft);
     const confd = isDuesConfirmed(month, m.id);
-    // 멤버가 '납부 표시'를 안 눌러도 총무가 계좌에서 확인했으면 바로 입금확인 가능 (2026-08-15)
-    // — 확인 시 납부 상태도 자동 기록되므로 자가신고 누락이 흐름을 막지 않는다.
-    const confChip = isDuesConfirmer()
-      ? `<button class="dues-conf ${confd?'on':''}" onclick="toggleDuesConfirm('${month}',${m.id})">${confd?'✓ 입금확인':'입금확인'}</button>`
-      : (confd ? `<span class="dues-conf on ro">✓ 입금확인</span>` : '');
+    // 입금확인은 멤버가 '납부 표시'를 한 뒤에만 — 계좌에 돈이 먼저 들어와도 자가신고를 기다린다.
+    // (총괄 의도: 회원이 직접 표시하는 습관을 학습시키는 설계. 2026-08-15 확인)
+    const confChip = (stt==='paid' && !noConf)
+      ? (isDuesConfirmer()
+          ? `<button class="dues-conf ${confd?'on':''}" onclick="toggleDuesConfirm('${month}',${m.id})">${confd?'✓ 입금확인':'입금확인'}</button>`
+          : (confd ? `<span class="dues-conf on ro">✓ 입금확인</span>` : ''))
+      : '';
     const statusEl = admin
       ? `<span class="st-set"><button class="st paid ${stt==='paid'?'on':''}" onclick="duesDraftSet(${m.id},'paid')">납부</button><button class="st unpaid ${stt==='unpaid'?'on':''}" onclick="duesDraftSet(${m.id},'unpaid')">미납</button><button class="st dormant ${stt==='dormant'?'on':''}" onclick="duesDraftSet(${m.id},'dormant')">휴면</button></span>`
       : `<span style="flex-shrink:0;font-size:12px;font-weight:800;padding:4px 12px;border-radius:20px;background:${stt==='paid'?'rgba(70,179,129,.92)':'rgba(217,97,74,.92)'};color:#fff">${stt==='paid'?'납부':'미납'}</span>`;
@@ -3702,7 +3700,7 @@ async function renderDues() {
       else gUnpaid.push(m);                                             // 확인 후 납부 전
     });
     listHtml =
-      (gNo.length ? gh('미응답 — 26일 자동 휴면', gNo.length, 'var(--alert)', true) + gNo.map(_rowOf).join('') : '') +
+      (gNo.length ? gh('미응답 — 26일 자동 휴면', gNo.length, 'var(--alert)', true) + gNo.map(m=>_rowOf(m,true)).join('') : '') +
       (gWait.length ? gh('입금확인 대기 — 계좌 대조', gWait.length, 'var(--accent)', !gNo.length) + gWait.map(_rowOf).join('') : '') +
       (gUnpaid.length ? gh('미납 — 25일까지', gUnpaid.length, 'var(--red)', false) + gUnpaid.map(_rowOf).join('') : '') +
       (gDone.length ? gh('확정 — 입금확인 완료', gDone.length, 'var(--win)', false) + gDone.map(_rowOf).join('') : '');

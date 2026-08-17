@@ -100,7 +100,10 @@ const MEMBER_ROLES = {
   '김균원':{role:'MD',type:'role'},
 };
 // 멤버 프로필 — club_settings.current.profiles[memberId] = { pos, tags[], bio }
-const PROFILE_POS = ['골레이로(GOLEIRO)','픽소(FIXO)','아라(ALA)','피보(PIVO)'];   // 풋살 포지션
+const PROFILE_POS = ['골키퍼','수비수','미드필더','공격수'];   // 포지션 (2026-08-16 총괄 — 풋살 용어에서 일반 용어로)
+// 예전 저장값(풋살 용어) 호환 — 표시·수정 화면에서 새 용어로 읽는다
+const POS_LEGACY = { '골레이로(GOLEIRO)':'골키퍼', '픽소(FIXO)':'수비수', '아라(ALA)':'미드필더', '피보(PIVO)':'공격수' };
+const posLabel = p => POS_LEGACY[p] || p;
 // 강점 — 신체 → 공격기술 → 수비·전술 → 정신·분위기 순
 const PROFILE_TAGS = [
   '스피드','피지컬','활동량',                                  // 신체
@@ -122,11 +125,10 @@ async function saveProfile(id, pf){
   if (pf && (pf.pos || (pf.tags||[]).length || (pf.weaks||[]).length || (pf.bio||'').trim())) profiles[id] = pf; else delete profiles[id];
   return await saveSettings({ profiles });
 }
-// 포지션 칩(이름 밑에 표시) — '픽소(FIXO)' → '픽소' 짧게
+// 포지션 칩(이름 밑에 표시)
 function profilePosHtml(pf, small){
   if (!pf || !pf.pos) return '';
-  const label = String(pf.pos).replace(/\s*\(.*\)\s*$/, '');
-  return `<div style="margin-top:5px"><span class="pf-chip pos${small?' sm':''}">${esc(label)}</span></div>`;
+  return `<div style="margin-top:5px"><span class="pf-chip pos${small?' sm':''}">${esc(posLabel(pf.pos))}</span></div>`;
 }
 // 강점 · 약점 — 한 줄에 반씩 나눠서 표시
 function profileSkillsHtml(pf, small){
@@ -2721,20 +2723,12 @@ function showAddHomeGuide(){
   </div></div>`;
 }
 function mmEdit(on){ if(!mmState) return; mmState.edit=on; renderMemberCard(); }
-function mmSetPos(p){ if(!mmState) return; mmState.pf.pos = (mmState.pf.pos===p) ? null : p; renderMemberCard(); }
+function mmSetPos(p){ if(!mmState) return; mmState.pf.pos = (posLabel(mmState.pf.pos)===p) ? null : p; renderMemberCard(); }
 function mmToggleTag(t){ if(!mmState) return; const a=mmState.pf.tags; const i=a.indexOf(t);
   if(i>=0) a.splice(i,1); else { if(a.length>=3){ toast('강점은 3개까지만요'); return; } a.push(t); } renderMemberCard(); }
 function mmToggleWeak(t){ if(!mmState) return; const a=mmState.pf.weaks; const i=a.indexOf(t);
   if(i>=0) a.splice(i,1); else { if(a.length>=3){ toast('약점은 3개까지만요'); return; } a.push(t); } renderMemberCard(); }
 function mmSetBio(v){ if(mmState) mmState.pf.bio = v; }
-// 풋살 포지션 설명 (모르는 사람용)
-const POSITION_HELP = [
-  ['골레이로(GOLEIRO)', '골키퍼. 골문을 지키는 최후방, 손 사용 가능하고 후방 빌드업을 시작해요.'],
-  ['픽소(FIXO)', '최후방 수비수. 수비를 조율·커버하고 공격 전개의 출발점이 돼요.'],
-  ['아라(ALA)', '좌우 측면. 공수 전환의 핵심으로 활동량·스피드가 많이 필요해요.'],
-  ['피보(PIVO)', '최전방 공격수. 등지고 볼을 지키는 포스트 플레이와 골 결정을 맡아요.'],
-];
-function togglePosHelp(){ const el=document.getElementById('posHelp'); if(el) el.style.display = (el.style.display==='none'||!el.style.display) ? 'block' : 'none'; }
 async function mmSave(){
   if(!mmState) return;
   const pf = { pos:mmState.pf.pos||null, tags:mmState.pf.tags.slice(0,3), weaks:(mmState.pf.weaks||[]).slice(0,3), bio:(mmState.pf.bio||'').trim().slice(0,30) };
@@ -2749,11 +2743,10 @@ function renderMemberCard(){
   const winHtml = (s.wins && s.wins.length) ? ' ' + s.wins.map(t=>`<span class="win-badge ${t==='MVP'?'mvp':'grow'}">${t}</span>`).join(' ') : '';
   let body;
   if(s.edit){
-    const posChips = PROFILE_POS.map(p=>`<button class="pf-pick ${s.pf.pos===p?'on':''}" onclick="mmSetPos('${p}')">${p}</button>`).join('');
+    const posChips = PROFILE_POS.map(p=>`<button class="pf-pick ${posLabel(s.pf.pos)===p?'on':''}" onclick="mmSetPos('${p}')">${p}</button>`).join('');
     const tagChips = PROFILE_TAGS.map(t=>`<button class="pf-pick ${s.pf.tags.includes(t)?'on':''}" onclick="mmToggleTag('${t}')">${t}</button>`).join('');
     const weakChips = PROFILE_WEAKS.map(t=>`<button class="pf-pick ${s.pf.weaks.includes(t)?'on w':''}" onclick="mmToggleWeak('${t}')">${t}</button>`).join('');
-    body = `<div class="mm-sec">포지션 <button type="button" class="pf-edit-link" style="text-transform:none;letter-spacing:0" onclick="togglePosHelp()">포지션이 뭐예요?</button></div><div class="pf-picks">${posChips}</div>
-      <div id="posHelp" style="display:none;margin:8px 0 2px;padding:10px 12px;background:var(--gold-bg);border-radius:10px;font-size:12px;line-height:1.6;color:var(--coffee-2)">${POSITION_HELP.map(([n,d])=>`<div style="margin:2px 0"><b style="color:var(--gold-bright)">${n}</b> — ${d}</div>`).join('')}</div>
+    body = `<div class="mm-sec">포지션</div><div class="pf-picks">${posChips}</div>
       <div class="mm-sec">강점 <span style="font-weight:400;color:var(--muted)">최대 3개</span></div><div class="pf-picks">${tagChips}</div>
       <div class="mm-sec">약점 <span style="font-weight:400;color:var(--muted)">최대 3개 · 유머 환영</span></div><div class="pf-picks">${weakChips}</div>
       <div class="mm-sec">한 줄 소개</div><input type="text" maxlength="30" value="${esc(s.pf.bio||'')}" placeholder="예: 왼발은 거들 뿐" oninput="mmSetBio(this.value)">

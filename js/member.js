@@ -4018,6 +4018,7 @@ async function opsTodoHtml(){
   const _todoItems = [
     { n:_noResp,            label:'다음 세션 미응답'+(_nextLbl?' ('+_nextLbl+')':''), go:"switchTab('att')" },
     { n:_duesUnpaid, label:parseInt(_dm.split('-')[1])+'월 회비 미납', go:"switchTab('dues')" },
+    { n:_duesRows.filter(r => r.paid && !isDuesConfirmed(_dm, r.member_id)).length, label:parseInt(_dm.split('-')[1])+'월 입금확인 대기', go:"switchTab('dues')" },   // 납부 표시됐지만 총무 확인 전 — 계좌 대조 대상
     { n:isVotingOpen() ? _vMissing.length : 0,   label:'이달 투표 미참여', go:"opsSwitch('vote')" },   // 투표 창(25일~)이 열린 뒤에만 할 일
     { n:_guestPend,         label:'게스트 신청 대기', go:"switchTab('att')" },
     { n:_pinMissing,        label:'PIN 미설정(미로그인)', go:"opsSwitch('roster')" },

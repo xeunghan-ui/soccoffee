@@ -2509,9 +2509,10 @@ async function renderHome() {
         const recs = dN.recs || [];
         const cnt = {}; recs.forEach(r => { cnt[r.to] = (cnt[r.to]||0) + 1; });
         const _nm = id => (ROSTER.find(x=>x.id===Number(id))||{}).name || '';
-        const recAgg = (isAdmin() || isSubAdmin())
+        // 추천 현황은 총괄에게만 (2026-08-16) — 일반 회원·관리자에겐 집계 미노출, 본인 추천만 표시
+        const recAgg = isAdmin()
           ? Object.entries(cnt).sort((a,b)=>b[1]-a[1]).map(([id,n])=>`${esc(_nm(id))} ${n}`).join(' · ')
-          : (recs.length ? `추천 ${recs.length}건` : '');
+          : '';
         const myRecH = recs.find(r => r.by === me);
         const _sub2 = [recAgg, myRecH ? `내 추천 ${esc(_nm(myRecH.to))}` : ''].filter(Boolean).join(' · ');
         const canRec = isDuesConfirmed(_lgNext, me);

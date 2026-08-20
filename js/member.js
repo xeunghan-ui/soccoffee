@@ -1500,6 +1500,8 @@ function byJersey(a, b) {
   return (a.jersey ?? 9999) - (b.jersey ?? 9999) || a.name.localeCompare(b.name, 'ko');
 }
 function byName(a, b) { return (a.name||'').localeCompare(b.name||'', 'ko'); }   // 이름순(등번호 불필요한 리스트 기본)
+// 명단에서 본인을 맨 위로 (2026-08-16 총괄) — 정렬이 끝난 배열에 마지막으로 적용
+function meFirst(arr){ const me = getMe(); if (me == null) return arr; const i = arr.findIndex(x => x && x.id === me); if (i > 0) arr.unshift(arr.splice(i, 1)[0]); return arr; }
 // 후보를 드롭다운(스크롤 선택)으로
 function candSelect(candidates, cat) {
   const sorted = [...candidates].sort(byName);
@@ -3464,7 +3466,7 @@ async function renderAtt() {
       : `<span class="st ${s}">${lbl}</span>`;
     return `<div class="att-row${dirty?' dirty':''}"><span class="js">${m.jersey!=null?m.jersey:''}</span><span class="nm">${esc(m.name)}${dirty?' <span class="dirty-dot">●</span>':''}</span>${st}</div>`;
   };
-  const sortedM = [...members].sort(byName);
+  const sortedM = meFirst([...members].sort(byName));
   const _emptyRow = '<div class="empty" style="font-size:13px;padding:16px 0;text-align:center">해당 인원이 없어요.</div>';
   // 상태별 명단 행 미리 생성(카운트 클릭 시 즉시 전환)
   _attRows = {}; ['yes','no','maybe','none'].forEach(st=>{ _attRows[st] = sortedM.filter(m=>eff(m.id)===st).map(rosterRow).join('') || _emptyRow; });
@@ -3854,10 +3856,10 @@ async function renderDues() {
     }
     const _empty = `<p class="hint" style="margin:6px 0 0">없어요.</p>`;
     const TABS = [
-      ['wait',   '입금 확인', gWait.length,  gWait.length ? gWait.map(m=>_rowOf(m)).join('') : _empty],
-      ['noresp', '미응답',    gNo.length,    gNo.length ? gNo.map(m=>_rowOf(m,true)).join('') : _empty],
-      ['unpaid', '미납',      gUnpaid.length, gUnpaid.length ? gUnpaid.map(m=>_rowOf(m,true)).join('') : _empty],
-      ['done',   '확정',      gDone.length,  gDone.length ? gDone.map(m=>_rowOf(m)).join('') : _empty],
+      ['wait',   '입금 확인', gWait.length,  gWait.length ? meFirst(gWait).map(m=>_rowOf(m)).join('') : _empty],
+      ['noresp', '미응답',    gNo.length,    gNo.length ? meFirst(gNo).map(m=>_rowOf(m,true)).join('') : _empty],
+      ['unpaid', '미납',      gUnpaid.length, gUnpaid.length ? meFirst(gUnpaid).map(m=>_rowOf(m,true)).join('') : _empty],
+      ['done',   '확정',      gDone.length,  gDone.length ? meFirst(gDone).map(m=>_rowOf(m)).join('') : _empty],
       ['dorm',   '휴면',      dormCount,     dormBody || _empty],
     ];
     if (!TABS.some(t => t[0] === duesGrpSel)) duesGrpSel = 'wait';
@@ -3866,7 +3868,7 @@ async function renderDues() {
         ${TABS.map(t => `<button class="ops-subtab ${t[0]===duesGrpSel?'on':''}" onclick="duesGrpSwitch('${t[0]}')">${t[1]}${t[2]?` <span style="opacity:.75">${t[2]}</span>`:''}</button>`).join('')}
       </div>` + sel[3];
   } else {
-    listHtml = [...members].sort((a,b)=>{ const rk=s=>s==='unpaid'?0:(s==='paid'?1:2); return rk(effState(a.id))-rk(effState(b.id)) || byName(a,b); }).map(m=>_rowOf(m)).join('');
+    listHtml = meFirst([...members].sort((a,b)=>{ const rk=s=>s==='unpaid'?0:(s==='paid'?1:2); return rk(effState(a.id))-rk(effState(b.id)) || byName(a,b); })).map(m=>_rowOf(m)).join('');
     dormListHtml = dormantMembers.map(m=>{
       const isMe = me===m.id;
       return `<div class="dues-row ${isMe?'me':''}" style="opacity:.55">

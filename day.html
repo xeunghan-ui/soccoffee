@@ -50,7 +50,9 @@
   /* 히어로 — 포스터 레이아웃 */
   .hero{padding:34px 20px 10px;text-align:center}
   .hero-in{max-width:760px;margin:0 auto}
-  .toplogos img{width:clamp(210px,52vw,252px);height:auto;display:block;margin:0 auto}
+  .toplogos img{width:clamp(200px,50vw,248px);height:auto;display:block;margin:0 auto}
+  .hspon{margin-top:22px}
+  .hspon img{width:clamp(230px,58vw,300px);height:auto;display:block;margin:0 auto}
   .caps{margin-top:20px;font-size:12.5px;font-weight:800;letter-spacing:.04em;line-height:1.5;text-transform:uppercase}
   .bigname{font-family:var(--disp);font-weight:400;font-size:clamp(56px,17vw,124px);line-height:.86;letter-spacing:.01em;text-transform:uppercase;margin:38px 0 0}
   .when{margin-top:24px;display:inline-block;background:var(--ink);color:var(--cream);border-radius:999px;padding:11px 22px;font-size:clamp(14px,3.6vw,17px);font-weight:900;letter-spacing:.01em}
@@ -58,8 +60,8 @@
   .rule{height:2px;background:var(--ink);margin:34px 0 0}
 
   .sec{padding:44px 0 6px;scroll-margin-top:60px}
-  .sec-k{font-size:12px;font-weight:800;letter-spacing:.14em;color:var(--muted);margin-bottom:6px}
-  .sec h2{font-family:var(--disp);font-weight:400;font-size:clamp(30px,8vw,52px);line-height:.95;letter-spacing:.01em;margin-bottom:14px}
+  .sec-k{font-family:var(--disp);font-weight:400;font-size:clamp(34px,9vw,60px);line-height:.92;letter-spacing:.01em;color:var(--ink);margin-bottom:4px}
+  .sec h2{font-size:14px;font-weight:900;letter-spacing:.06em;color:var(--muted);margin-bottom:16px}
   .sec p.lead{color:var(--sub);font-size:15.5px}
 
   .note{border:2px solid var(--ink);border-radius:14px;padding:18px 20px;margin-top:20px;font-size:14.5px;color:var(--sub);line-height:1.75}
@@ -89,6 +91,7 @@
   .vhead>div{flex:1;min-width:0}
   .vlogo{flex:none;width:72px;height:52px;display:grid;place-items:center}
   .vlogo img{width:72px;height:52px;object-fit:contain;display:block}
+  .vlogo.sm img{width:46px;height:44px}
   .venue .nm{font-size:17px;font-weight:900}
   .venue .ad{font-size:13px;color:var(--muted);margin-top:3px}
   .map-btn{flex:none;margin-left:auto;font-size:13px;font-weight:800;text-decoration:none;border:2px solid var(--ink);border-radius:999px;padding:7px 14px;white-space:nowrap}
@@ -96,7 +99,7 @@
   /* 카페별 이벤트 목록 */
   .evs{margin-top:16px;padding-top:14px;border-top:1px solid var(--line);display:grid;grid-template-columns:1fr 1fr;gap:14px 26px}
   .evs .fn{grid-column:1 / -1}
-  @media (max-width:560px){.evs{grid-template-columns:1fr;gap:12px}}
+  @media (max-width:560px){.evs{gap:12px 14px}}
   .ev b{font-size:14.5px;font-weight:900}
   .ev span{display:block;font-size:13px;color:var(--sub)}
   .mk{font-style:normal;font-weight:900;font-size:14px;margin-left:2px;vertical-align:super;line-height:0}
@@ -165,8 +168,9 @@
       SOCCOFFEE DAY 2ND BIRTHDAY<br>
       SOCCOFFEE IS A COMMUNITY BASED ON A CAFÉ.<br>
       ALL MEMBERS LIKE SOCCER AND COFFEE.<br>
-      GOOD COFFEE, GOOD SOCCER, GOOD PEOPLE
+      GOOD COFFEE. GOOD SOCCER. GOOD PEOPLE.
     </div>
+    <div class="hspon"><img src="img/day/day-sponsors-row.png" alt="오틀리 · 엄브로 · 신선어람 · 88모"></div>
     <h1 class="bigname">Soccoffee<br>Day</h1>
     <div class="when">2026.09.05 SAT · 14:00 – 18:00</div>
     <div class="where">도덕과 규범(상수) · 카쩨(이대) · 토니(효창)</div>
@@ -208,7 +212,7 @@
       <div class="prog"><div class="no">COFFEE</div><h3>싸커피 싱글 오리진</h3><p>COLOMBIA La Terraza Geisha<br>Double Anaerobic · Citrus Co-Fermented · Washed</p><span class="at">도덕과 규범 · 카쩨 · 토니</span></div>
       <div class="prog"><div class="no">DRIP</div><h3>싸커피 드립백</h3><p>싸커피 싱글 오리진으로 만든 2주년 특별 드립백.</p><span class="at">도덕과 규범 · 카쩨 · 토니</span></div>
       <div class="prog"><div class="no">OATLY</div><h3>오틀리 특별 음료</h3><p>오틀리 슛(알콜) · 오틀리 패스(논알콜)</p><span class="at">도덕과 규범</span></div>
-      <div class="prog"><div class="no">GOODS</div><h3>싸커피 2주년 기념 굿즈</h3><p><a href="https://www.instagram.com/88mmo/" target="_blank" rel="noopener">88모</a> 콜라보 — 싸커피 컵과 싸커피 키링을 판매합니다. 컵은 도덕과 규범에서만.</p><span class="at">도덕과 규범 · 카쩨 · 토니</span></div>
+      <div class="prog"><div class="no">GOODS</div><h3>싸커피 2주년 기념 굿즈</h3><p><a href="https://www.instagram.com/88mmo/" target="_blank" rel="noopener">88모</a> 콜라보 — 싸커피 컵과 싸커피 키링을 판매합니다.</p><span class="at">도덕과 규범 · 카쩨 · 토니</span></div>
       <div class="prog"><div class="no">DISCOUNT</div><h3>레플리카 착용 할인</h3><p>축구 레플리카(유니폼)를 입고 오면 커피를 할인해 드립니다.</p><span class="at">도덕과 규범 · 카쩨 · 토니</span></div>
       <div class="prog"><div class="no">FLEA</div><h3>축구 플리마켓</h3><p>팀원들이 내놓은 축구용품과 기부 물품을 판매합니다.</p><span class="at">도덕과 규범</span></div>
     </div>
@@ -258,7 +262,7 @@
 
       <div class="venue panel" id="p-tony" role="tabpanel" aria-labelledby="tab-tony">
         <div class="vhead">
-          <span class="vlogo"><img src="img/day/day-p-tony.png" alt="카페 토니 로고"></span>
+          <span class="vlogo sm"><img src="img/day/day-p-tony.png" alt="카페 토니 로고"></span>
           <div><div class="nm">토니</div><div class="ad">서울 용산구 백범로79길 26 1층 102호</div></div>
           <a class="map-btn" href="https://naver.me/GDQaQcRd" target="_blank" rel="noopener">지도 보기</a>
         </div>

@@ -116,7 +116,7 @@
   /* 히어로 떠다니는 스티커 */
   .hero{position:relative;overflow:hidden}
   .fl{position:absolute;pointer-events:none;user-select:none}
-  .fl img{width:100%;height:auto;display:block}
+  .fl img{width:100%;height:auto;display:block;transform:rotate(var(--rot,0deg))}
   .fl.a{width:92px;left:3%;top:96px;animation:sway 6s ease-in-out infinite}
   .fl.b{width:74px;right:4%;top:76px;animation:sway 7.4s ease-in-out infinite reverse}
   .fl.c{width:82px;left:6%;bottom:96px;animation:sway 8s ease-in-out infinite reverse}
@@ -127,9 +127,9 @@
   /* 섹션 여백에 떠다니는 손그림 */
   .sec{position:relative;scroll-margin-top:60px}
   .sf{position:absolute;pointer-events:none;user-select:none;z-index:0}
-  .sf img{width:100%;height:auto;display:block}
-  .sf.l{left:-150px}
-  .sf.r{right:-150px}
+  .sf img{width:100%;height:auto;display:block;transform:rotate(var(--rot,0deg))}
+  .sf.l{left:var(--off,-150px)}
+  .sf.r{right:var(--off,-150px)}
   .sf.s1{width:88px;top:40px;animation:sway 7.2s ease-in-out infinite}
   .sf.s2{width:96px;top:170px;animation:sway 8.4s ease-in-out infinite reverse}
   .sf.s3{width:82px;top:330px;animation:sway 6.4s ease-in-out infinite}
@@ -155,10 +155,10 @@
 <body>
 
 <header class="hero">
-  <span class="fl a" aria-hidden="true"><img src="img/day/doodle/ball-fire.png" alt=""></span>
-  <span class="fl b" aria-hidden="true"><img src="img/day/doodle/cup.png" alt=""></span>
-  <span class="fl c" aria-hidden="true"><img src="img/day/doodle/candle.png" alt=""></span>
-  <span class="fl d" aria-hidden="true"><img src="img/day/doodle/scc-pop.png" alt=""></span>
+  <span class="fl a" aria-hidden="true"><img style="--rot:-11deg" src="img/day/doodle/ball-fire.png" alt=""></span>
+  <span class="fl b" aria-hidden="true"><img style="--rot:8deg" src="img/day/doodle/cup.png" alt=""></span>
+  <span class="fl c" aria-hidden="true"><img style="--rot:5deg" src="img/day/doodle/candle.png" alt=""></span>
+  <span class="fl d" aria-hidden="true"><img style="--rot:-7deg" src="img/day/doodle/scc-pop.png" alt=""></span>
   <div class="hero-in">
     <div class="toplogos"><img src="img/day/day-cafes-lockup.png" alt="카쩨 · 도덕과 규범 · 토니"></div>
     <div class="caps">
@@ -179,9 +179,9 @@
   <!-- 1. 행사 소개 -->
   <section class="sec" id="about">
     <div class="sec-k">ABOUT</div>
-    <span class="sf l s1" aria-hidden="true"><img src="img/day/doodle/spark.png" alt=""></span>
-    <span class="sf r s2" aria-hidden="true"><img src="img/day/doodle/jersey.png" alt=""></span>
-    <span class="sf l s3" aria-hidden="true"><img src="img/day/doodle/cup.png" alt=""></span>
+    <span class="sf l s1" aria-hidden="true" style="--off:-132px;width:84px;margin-top:-18px"><img style="--rot:-13deg" src="img/day/doodle/spark.png" alt=""></span>
+    <span class="sf r s2" aria-hidden="true" style="--off:-208px;width:100px;margin-top:36px"><img style="--rot:9deg" src="img/day/doodle/jersey.png" alt=""></span>
+    <span class="sf l s3" aria-hidden="true" style="--off:-176px;width:92px;margin-top:-30px"><img style="--rot:-7deg" src="img/day/doodle/cup.png" alt=""></span>
     <h2>행사 소개</h2>
     <p class="lead">싸커피는 2024년 9월, 축구와 커피를 좋아하는 사람들이 카페에서 시작한 혼성 풋살 클럽입니다. 창단 두 돌을 맞아 우리가 시작된 곳으로 돌아갑니다 — 하루 동안 동네 카페 세 곳이 축구를 좋아하는 사람들의 놀이터가 됩니다. 팀원이 아니어도, 축구를 몰라도 누구나 환영입니다.</p>
     <div class="note">
@@ -194,13 +194,13 @@
   <!-- 2. 이벤트 소개 -->
   <section class="sec" id="event">
     <div class="sec-k">EVENT</div>
-    <span class="sf l s2" aria-hidden="true"><img src="img/day/doodle/boots.png" alt=""></span>
-    <span class="sf r s1" aria-hidden="true"><img src="img/day/doodle/drinkick-round.png" alt=""></span>
-    <span class="sf l s5" aria-hidden="true"><img src="img/day/doodle/players.png" alt=""></span>
-    <span class="sf r s6" aria-hidden="true"><img src="img/day/doodle/drinkick-diag.png" alt=""></span>
-    <span class="sf l s7" aria-hidden="true"><img src="img/day/doodle/love-football.png" alt=""></span>
-    <span class="sf r s8" aria-hidden="true"><img src="img/day/doodle/candle.png" alt=""></span>
-    <span class="sf l s9" aria-hidden="true"><img src="img/day/doodle/scc-pop.png" alt=""></span>
+    <span class="sf l s2" aria-hidden="true" style="--off:-124px;width:108px;margin-top:54px"><img style="--rot:14deg" src="img/day/doodle/boots.png" alt=""></span>
+    <span class="sf r s1" aria-hidden="true" style="--off:-198px;width:86px;margin-top:20px"><img style="--rot:-4deg" src="img/day/doodle/drinkick-round.png" alt=""></span>
+    <span class="sf l s5" aria-hidden="true" style="--off:-146px;width:96px;margin-top:-46px"><img style="--rot:11deg" src="img/day/doodle/players.png" alt=""></span>
+    <span class="sf r s6" aria-hidden="true" style="--off:-214px;width:104px;margin-top:62px"><img style="--rot:-9deg" src="img/day/doodle/drinkick-diag.png" alt=""></span>
+    <span class="sf l s7" aria-hidden="true" style="--off:-138px;width:90px;margin-top:28px"><img style="--rot:6deg" src="img/day/doodle/love-football.png" alt=""></span>
+    <span class="sf r s8" aria-hidden="true" style="--off:-186px;width:98px;margin-top:-34px"><img style="--rot:-12deg" src="img/day/doodle/candle.png" alt=""></span>
+    <span class="sf l s9" aria-hidden="true" style="--off:-158px;width:112px;margin-top:48px"><img style="--rot:4deg" src="img/day/doodle/scc-pop.png" alt=""></span>
     <h2>이벤트 소개</h2>
     <p class="lead">싸커피 데이에서 만날 수 있는 것들. 카페별로 진행 여부가 다르니 아래 탭에서 확인하세요.</p>
 
@@ -278,21 +278,21 @@
 
   <section class="sec" id="with">
     <div class="sec-k">WITH</div>
-    <span class="sf r s2" aria-hidden="true"><img src="img/day/doodle/drinkick-badge.png" alt=""></span>
-    <span class="sf l s2" aria-hidden="true"><img src="img/day/doodle/spark.png" alt=""></span>
+    <span class="sf r s2" aria-hidden="true" style="--off:-206px;width:88px;margin-top:110px"><img style="--rot:10deg" src="img/day/doodle/drinkick-badge.png" alt=""></span>
+    <span class="sf l s2" aria-hidden="true" style="--off:-130px;width:94px;margin-top:40px"><img style="--rot:-6deg" src="img/day/doodle/spark.png" alt=""></span>
     <h2>함께하는 브랜드</h2>
     <div class="sponsors">
       <img src="Oatly_logo.svg" alt="Oatly" style="height:44px">
       <img src="img/day/day-umbro.png" alt="UMBRO" style="height:44px">
-      <img src="img/day/day-sinseon-y.png" alt="신선어람">
+      <img src="img/day/day-sinseon-d.png" alt="신선어람">
       <a href="https://www.instagram.com/88mmo/" target="_blank" rel="noopener"><img src="img/day/day-88mmo-mark.png" alt="팔팔모" style="height:46px"></a>
     </div>
   </section>
 
   <section class="sec" id="scf">
     <div class="sec-k">SOCCOFFEE</div>
-    <span class="sf l s4" aria-hidden="true"><img src="img/day/doodle/shooter.png" alt=""></span>
-    <span class="sf r s3" aria-hidden="true"><img src="img/day/doodle/ball-fire.png" alt=""></span>
+    <span class="sf l s4" aria-hidden="true" style="--off:-172px;width:106px;margin-top:16px"><img style="--rot:13deg" src="img/day/doodle/shooter.png" alt=""></span>
+    <span class="sf r s3" aria-hidden="true" style="--off:-192px;width:92px;margin-top:-52px"><img style="--rot:-3deg" src="img/day/doodle/ball-fire.png" alt=""></span>
     <h2>싸커피는</h2>
     <p class="lead">축구와 커피를 좋아하는 40명의 혼성 풋살 클럽. 매주 수요일 상암에서 공을 차고, 카페에서 커피를 마십니다. UMBRO, 빅토리아 아르두이노, 오틀리 풋살 챔피언십까지 — 축구와 커피 사이의 문화를 만들어 왔습니다.</p>
     <div class="shots">

@@ -49,7 +49,7 @@
 
   /* 히어로 — 포스터 레이아웃 */
   .hero{padding:clamp(30px,5vh,48px) 20px 12px;text-align:center;min-height:100vh;min-height:100svh;display:flex;flex-direction:column;justify-content:center}
-  .hero-in{width:100%;max-width:880px;margin:0 auto}
+  .hero-in{position:relative;z-index:1;width:100%;max-width:880px;margin:0 auto}
   .toplogos img{width:clamp(200px,50vw,248px);height:auto;display:block;margin:0 auto}
   .hspon{margin-top:clamp(28px,4.6vh,44px)}
   .hspon img{width:clamp(230px,58vw,300px);height:auto;display:block;margin:0 auto}
@@ -119,6 +119,8 @@
 
   /* 히어로 떠다니는 스티커 */
   .hero{position:relative;overflow:hidden}
+  .heromark{position:absolute;left:50%;top:50%;transform:translate(-50%,-46%);width:min(760px,92vw);opacity:.09;pointer-events:none;user-select:none;z-index:0}
+  .heromark img{width:100%;height:auto;display:block}
   .fl{position:absolute;pointer-events:none;user-select:none}
   .fl img{width:100%;height:auto;display:block;transform:rotate(var(--rot,0deg))}
   .fl.a{width:92px;left:3%;top:96px;animation:sway 6s ease-in-out infinite}
@@ -159,6 +161,7 @@
 <body>
 
 <header class="hero">
+  <span class="heromark" aria-hidden="true"><img src="img/day/day-scf-mark.png" alt=""></span>
   <span class="fl a" aria-hidden="true"><img style="--rot:-11deg" src="img/day/doodle/ball-fire.png" alt=""></span>
   <span class="fl b" aria-hidden="true"><img style="--rot:8deg" src="img/day/doodle/cup.png" alt=""></span>
   <span class="fl c" aria-hidden="true"><img style="--rot:5deg" src="img/day/doodle/candle.png" alt=""></span>

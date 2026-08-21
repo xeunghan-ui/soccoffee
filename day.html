@@ -72,6 +72,9 @@
   .venue .ad{font-size:13px;color:var(--muted);margin-top:3px}
   .venue .tag{flex-shrink:0;font-size:12px;font-weight:800;color:var(--bg);background:var(--accent);border-radius:999px;padding:6px 12px}
   .map-btn{display:inline-block;margin-top:2px;font-size:13px;font-weight:800;color:var(--gold);text-decoration:none;border:1px solid var(--gold);border-radius:999px;padding:7px 14px}
+  .chips{display:flex;flex-wrap:wrap;gap:8px;margin-top:14px}
+  .chip{font-size:13px;font-weight:700;color:var(--cream);border:1.5px solid var(--muted);border-radius:999px;padding:7px 14px}
+  .chip.hl{border-color:var(--gold);color:var(--gold)}
 
   /* 안내 */
   .note{background:var(--card);border-radius:16px;padding:20px;margin-top:22px;font-size:14px;color:var(--sub)}
@@ -94,7 +97,7 @@
 <header class="hero">
   <img src="img/130E7A4513.webp" alt="카페에 모인 싸커피 팀원들">
   <div class="hero-in">
-    <div class="kicker">SOCCOFFEE 2주년</div>
+    <div class="kicker">DRINKICK — SOCCOFFEE 2ND BIRTHDAY</div>
     <h1>싸커피 데이</h1>
     <div class="date">2026.09.05 <b>토요일</b> · 14:00 – 18:00</div>
     <div class="sub">마포 · 도덕과 규범 × 카쩨 × 토니 — 카페에서 만나는 축구 문화</div>
@@ -110,17 +113,59 @@
   </section>
 
   <section class="sec">
-    <div class="sec-k">PROGRAM</div>
-    <h2>즐길 거리</h2>
-    <p class="lead">세 카페 어디서든 즐길 수 있는 것들.</p>
-    <div class="grid">
-      <div class="prog"><div class="no">01</div><h3>싸커피 커피 & 드립백</h3><p>싸커피 커피와 드립백·싱글 오리진 한정 판매.<br>COLOMBIA La Terraza Geisha — Double Anaerobic<br>Citrus Co-Fermented — Washed</p></div>
-      <div class="prog"><div class="no">02</div><h3>레플리카 커피 할인</h3><p>축구 레플리카(유니폼)를 입고 오면 커피를 할인해 드립니다. 좋아하는 팀 유니폼을 꺼내 입으세요.</p></div>
-      <div class="prog"><div class="no">03</div><h3>뽑기 이벤트</h3><p>방문객 대상 뽑기 이벤트가 열립니다.</p></div>
-      <div class="prog"><div class="no">04</div><h3>싸커피 페이크 타투</h3><p>싸커피 로고 페이크 타투를 붙이고 하루를 즐기세요.</p></div>
-      <div class="prog"><div class="no">05</div><h3>88모 × 싸커피 키링 컵</h3><p>88모와 싸커피가 함께 만든 키링 컵을 판매합니다.</p></div>
+    <div class="sec-k">PLACE & PROGRAM</div>
+    <h2>세 개의 카페, 각자의 즐길 거리</h2>
+    <p class="lead">행사 시간 안에 자유롭게 방문하면 됩니다. 세 곳을 도는 것도 방법.</p>
+    <div class="venues">
+      <div class="venue" style="display:block">
+        <div style="display:flex;justify-content:space-between;align-items:center;gap:14px;flex-wrap:wrap">
+          <div><div class="nm">도덕과 규범</div><div class="ad">서울 마포구 독막로19길 32 1층</div></div>
+          <span class="tag">상수 · 메인</span>
+        </div>
+        <div class="chips">
+          <span class="chip">싸커피 싱글 오리진</span><span class="chip">싸커피 드립백</span><span class="chip">싸커피 기념 굿즈</span>
+          <span class="chip">레플리카 착용 할인</span><span class="chip">뽑기 이벤트</span><span class="chip">타투 스티커</span>
+          <span class="chip hl">오틀리 특별 음료</span><span class="chip hl">축구 용품 플리마켓</span><span class="chip hl">신선어람 리닭칩 시식</span>
+        </div>
+        <a class="map-btn" style="margin-top:14px" href="https://naver.me/FRLN7StS" target="_blank" rel="noopener">지도 보기</a>
+      </div>
+      <div class="venue" style="display:block">
+        <div style="display:flex;justify-content:space-between;align-items:center;gap:14px;flex-wrap:wrap">
+          <div><div class="nm">카쩨</div><div class="ad">서울 서대문구 이화여대2길 26 1층 102, 103호</div></div>
+          <span class="tag">이대</span>
+        </div>
+        <div class="chips">
+          <span class="chip">싸커피 싱글 오리진</span><span class="chip">싸커피 드립백</span><span class="chip">싸커피 기념 굿즈</span>
+          <span class="chip">레플리카 착용 할인</span><span class="chip">뽑기 이벤트</span><span class="chip">타투 스티커</span>
+        </div>
+        <a class="map-btn" style="margin-top:14px" href="https://naver.me/5EUZwRQr" target="_blank" rel="noopener">지도 보기</a>
+      </div>
+      <div class="venue" style="display:block">
+        <div style="display:flex;justify-content:space-between;align-items:center;gap:14px;flex-wrap:wrap">
+          <div><div class="nm">토니</div><div class="ad">서울 용산구 백범로79길 26 1층 102호</div></div>
+          <span class="tag">효창</span>
+        </div>
+        <div class="chips">
+          <span class="chip">싸커피 싱글 오리진</span><span class="chip">싸커피 드립백</span><span class="chip">싸커피 기념 굿즈</span>
+          <span class="chip">레플리카 착용 할인</span><span class="chip">뽑기 이벤트</span><span class="chip">타투 스티커</span>
+          <span class="chip hl">축구 게임</span>
+        </div>
+        <a class="map-btn" style="margin-top:14px" href="https://naver.me/GDQaQcRd" target="_blank" rel="noopener">지도 보기</a>
+      </div>
     </div>
-    <div class="note" style="margin-top:14px"><b>도덕과 규범(상수)에서만.</b> 축구용품 플리마켓 · 오틀리 축구 음료 판매 · 신선어람 리닭칩 시식은 메인 회장인 도덕과 규범에서만 진행됩니다.</div>
+  </section>
+
+  <section class="sec">
+    <div class="sec-k">DETAIL</div>
+    <h2>자세히 보기</h2>
+    <div class="grid">
+      <div class="prog"><div class="no">COFFEE</div><h3>싱글 오리진 & 드립백</h3><p>COLOMBIA La Terraza Geisha<br>Double Anaerobic · Citrus Co-Fermented · Washed</p></div>
+      <div class="prog"><div class="no">OATLY</div><h3>오틀리 특별 음료</h3><p>오틀리 슛(알콜) · 오틀리 패스(논알콜)<br>도덕과 규범에서만.</p></div>
+      <div class="prog"><div class="no">GOODS</div><h3>기념 굿즈 — 88모 콜라보</h3><p>2주년 기념 싸커피 컵과 싸커피 키링을 판매합니다.</p></div>
+      <div class="prog"><div class="no">TATTOO</div><h3>타투 스티커</h3><p>싸커피 메뉴를 주문하면 2주년 기념 타투 스티커를 드립니다.</p></div>
+      <div class="prog"><div class="no">DISCOUNT</div><h3>레플리카 착용 할인</h3><p>축구 레플리카(유니폼)를 입고 오면 커피를 할인해 드립니다.</p></div>
+      <div class="prog"><div class="no">GAME</div><h3>뽑기 · 축구 게임</h3><p>뽑기 이벤트는 세 곳 모두, 축구 게임은 토니에서.</p></div>
+    </div>
   </section>
 
   <section class="sec">
@@ -132,29 +177,6 @@
       <div class="venue"><div><div class="nm">기부 물품</div><div class="ad">페노 — 골키퍼 장갑 · 겨울 축구장갑 · 축구 운동가방 · 축구공, 조원희 선수 소장품(공개 예정)</div></div></div>
     </div>
     <div class="note">라인업은 행사 전까지 계속 추가됩니다.</div>
-  </section>
-
-  <section class="sec">
-    <div class="sec-k">PLACE</div>
-    <h2>세 개의 카페, 하나의 행사</h2>
-    <div class="venues">
-      <div class="venue">
-        <div><div class="nm">도덕과 규범</div><div class="ad">서울 마포구 독막로19길 32 1층</div>
-        <a class="map-btn" href="https://naver.me/FRLN7StS" target="_blank" rel="noopener">지도 보기</a></div>
-        <span class="tag">상수 · 메인</span>
-      </div>
-      <div class="venue">
-        <div><div class="nm">카쩨</div><div class="ad">서울 서대문구 이화여대2길 26 1층 102, 103호</div>
-        <a class="map-btn" href="https://naver.me/5EUZwRQr" target="_blank" rel="noopener">지도 보기</a></div>
-        <span class="tag">이대</span>
-      </div>
-      <div class="venue">
-        <div><div class="nm">토니 카페</div><div class="ad">서울 용산구 백범로79길 26 1층 102호</div>
-        <a class="map-btn" href="https://naver.me/GDQaQcRd" target="_blank" rel="noopener">지도 보기</a></div>
-        <span class="tag">효창</span>
-      </div>
-    </div>
-    <div class="note"><b>따로 준비할 것은 없어요.</b> 행사 시간 안에 자유롭게 방문하면 됩니다. 레플리카를 입고 오면 이벤트 혜택이 있으니 참고하세요.</div>
   </section>
 
   <section class="sec">

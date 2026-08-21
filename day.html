@@ -95,13 +95,14 @@
   .map-btn{display:inline-block;margin-top:12px;font-size:13px;font-weight:800;text-decoration:none;border:2px solid var(--ink);border-radius:999px;padding:6px 14px}
 
   /* 카페별 이벤트 목록 */
-  .evs{margin-top:16px;padding-top:14px;border-top:1px solid var(--line)}
+  .evs{margin-top:16px;padding-top:14px;border-top:1px solid var(--line);display:grid;grid-template-columns:1fr 1fr;gap:14px 26px}
+  .evs .lb,.evs .fn{grid-column:1 / -1}
   .evs .lb{font-size:11px;font-weight:800;letter-spacing:.12em;color:var(--muted)}
-  .ev{margin-top:11px}
+  @media (max-width:560px){.evs{grid-template-columns:1fr;gap:12px}}
   .ev b{font-size:14.5px;font-weight:900}
   .ev span{display:block;font-size:13px;color:var(--sub)}
   .mk{font-style:normal;font-weight:900;font-size:14px;margin-left:2px;vertical-align:super;line-height:0}
-  .fn{margin-top:16px;padding-top:10px;border-top:1px solid var(--line);font-size:12px;font-weight:700;color:var(--muted)}
+  .fn{margin-top:6px;padding-top:10px;border-top:1px solid var(--line);font-size:12px;font-weight:700;color:var(--muted)}
 
   /* 셀러 */
 
@@ -113,15 +114,6 @@
   .shots{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-top:20px}
   @media (max-width:560px){.shots{grid-template-columns:1fr 1fr}}
   .shots img{width:100%;aspect-ratio:1/1;object-fit:cover;border-radius:12px;display:block}
-
-  /* 손그림 스티커 — 흐르는 띠 */
-  .strip{overflow:hidden;margin:38px calc(50% - 50vw) 6px;width:100vw;padding:6px 0;-webkit-mask-image:linear-gradient(90deg,transparent,#000 8%,#000 92%,transparent);mask-image:linear-gradient(90deg,transparent,#000 8%,#000 92%,transparent)}
-  .track{display:flex;align-items:center;gap:40px;width:max-content;animation:slide 34s linear infinite}
-  .strip.rev .track{animation-direction:reverse}
-  .track img{height:58px;width:auto;display:block;animation:bob 3.4s ease-in-out infinite}
-  .track img:nth-child(even){animation-delay:-1.5s;animation-duration:4.1s}
-  @keyframes slide{from{transform:translateX(0)}to{transform:translateX(-50%)}}
-  @keyframes bob{0%,100%{transform:translateY(0) rotate(-2deg)}50%{transform:translateY(-7px) rotate(2deg)}}
 
   /* 히어로 떠다니는 스티커 */
   .hero{position:relative;overflow:hidden}
@@ -147,7 +139,7 @@
   @media (max-width:1120px){.sf{display:none}}
 
   @media (prefers-reduced-motion:reduce){
-    .track,.track img,.fl{animation:none !important}
+    .fl,.sf{animation:none !important}
   }
 
   /* 푸터 */
@@ -199,8 +191,6 @@
       입장료 없음 · 예약 없이 시간 안에 자유롭게 방문
     </div>
   </section>
-
-  <div class="strip" aria-hidden="true"><div class="track"><img src="img/day/doodle/drinkick-badge.png" alt=""><img src="img/day/doodle/boots.png" alt=""><img src="img/day/doodle/cup.png" alt=""><img src="img/day/doodle/spark.png" alt=""><img src="img/day/doodle/jersey.png" alt=""><img src="img/day/doodle/ball-fire.png" alt=""><img src="img/day/doodle/love-football.png" alt=""><img src="img/day/doodle/drinkick-badge.png" alt=""><img src="img/day/doodle/boots.png" alt=""><img src="img/day/doodle/cup.png" alt=""><img src="img/day/doodle/spark.png" alt=""><img src="img/day/doodle/jersey.png" alt=""><img src="img/day/doodle/ball-fire.png" alt=""><img src="img/day/doodle/love-football.png" alt=""></div></div>
 
   <!-- 2. 이벤트 소개 -->
   <section class="sec">
@@ -285,8 +275,6 @@
       </div>
     </div>
   </section>
-
-  <div class="strip rev" aria-hidden="true"><div class="track"><img src="img/day/doodle/scc-pop.png" alt=""><img src="img/day/doodle/players.png" alt=""><img src="img/day/doodle/drinkick-round.png" alt=""><img src="img/day/doodle/candle.png" alt=""><img src="img/day/doodle/shooter.png" alt=""><img src="img/day/doodle/scf-scribble.png" alt=""><img src="img/day/doodle/drinkick-diag.png" alt=""><img src="img/day/doodle/scc-pop.png" alt=""><img src="img/day/doodle/players.png" alt=""><img src="img/day/doodle/drinkick-round.png" alt=""><img src="img/day/doodle/candle.png" alt=""><img src="img/day/doodle/shooter.png" alt=""><img src="img/day/doodle/scf-scribble.png" alt=""><img src="img/day/doodle/drinkick-diag.png" alt=""></div></div>
 
   <section class="sec">
     <div class="sec-k">WITH</div>

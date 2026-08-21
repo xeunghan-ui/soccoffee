@@ -57,13 +57,6 @@
   .where{margin-top:12px;font-size:13.5px;color:var(--sub);font-weight:700}
   .rule{height:2px;background:var(--ink);margin:34px 0 0}
 
-  /* 앵커 내비 */
-  .anav{position:sticky;top:0;z-index:20;background:var(--cream);border-bottom:2px solid var(--ink)}
-  .anav-in{max-width:760px;margin:0 auto;padding:0 20px;display:flex;gap:6px;overflow-x:auto;-webkit-overflow-scrolling:touch;scrollbar-width:none}
-  .anav-in::-webkit-scrollbar{display:none}
-  .anav a{flex:none;padding:13px 12px;font-size:13.5px;font-weight:900;text-decoration:none;color:var(--muted);border-bottom:3px solid transparent;margin-bottom:-2px;white-space:nowrap}
-  .anav a.on{color:var(--ink);border-bottom-color:var(--ink)}
-
   .sec{padding:44px 0 6px;scroll-margin-top:60px}
   .sec-k{font-size:12px;font-weight:800;letter-spacing:.14em;color:var(--muted);margin-bottom:6px}
   .sec h2{font-family:var(--disp);font-weight:400;font-size:clamp(30px,8vw,52px);line-height:.95;letter-spacing:.01em;margin-bottom:14px}
@@ -176,15 +169,6 @@
     <div class="rule"></div>
   </div>
 </header>
-
-<nav class="anav" aria-label="섹션 이동">
-  <div class="anav-in">
-    <a href="#about">행사 소개</a>
-    <a href="#event">이벤트 소개</a>
-    <a href="#with">함께하는 브랜드</a>
-    <a href="#scf">싸커피는</a>
-  </div>
-</nav>
 
 <main class="wrap">
 
@@ -344,25 +328,6 @@
     });
   });
   select(0);
-})();
-
-(function(){
-  var links = [].slice.call(document.querySelectorAll('.anav a'));
-  if (!links.length || !window.IntersectionObserver) return;
-  var map = {};
-  links.forEach(function(a){ map[a.getAttribute('href').slice(1)] = a; });
-  var io = new IntersectionObserver(function(entries){
-    entries.forEach(function(en){
-      if (!en.isIntersecting) return;
-      links.forEach(function(a){ a.classList.remove('on'); });
-      var a = map[en.target.id];
-      if (a) a.classList.add('on');
-    });
-  }, { rootMargin: '-58px 0px -70% 0px' });
-  Object.keys(map).forEach(function(id){
-    var el = document.getElementById(id);
-    if (el) io.observe(el);
-  });
 })();
 </script>
 

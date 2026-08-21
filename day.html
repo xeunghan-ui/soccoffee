@@ -1,0 +1,167 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>싸커피 데이 — 2026.09.05(토) 카페에서 만나는 축구 문화</title>
+<meta name="description" content="싸커피 2주년 기념 행사 '싸커피 데이'. 9월 5일 토요일 14–18시, 마포 도덕과 규범·카쩨·토니에서. 한정 블렌드와 드립백, 레플리카 이벤트, 축구용품 플리마켓, 오틀리 특별 음료.">
+<link rel="canonical" href="https://xeunghan-ui.github.io/soccoffee/day.html">
+<meta property="og:type" content="website">
+<meta property="og:title" content="싸커피 데이 — 2026.09.05(토)">
+<meta property="og:description" content="카페에서 만나는 축구 문화. 도덕과 규범 · 카쩨 · 토니, 14–18시.">
+<meta property="og:image" content="https://xeunghan-ui.github.io/soccoffee/img/gal-ssau-1.jpg">
+<meta property="og:url" content="https://xeunghan-ui.github.io/soccoffee/day.html">
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "Event",
+  "name": "싸커피 데이 (SOCCOFFEE DAY)",
+  "description": "싸커피 창단 2주년 기념 행사. 카페에서 축구 문화를 즐기는 하루 — 한정 블렌드·드립백, 축구 레플리카 이벤트, 축구용품 플리마켓, 오틀리 특별 음료.",
+  "startDate": "2026-09-05T14:00:00+09:00",
+  "endDate": "2026-09-05T18:00:00+09:00",
+  "eventStatus": "https://schema.org/EventScheduled",
+  "eventAttendanceMode": "https://schema.org/OfflineEventAttendanceMode",
+  "isAccessibleForFree": true,
+  "location": {
+    "@type": "Place",
+    "name": "도덕과 규범",
+    "address": { "@type": "PostalAddress", "streetAddress": "독막로19길 32 1층", "addressLocality": "마포구", "addressRegion": "서울", "addressCountry": "KR" }
+  },
+  "organizer": { "@type": "SportsTeam", "name": "싸커피 (SOCCOFFEE FC)", "url": "https://xeunghan-ui.github.io/soccoffee/" },
+  "image": "https://xeunghan-ui.github.io/soccoffee/img/gal-ssau-1.jpg"
+}
+</script>
+<style>
+  :root{
+    --bg:#15281B; --card:#1E3526; --cream:#ECE6D2; --heading:#F3EED9;
+    --sub:#D6CFB4; --accent:#DDD6B6; --muted:#A4B39A; --gold:#E0A530;
+  }
+  *{margin:0;padding:0;box-sizing:border-box}
+  body{background:var(--bg);color:var(--cream);font-family:'Pretendard Variable',Pretendard,-apple-system,BlinkMacSystemFont,system-ui,sans-serif;line-height:1.6;-webkit-font-smoothing:antialiased}
+  a{color:inherit}
+  .wrap{max-width:760px;margin:0 auto;padding:0 20px}
+
+  /* 히어로 */
+  .hero{position:relative;min-height:78vh;display:flex;align-items:flex-end;overflow:hidden}
+  .hero img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;object-position:center 30%}
+  .hero::after{content:'';position:absolute;inset:0;background:linear-gradient(180deg,rgba(21,40,27,.35) 0%,rgba(21,40,27,.55) 55%,var(--bg) 100%)}
+  .hero-in{position:relative;z-index:1;width:100%;max-width:760px;margin:0 auto;padding:0 20px 56px}
+  .hero .kicker{font-size:13px;font-weight:800;letter-spacing:.14em;color:var(--gold);margin-bottom:10px}
+  .hero h1{font-size:clamp(40px,9vw,72px);line-height:1.04;font-weight:900;color:var(--heading);letter-spacing:-.01em}
+  .hero .date{margin-top:16px;font-size:clamp(16px,3.6vw,20px);font-weight:800;color:var(--cream)}
+  .hero .date b{color:var(--gold)}
+  .hero .sub{margin-top:6px;font-size:14px;color:var(--sub)}
+
+  .sec{padding:56px 0 8px}
+  .sec-k{font-size:12px;font-weight:800;letter-spacing:.14em;color:var(--gold);margin-bottom:8px}
+  .sec h2{font-size:clamp(24px,5.4vw,32px);font-weight:900;color:var(--heading);line-height:1.25;margin-bottom:14px}
+  .sec p.lead{color:var(--sub);font-size:15.5px}
+
+  /* 즐길 거리 */
+  .grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:22px}
+  @media (max-width:560px){.grid{grid-template-columns:1fr}}
+  .prog{background:var(--card);border-radius:16px;padding:22px 20px}
+  .prog .no{font-size:12px;font-weight:800;color:var(--gold);letter-spacing:.1em}
+  .prog h3{font-size:18px;font-weight:800;color:var(--heading);margin:6px 0 8px}
+  .prog p{font-size:13.5px;color:var(--muted)}
+
+  /* 장소 */
+  .venues{display:grid;gap:12px;margin-top:22px}
+  .venue{background:var(--card);border-radius:16px;padding:20px;display:flex;justify-content:space-between;align-items:center;gap:14px;flex-wrap:wrap}
+  .venue .nm{font-size:17px;font-weight:800;color:var(--heading)}
+  .venue .ad{font-size:13px;color:var(--muted);margin-top:3px}
+  .venue .tag{flex-shrink:0;font-size:12px;font-weight:800;color:var(--bg);background:var(--accent);border-radius:999px;padding:6px 12px}
+  .map-btn{display:inline-block;margin-top:2px;font-size:13px;font-weight:800;color:var(--gold);text-decoration:none;border:1px solid var(--gold);border-radius:999px;padding:7px 14px}
+
+  /* 안내 */
+  .note{background:var(--card);border-radius:16px;padding:20px;margin-top:22px;font-size:14px;color:var(--sub)}
+  .note b{color:var(--heading)}
+
+  /* 갤러리 */
+  .shots{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-top:22px}
+  @media (max-width:560px){.shots{grid-template-columns:1fr 1fr}}
+  .shots img{width:100%;aspect-ratio:1/1;object-fit:cover;border-radius:12px;display:block}
+
+  /* 푸터 */
+  .cta{margin:56px 0 0;padding:34px 0 60px;text-align:center;border-top:1px solid var(--card)}
+  .cta p{color:var(--muted);font-size:14px;margin-bottom:14px}
+  .cta a.btn{display:inline-block;background:var(--gold);color:var(--bg);font-weight:900;font-size:15px;border-radius:999px;padding:13px 26px;text-decoration:none}
+  .foot{padding:26px 0 40px;text-align:center;font-size:12px;color:var(--muted)}
+</style>
+</head>
+<body>
+
+<header class="hero">
+  <img src="img/130E7A4513.webp" alt="카페에 모인 싸커피 팀원들">
+  <div class="hero-in">
+    <div class="kicker">SOCCOFFEE 2주년</div>
+    <h1>싸커피 데이</h1>
+    <div class="date">2026.09.05 <b>토요일</b> · 14:00 – 18:00</div>
+    <div class="sub">마포 · 도덕과 규범 × 카쩨 × 토니 — 카페에서 만나는 축구 문화</div>
+  </div>
+</header>
+
+<main class="wrap">
+
+  <section class="sec">
+    <div class="sec-k">ABOUT</div>
+    <h2>축구와 커피가 만나는 하루</h2>
+    <p class="lead">싸커피는 2024년 9월, 축구와 커피를 좋아하는 사람들이 카페에서 시작한 혼성 풋살 클럽입니다. 창단 두 돌을 맞아 우리가 시작된 곳으로 돌아갑니다 — 하루 동안 동네 카페 세 곳이 축구를 좋아하는 사람들의 놀이터가 됩니다. 팀원이 아니어도, 축구를 몰라도 누구나 환영입니다.</p>
+  </section>
+
+  <section class="sec">
+    <div class="sec-k">PROGRAM</div>
+    <h2>즐길 거리</h2>
+    <div class="grid">
+      <div class="prog"><div class="no">01</div><h3>싸커피 블렌드 & 드립백</h3><p>도덕과 규범과의 콜라보로 만든 특별한 블렌드와 드립백을 한정 판매합니다.</p></div>
+      <div class="prog"><div class="no">02</div><h3>레플리카 이벤트</h3><p>축구 레플리카(유니폼)를 입고 방문하면 이벤트 혜택을 드립니다. 좋아하는 팀 유니폼을 꺼내 입고 오세요.</p></div>
+      <div class="prog"><div class="no">03</div><h3>축구용품 플리마켓</h3><p>팀원들이 내놓은 축구용품을 판매하는 작은 플리마켓이 열립니다.</p></div>
+      <div class="prog"><div class="no">04</div><h3>오틀리 특별 음료</h3><p>싸커피의 파트너 오틀리(OATLY)로 만든 특별 음료를 함께 판매합니다.</p></div>
+    </div>
+  </section>
+
+  <section class="sec">
+    <div class="sec-k">PLACE</div>
+    <h2>세 개의 카페, 하나의 행사</h2>
+    <div class="venues">
+      <div class="venue">
+        <div><div class="nm">도덕과 규범</div><div class="ad">서울 마포구 독막로19길 32 1층</div>
+        <a class="map-btn" href="https://naver.me/FRLN7StS" target="_blank" rel="noopener">지도 보기</a></div>
+        <span class="tag">메인</span>
+      </div>
+      <div class="venue">
+        <div><div class="nm">카쩨</div><div class="ad">서울 서대문구 이화여대2길 26 1층 102, 103호</div>
+        <a class="map-btn" href="https://naver.me/5EUZwRQr" target="_blank" rel="noopener">지도 보기</a></div>
+        <span class="tag">함께</span>
+      </div>
+      <div class="venue">
+        <div><div class="nm">토니 카페</div><div class="ad">서울 용산구 백범로79길 26 1층 102호</div>
+        <a class="map-btn" href="https://naver.me/GDQaQcRd" target="_blank" rel="noopener">지도 보기</a></div>
+        <span class="tag">함께</span>
+      </div>
+    </div>
+    <div class="note"><b>따로 준비할 것은 없어요.</b> 행사 시간 안에 자유롭게 방문하면 됩니다. 레플리카를 입고 오면 이벤트 혜택이 있으니 참고하세요.</div>
+  </section>
+
+  <section class="sec">
+    <div class="sec-k">SOCCOFFEE</div>
+    <h2>싸커피는</h2>
+    <p class="lead">축구와 커피를 좋아하는 40명의 혼성 풋살 클럽. 매주 수요일 상암에서 공을 차고, 카페에서 커피를 마십니다. UMBRO, 빅토리아 아르두이노, 오틀리 풋살 챔피언십까지 — 축구와 커피 사이의 문화를 만들어 왔습니다.</p>
+    <div class="shots">
+      <img src="img/gal-ssau-2.webp" alt="싸커피 경기 모습" loading="lazy">
+      <img src="img/gal-ssau-4.webp" alt="싸커피 팀원들" loading="lazy">
+      <img src="img/190E7A0036.webp" alt="카페에서의 싸커피" loading="lazy">
+    </div>
+  </section>
+
+  <div class="cta">
+    <p>싸커피가 궁금하다면</p>
+    <a class="btn" href="index.html">싸커피 소개 보러 가기</a>
+  </div>
+
+</main>
+
+<footer class="foot">SOCCOFFEE · Drink Coffee, Play Football · EST 2024</footer>
+
+</body>
+</html>

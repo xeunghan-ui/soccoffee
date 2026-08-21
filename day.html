@@ -91,7 +91,7 @@
   .vlogo img{width:72px;height:52px;object-fit:contain;display:block}
   .venue .nm{font-size:17px;font-weight:900}
   .venue .ad{font-size:13px;color:var(--muted);margin-top:3px}
-  .map-btn{display:inline-block;margin-top:12px;font-size:13px;font-weight:800;text-decoration:none;border:2px solid var(--ink);border-radius:999px;padding:6px 14px}
+  .map-btn{flex:none;margin-left:auto;font-size:13px;font-weight:800;text-decoration:none;border:2px solid var(--ink);border-radius:999px;padding:7px 14px;white-space:nowrap}
 
   /* 카페별 이벤트 목록 */
   .evs{margin-top:16px;padding-top:14px;border-top:1px solid var(--line);display:grid;grid-template-columns:1fr 1fr;gap:14px 26px}
@@ -135,6 +135,11 @@
   .sf.s2{width:96px;top:170px;animation:sway 8.4s ease-in-out infinite reverse}
   .sf.s3{width:82px;top:330px;animation:sway 6.4s ease-in-out infinite}
   .sf.s4{width:104px;top:520px;animation:sway 9s ease-in-out infinite reverse}
+  .sf.s5{width:92px;top:700px;animation:sway 7.8s ease-in-out infinite}
+  .sf.s6{width:86px;top:880px;animation:sway 6.8s ease-in-out infinite reverse}
+  .sf.s7{width:100px;top:1080px;animation:sway 8.6s ease-in-out infinite}
+  .sf.s8{width:88px;top:1300px;animation:sway 7.4s ease-in-out infinite reverse}
+  .sf.s9{width:94px;top:1250px;animation:sway 9.2s ease-in-out infinite}
   @media (max-width:1120px){.sf{display:none}}
 
   @media (prefers-reduced-motion:reduce){
@@ -177,6 +182,7 @@
     <div class="sec-k">ABOUT</div>
     <span class="sf l s1" aria-hidden="true"><img src="img/day/doodle/spark.png" alt=""></span>
     <span class="sf r s2" aria-hidden="true"><img src="img/day/doodle/jersey.png" alt=""></span>
+    <span class="sf l s3" aria-hidden="true"><img src="img/day/doodle/cup.png" alt=""></span>
     <h2>행사 소개</h2>
     <p class="lead">싸커피는 2024년 9월, 축구와 커피를 좋아하는 사람들이 카페에서 시작한 혼성 풋살 클럽입니다. 창단 두 돌을 맞아 우리가 시작된 곳으로 돌아갑니다 — 하루 동안 동네 카페 세 곳이 축구를 좋아하는 사람들의 놀이터가 됩니다. 팀원이 아니어도, 축구를 몰라도 누구나 환영입니다.</p>
     <div class="note">
@@ -191,6 +197,11 @@
     <div class="sec-k">EVENT</div>
     <span class="sf l s2" aria-hidden="true"><img src="img/day/doodle/boots.png" alt=""></span>
     <span class="sf r s1" aria-hidden="true"><img src="img/day/doodle/drinkick-round.png" alt=""></span>
+    <span class="sf l s5" aria-hidden="true"><img src="img/day/doodle/players.png" alt=""></span>
+    <span class="sf r s6" aria-hidden="true"><img src="img/day/doodle/drinkick-diag.png" alt=""></span>
+    <span class="sf l s7" aria-hidden="true"><img src="img/day/doodle/love-football.png" alt=""></span>
+    <span class="sf r s8" aria-hidden="true"><img src="img/day/doodle/candle.png" alt=""></span>
+    <span class="sf l s9" aria-hidden="true"><img src="img/day/doodle/scc-pop.png" alt=""></span>
     <h2>이벤트 소개</h2>
     <p class="lead">싸커피 데이에서 만날 수 있는 것들. 카페별로 진행 여부가 다르니 아래 탭에서 확인하세요.</p>
 
@@ -214,8 +225,8 @@
         <div class="vhead">
           <span class="vlogo"><img src="img/day/day-p-dokyu.png" alt="도덕과 규범 로고"></span>
           <div><div class="nm">도덕과 규범</div><div class="ad">서울 마포구 독막로19길 32 1층</div></div>
+          <a class="map-btn" href="https://naver.me/FRLN7StS" target="_blank" rel="noopener">지도 보기</a>
         </div>
-        <a class="map-btn" href="https://naver.me/FRLN7StS" target="_blank" rel="noopener">지도 보기</a>
         <div class="evs">
           <div class="lb">이곳에서 진행되는 이벤트 9</div>
           <div class="ev"><b>싸커피 싱글 오리진</b><span>COLOMBIA La Terraza Geisha</span></div>
@@ -235,8 +246,8 @@
         <div class="vhead">
           <span class="vlogo"><img src="img/day/day-p-katze.png" alt="카쩨 로고"></span>
           <div><div class="nm">카쩨</div><div class="ad">서울 서대문구 이화여대2길 26 1층 102, 103호</div></div>
+          <a class="map-btn" href="https://naver.me/5EUZwRQr" target="_blank" rel="noopener">지도 보기</a>
         </div>
-        <a class="map-btn" href="https://naver.me/5EUZwRQr" target="_blank" rel="noopener">지도 보기</a>
         <div class="evs">
           <div class="lb">이곳에서 진행되는 이벤트 6</div>
           <div class="ev"><b>싸커피 싱글 오리진</b><span>COLOMBIA La Terraza Geisha</span></div>
@@ -252,8 +263,8 @@
         <div class="vhead">
           <span class="vlogo"><img src="img/day/day-p-tony.png" alt="카페 토니 로고"></span>
           <div><div class="nm">토니</div><div class="ad">서울 용산구 백범로79길 26 1층 102호</div></div>
+          <a class="map-btn" href="https://naver.me/GDQaQcRd" target="_blank" rel="noopener">지도 보기</a>
         </div>
-        <a class="map-btn" href="https://naver.me/GDQaQcRd" target="_blank" rel="noopener">지도 보기</a>
         <div class="evs">
           <div class="lb">이곳에서 진행되는 이벤트 7</div>
           <div class="ev"><b>싸커피 싱글 오리진</b><span>COLOMBIA La Terraza Geisha</span></div>
@@ -271,19 +282,20 @@
 
   <section class="sec" id="with">
     <div class="sec-k">WITH</div>
-    <span class="sf r s1" aria-hidden="true"><img src="img/day/doodle/drinkick-badge.png" alt=""></span>
+    <span class="sf r s2" aria-hidden="true"><img src="img/day/doodle/drinkick-badge.png" alt=""></span>
+    <span class="sf l s2" aria-hidden="true"><img src="img/day/doodle/spark.png" alt=""></span>
     <h2>함께하는 브랜드</h2>
     <div class="sponsors">
       <img src="Oatly_logo.svg" alt="Oatly" style="height:44px">
       <img src="img/day/day-umbro.png" alt="UMBRO" style="height:44px">
-      <img src="img/day/day-sinseon.png" alt="신선어람">
+      <img src="img/day/day-sinseon-y.png" alt="신선어람">
       <a href="https://www.instagram.com/88mmo/" target="_blank" rel="noopener"><img src="img/day/day-88mmo-mark.png" alt="팔팔모" style="height:46px"></a>
     </div>
   </section>
 
   <section class="sec" id="scf">
     <div class="sec-k">SOCCOFFEE</div>
-    <span class="sf l s2" aria-hidden="true"><img src="img/day/doodle/shooter.png" alt=""></span>
+    <span class="sf l s4" aria-hidden="true"><img src="img/day/doodle/shooter.png" alt=""></span>
     <span class="sf r s3" aria-hidden="true"><img src="img/day/doodle/ball-fire.png" alt=""></span>
     <h2>싸커피는</h2>
     <p class="lead">축구와 커피를 좋아하는 40명의 혼성 풋살 클럽. 매주 수요일 상암에서 공을 차고, 카페에서 커피를 마십니다. UMBRO, 빅토리아 아르두이노, 오틀리 풋살 챔피언십까지 — 축구와 커피 사이의 문화를 만들어 왔습니다.</p>

@@ -41,6 +41,7 @@
     --disp:"Anton","Pretendard",sans-serif;
   }
   *{margin:0;padding:0;box-sizing:border-box}
+  html{scroll-behavior:smooth}
   body{overflow-x:hidden;background:var(--cream);color:var(--ink);font-family:'Pretendard Variable',Pretendard,-apple-system,BlinkMacSystemFont,system-ui,sans-serif;line-height:1.6;-webkit-font-smoothing:antialiased}
   a{color:inherit}
   .wrap{max-width:760px;margin:0 auto;padding:0 20px}
@@ -55,7 +56,14 @@
   .where{margin-top:12px;font-size:13.5px;color:var(--sub);font-weight:700}
   .rule{height:2px;background:var(--ink);margin:34px 0 0}
 
-  .sec{padding:44px 0 6px}
+  /* 앵커 내비 */
+  .anav{position:sticky;top:0;z-index:20;background:var(--cream);border-bottom:2px solid var(--ink)}
+  .anav-in{max-width:760px;margin:0 auto;padding:0 20px;display:flex;gap:6px;overflow-x:auto;-webkit-overflow-scrolling:touch;scrollbar-width:none}
+  .anav-in::-webkit-scrollbar{display:none}
+  .anav a{flex:none;padding:13px 12px;font-size:13.5px;font-weight:900;text-decoration:none;color:var(--muted);border-bottom:3px solid transparent;margin-bottom:-2px;white-space:nowrap}
+  .anav a.on{color:var(--ink);border-bottom-color:var(--ink)}
+
+  .sec{padding:44px 0 6px;scroll-margin-top:60px}
   .sec-k{font-size:12px;font-weight:800;letter-spacing:.14em;color:var(--muted);margin-bottom:6px}
   .sec h2{font-family:var(--disp);font-weight:400;font-size:clamp(30px,8vw,52px);line-height:.95;letter-spacing:.01em;margin-bottom:14px}
   .sec p.lead{color:var(--sub);font-size:15.5px}
@@ -124,7 +132,7 @@
   @media (max-width:900px){.fl{display:none}}
 
   /* 섹션 여백에 떠다니는 손그림 */
-  .sec{position:relative}
+  .sec{position:relative;scroll-margin-top:60px}
   .sf{position:absolute;pointer-events:none;user-select:none;z-index:0}
   .sf img{width:100%;height:auto;display:block}
   .sf.l{left:-150px}
@@ -168,10 +176,19 @@
   </div>
 </header>
 
+<nav class="anav" aria-label="섹션 이동">
+  <div class="anav-in">
+    <a href="#about">행사 소개</a>
+    <a href="#event">이벤트 소개</a>
+    <a href="#with">함께하는 브랜드</a>
+    <a href="#scf">싸커피는</a>
+  </div>
+</nav>
+
 <main class="wrap">
 
   <!-- 1. 행사 소개 -->
-  <section class="sec">
+  <section class="sec" id="about">
     <div class="sec-k">ABOUT</div>
     <span class="sf l s1" aria-hidden="true"><img src="img/day/doodle/spark.png" alt=""></span>
     <span class="sf r s2" aria-hidden="true"><img src="img/day/doodle/jersey.png" alt=""></span>
@@ -185,7 +202,7 @@
   </section>
 
   <!-- 2. 이벤트 소개 -->
-  <section class="sec">
+  <section class="sec" id="event">
     <div class="sec-k">EVENT</div>
     <span class="sf l s2" aria-hidden="true"><img src="img/day/doodle/boots.png" alt=""></span>
     <span class="sf r s1" aria-hidden="true"><img src="img/day/doodle/drinkick-round.png" alt=""></span>
@@ -210,7 +227,7 @@
     <div class="panels">
       <div class="venue panel" id="p-dokyu" role="tabpanel" aria-labelledby="tab-dokyu">
         <div class="vhead">
-          <span class="vlogo"><img src="img/day/day-dokyu.png" alt="도덕과 규범 로고"></span>
+          <span class="vlogo"><img src="img/day/day-p-dokyu.png" alt="도덕과 규범 로고"></span>
           <div><div class="nm">도덕과 규범</div><div class="ad">서울 마포구 독막로19길 32 1층</div></div>
         </div>
         <a class="map-btn" href="https://naver.me/FRLN7StS" target="_blank" rel="noopener">지도 보기</a>
@@ -231,7 +248,7 @@
 
       <div class="venue panel" id="p-katze" role="tabpanel" aria-labelledby="tab-katze">
         <div class="vhead">
-          <span class="vlogo"><img src="img/day/day-katze.png" alt="카쩨 로고"></span>
+          <span class="vlogo"><img src="img/day/day-p-katze.png" alt="카쩨 로고"></span>
           <div><div class="nm">카쩨</div><div class="ad">서울 서대문구 이화여대2길 26 1층 102, 103호</div></div>
         </div>
         <a class="map-btn" href="https://naver.me/5EUZwRQr" target="_blank" rel="noopener">지도 보기</a>
@@ -248,7 +265,7 @@
 
       <div class="venue panel" id="p-tony" role="tabpanel" aria-labelledby="tab-tony">
         <div class="vhead">
-          <span class="vlogo"><img src="img/day/day-tony-inv.png" alt="카페 토니 로고"></span>
+          <span class="vlogo"><img src="img/day/day-p-tony.png" alt="카페 토니 로고"></span>
           <div><div class="nm">토니</div><div class="ad">서울 용산구 백범로79길 26 1층 102호</div></div>
         </div>
         <a class="map-btn" href="https://naver.me/GDQaQcRd" target="_blank" rel="noopener">지도 보기</a>
@@ -267,7 +284,7 @@
     </div>
   </section>
 
-  <section class="sec">
+  <section class="sec" id="with">
     <div class="sec-k">WITH</div>
     <span class="sf r s1" aria-hidden="true"><img src="img/day/doodle/drinkick-badge.png" alt=""></span>
     <h2>함께하는 브랜드</h2>
@@ -279,7 +296,7 @@
     </div>
   </section>
 
-  <section class="sec">
+  <section class="sec" id="scf">
     <div class="sec-k">SOCCOFFEE</div>
     <span class="sf l s2" aria-hidden="true"><img src="img/day/doodle/shooter.png" alt=""></span>
     <span class="sf r s3" aria-hidden="true"><img src="img/day/doodle/ball-fire.png" alt=""></span>
@@ -326,6 +343,25 @@
     });
   });
   select(0);
+})();
+
+(function(){
+  var links = [].slice.call(document.querySelectorAll('.anav a'));
+  if (!links.length || !window.IntersectionObserver) return;
+  var map = {};
+  links.forEach(function(a){ map[a.getAttribute('href').slice(1)] = a; });
+  var io = new IntersectionObserver(function(entries){
+    entries.forEach(function(en){
+      if (!en.isIntersecting) return;
+      links.forEach(function(a){ a.classList.remove('on'); });
+      var a = map[en.target.id];
+      if (a) a.classList.add('on');
+    });
+  }, { rootMargin: '-58px 0px -70% 0px' });
+  Object.keys(map).forEach(function(id){
+    var el = document.getElementById(id);
+    if (el) io.observe(el);
+  });
 })();
 </script>
 

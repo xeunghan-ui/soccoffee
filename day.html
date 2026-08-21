@@ -48,9 +48,7 @@
   /* 히어로 — 포스터 레이아웃 */
   .hero{padding:34px 20px 10px;text-align:center}
   .hero-in{max-width:760px;margin:0 auto}
-  .toplogos{display:flex;align-items:center;justify-content:center;gap:28px;flex-wrap:wrap}
-  .toplogos span{width:96px;height:56px;display:grid;place-items:center}
-  .toplogos img{width:96px;height:56px;object-fit:contain;display:block}
+  .toplogos img{width:clamp(210px,52vw,252px);height:auto;display:block;margin:0 auto}
   .caps{margin-top:20px;font-size:12.5px;font-weight:800;letter-spacing:.04em;line-height:1.5;text-transform:uppercase}
   .bigname{font-family:var(--disp);font-weight:400;font-size:clamp(56px,17vw,124px);line-height:.86;letter-spacing:.01em;text-transform:uppercase;margin:38px 0 0}
   .kor{margin-top:10px;font-size:clamp(17px,4.4vw,22px);font-weight:900;letter-spacing:.02em}
@@ -157,11 +155,7 @@
   <span class="fl c" aria-hidden="true"><img src="img/day/doodle/candle.png" alt=""></span>
   <span class="fl d" aria-hidden="true"><img src="img/day/doodle/scc-pop.png" alt=""></span>
   <div class="hero-in">
-    <div class="toplogos">
-      <span><img src="img/day/day-katze.png" alt="카쩨"></span>
-      <span><img src="img/day/day-dokyu.png" alt="도덕과 규범"></span>
-      <span><img src="img/day/day-tony-inv.png" alt="카페 토니"></span>
-    </div>
+    <div class="toplogos"><img src="img/day/day-cafes-lockup.png" alt="카쩨 · 도덕과 규범 · 토니"></div>
     <div class="caps">
       SOCCOFFEE DAY 2ND BIRTHDAY<br>
       SOCCOFFEE IS A COMMUNITY BASED ON A CAFÉ.<br>

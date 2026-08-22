@@ -88,7 +88,7 @@
 
   /* 이벤트 카드 */
   .grid{display:grid;grid-template-columns:1fr 1fr;gap:18px;margin-top:22px}
-  @media (max-width:560px){.grid{gap:10px;align-items:start}.prog{padding:14px 14px}.prog h3{font-size:15px}.prog .no{font-size:10px}.prog.open{grid-column:1 / -1;padding:16px 18px}.prog.open h3{font-size:17px}}
+  @media (max-width:560px){.grid{grid-template-columns:1fr;gap:10px}.prog{padding:16px 18px}.prog h3{font-size:17px}}
   .prog{background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:24px}
   .prog .no{font-size:11px;font-weight:800;color:var(--muted);letter-spacing:.12em}
   .prog h3{font-size:18px;font-weight:900;margin:6px 0 8px}
@@ -96,11 +96,11 @@
   .prog .at{display:block;margin-top:9px;font-size:12px;font-weight:800;color:var(--ink);letter-spacing:.01em}
   .prog .pbody{display:block}
   @media (max-width:560px){
-    .prog{position:relative;padding-right:26px}
+    .prog{position:relative;padding-right:34px}
     .prog .pbody{display:none}
     .prog.open .pbody{display:block}
     .prog h3{margin-bottom:0}
-    .prog::after{content:'+';position:absolute;top:12px;right:10px;font-size:15px;font-weight:900;color:var(--muted);line-height:1}
+    .prog::after{content:'+';position:absolute;top:14px;right:14px;font-size:16px;font-weight:900;color:var(--muted);line-height:1}
     .prog.open::after{content:'\2212'}
   }
 

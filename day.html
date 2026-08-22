@@ -150,13 +150,6 @@
   .fl img,.sf img{width:100%;height:auto;display:block;transform:rotate(var(--rot,0deg));transition:opacity .22s ease,transform .28s cubic-bezier(.34,1.56,.64,1)}
   .fl,.sf{transition:transform .28s cubic-bezier(.34,1.56,.64,1)}
   .s-alt{position:absolute;left:0;top:0;opacity:0}
-  @media (hover:hover){
-    .fl,.sf{pointer-events:auto}
-    .fl:hover,.sf:hover{transform:scale(1.14)}
-    .fl:hover .s-base,.sf:hover .s-base{opacity:0}
-    .fl:hover .s-alt,.sf:hover .s-alt{opacity:1;transform:rotate(calc(var(--rot,0deg) * -1.4))}
-    .fl:hover img,.sf:hover img{animation-play-state:paused}
-  }
   .fl.a{width:74px;left:3%;top:96px;animation:sway 6s ease-in-out infinite}
   .fl.b{width:60px;right:4%;top:76px;animation:sway 7.4s ease-in-out infinite reverse}
   .fl.c{width:66px;left:6%;bottom:96px;animation:sway 8s ease-in-out infinite reverse}
@@ -191,6 +184,14 @@
   @media (max-width:640px){
     .sf{display:none}
     .sec > span.sf:first-of-type{display:block;left:auto;right:0;top:4px;width:40px !important;margin-top:0 !important;opacity:.85}
+  }
+
+  @media (hover:hover){
+    .fl,.sf{pointer-events:auto}
+    .fl:hover,.sf:hover{transform:scale(1.14)}
+    .fl:hover .s-base,.sf:hover .s-base{opacity:0}
+    .fl:hover .s-alt,.sf:hover .s-alt{opacity:1;transform:rotate(calc(var(--rot,0deg) * -1.4))}
+    .fl:hover img,.sf:hover img{animation-play-state:paused}
   }
 
   @media (prefers-reduced-motion:reduce){

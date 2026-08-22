@@ -154,7 +154,16 @@
   .fl.d{width:96px;right:5%;bottom:82px;animation:sway 6.6s ease-in-out infinite}
   .fl.e{width:92px;left:7%;top:47%;animation:sway 8.8s ease-in-out infinite reverse}
   @keyframes sway{0%,100%{transform:translateY(0) rotate(-5deg)}50%{transform:translateY(-14px) rotate(6deg)}}
-  @media (max-width:900px){.fl{display:none}}
+  @media (max-width:900px){
+    .fl.a{width:56px;left:2%;top:52px}
+    .fl.b{width:46px;right:3%;top:44px}
+    .fl.c{width:50px;left:3%;bottom:56px}
+    .fl.d{width:58px;right:2%;bottom:48px}
+    .fl.e{width:52px;left:4%;top:48%}
+  }
+  @media (max-width:430px){
+    .fl.a{width:48px}.fl.b{width:40px}.fl.c{width:44px}.fl.d{width:50px}.fl.e{width:44px}
+  }
 
   /* 섹션 여백에 떠다니는 손그림 */
   .sec{position:relative;scroll-margin-top:60px}
@@ -171,7 +180,11 @@
   .sf.s7{width:100px;top:1080px;animation:sway 8.6s ease-in-out infinite}
   .sf.s8{width:88px;top:1300px;animation:sway 7.4s ease-in-out infinite reverse}
   .sf.s9{width:94px;top:1250px;animation:sway 9.2s ease-in-out infinite}
-  @media (max-width:1240px){.sf{display:none}}
+  @media (max-width:1240px) and (min-width:641px){.sf{display:none}}
+  @media (max-width:640px){
+    .sf{display:none}
+    .sec > span.sf:first-of-type{display:block;left:auto;right:0;top:2px;width:46px !important;margin-top:0 !important;opacity:.9}
+  }
 
   @media (prefers-reduced-motion:reduce){
     .fl,.sf{animation:none !important}

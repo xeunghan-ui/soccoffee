@@ -156,6 +156,11 @@
   .fl.d{width:78px;right:5%;bottom:82px;animation:sway 6.6s ease-in-out infinite}
   .fl.e{width:74px;left:7%;top:47%;animation:sway 8.8s ease-in-out infinite reverse}
   @keyframes sway{0%,100%{transform:translateY(0) rotate(-5deg)}50%{transform:translateY(-14px) rotate(6deg)}}
+  @keyframes drift{0%,100%{transform:translate(0,0) rotate(0deg)}33%{transform:translate(9px,-7px) rotate(5deg)}66%{transform:translate(-7px,-12px) rotate(-4deg)}}
+  @keyframes bobble{0%,100%{transform:translateY(0) rotate(0deg)}25%{transform:translateY(-6px) rotate(9deg)}75%{transform:translateY(-16px) rotate(-8deg)}}
+  @keyframes tilt{0%,100%{transform:rotate(-9deg) translateY(-2px)}50%{transform:rotate(10deg) translateY(-9px)}}
+  @keyframes wander{0%,100%{transform:translate(0,0) rotate(-3deg)}20%{transform:translate(-8px,-5px) rotate(4deg)}55%{transform:translate(6px,-14px) rotate(-6deg)}80%{transform:translate(-4px,-6px) rotate(3deg)}}
+
   @media (max-width:900px){
     .fl.b,.fl.e{display:none}
     .fl.a{width:50px;left:3%;top:60px}
@@ -185,6 +190,18 @@
     .sf{display:none}
     .sec > span.sf:first-of-type{display:block;left:auto;right:0;top:4px;width:40px !important;margin-top:0 !important;opacity:.85}
   }
+
+  /* 스티커마다 다른 궤적·시작 시점 */
+  .fl.a{animation-name:drift;animation-delay:-1.4s}
+  .fl.b{animation-name:bobble;animation-delay:-3.1s}
+  .fl.c{animation-name:tilt;animation-delay:-0.6s}
+  .fl.d{animation-name:wander;animation-delay:-2.2s}
+  .fl.e{animation-name:sway;animation-delay:-4.3s}
+  .sf:nth-of-type(5n+1){animation-name:sway;animation-delay:-0.9s}
+  .sf:nth-of-type(5n+2){animation-name:drift;animation-delay:-2.6s}
+  .sf:nth-of-type(5n+3){animation-name:bobble;animation-delay:-4.1s}
+  .sf:nth-of-type(5n+4){animation-name:tilt;animation-delay:-1.7s}
+  .sf:nth-of-type(5n+5){animation-name:wander;animation-delay:-3.4s}
 
   @media (hover:hover){
     .fl,.sf{pointer-events:auto}

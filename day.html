@@ -65,7 +65,7 @@
   .sec h2{font-size:14px;font-weight:900;letter-spacing:.06em;color:var(--muted);margin-bottom:2px}
   .sec p.lead{color:var(--sub);font-size:15.5px}
 
-  .note{border:2px solid var(--ink);border-radius:14px;padding:18px 20px;margin-top:20px;font-size:14.5px;color:var(--sub);line-height:1.75}
+  .note{display:inline-block;border:2px solid var(--ink);border-radius:14px;padding:16px 22px;margin-top:20px;font-size:14.5px;color:var(--sub);line-height:1.7}
   .note b{color:var(--ink);font-weight:900}
 
   /* 이벤트 카드 */
@@ -88,6 +88,7 @@
   .panel[hidden]{display:none}
 
   .venue{background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:24px}
+  .vphoto{width:100%;max-width:440px;height:auto;display:block;border-radius:10px;margin:0 auto 18px}
   .vhead{display:flex;align-items:center;gap:14px}
   .vhead>div{flex:1;min-width:0}
   .vlogo{flex:none;width:72px;height:52px;display:grid;place-items:center}
@@ -111,7 +112,7 @@
   /* 브랜드 */
 
   /* 갤러리 */
-  .shots{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-top:20px}
+  .shots{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-top:20px}
   @media (max-width:560px){.shots{grid-template-columns:1fr 1fr}}
   .shots img{width:100%;aspect-ratio:1/1;object-fit:cover;border-radius:12px;display:block}
 
@@ -234,6 +235,7 @@
 
     <div class="panels">
       <div class="venue panel" id="p-dokyu" role="tabpanel" aria-labelledby="tab-dokyu">
+        <img class="vphoto" src="img/day/day-photo-dokyu.webp" alt="도덕과 규범 외관" loading="lazy">
         <div class="vhead">
           <span class="vlogo"><img src="img/day/day-p-dokyu.png" alt="도덕과 규범 로고"></span>
           <div><div class="nm">도덕과 규범</div><div class="ad">서울 마포구 독막로19길 32 1층</div></div>
@@ -254,6 +256,7 @@
       </div>
 
       <div class="venue panel" id="p-katze" role="tabpanel" aria-labelledby="tab-katze">
+        <img class="vphoto" src="img/day/day-photo-katze.webp" alt="카쩨 외관" loading="lazy">
         <div class="vhead">
           <span class="vlogo"><img src="img/day/day-p-katze.png" alt="카쩨 로고"></span>
           <div><div class="nm">카쩨</div><div class="ad">서울 서대문구 이화여대2길 26 1층</div></div>
@@ -270,6 +273,7 @@
       </div>
 
       <div class="venue panel" id="p-tony" role="tabpanel" aria-labelledby="tab-tony">
+        <img class="vphoto" src="img/day/day-photo-tony.webp" alt="토니 외관" loading="lazy">
         <div class="vhead">
           <span class="vlogo sm"><img src="img/day/day-p-tony.png" alt="카페 토니 로고"></span>
           <div><div class="nm">토니</div><div class="ad">서울 용산구 백범로79길 26 1층 102호</div></div>
@@ -300,6 +304,7 @@
       <img src="img/gal-ssau-8.webp" alt="싸커피 활동" loading="lazy">
       <img src="img/gal-ssau-1.webp" alt="싸커피 활동" loading="lazy">
       <img src="img/gal-ssau-2.webp" alt="싸커피 활동" loading="lazy">
+      <img src="img/60E7A8504.webp" alt="싸커피 활동" loading="lazy">
     </div>
   </section>
 

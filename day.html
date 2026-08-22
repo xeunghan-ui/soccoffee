@@ -147,7 +147,16 @@
   .heromark{position:absolute;left:50%;top:50%;transform:translate(-50%,-46%);width:min(760px,92vw);opacity:.055;pointer-events:none;user-select:none;z-index:0}
   .heromark img{width:100%;height:auto;display:block}
   .fl{position:absolute;pointer-events:none;user-select:none}
-  .fl img{width:100%;height:auto;display:block;transform:rotate(var(--rot,0deg))}
+  .fl img,.sf img{width:100%;height:auto;display:block;transform:rotate(var(--rot,0deg));transition:opacity .22s ease,transform .28s cubic-bezier(.34,1.56,.64,1)}
+  .fl,.sf{transition:transform .28s cubic-bezier(.34,1.56,.64,1)}
+  .s-alt{position:absolute;left:0;top:0;opacity:0}
+  @media (hover:hover){
+    .fl,.sf{pointer-events:auto}
+    .fl:hover,.sf:hover{transform:scale(1.14)}
+    .fl:hover .s-base,.sf:hover .s-base{opacity:0}
+    .fl:hover .s-alt,.sf:hover .s-alt{opacity:1;transform:rotate(calc(var(--rot,0deg) * -1.4))}
+    .fl:hover img,.sf:hover img{animation-play-state:paused}
+  }
   .fl.a{width:74px;left:3%;top:96px;animation:sway 6s ease-in-out infinite}
   .fl.b{width:60px;right:4%;top:76px;animation:sway 7.4s ease-in-out infinite reverse}
   .fl.c{width:66px;left:6%;bottom:96px;animation:sway 8s ease-in-out infinite reverse}
@@ -167,7 +176,6 @@
   /* 섹션 여백에 떠다니는 손그림 */
   .sec{position:relative;scroll-margin-top:60px}
   .sf{position:absolute;pointer-events:none;user-select:none;z-index:0}
-  .sf img{width:100%;height:auto;display:block;transform:rotate(var(--rot,0deg))}
   .sf.l{left:var(--off,-150px)}
   .sf.r{right:var(--off,-150px)}
   .sf.s1{width:88px;top:40px;animation:sway 7.2s ease-in-out infinite}
@@ -202,11 +210,11 @@
 
 <header class="hero">
   <span class="heromark" aria-hidden="true"><img src="img/day/day-scf-mark.png" alt=""></span>
-  <span class="fl a" aria-hidden="true"><img style="--rot:-11deg" src="img/day/doodle/ball-fire.png" alt=""></span>
-  <span class="fl b" aria-hidden="true"><img style="--rot:8deg" src="img/day/doodle/cup.png" alt=""></span>
-  <span class="fl c" aria-hidden="true"><img style="--rot:5deg" src="img/day/doodle/candle.png" alt=""></span>
-  <span class="fl d" aria-hidden="true"><img style="--rot:-7deg" src="img/day/doodle/scc-pop.png" alt=""></span>
-  <span class="fl e" aria-hidden="true"><img style="--rot:-9deg" src="img/day/doodle/jersey.png" alt=""></span>
+  <span class="fl a" aria-hidden="true"><img class="s-base" style="--rot:-11deg" src="img/day/doodle/ball-fire.png" alt=""><img class="s-alt" style="--rot:-11deg" src="img/day/doodle/players.png" alt=""></span>
+  <span class="fl b" aria-hidden="true"><img class="s-base" style="--rot:8deg" src="img/day/doodle/cup.png" alt=""><img class="s-alt" style="--rot:8deg" src="img/day/doodle/drinkick-round.png" alt=""></span>
+  <span class="fl c" aria-hidden="true"><img class="s-base" style="--rot:5deg" src="img/day/doodle/candle.png" alt=""><img class="s-alt" style="--rot:5deg" src="img/day/doodle/spark.png" alt=""></span>
+  <span class="fl d" aria-hidden="true"><img class="s-base" style="--rot:-7deg" src="img/day/doodle/scc-pop.png" alt=""><img class="s-alt" style="--rot:-7deg" src="img/day/doodle/drinkick-diag.png" alt=""></span>
+  <span class="fl e" aria-hidden="true"><img class="s-base" style="--rot:-9deg" src="img/day/doodle/jersey.png" alt=""><img class="s-alt" style="--rot:-9deg" src="img/day/doodle/shooter.png" alt=""></span>
   <div class="hero-in">
     <div class="toplogos"><img src="img/day/day-cafes-lockup.png" alt="카쩨 · 도덕과 규범 · 토니"></div>
     <div class="caps">
@@ -230,9 +238,9 @@
   <section class="sec" id="about">
     <h2>행사 소개</h2>
     <div class="sec-k">ABOUT</div>
-    <span class="sf l s1" aria-hidden="true" style="--off:-120px;width:66px;margin-top:-18px"><img style="--rot:-13deg" src="img/day/doodle/spark.png" alt=""></span>
-    <span class="sf r s2" aria-hidden="true" style="--off:-174px;width:78px;margin-top:36px"><img style="--rot:9deg" src="img/day/doodle/jersey.png" alt=""></span>
-    <span class="sf l s3" aria-hidden="true" style="--off:-142px;width:72px;margin-top:-30px"><img style="--rot:-7deg" src="img/day/doodle/cup.png" alt=""></span>
+    <span class="sf l s1" aria-hidden="true" style="--off:-120px;width:66px;margin-top:-18px"><img class="s-base" style="--rot:-13deg" src="img/day/doodle/spark.png" alt=""><img class="s-alt" style="--rot:-13deg" src="img/day/doodle/candle.png" alt=""></span>
+    <span class="sf r s2" aria-hidden="true" style="--off:-174px;width:78px;margin-top:36px"><img class="s-base" style="--rot:9deg" src="img/day/doodle/jersey.png" alt=""><img class="s-alt" style="--rot:9deg" src="img/day/doodle/shooter.png" alt=""></span>
+    <span class="sf l s3" aria-hidden="true" style="--off:-142px;width:72px;margin-top:-30px"><img class="s-base" style="--rot:-7deg" src="img/day/doodle/cup.png" alt=""><img class="s-alt" style="--rot:-7deg" src="img/day/doodle/drinkick-round.png" alt=""></span>
 
     <p class="lead">싸커피는 2024년 9월, 축구와 커피를 좋아하는 사람들이 카페에서 시작한 혼성 풋살 클럽입니다. 창단 2주년을 맞이하여, 카페에서 축구 문화를 즐길 수 있도록 할 예정입니다. 싸커피 데이가 진행되는 3곳의 카페를 방문하여, 축구를 함께 즐겨요. 축구를 몰라도 누구나 환영입니다.</p>
 
@@ -248,13 +256,13 @@
   <section class="sec" id="event">
     <h2>이벤트 소개</h2>
     <div class="sec-k">EVENT</div>
-    <span class="sf l s2" aria-hidden="true" style="--off:-124px;width:84px;margin-top:54px"><img style="--rot:14deg" src="img/day/doodle/boots.png" alt=""></span>
-    <span class="sf r s1" aria-hidden="true" style="--off:-164px;width:67px;margin-top:20px"><img style="--rot:-4deg" src="img/day/doodle/drinkick-round.png" alt=""></span>
-    <span class="sf l s5" aria-hidden="true" style="--off:-112px;width:75px;margin-top:-46px"><img style="--rot:11deg" src="img/day/doodle/players.png" alt=""></span>
-    <span class="sf r s6" aria-hidden="true" style="--off:-180px;width:81px;margin-top:62px"><img style="--rot:-9deg" src="img/day/doodle/drinkick-diag.png" alt=""></span>
-    <span class="sf l s7" aria-hidden="true" style="--off:-104px;width:70px;margin-top:28px"><img style="--rot:6deg" src="img/day/doodle/love-football.png" alt=""></span>
-    <span class="sf r s8" aria-hidden="true" style="--off:-152px;width:76px;margin-top:-34px"><img style="--rot:-12deg" src="img/day/doodle/candle.png" alt=""></span>
-    <span class="sf l s9" aria-hidden="true" style="--off:-124px;width:87px;margin-top:48px"><img style="--rot:4deg" src="img/day/doodle/scc-pop.png" alt=""></span>
+    <span class="sf l s2" aria-hidden="true" style="--off:-124px;width:84px;margin-top:54px"><img class="s-base" style="--rot:14deg" src="img/day/doodle/boots.png" alt=""><img class="s-alt" style="--rot:14deg" src="img/day/doodle/love-football.png" alt=""></span>
+    <span class="sf r s1" aria-hidden="true" style="--off:-164px;width:67px;margin-top:20px"><img class="s-base" style="--rot:-4deg" src="img/day/doodle/drinkick-round.png" alt=""><img class="s-alt" style="--rot:-4deg" src="img/day/doodle/cup.png" alt=""></span>
+    <span class="sf l s5" aria-hidden="true" style="--off:-112px;width:75px;margin-top:-46px"><img class="s-base" style="--rot:11deg" src="img/day/doodle/players.png" alt=""><img class="s-alt" style="--rot:11deg" src="img/day/doodle/ball-fire.png" alt=""></span>
+    <span class="sf r s6" aria-hidden="true" style="--off:-180px;width:81px;margin-top:62px"><img class="s-base" style="--rot:-9deg" src="img/day/doodle/drinkick-diag.png" alt=""><img class="s-alt" style="--rot:-9deg" src="img/day/doodle/scc-pop.png" alt=""></span>
+    <span class="sf l s7" aria-hidden="true" style="--off:-104px;width:70px;margin-top:28px"><img class="s-base" style="--rot:6deg" src="img/day/doodle/love-football.png" alt=""><img class="s-alt" style="--rot:6deg" src="img/day/doodle/boots.png" alt=""></span>
+    <span class="sf r s8" aria-hidden="true" style="--off:-152px;width:76px;margin-top:-34px"><img class="s-base" style="--rot:-12deg" src="img/day/doodle/candle.png" alt=""><img class="s-alt" style="--rot:-12deg" src="img/day/doodle/spark.png" alt=""></span>
+    <span class="sf l s9" aria-hidden="true" style="--off:-124px;width:87px;margin-top:48px"><img class="s-base" style="--rot:4deg" src="img/day/doodle/scc-pop.png" alt=""><img class="s-alt" style="--rot:4deg" src="img/day/doodle/drinkick-diag.png" alt=""></span>
 
     <p class="lead">싸커피 데이에서 만날 수 있는 것들. 카페별로 진행 여부가 다르니 아래 탭에서 확인하세요.</p>
 
@@ -333,8 +341,8 @@
   <section class="sec" id="scf">
     <h2>싸커피는</h2>
     <div class="sec-k">SOCCOFFEE</div>
-    <span class="sf l s4" aria-hidden="true" style="--off:-138px;width:83px;margin-top:16px"><img style="--rot:13deg" src="img/day/doodle/shooter.png" alt=""></span>
-    <span class="sf r s3" aria-hidden="true" style="--off:-158px;width:72px;margin-top:-52px"><img style="--rot:-3deg" src="img/day/doodle/ball-fire.png" alt=""></span>
+    <span class="sf l s4" aria-hidden="true" style="--off:-138px;width:83px;margin-top:16px"><img class="s-base" style="--rot:13deg" src="img/day/doodle/shooter.png" alt=""><img class="s-alt" style="--rot:13deg" src="img/day/doodle/jersey.png" alt=""></span>
+    <span class="sf r s3" aria-hidden="true" style="--off:-158px;width:72px;margin-top:-52px"><img class="s-base" style="--rot:-3deg" src="img/day/doodle/ball-fire.png" alt=""><img class="s-alt" style="--rot:-3deg" src="img/day/doodle/players.png" alt=""></span>
 
     <div class="shots">
       <img src="img/gal-ssau-8.webp" alt="싸커피 활동" loading="lazy">

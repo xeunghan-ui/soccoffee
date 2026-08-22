@@ -42,9 +42,9 @@
   }
   *{margin:0;padding:0;box-sizing:border-box}
   html{scroll-behavior:smooth}
-  body{cursor:url(img/day/day-cursor.png) 6 4, auto;overflow-x:hidden;background:var(--cream);color:var(--ink);font-family:'Pretendard Variable',Pretendard,-apple-system,BlinkMacSystemFont,system-ui,sans-serif;line-height:1.6;-webkit-font-smoothing:antialiased}
+  body{cursor:url(img/day/day-cursor.png) 8 6, auto;overflow-x:hidden;background:var(--cream);color:var(--ink);font-family:'Pretendard Variable',Pretendard,-apple-system,BlinkMacSystemFont,system-ui,sans-serif;line-height:1.6;-webkit-font-smoothing:antialiased}
   a{color:inherit}
-  a,button,.tab,.map-btn{cursor:url(img/day/day-cursor.png) 6 4, pointer}
+  a,button,.tab,.map-btn{cursor:url(img/day/day-cursor.png) 8 6, pointer}
   @media (hover:none){body,a,button,.tab,.map-btn{cursor:auto}}
   .prog a,.ev a{text-decoration:underline;text-underline-offset:3px}
   .wrap{max-width:880px;margin:0 auto;padding:0 24px}
@@ -67,8 +67,7 @@
   .sec h2{font-size:14px;font-weight:900;letter-spacing:.06em;color:var(--muted);margin-bottom:2px}
   .sec p.lead{color:var(--sub);font-size:15.5px}
 
-  .note{display:inline-block;border:2px solid var(--ink);border-radius:14px;padding:16px 22px;margin-top:26px;font-size:14.5px;color:var(--sub);line-height:1.7}
-  .note b{color:var(--ink);font-weight:900}
+  .when-line{margin-top:18px;font-size:clamp(15px,3.6vw,17px);font-weight:900;color:var(--ink);letter-spacing:.01em}
 
   .cafeshots{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;margin-top:26px}
   @media (max-width:640px){.cafeshots{grid-template-columns:1fr;gap:18px}}
@@ -206,14 +205,11 @@
 
     <p class="lead">싸커피는 2024년 9월, 축구와 커피를 좋아하는 사람들이 카페에서 시작한 혼성 풋살 클럽입니다. 창단 2주년을 맞이하여, 카페에서 축구 문화를 즐길 수 있도록 할 예정입니다. 싸커피 데이가 진행되는 3곳의 카페를 방문하여, 축구를 함께 즐겨요. 축구를 몰라도 누구나 환영입니다.</p>
 
+    <p class="when-line">2026년 9월 5일 토요일 14:00 – 18:00 (입장료 없음)</p>
     <div class="cafeshots">
       <figure><img src="img/day/day-photo-dokyu.webp" alt="도덕과 규범 외관" loading="lazy"><figcaption>도덕과 규범 <span>상수</span></figcaption></figure>
       <figure><img src="img/day/day-photo-katze.webp" alt="카쩨 외관" loading="lazy"><figcaption>카쩨 <span>이대</span></figcaption></figure>
       <figure><img src="img/day/day-photo-tony.webp" alt="토니 외관" loading="lazy"><figcaption>토니 <span>효창</span></figcaption></figure>
-    </div>
-    <div class="note">
-      <b>2026년 9월 5일 토요일 14:00 – 18:00</b><br>
-      입장료 없음
     </div>
   </section>
 

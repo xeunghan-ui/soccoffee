@@ -53,8 +53,8 @@
   html{scroll-behavior:smooth}
   body{cursor:url(img/day/day-cursor.png) 12 8, auto;overflow-x:hidden;background:var(--cream);color:var(--ink);font-family:'Pretendard Variable',Pretendard,-apple-system,BlinkMacSystemFont,system-ui,sans-serif;line-height:1.6;word-break:keep-all;-webkit-font-smoothing:antialiased}
   a{color:inherit}
-  a,button,.tab,.map-btn{cursor:url(img/day/day-cursor.png) 12 8, pointer}
-  @media (hover:none){body,a,button,.tab,.map-btn{cursor:auto}}
+  a,button,summary,.tab,.map-btn{cursor:url(img/day/day-cursor.png) 12 8, pointer}
+  @media (hover:none){body,a,button,summary,.tab,.map-btn{cursor:auto}}
   .ev a{text-decoration:underline;text-underline-offset:3px}
   .wrap{max-width:880px;margin:0 auto;padding:0 24px}
 
@@ -206,6 +206,22 @@
     .fl,.sf{animation:none !important}
   }
 
+  /* 크레딧 */
+  .credits{border-top:2px solid var(--ink);margin-top:40px}
+  .credits summary{list-style:none;padding:18px 0;font-size:12px;font-weight:900;letter-spacing:.14em;color:var(--ink);display:flex;align-items:center;justify-content:space-between}
+  .credits summary::-webkit-details-marker{display:none}
+  .credits summary::after{content:'+';font-size:15px;font-weight:900;color:var(--muted)}
+  .credits[open] summary::after{content:'\2212'}
+  .cr{display:grid;grid-template-columns:132px 1fr;gap:10px 18px;padding:2px 0 26px;font-size:13.5px}
+  .cr dt{font-weight:900;color:var(--muted);font-size:12px;letter-spacing:.02em;padding-top:2px}
+  .cr dd{color:var(--sub);font-weight:700}
+  .cr dd a{text-decoration:underline;text-underline-offset:3px;color:var(--ink)}
+  .cr .thx{grid-column:1 / -1;margin-top:8px;padding-top:16px;border-top:1px solid var(--line);color:var(--muted);font-weight:700}
+  @media (max-width:560px){
+    .cr{grid-template-columns:1fr;gap:2px 0}
+    .cr dt{margin-top:12px}
+  }
+
   /* 푸터 */
   .cta{margin:48px 0 0;padding:32px 0 52px;text-align:center;border-top:2px solid var(--ink)}
   .cta p{color:var(--muted);font-size:14px;margin-bottom:14px}
@@ -273,7 +289,6 @@
     <span class="sf r s8" aria-hidden="true" style="--off:-152px;width:76px;margin-top:-34px"><img class="s-base" style="--rot:-12deg" src="img/day/doodle/candle.png" alt=""><img class="s-alt" style="--rot:-12deg" src="img/day/doodle/spark.png" alt=""></span>
     <span class="sf l s9" aria-hidden="true" style="--off:-124px;width:87px;margin-top:48px"><img class="s-base" style="--rot:4deg" src="img/day/doodle/scc-pop.png" alt=""><img class="s-alt" style="--rot:4deg" src="img/day/doodle/drinkick-diag.png" alt=""></span>
 
-    <p class="lead">싸커피 데이에서 만날 수 있는 것들. 카페별로 진행 여부가 다르니 아래 탭에서 확인하세요.</p>
 
     <div class="tabs" role="tablist" aria-label="카페 선택">
       <button class="tab" role="tab" id="tab-dokyu" aria-controls="p-dokyu" aria-selected="true">도덕과 규범<span class="a">상수 · 메인</span></button>
@@ -357,6 +372,25 @@
     <a class="btn" href="index.html">싸커피 소개 보러 가기</a>
     <a class="btn ghost" href="https://instagram.com/soccoffee__" target="_blank" rel="noopener">인스타그램 @soccoffee__</a>
   </div>
+
+  <details class="credits">
+    <summary>CREDIT</summary>
+    <dl class="cr">
+      <dt>총괄 및 기획</dt><dd><a href="https://www.instagram.com/xeung.han/" target="_blank" rel="noopener">박승한</a></dd>
+      <dt>이벤트</dt><dd><a href="https://www.instagram.com/oozoo.with/" target="_blank" rel="noopener">정은용</a> · <a href="https://www.instagram.com/darong_son/" target="_blank" rel="noopener">손다희</a></dd>
+      <dt>디자인 및 MD</dt><dd><a href="https://www.instagram.com/llittlezoe/" target="_blank" rel="noopener">조은애</a> · 김균원</dd>
+      <dt>촬영</dt><dd><a href="https://www.instagram.com/hi._.bi_film/" target="_blank" rel="noopener">정희범</a></dd>
+      <dt>참여 카페</dt><dd><a href="https://www.instagram.com/doduk_kyubum/" target="_blank" rel="noopener">도덕과 규범</a> · <a href="https://www.instagram.com/katze_seoul/" target="_blank" rel="noopener">카쩨</a> · <a href="https://www.instagram.com/tony._.cafe/" target="_blank" rel="noopener">토니</a></dd>
+      <dt>협찬</dt><dd><a href="https://www.instagram.com/oatly/" target="_blank" rel="noopener">오틀리</a> · <a href="https://www.instagram.com/umbrokorea/" target="_blank" rel="noopener">엄브로</a> · <a href="https://www.instagram.com/sserfood.official/" target="_blank" rel="noopener">신선어람</a></dd>
+      <dt>콜라보 굿즈 제작</dt><dd><a href="https://www.instagram.com/88mmo/" target="_blank" rel="noopener">88mmo</a></dd>
+      <dt>판매 셀러</dt><dd>싸커피 멤버들 · <a href="https://www.instagram.com/ta.koii/" target="_blank" rel="noopener">이호탁</a> · <a href="https://www.instagram.com/differeach.ragazzi/" target="_blank" rel="noopener">김준태</a>(다다르다) · <a href="https://www.instagram.com/88mmo/" target="_blank" rel="noopener">88mmo</a></dd>
+      <dt>기부 셀러</dt><dd><a href="https://www.instagram.com/fenomino__/" target="_blank" rel="noopener">페노</a>(새벽의 축구전문가) · <a href="https://www.instagram.com/wonhee06/" target="_blank" rel="noopener">조원희</a> 선수 · <a href="https://www.instagram.com/nineist/" target="_blank" rel="noopener">이진웅</a>(Nineist)</dd>
+      <dt>도덕과 규범</dt><dd>이규범 · 홍순인 · 정유정</dd>
+      <dt>카쩨</dt><dd>한승재</dd>
+      <dt>토니</dt><dd>박우성</dd>
+      <dd class="thx">그리고 싸커피 멤버들과 방문해주신 모든 분들 감사합니다.</dd>
+    </dl>
+  </details>
 
 </main>
 

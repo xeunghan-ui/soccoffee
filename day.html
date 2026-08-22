@@ -67,10 +67,20 @@
   .sec h2{font-size:14px;font-weight:900;letter-spacing:.06em;color:var(--muted);margin-bottom:2px}
   .sec p.lead{color:var(--sub);font-size:15.5px}
 
-  .when-line{margin-top:18px;font-size:clamp(15px,3.6vw,17px);font-weight:900;color:var(--ink);letter-spacing:.01em}
+  .when-line{grid-column:1 / -1;margin:0 0 4px;font-size:clamp(15px,3.6vw,17px);font-weight:900;color:var(--ink);letter-spacing:.01em;line-height:1.5}
+  .when-line br{display:none}
+  .when-line span{font-weight:800;color:var(--sub)}
+  .when-line span::before{content:' · '}
 
   .cafeshots{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;margin-top:26px}
-  @media (max-width:640px){.cafeshots{grid-template-columns:1fr;gap:18px}}
+  @media (max-width:640px){
+    .cafeshots{grid-template-columns:1fr 1fr;gap:14px}
+    .when-line{grid-column:auto;align-self:center;margin:0;font-size:15px;line-height:1.6}
+    .when-line br{display:inline}
+    .when-line span{display:block}
+    .when-line span::before{content:''}
+    .cafeshots figcaption{font-size:11.5px;margin-top:6px}
+  }
   .cafeshots figure{margin:0}
   .cafeshots img{width:100%;height:auto;display:block;border-radius:10px}
   .cafeshots figcaption{margin-top:8px;font-size:12.5px;font-weight:800;color:var(--sub)}
@@ -78,12 +88,21 @@
 
   /* 이벤트 카드 */
   .grid{display:grid;grid-template-columns:1fr 1fr;gap:18px;margin-top:22px}
-  @media (max-width:560px){.grid{gap:12px}.prog{padding:16px}.prog h3{font-size:16px}.prog p{font-size:12.5px}.prog .at{font-size:11px}}
+  @media (max-width:560px){.grid{grid-template-columns:1fr;gap:10px}.prog{padding:16px 18px}.prog h3{font-size:17px}}
   .prog{background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:24px}
   .prog .no{font-size:11px;font-weight:800;color:var(--muted);letter-spacing:.12em}
   .prog h3{font-size:18px;font-weight:900;margin:6px 0 8px}
   .prog p{font-size:13.5px;color:var(--sub)}
   .prog .at{display:block;margin-top:9px;font-size:12px;font-weight:800;color:var(--ink);letter-spacing:.01em}
+  .prog .pbody{display:block}
+  @media (max-width:560px){
+    .prog{position:relative;padding-right:34px}
+    .prog .pbody{display:none}
+    .prog.open .pbody{display:block}
+    .prog h3{margin-bottom:0}
+    .prog::after{content:'+';position:absolute;top:14px;right:14px;font-size:16px;font-weight:900;color:var(--muted);line-height:1}
+    .prog.open::after{content:'\2212'}
+  }
 
   /* 카페 탭 */
   .tabs{display:flex;gap:10px;margin-top:28px;flex-wrap:wrap}
@@ -205,8 +224,8 @@
 
     <p class="lead">싸커피는 2024년 9월, 축구와 커피를 좋아하는 사람들이 카페에서 시작한 혼성 풋살 클럽입니다. 창단 2주년을 맞이하여, 카페에서 축구 문화를 즐길 수 있도록 할 예정입니다. 싸커피 데이가 진행되는 3곳의 카페를 방문하여, 축구를 함께 즐겨요. 축구를 몰라도 누구나 환영입니다.</p>
 
-    <p class="when-line">2026년 9월 5일 토요일 14:00 – 18:00 (입장료 없음)</p>
     <div class="cafeshots">
+      <p class="when-line">2026년 9월 5일 토요일<br>14:00 – 18:00<br><span>입장료 없음</span></p>
       <figure><img src="img/day/day-photo-dokyu.webp" alt="도덕과 규범 외관" loading="lazy"><figcaption>도덕과 규범 <span>상수</span></figcaption></figure>
       <figure><img src="img/day/day-photo-katze.webp" alt="카쩨 외관" loading="lazy"><figcaption>카쩨 <span>이대</span></figcaption></figure>
       <figure><img src="img/day/day-photo-tony.webp" alt="토니 외관" loading="lazy"><figcaption>토니 <span>효창</span></figcaption></figure>
@@ -228,12 +247,12 @@
     <p class="lead">싸커피 데이에서 만날 수 있는 것들. 카페별로 진행 여부가 다르니 아래 탭에서 확인하세요.</p>
 
     <div class="grid">
-      <div class="prog"><div class="no">COFFEE</div><h3>싸커피 싱글 오리진</h3><p>COLOMBIA La Terraza Geisha<br>Double Anaerobic · Citrus Co-Fermented · Washed</p><span class="at">도덕과 규범 · 카쩨 · 토니</span></div>
-      <div class="prog"><div class="no">DRIP</div><h3>싸커피 드립백</h3><p>싸커피 싱글 오리진으로 만든 2주년 특별 드립백.</p><span class="at">도덕과 규범 · 카쩨 · 토니</span></div>
-      <div class="prog"><div class="no">OATLY</div><h3>오틀리 특별 음료</h3><p>오틀리 슛(알콜) · 오틀리 패스(논알콜)</p><span class="at">도덕과 규범</span></div>
-      <div class="prog"><div class="no">GOODS</div><h3>싸커피 2주년 기념 굿즈</h3><p><a href="https://www.instagram.com/88mmo/" target="_blank" rel="noopener">88모</a> 콜라보 — 싸커피 컵과 싸커피 키링을 판매합니다.</p><span class="at">도덕과 규범 · 카쩨 · 토니</span></div>
-      <div class="prog"><div class="no">DISCOUNT</div><h3>레플리카 착용 할인</h3><p>축구 레플리카(유니폼)를 입고 오면 커피 1,000원 할인.</p><span class="at">도덕과 규범 · 카쩨 · 토니</span></div>
-      <div class="prog"><div class="no">FLEA</div><h3>축구 플리마켓</h3><p>팀원들이 내놓은 축구용품과 기부 물품을 판매합니다.</p><span class="at">도덕과 규범</span></div>
+      <div class="prog"><div class="no">COFFEE</div><h3>싸커피 싱글 오리진</h3><div class="pbody"><p>COLOMBIA La Terraza Geisha<br>Double Anaerobic · Citrus Co-Fermented · Washed</p><span class="at">도덕과 규범 · 카쩨 · 토니</span></div></div>
+      <div class="prog"><div class="no">DRIP</div><h3>싸커피 드립백</h3><div class="pbody"><p>싸커피 싱글 오리진으로 만든 2주년 특별 드립백.</p><span class="at">도덕과 규범 · 카쩨 · 토니</span></div></div>
+      <div class="prog"><div class="no">OATLY</div><h3>오틀리 특별 음료</h3><div class="pbody"><p>오틀리 슛(알콜) · 오틀리 패스(논알콜)</p><span class="at">도덕과 규범</span></div></div>
+      <div class="prog"><div class="no">GOODS</div><h3>싸커피 2주년 기념 굿즈</h3><div class="pbody"><p><a href="https://www.instagram.com/88mmo/" target="_blank" rel="noopener">88모</a> 콜라보 — 싸커피 컵과 싸커피 키링을 판매합니다.</p><span class="at">도덕과 규범 · 카쩨 · 토니</span></div></div>
+      <div class="prog"><div class="no">DISCOUNT</div><h3>레플리카 착용 할인</h3><div class="pbody"><p>축구 레플리카(유니폼)를 입고 오면 커피 1,000원 할인.</p><span class="at">도덕과 규범 · 카쩨 · 토니</span></div></div>
+      <div class="prog"><div class="no">FLEA</div><h3>축구 플리마켓</h3><div class="pbody"><p>팀원들이 내놓은 축구용품과 기부 물품을 판매합니다.</p><span class="at">도덕과 규범</span></div></div>
     </div>
 
     <div class="tabs" role="tablist" aria-label="카페 선택">
@@ -349,6 +368,38 @@
     });
   });
   select(0);
+})();
+
+(function(){
+  var cards = [].slice.call(document.querySelectorAll('.prog'));
+  var mq = window.matchMedia('(max-width:560px)');
+  function sync(){
+    cards.forEach(function(c){
+      if (mq.matches) {
+        c.setAttribute('role','button');
+        c.setAttribute('tabindex','0');
+        c.setAttribute('aria-expanded', c.classList.contains('open') ? 'true' : 'false');
+      } else {
+        c.removeAttribute('role'); c.removeAttribute('tabindex'); c.removeAttribute('aria-expanded');
+      }
+    });
+  }
+  cards.forEach(function(c){
+    function toggle(){
+      if (!mq.matches) return;
+      c.classList.toggle('open');
+      c.setAttribute('aria-expanded', c.classList.contains('open') ? 'true' : 'false');
+    }
+    c.addEventListener('click', function(e){
+      if (e.target.closest('a')) return;
+      toggle();
+    });
+    c.addEventListener('keydown', function(e){
+      if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); toggle(); }
+    });
+  });
+  sync();
+  if (mq.addEventListener) mq.addEventListener('change', sync);
 })();
 </script>
 

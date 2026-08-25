@@ -1507,7 +1507,7 @@ function candSelect(candidates, cat) {
   const sorted = [...candidates].sort(byName);
   return `<select class="vote-sel" id="voteSel-${cat}" onchange="pickCandSel('${cat}', this.value)">
     <option value="">— 이름 선택 —</option>
-    ${sorted.map(m => `<option value="${m.id}" ${potmPick[cat]===m.id?'selected':''}>${m.jersey!=null?m.jersey+' · ':''}${esc(m.name)}${m.cap?' (C)':''}</option>`).join('')}
+    ${sorted.map(m => `<option value="${m.id}" ${potmPick[cat]===m.id?'selected':''}>${m.jersey!=null?m.jersey+' · ':''}${esc(m.name)}${(m.cap&&teamSplitOn)?' (C)':''}</option>`).join('')}
   </select>`;
 }
 function pickCandSel(cat, val) {
@@ -1839,7 +1839,7 @@ function squadBlock(members, team) {
     <div class="sq-title">${team} <span class="sq-n">${list.length}명</span></div>
     ${list.map(m => `<div class="sq-row">
       <span class="no">${m.jersey != null ? String(m.jersey).padStart(2,'0') : '—'}</span>
-      <span class="kr">${esc(m.name)}${m.cap ? '<span class="sq-cap">C</span>' : ''}</span>
+      <span class="kr">${esc(m.name)}${(m.cap && teamSplitOn) ? '<span class="sq-cap">C</span>' : ''}</span>
       <span class="en">${esc(m.eng || '')}</span>
     </div>`).join('')}
   </div>`;

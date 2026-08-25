@@ -701,7 +701,7 @@ let TEAM_SHEET = {};
 function applyPlayers(players) {
   PLAYERS = players;
   ROSTER = players.map(p => {
-    const o = { id:p.id, name:p.name, tier:p.tier, status:p.status||'active',
+    const o = { id:p.id, name:p.name, tier:p.tier, status:p.status||'active', gender:p.gender||null,
       joinDate:p.joinDate||'', dormantMonths:(p.dormantMonths||[]).slice(), activeMonths:(p.activeMonths||[]).slice() };
     if (p.friendsSince) o.friendsSince = p.friendsSince;
     return o;

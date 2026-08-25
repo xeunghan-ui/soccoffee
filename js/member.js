@@ -217,9 +217,12 @@ function switchTab(tab, mode) {
   if (mode !== 'none' && location.hash.slice(1) !== tab) {
     try {
       if (mode === 'replace') history.replaceState(null, '', '#' + tab);
-      else history.pushState(null, '', '#' + tab);
+      else { history.pushState(null, '', '#' + tab); _navDepth++; }
     } catch(e){ location.hash = tab; }
   }
+  // 하단 왼편 뒤로가기 버튼 — 홈에서만 숨김 (홈 화면 앱엔 브라우저 뒤로가기가 없어서. 2026-08-25 총괄)
+  const _bb = document.getElementById('bnavBack');
+  if (_bb) _bb.classList.toggle('hidden', tab === 'home');
   // 스크롤: 같은 탭 재클릭이면 그대로 두고, 다른 탭이면 그 탭에서 마지막 보던 위치 복원(첫 방문은 맨 위)
   if (mode !== 'none' && prevTab !== tab) {
     const _y = _tabScroll[tab] || 0;
@@ -4915,7 +4918,14 @@ async function initApp() {
 }
 // 뒤로/앞으로 가기(해시 변경) → 해당 탭으로(히스토리 조작 없이)
 window.addEventListener('hashchange', () => {
+  _navDepth = Math.max(0, _navDepth - 1);   // 대개 뒤로가기(앞으로 가기는 드묾 — 어긋나도 navBack이 홈으로 폴백)
   const t = location.hash.slice(1) || 'home';
   if (ALL_TABS.includes(t) && (t !== 'ops' || isAdmin())) switchTab(t, 'none');
 });
+// 하단 왼편 ← 버튼: 앱 안 히스토리가 있으면 이전 화면으로, 없으면 홈으로
+let _navDepth = 0;
+function navBack(){
+  if (_navDepth > 0) { try { history.back(); return; } catch(e){} }
+  switchTab('home');
+}
 initApp();

@@ -20,7 +20,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Anton&family=Oswald:wght@400;500;600&display=swap" rel="stylesheet">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-<link rel="stylesheet" href="css/member.css?v=20260816a">
+<link rel="stylesheet" href="css/member.css?v=20260825a">
 </head>
 <body>
 <div class="gate" id="gate">
@@ -130,6 +130,7 @@
 </div>
 
 <nav class="bottomnav" id="bottomNav">
+  <button class="bnav-item bnav-back hidden" id="bnavBack" onclick="navBack()"><span class="bn-ico">←</span>뒤로</button>
   <button class="bnav-item active" data-tab="home" onclick="switchTab('home')"><span class="bn-ico">⌂</span>홈</button>
   <button class="bnav-item" data-tab="att" onclick="switchTab('att')"><span class="bn-ico">◷</span>일정<span class="bn-badge" id="attBadge" style="display:none"></span></button>
   <button class="bnav-item" data-tab="member" onclick="switchTab('squad')"><span class="bn-ico">▦</span>멤버<span class="nav-dot" id="memberDot" style="display:none"></span></button>
@@ -138,6 +139,6 @@
 
 <div class="toast" id="toast"></div>
 
-<script src="js/member.js?v=20260825e"></script>
+<script src="js/member.js?v=20260825f"></script>
 </body>
 </html>

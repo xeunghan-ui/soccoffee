@@ -720,6 +720,9 @@
     color: #a4b39a; font-size: 11px; font-weight: 600; }
   .bnav-item .bn-ico { font-size: 19px; line-height: 1; }
   .bnav-item.active { color: var(--gold); }
+  /* 하단 왼편 뒤로가기 — 홈에서는 숨김(홈 화면 앱엔 브라우저 뒤로가기가 없음. 2026-08-25 총괄) */
+  .bnav-back { flex: 0 0 54px; color: var(--muted); }
+  .bnav-back.hidden { display: none; }
   .bn-badge { position: absolute; top: 2px; left: calc(50% + 5px); min-width: 16px; height: 16px; padding: 0 4px; border-radius: 8px; background: var(--alert); color: #fff; font-size: 10px; font-weight: 800; line-height: 16px; text-align: center; box-sizing: border-box; }
   /* 더보기 메뉴 */
   .more-grid { display: grid; gap: 10px; }

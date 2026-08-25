@@ -2723,6 +2723,21 @@ function closeMemberCard(){ mmState=null; const h=document.getElementById('mmHos
   function attach(){ let h=document.getElementById('mmHost'); if(!h){ h=document.createElement('div'); h.id='mmHost'; document.body.appendChild(h); } new MutationObserver(sync).observe(h,{childList:true}); sync(); }
   if(document.readyState==='loading') document.addEventListener('DOMContentLoaded',attach); else attach();
 })();
+// 일정 세션 캐러셀 — 키보드 ←/→ 로도 넘기기 (입력 중이거나 모달 열림 시 무시)
+document.addEventListener('keydown', (e) => {
+  if (e.key !== 'ArrowLeft' && e.key !== 'ArrowRight') return;
+  const c = document.getElementById('sessCarousel');
+  if (!c || !c.offsetParent) return;                      // 캐러셀 없거나 숨김 상태
+  const t = e.target;
+  if (t && (/^(INPUT|TEXTAREA|SELECT)$/.test(t.tagName) || t.isContentEditable)) return;
+  const h = document.getElementById('mmHost');
+  if (h && h.innerHTML.trim()) return;                    // 모달 열려 있으면 무시
+  e.preventDefault();
+  const w = c.clientWidth, n = c.children.length;
+  const i = Math.round(c.scrollLeft / w);
+  const next = Math.max(0, Math.min(n - 1, i + (e.key === 'ArrowRight' ? 1 : -1)));
+  c.scrollTo({ left: next * w, behavior: 'smooth' });
+});
 // 홈 화면에 추가 가이드(모달)
 function showAddHomeGuide(){
   let h=document.getElementById('mmHost'); if(!h){ h=document.createElement('div'); h.id='mmHost'; document.body.appendChild(h); }

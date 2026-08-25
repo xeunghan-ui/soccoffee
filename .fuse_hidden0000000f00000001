@@ -1,0 +1,431 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>싸커피 데이 — 2026.09.05(토) 카페에서 만나는 축구</title>
+<meta name="description" content="싸커피 2주년 기념 행사 '싸커피 데이'. 9월 5일 토요일 14–18시, 도덕과 규범(상수)·카쩨(이대)·토니(효창)에서. 싸커피 커피·드립백, 레플리카 커피 1,000원 할인, 뽑기 이벤트, 타투 스티커, 축구용품 플리마켓, 오틀리 음료.">
+<link rel="canonical" href="https://xeunghan-ui.github.io/soccoffee/day.html">
+<meta property="og:type" content="website">
+<meta property="og:title" content="싸커피 데이 — 2026.09.05(토)">
+<meta property="og:description" content="싸커피 창단 2주년 기념 행사. 카페에서 축구를 즐기는 하루 — 싸커피 커피·드립백, 레플리카 커피 할인, 뽑기 이벤트, 타투 스티커, 축구용품 플리마켓, 오틀리 음료.">
+<meta property="og:image" content="https://xeunghan-ui.github.io/soccoffee/img/day/day-og.jpg?v=2">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta property="og:image:alt" content="싸커피 데이 2026.09.05">
+<meta property="og:site_name" content="SOCCOFFEE">
+<meta property="og:locale" content="ko_KR">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="싸커피 데이 — 2026.09.05(토)">
+<meta name="twitter:description" content="싸커피 창단 2주년 기념 행사. 카페에서 축구를 즐기는 하루 — 싸커피 커피·드립백, 레플리카 커피 할인, 뽑기 이벤트, 타투 스티커, 축구용품 플리마켓, 오틀리 음료.">
+<meta name="twitter:image" content="https://xeunghan-ui.github.io/soccoffee/img/day/day-og.jpg?v=2">
+<meta property="og:url" content="https://xeunghan-ui.github.io/soccoffee/day.html">
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Anton&display=swap" rel="stylesheet">
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "Event",
+  "name": "싸커피 데이 (SOCCOFFEE DAY)",
+  "description": "싸커피 창단 2주년 기념 행사. 카페에서 축구를 즐기는 하루 — 싸커피 커피·드립백, 레플리카 커피 할인, 뽑기 이벤트, 타투 스티커, 축구용품 플리마켓, 오틀리 음료.",
+  "startDate": "2026-09-05T14:00:00+09:00",
+  "endDate": "2026-09-05T18:00:00+09:00",
+  "eventStatus": "https://schema.org/EventScheduled",
+  "eventAttendanceMode": "https://schema.org/OfflineEventAttendanceMode",
+  "isAccessibleForFree": true,
+  "location": {
+    "@type": "Place",
+    "name": "도덕과 규범",
+    "address": { "@type": "PostalAddress", "streetAddress": "독막로19길 32 1층", "addressLocality": "마포구", "addressRegion": "서울", "addressCountry": "KR" }
+  },
+  "organizer": { "@type": "SportsTeam", "name": "싸커피 (SOCCOFFEE FC)", "url": "https://xeunghan-ui.github.io/soccoffee/" },
+  "image": "https://xeunghan-ui.github.io/soccoffee/img/day/day-og.jpg"
+}
+</script>
+<style>
+  /* 포스터 톤 — 크림 바탕 + 딥그린 잉크 2색. 값은 브랜드_컬러.md 토큰만 사용 */
+  :root{
+    --cream:#E8E0C8; --ink:#15281B; --surface:#FBF6EE;
+    --line:#C4B894; --muted:#8A8468; --sub:#33492F;
+    --disp:"Anton","Pretendard",sans-serif;
+  }
+  *{margin:0;padding:0;box-sizing:border-box}
+  html{scroll-behavior:smooth}
+  body{cursor:url(img/day/day-cursor.png) 12 8, auto;overflow-x:hidden;background:var(--cream);color:var(--ink);font-family:'Pretendard Variable',Pretendard,-apple-system,BlinkMacSystemFont,system-ui,sans-serif;line-height:1.6;word-break:keep-all;-webkit-font-smoothing:antialiased}
+  a{color:inherit}
+  a,button,summary,.tab,.map-btn{cursor:url(img/day/day-cursor.png) 12 8, pointer}
+  @media (hover:none){body,a,button,summary,.tab,.map-btn{cursor:auto}}
+  .ev a{text-decoration:underline;text-underline-offset:3px}
+  .wrap{max-width:880px;margin:0 auto;padding:0 24px}
+
+  /* 히어로 — 포스터 레이아웃 */
+  .hero{padding:clamp(30px,5vh,48px) 20px 12px;text-align:center;min-height:100vh;min-height:100svh;display:flex;flex-direction:column;justify-content:center}
+  .hero-in{position:relative;z-index:1;width:100%;max-width:880px;margin:0 auto}
+  .toplogos img{width:clamp(168px,42vw,206px);height:auto;display:block;margin:0 auto}
+  .hspon{margin-top:clamp(30px,5vh,44px)}
+  .hspon img{width:clamp(186px,48vw,244px);height:auto;display:block;margin:0 auto}
+  .caps{margin-top:clamp(26px,4.4vh,36px);font-size:clamp(11px,2.8vw,12.5px);font-weight:800;letter-spacing:.04em;line-height:1.45;text-transform:uppercase}
+  .bigname{font-family:var(--disp);font-weight:400;font-size:clamp(56px,17vw,124px);line-height:.98;letter-spacing:.01em;text-transform:uppercase;margin:clamp(56px,9vh,96px) 0 0}
+  .when{margin-top:clamp(30px,4.4vh,44px);display:inline-block;background:var(--ink);color:var(--cream);border-radius:999px;padding:11px 22px;font-size:clamp(14px,3.6vw,17px);font-weight:900;letter-spacing:.01em}
+  .where{margin-top:clamp(14px,2.2vh,22px);font-size:13.5px;color:var(--sub);font-weight:700}
+  .rule{height:2px;background:var(--ink);margin:0}
+  @media (max-height:680px){.hero{min-height:0}}
+
+  .sec{padding:clamp(48px,7vh,72px) 0 6px;scroll-margin-top:60px}
+  .sec-k{font-family:var(--disp);font-weight:400;font-size:clamp(34px,9vw,60px);line-height:.92;letter-spacing:.01em;color:var(--ink);margin-bottom:16px}
+  .sec h2{font-size:14px;font-weight:900;letter-spacing:.06em;color:var(--muted);margin-bottom:2px}
+  .sec p.lead{color:var(--sub);font-size:15.5px}
+
+  .when-line{grid-column:1 / -1;margin:0 0 4px;font-size:clamp(15px,3.6vw,17px);font-weight:900;color:var(--ink);letter-spacing:.01em;line-height:1.5}
+  .when-line br{display:none}
+  .when-line span{font-weight:800;color:var(--sub)}
+  .when-line span::before{content:' · '}
+
+  .cafeshots{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;margin-top:26px}
+  @media (max-width:640px){
+    .cafeshots{grid-template-columns:1fr 1fr;gap:14px}
+    .when-line{grid-column:auto;align-self:center;margin:0;font-size:15px;line-height:1.6}
+    .when-line br{display:inline}
+    .when-line span{display:block}
+    .when-line span::before{content:''}
+    .cafeshots figcaption{font-size:11.5px;margin-top:6px}
+  }
+  .cafeshots figure{margin:0}
+  .cafeshots img{width:100%;height:auto;display:block;border-radius:10px}
+  .cafeshots figcaption{margin-top:8px;font-size:12.5px;font-weight:800;color:var(--sub)}
+  .cafeshots figcaption span{font-weight:700;color:var(--muted)}
+
+  /* 카페 탭 */
+  .tabs{display:flex;gap:10px;margin-top:28px;flex-wrap:wrap}
+  .tab{flex:1 1 0;min-width:100px;background:transparent;border:2px solid var(--ink);color:var(--ink);font-family:inherit;font-size:14.5px;font-weight:900;line-height:1.25;border-radius:12px;padding:11px 10px;cursor:pointer;text-align:center}
+  .tab .a{display:block;font-size:11px;font-weight:700;letter-spacing:.06em;color:var(--muted);margin-top:3px}
+  .tab[aria-selected="true"]{background:var(--ink);color:var(--cream)}
+  .tab[aria-selected="true"] .a{color:var(--cream);opacity:.8}
+  .panels{margin-top:12px}
+  .panel{display:block}
+  .panel[hidden]{display:none}
+
+  .venue{background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:24px}
+  .vhead{display:flex;align-items:center;gap:14px}
+  .vhead>div{flex:1;min-width:0}
+  .vlogo{flex:none;width:72px;height:52px;display:grid;place-items:center}
+  .vlogo img{width:72px;height:52px;object-fit:contain;display:block}
+  .vlogo.sm img{width:46px;height:44px}
+  .venue .nm{font-size:17px;font-weight:900}
+  .venue .ad{font-size:13px;color:var(--muted);margin-top:3px}
+  .map-btn{flex:none;margin-left:auto;font-size:13px;font-weight:800;text-decoration:none;border:2px solid var(--ink);border-radius:999px;padding:7px 14px;white-space:nowrap}
+
+  /* 카페별 이벤트 목록 */
+  .evs{margin-top:16px;padding-top:14px;border-top:1px solid var(--line);display:grid;grid-template-columns:1fr 1fr;gap:16px 34px}
+  .evs .fn{grid-column:1 / -1}
+  @media (max-width:560px){.evs{gap:12px 16px}}
+  .ev b{font-size:14.5px;font-weight:900}
+  .ev span{display:block;font-size:13px;color:var(--sub)}
+  .mk{font-style:normal;font-weight:900;font-size:14px;margin-left:2px;vertical-align:super;line-height:0}
+  .fn{margin-top:6px;padding-top:10px;border-top:1px solid var(--line);font-size:12px;font-weight:700;color:var(--muted)}
+
+  /* 셀러 */
+
+  /* 브랜드 */
+
+  /* 갤러리 */
+  .shots{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-top:20px}
+  @media (max-width:560px){.shots{grid-template-columns:1fr 1fr}}
+  .shots img{width:100%;aspect-ratio:1/1;object-fit:cover;border-radius:12px;display:block}
+
+  /* 히어로 떠다니는 스티커 */
+  .hero{position:relative;overflow:hidden}
+  .heromark{position:absolute;left:50%;top:50%;transform:translate(-50%,-46%);width:min(760px,92vw);opacity:.055;pointer-events:none;user-select:none;z-index:0}
+  .heromark img{width:100%;height:auto;display:block}
+  .fl{position:absolute;pointer-events:none;user-select:none}
+  .fl img,.sf img{width:100%;height:auto;display:block;transform:rotate(var(--rot,0deg));transition:opacity .22s ease,transform .28s cubic-bezier(.34,1.56,.64,1)}
+  .fl,.sf{transition:transform .28s cubic-bezier(.34,1.56,.64,1)}
+  .s-alt{position:absolute;left:0;top:0;opacity:0}
+  .fl.a{width:74px;left:3%;top:96px;animation:sway 6s ease-in-out infinite}
+  .fl.b{width:60px;right:4%;top:76px;animation:sway 7.4s ease-in-out infinite reverse}
+  .fl.c{width:66px;left:6%;bottom:96px;animation:sway 8s ease-in-out infinite reverse}
+  .fl.d{width:78px;right:5%;bottom:82px;animation:sway 6.6s ease-in-out infinite}
+  .fl.e{width:74px;left:7%;top:47%;animation:sway 8.8s ease-in-out infinite reverse}
+  @keyframes sway{0%,100%{transform:translateY(0) rotate(-5deg)}50%{transform:translateY(-14px) rotate(6deg)}}
+  @keyframes drift{0%,100%{transform:translate(0,0) rotate(0deg)}33%{transform:translate(9px,-7px) rotate(5deg)}66%{transform:translate(-7px,-12px) rotate(-4deg)}}
+  @keyframes bobble{0%,100%{transform:translateY(0) rotate(0deg)}25%{transform:translateY(-6px) rotate(9deg)}75%{transform:translateY(-16px) rotate(-8deg)}}
+  @keyframes tilt{0%,100%{transform:rotate(-9deg) translateY(-2px)}50%{transform:rotate(10deg) translateY(-9px)}}
+  @keyframes wander{0%,100%{transform:translate(0,0) rotate(-3deg)}20%{transform:translate(-8px,-5px) rotate(4deg)}55%{transform:translate(6px,-14px) rotate(-6deg)}80%{transform:translate(-4px,-6px) rotate(3deg)}}
+
+  @media (max-width:900px){
+    .fl.b,.fl.e{display:none}
+    .fl.a{width:50px;left:3%;top:60px}
+    .fl.c{width:44px;left:4%;bottom:60px}
+    .fl.d{width:52px;right:3%;bottom:52px}
+  }
+  @media (max-width:430px){
+    .fl.a{width:44px}.fl.c{width:38px}.fl.d{width:46px}
+  }
+
+  /* 섹션 여백에 떠다니는 손그림 */
+  .sec{position:relative;scroll-margin-top:60px}
+  .sf{position:absolute;pointer-events:none;user-select:none;z-index:0}
+  .sf.l{left:var(--off,-150px)}
+  .sf.r{right:var(--off,-150px)}
+  .sf.s1{width:88px;top:40px;animation:sway 7.2s ease-in-out infinite}
+  .sf.s2{width:96px;top:170px;animation:sway 8.4s ease-in-out infinite reverse}
+  .sf.s3{width:82px;top:330px;animation:sway 6.4s ease-in-out infinite}
+  .sf.s4{width:104px;top:520px;animation:sway 9s ease-in-out infinite reverse}
+  .sf.s5{width:92px;top:700px;animation:sway 7.8s ease-in-out infinite}
+  .sf.s6{width:86px;top:880px;animation:sway 6.8s ease-in-out infinite reverse}
+  .sf.s7{width:100px;top:1080px;animation:sway 8.6s ease-in-out infinite}
+  .sf.s8{width:88px;top:1300px;animation:sway 7.4s ease-in-out infinite reverse}
+  .sf.s9{width:94px;top:1250px;animation:sway 9.2s ease-in-out infinite}
+  @media (max-width:1240px) and (min-width:641px){.sf{display:none}}
+  @media (max-width:640px){
+    .sf{display:none}
+    .sec > span.sf:first-of-type{display:block;left:auto;right:0;top:4px;width:40px !important;margin-top:0 !important;opacity:.85}
+  }
+
+  /* 스티커마다 다른 궤적·시작 시점 */
+  .fl.a{animation-name:drift;animation-delay:-1.4s}
+  .fl.b{animation-name:bobble;animation-delay:-3.1s}
+  .fl.c{animation-name:tilt;animation-delay:-0.6s}
+  .fl.d{animation-name:wander;animation-delay:-2.2s}
+  .fl.e{animation-name:sway;animation-delay:-4.3s}
+  .sf:nth-of-type(5n+1){animation-name:sway;animation-delay:-0.9s}
+  .sf:nth-of-type(5n+2){animation-name:drift;animation-delay:-2.6s}
+  .sf:nth-of-type(5n+3){animation-name:bobble;animation-delay:-4.1s}
+  .sf:nth-of-type(5n+4){animation-name:tilt;animation-delay:-1.7s}
+  .sf:nth-of-type(5n+5){animation-name:wander;animation-delay:-3.4s}
+
+  @media (hover:hover){
+    .fl,.sf{pointer-events:auto}
+    .fl:hover,.sf:hover{transform:scale(1.14)}
+    .fl:hover .s-base,.sf:hover .s-base{opacity:0}
+    .fl:hover .s-alt,.sf:hover .s-alt{opacity:1;transform:rotate(calc(var(--rot,0deg) * -1.4))}
+    .fl:hover img,.sf:hover img{animation-play-state:paused}
+  }
+
+  @media (prefers-reduced-motion:reduce){
+    .fl,.sf{animation:none !important}
+  }
+
+  /* 크레딧 */
+  .credits{border-top:2px solid var(--ink);margin-top:40px}
+  .credits summary{list-style:none;padding:18px 0;font-size:12px;font-weight:900;letter-spacing:.14em;color:var(--ink);display:flex;align-items:center;justify-content:space-between}
+  .credits summary::-webkit-details-marker{display:none}
+  .credits summary::after{content:'+';font-size:15px;font-weight:900;color:var(--muted)}
+  .credits[open] summary::after{content:'\2212'}
+  .cr{display:grid;grid-template-columns:132px 1fr;gap:10px 18px;padding:2px 0 26px;font-size:13.5px}
+  .cr dt{font-weight:900;color:var(--muted);font-size:12px;letter-spacing:.02em;padding-top:2px}
+  .cr dd{color:var(--sub);font-weight:700}
+  .cr dd a{text-decoration:underline;text-underline-offset:3px;color:var(--ink)}
+  .cr .thx{grid-column:1 / -1;margin-top:8px;padding-top:16px;border-top:1px solid var(--line);color:var(--muted);font-weight:700}
+  @media (max-width:560px){
+    .cr{grid-template-columns:1fr;gap:2px 0}
+    .cr dt{margin-top:12px}
+  }
+
+  /* 푸터 */
+  .cta{margin:48px 0 0;padding:32px 0 52px;text-align:center;border-top:2px solid var(--ink)}
+  .cta p{color:var(--muted);font-size:14px;margin-bottom:14px}
+  .cta a.btn{display:inline-block;background:var(--ink);color:var(--cream);font-weight:900;font-size:15px;border-radius:999px;padding:13px 26px;text-decoration:none;margin:6px}
+  .cta a.btn.ghost{background:transparent;color:var(--ink);border:2px solid var(--ink);padding:11px 24px}
+  .foot{padding:22px 0 40px;text-align:center;font-size:12px;color:var(--muted)}
+  .foot a{text-decoration:none;font-weight:800;color:var(--sub)}
+</style>
+</head>
+<body>
+
+<header class="hero">
+  <span class="heromark" aria-hidden="true"><img src="img/day/day-scf-mark.png" alt=""></span>
+  <span class="fl a" aria-hidden="true"><img class="s-base" style="--rot:-11deg" src="img/day/doodle/ball-fire.png" alt=""><img class="s-alt" style="--rot:-11deg" src="img/day/doodle/players.png" alt=""></span>
+  <span class="fl b" aria-hidden="true"><img class="s-base" style="--rot:8deg" src="img/day/doodle/cup.png" alt=""><img class="s-alt" style="--rot:8deg" src="img/day/doodle/drinkick-round.png" alt=""></span>
+  <span class="fl c" aria-hidden="true"><img class="s-base" style="--rot:5deg" src="img/day/doodle/candle.png" alt=""><img class="s-alt" style="--rot:5deg" src="img/day/doodle/spark.png" alt=""></span>
+  <span class="fl d" aria-hidden="true"><img class="s-base" style="--rot:-7deg" src="img/day/doodle/scc-pop.png" alt=""><img class="s-alt" style="--rot:-7deg" src="img/day/doodle/drinkick-diag.png" alt=""></span>
+  <span class="fl e" aria-hidden="true"><img class="s-base" style="--rot:-9deg" src="img/day/doodle/jersey.png" alt=""><img class="s-alt" style="--rot:-9deg" src="img/day/doodle/shooter.png" alt=""></span>
+  <div class="hero-in">
+    <div class="toplogos"><img src="img/day/day-cafes-lockup.png" alt="카쩨 · 도덕과 규범 · 토니"></div>
+    <div class="caps">
+      SOCCOFFEE DAY 2ND BIRTHDAY<br>
+      SOCCOFFEE IS A COMMUNITY BASED ON A CAFÉ.<br>
+      ALL MEMBERS LIKE SOCCER AND COFFEE.<br>
+      GOOD COFFEE. GOOD SOCCER. GOOD PEOPLE.
+    </div>
+    <div class="hspon"><img src="img/day/day-sponsors-row.png" alt="오틀리 · 엄브로 · 신선어람 · 88모"></div>
+    <h1 class="bigname">Soccoffee<br>Day</h1>
+    <div class="when">2026.09.05 SAT · 14:00 – 18:00</div>
+    <div class="where">도덕과 규범(상수) · 카쩨(이대) · 토니(효창)</div>
+  </div>
+</header>
+
+<div class="wrap"><div class="rule"></div></div>
+
+<main class="wrap">
+
+  <!-- 1. 행사 소개 -->
+  <section class="sec" id="about">
+    <h2>행사 소개</h2>
+    <div class="sec-k">ABOUT</div>
+    <span class="sf l s1" aria-hidden="true" style="--off:-120px;width:66px;margin-top:-18px"><img class="s-base" style="--rot:-13deg" src="img/day/doodle/spark.png" alt=""><img class="s-alt" style="--rot:-13deg" src="img/day/doodle/candle.png" alt=""></span>
+    <span class="sf r s2" aria-hidden="true" style="--off:-174px;width:78px;margin-top:36px"><img class="s-base" style="--rot:9deg" src="img/day/doodle/jersey.png" alt=""><img class="s-alt" style="--rot:9deg" src="img/day/doodle/shooter.png" alt=""></span>
+    <span class="sf l s3" aria-hidden="true" style="--off:-142px;width:72px;margin-top:-30px"><img class="s-base" style="--rot:-7deg" src="img/day/doodle/cup.png" alt=""><img class="s-alt" style="--rot:-7deg" src="img/day/doodle/drinkick-round.png" alt=""></span>
+
+    <p class="lead">싸커피는 2024년 9월, 축구와 커피를 좋아하는 사람들이 카페에서 시작한 혼성 풋살 클럽입니다. 창단 2주년을 맞이하여, 카페에서 축구를 즐길 수 있도록 할 예정입니다. 싸커피 데이가 진행되는 3곳의 카페를 방문하여, 축구를 함께 즐겨요. 축구를 몰라도 누구나 환영입니다.</p>
+
+    <div class="cafeshots">
+      <p class="when-line">2026년 9월 5일 토요일<br>14:00 – 18:00<br><span>입장료 없음</span></p>
+      <figure><img src="img/day/day-photo-dokyu.webp" alt="도덕과 규범 외관" loading="lazy"><figcaption>도덕과 규범 <span>상수</span></figcaption></figure>
+      <figure><img src="img/day/day-photo-katze.webp" alt="카쩨 외관" loading="lazy"><figcaption>카쩨 <span>이대</span></figcaption></figure>
+      <figure><img src="img/day/day-photo-tony.webp" alt="토니 외관" loading="lazy"><figcaption>토니 <span>효창</span></figcaption></figure>
+    </div>
+  </section>
+
+  <!-- 2. 이벤트 소개 -->
+  <section class="sec" id="event">
+    <h2>이벤트 소개</h2>
+    <div class="sec-k">EVENT</div>
+    <span class="sf l s2" aria-hidden="true" style="--off:-124px;width:84px;margin-top:54px"><img class="s-base" style="--rot:14deg" src="img/day/doodle/boots.png" alt=""><img class="s-alt" style="--rot:14deg" src="img/day/doodle/love-football.png" alt=""></span>
+    <span class="sf r s1" aria-hidden="true" style="--off:-164px;width:67px;margin-top:20px"><img class="s-base" style="--rot:-4deg" src="img/day/doodle/drinkick-round.png" alt=""><img class="s-alt" style="--rot:-4deg" src="img/day/doodle/cup.png" alt=""></span>
+    <span class="sf l s5" aria-hidden="true" style="--off:-112px;width:75px;margin-top:-46px"><img class="s-base" style="--rot:11deg" src="img/day/doodle/players.png" alt=""><img class="s-alt" style="--rot:11deg" src="img/day/doodle/ball-fire.png" alt=""></span>
+    <span class="sf r s6" aria-hidden="true" style="--off:-180px;width:81px;margin-top:62px"><img class="s-base" style="--rot:-9deg" src="img/day/doodle/drinkick-diag.png" alt=""><img class="s-alt" style="--rot:-9deg" src="img/day/doodle/scc-pop.png" alt=""></span>
+    <span class="sf l s7" aria-hidden="true" style="--off:-104px;width:70px;margin-top:28px"><img class="s-base" style="--rot:6deg" src="img/day/doodle/love-football.png" alt=""><img class="s-alt" style="--rot:6deg" src="img/day/doodle/boots.png" alt=""></span>
+    <span class="sf r s8" aria-hidden="true" style="--off:-152px;width:76px;margin-top:-34px"><img class="s-base" style="--rot:-12deg" src="img/day/doodle/candle.png" alt=""><img class="s-alt" style="--rot:-12deg" src="img/day/doodle/spark.png" alt=""></span>
+    <span class="sf l s9" aria-hidden="true" style="--off:-124px;width:87px;margin-top:48px"><img class="s-base" style="--rot:4deg" src="img/day/doodle/scc-pop.png" alt=""><img class="s-alt" style="--rot:4deg" src="img/day/doodle/drinkick-diag.png" alt=""></span>
+
+
+    <div class="tabs" role="tablist" aria-label="카페 선택">
+      <button class="tab" role="tab" id="tab-dokyu" aria-controls="p-dokyu" aria-selected="true">도덕과 규범<span class="a">상수 · 메인</span></button>
+      <button class="tab" role="tab" id="tab-katze" aria-controls="p-katze" aria-selected="false">카쩨<span class="a">이대</span></button>
+      <button class="tab" role="tab" id="tab-tony" aria-controls="p-tony" aria-selected="false">토니<span class="a">효창</span></button>
+    </div>
+
+    <div class="panels">
+      <div class="venue panel" id="p-dokyu" role="tabpanel" aria-labelledby="tab-dokyu">
+        <div class="vhead">
+          <span class="vlogo"><img src="img/day/day-p-dokyu.png" alt="도덕과 규범 로고"></span>
+          <div><div class="nm">도덕과 규범</div><div class="ad">서울 마포구 독막로19길 32 1층</div></div>
+          <a class="map-btn" href="https://naver.me/FRLN7StS" target="_blank" rel="noopener">지도 보기</a>
+        </div>
+        <div class="evs">
+          <div class="ev"><b>싸커피 싱글 오리진</b><span>COLOMBIA La Terraza Geisha</span></div>
+          <div class="ev"><b>싸커피 드립백</b><span>싱글 오리진으로 만든 2주년 특별 드립백</span></div>
+          <div class="ev"><b>싸커피 2주년 기념 굿즈</b><span><a href="https://www.instagram.com/88mmo/" target="_blank" rel="noopener">88모</a> 콜라보 — 컵 · 키링</span></div>
+          <div class="ev"><b>레플리카 착용 할인</b><span>유니폼 입고 오면 커피 1,000원 할인</span></div>
+          <div class="ev"><b>뽑기 이벤트</b><span>UMBRO 악세사리 등 상품</span></div>
+          <div class="ev"><b>타투 스티커</b><span>싸커피 메뉴 주문 시 증정</span></div>
+          <div class="ev"><b>오틀리 특별 음료<em class="mk">*</em></b><span>오틀리 슛(알콜) · 오틀리 패스(논알콜)</span></div>
+          <div class="ev"><b>축구 플리마켓<em class="mk">*</em></b><span>팀원을 포함한 축구 관련 셀러들의 마켓</span></div>
+          <div class="ev"><b>신선어람 리닭칩 시식<em class="mk">*</em></b><span>현장에서 맛보실 수 있습니다.</span></div>
+        </div>
+        <div class="fn">* 이 카페에서만 진행하는 이벤트</div>
+      </div>
+
+      <div class="venue panel" id="p-katze" role="tabpanel" aria-labelledby="tab-katze">
+        <div class="vhead">
+          <span class="vlogo"><img src="img/day/day-p-katze.png" alt="카쩨 로고"></span>
+          <div><div class="nm">카쩨</div><div class="ad">서울 서대문구 이화여대2길 26 1층</div></div>
+          <a class="map-btn" href="https://naver.me/5EUZwRQr" target="_blank" rel="noopener">지도 보기</a>
+        </div>
+        <div class="evs">
+          <div class="ev"><b>싸커피 싱글 오리진</b><span>COLOMBIA La Terraza Geisha</span></div>
+          <div class="ev"><b>싸커피 드립백</b><span>싱글 오리진으로 만든 2주년 특별 드립백</span></div>
+          <div class="ev"><b>싸커피 2주년 기념 굿즈</b><span><a href="https://www.instagram.com/88mmo/" target="_blank" rel="noopener">88모</a> 콜라보 — 키링</span></div>
+          <div class="ev"><b>레플리카 착용 할인</b><span>유니폼 입고 오면 커피 1,000원 할인</span></div>
+          <div class="ev"><b>뽑기 이벤트</b><span>UMBRO 악세사리 등 상품</span></div>
+          <div class="ev"><b>타투 스티커</b><span>싸커피 메뉴 주문 시 증정</span></div>
+        </div>
+      </div>
+
+      <div class="venue panel" id="p-tony" role="tabpanel" aria-labelledby="tab-tony">
+        <div class="vhead">
+          <span class="vlogo sm"><img src="img/day/day-p-tony.png" alt="카페 토니 로고"></span>
+          <div><div class="nm">토니</div><div class="ad">서울 용산구 백범로79길 26 1층</div></div>
+          <a class="map-btn" href="https://naver.me/GDQaQcRd" target="_blank" rel="noopener">지도 보기</a>
+        </div>
+        <div class="evs">
+          <div class="ev"><b>싸커피 싱글 오리진</b><span>COLOMBIA La Terraza Geisha</span></div>
+          <div class="ev"><b>싸커피 드립백</b><span>싱글 오리진으로 만든 2주년 특별 드립백</span></div>
+          <div class="ev"><b>싸커피 2주년 기념 굿즈</b><span><a href="https://www.instagram.com/88mmo/" target="_blank" rel="noopener">88모</a> 콜라보 — 키링</span></div>
+          <div class="ev"><b>레플리카 착용 할인</b><span>유니폼 입고 오면 커피 1,000원 할인</span></div>
+          <div class="ev"><b>뽑기 이벤트</b><span>UMBRO 악세사리 등 상품</span></div>
+          <div class="ev"><b>타투 스티커</b><span>싸커피 메뉴 주문 시 증정</span></div>
+          <div class="ev"><b>축구 게임<em class="mk">*</em></b><span>미션 성공 시 선물 증정</span></div>
+        </div>
+        <div class="fn">* 이 카페에서만 진행하는 이벤트</div>
+      </div>
+    </div>
+  </section>
+
+  <section class="sec" id="scf">
+    <h2>싸커피는</h2>
+    <div class="sec-k">SOCCOFFEE</div>
+    <span class="sf l s4" aria-hidden="true" style="--off:-138px;width:83px;margin-top:16px"><img class="s-base" style="--rot:13deg" src="img/day/doodle/shooter.png" alt=""><img class="s-alt" style="--rot:13deg" src="img/day/doodle/jersey.png" alt=""></span>
+    <span class="sf r s3" aria-hidden="true" style="--off:-158px;width:72px;margin-top:-52px"><img class="s-base" style="--rot:-3deg" src="img/day/doodle/ball-fire.png" alt=""><img class="s-alt" style="--rot:-3deg" src="img/day/doodle/players.png" alt=""></span>
+
+    <div class="shots">
+      <img src="img/gal-ssau-1.webp" alt="싸커피 활동" loading="lazy">
+      <img src="img/day/day-drinkick.webp" alt="싸커피 드링킥 포스터" loading="lazy">
+      <img src="img/gal-ssau-2.webp" alt="싸커피 활동" loading="lazy">
+      <img src="img/gal-ssau-8.webp" alt="싸커피 활동" loading="lazy">
+    </div>
+  </section>
+
+  <div class="cta">
+    <p>싸커피가 궁금하다면</p>
+    <a class="btn" href="index.html">싸커피 소개 보러 가기</a>
+    <a class="btn ghost" href="https://instagram.com/soccoffee__" target="_blank" rel="noopener">인스타그램 @soccoffee__</a>
+  </div>
+
+  <details class="credits">
+    <summary>CREDIT</summary>
+    <dl class="cr">
+      <dt>총괄 및 기획</dt><dd><a href="https://www.instagram.com/xeung.han/" target="_blank" rel="noopener">박승한</a></dd>
+      <dt>이벤트</dt><dd><a href="https://www.instagram.com/oozoo.with/" target="_blank" rel="noopener">정은용</a> · <a href="https://www.instagram.com/darong_son/" target="_blank" rel="noopener">손다희</a></dd>
+      <dt>디자인 및 MD</dt><dd><a href="https://www.instagram.com/llittlezoe/" target="_blank" rel="noopener">조은애</a> · 김균원</dd>
+      <dt>촬영</dt><dd><a href="https://www.instagram.com/hi._.bi_film/" target="_blank" rel="noopener">정희범</a></dd>
+      <dt>참여 카페</dt><dd><a href="https://www.instagram.com/doduk_kyubum/" target="_blank" rel="noopener">도덕과 규범</a> · <a href="https://www.instagram.com/katze_seoul/" target="_blank" rel="noopener">카쩨</a> · <a href="https://www.instagram.com/tony._.cafe/" target="_blank" rel="noopener">토니</a></dd>
+      <dt>협찬</dt><dd><a href="https://www.instagram.com/oatly/" target="_blank" rel="noopener">오틀리</a> · <a href="https://www.instagram.com/umbrokorea/" target="_blank" rel="noopener">엄브로</a> · <a href="https://www.instagram.com/sserfood.official/" target="_blank" rel="noopener">신선어람</a></dd>
+      <dt>콜라보 굿즈 제작</dt><dd><a href="https://www.instagram.com/88mmo/" target="_blank" rel="noopener">88mmo</a></dd>
+      <dt>판매 셀러</dt><dd>싸커피 멤버들 · <a href="https://www.instagram.com/ta.koii/" target="_blank" rel="noopener">이호탁</a> · <a href="https://www.instagram.com/differeach.ragazzi/" target="_blank" rel="noopener">김준태</a>(다다르다) · <a href="https://www.instagram.com/88mmo/" target="_blank" rel="noopener">88mmo</a> · <a href="https://www.instagram.com/u3ung/" target="_blank" rel="noopener">정유정</a></dd>
+      <dt>기부 셀러</dt><dd><a href="https://www.instagram.com/fenomino__/" target="_blank" rel="noopener">페노</a>(새벽의 축구전문가) · <a href="https://www.instagram.com/wonhee06/" target="_blank" rel="noopener">조원희</a> 선수 · <a href="https://www.instagram.com/nineist/" target="_blank" rel="noopener">이진웅</a>(Nineist)</dd>
+      <dt>도덕과 규범</dt><dd><a href="https://www.instagram.com/kyusoonshow/" target="_blank" rel="noopener">이규범</a> · <a href="https://www.instagram.com/suninhong/" target="_blank" rel="noopener">홍순인</a> · <a href="https://www.instagram.com/u3ung/" target="_blank" rel="noopener">정유정</a></dd>
+      <dt>카쩨</dt><dd><a href="https://www.instagram.com/1tmdwo/" target="_blank" rel="noopener">한승재</a></dd>
+      <dt>토니</dt><dd><a href="https://www.instagram.com/ach1vn/" target="_blank" rel="noopener">박우성</a></dd>
+      <dt>오틀리</dt><dd><a href="https://www.instagram.com/oab_scott/" target="_blank" rel="noopener">이희성</a> · <a href="https://www.instagram.com/bangpan_man/" target="_blank" rel="noopener">최승호</a></dd>
+      <dt>엄브로</dt><dd>김영환 팀장님</dd>
+      <dt>신선어람</dt><dd><a href="https://www.instagram.com/dobomapo/" target="_blank" rel="noopener">신현오</a></dd>
+      <dd class="thx">그리고 싸커피 멤버들과 방문해주신 모든 분들 감사합니다.</dd>
+    </dl>
+  </details>
+
+</main>
+
+<footer class="foot"><a href="https://instagram.com/soccoffee__" target="_blank" rel="noopener">@soccoffee__</a> · SOCCOFFEE · Drink Coffee, Play Football · EST 2024</footer>
+
+<script>
+(function(){
+  var tabs = [].slice.call(document.querySelectorAll('.tab'));
+  if (!tabs.length) return;
+  function select(i){
+    tabs.forEach(function(t, k){
+      var on = (k === i);
+      t.setAttribute('aria-selected', on ? 'true' : 'false');
+      t.tabIndex = on ? 0 : -1;
+      var panel = document.getElementById(t.getAttribute('aria-controls'));
+      if (panel) panel.hidden = !on;
+    });
+  }
+  tabs.forEach(function(t, i){
+    t.addEventListener('click', function(){ select(i); });
+    t.addEventListener('keydown', function(e){
+      var d = e.key === 'ArrowRight' ? 1 : (e.key === 'ArrowLeft' ? -1 : 0);
+      if (!d) return;
+      e.preventDefault();
+      var n = (i + d + tabs.length) % tabs.length;
+      tabs[n].focus();
+      select(n);
+    });
+  });
+  select(0);
+})();
+</script>
+
+</body>
+</html>

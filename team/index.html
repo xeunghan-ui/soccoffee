@@ -4136,7 +4136,8 @@ function recalcAttendance(){
     p.attCount=yr.attended;
     p.attTotal=yr.counted;
     // 해당 연도에 재적(inPool)이었던 세션이 하나라도 있는지 (휴면 포함)
-    p.inPoolForYear=attYear?yearSessions.some(s=>isInPool(p,s.date)):true;
+    // + 가입일이 그 연도인 선수는 아직 재적 세션이 없어도 포함 (예: 9월 가입 신규가 8월에 명단에서 안 보이던 문제)
+    p.inPoolForYear=attYear?(yearSessions.some(s=>isInPool(p,s.date))||(!!p.joinDate&&p.joinDate.slice(0,4)===String(attYear)&&!p.leaveDate)):true;
     p.attendanceAll=all.rate;
     p.attCountAll=all.attended;
     p.attTotalAll=all.counted;

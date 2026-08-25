@@ -3784,10 +3784,15 @@ async function renderDues() {
   });
   const _toActiveIds = new Set(toActive.map(p=>p.id));
   const toDormant = ROSTER.filter(p => { const st = p.status||'active'; if (st!=='active') return false; if (_toActiveIds.has(p.id)) return false; const dm = dormantMonthsOf(p); return dm.includes(_sMon) && !dm.includes(_curM); });
-  const transCard = (toActive.length || toDormant.length) ? `<div class="card" style="padding:12px 14px;margin-bottom:12px">
-      <div style="font-size:12px;font-weight:800;color:var(--coffee);margin-bottom:8px">${_moLbl}월 활동/휴면 변경 <span style="color:var(--muted);font-weight:600">· 멤버 셀프 신청</span></div>
-      ${toActive.length?`<div style="font-size:13px;line-height:1.7${toDormant.length?';margin-bottom:6px':''}"><span style="color:var(--win);font-weight:800">휴면→활동</span> <span style="color:var(--muted)">${toActive.length}명</span> · ${[...toActive].sort(byName).map(m=>esc(m.name)).join(', ')}</div>`:''}
-      ${toDormant.length?`<div style="font-size:13px;line-height:1.7"><span style="color:var(--alert);font-weight:800">활동→휴면</span> <span style="color:var(--muted)">${toDormant.length}명</span> · ${[...toDormant].sort(byName).map(m=>esc(m.name)).join(', ')}</div>`:''}
+  // 신규 가입: 가입일이 해당 월인 멤버 (탈퇴·친구 제외)
+  const toNew = ROSTER.filter(p => { const st = p.status||'active'; if (st==='former'||st==='friends') return false; return (p.joinDate||'').slice(0,7) === _sMon; });
+  const _transLines = [];
+  if (toNew.length)     _transLines.push(`<span style="color:var(--accent);font-weight:800">신규 가입</span> <span style="color:var(--muted)">${toNew.length}명</span> · ${[...toNew].sort(byName).map(m=>esc(m.name)).join(', ')}`);
+  if (toActive.length)  _transLines.push(`<span style="color:var(--win);font-weight:800">휴면→활동</span> <span style="color:var(--muted)">${toActive.length}명</span> · ${[...toActive].sort(byName).map(m=>esc(m.name)).join(', ')}`);
+  if (toDormant.length) _transLines.push(`<span style="color:var(--alert);font-weight:800">활동→휴면</span> <span style="color:var(--muted)">${toDormant.length}명</span> · ${[...toDormant].sort(byName).map(m=>esc(m.name)).join(', ')}`);
+  const transCard = _transLines.length ? `<div class="card" style="padding:12px 14px;margin-bottom:12px">
+      <div style="font-size:12px;font-weight:800;color:var(--coffee);margin-bottom:8px">${_moLbl}월 멤버 변동</div>
+      ${_transLines.map((l,i)=>`<div style="font-size:13px;line-height:1.7${i<_transLines.length-1?';margin-bottom:6px':''}">${l}</div>`).join('')}
     </div>` : '';
 
   // ---- 명단 렌더 — 운영진·총무는 '할 일' 순 그룹(입금확인 대기 → 미납 → 완료), 멤버는 기존 정렬 (2026-08-15)

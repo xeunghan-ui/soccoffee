@@ -4203,7 +4203,7 @@ async function renderOps() {
     <div style="margin:0 0 16px;border-bottom:1px solid #2a3d30;padding-bottom:14px">
       <b style="color:#ece6d2">가입 신청 <span class="cnt-tag">${_jr.length}</span></b>
       <div class="hint" style="margin:2px 0 8px">연락 후 팀빌더에 등록하고 '처리'를 눌러요.</div>
-      ${_jr.map(q => `<div class="dues-row"><span class="nm" style="min-width:0">${esc(q.name)} <span class="cnt-tag">${esc(q.gender||'?')}</span><span class="hint" style="display:block;margin:0">${esc(q.phone||'')}${q.note?` · ${esc(q.note)}`:''}</span></span><button class="btn ghost sm" onclick="joinReqDone(${q.id})">처리</button></div>`).join('')}
+      ${_jr.map(q => `<div class="dues-row"><span class="nm" style="min-width:0">${esc(q.name)} <span class="cnt-tag">${esc(q.gender||'?')}</span>${q.jersey!=null?` <span class="cnt-tag">희망 ${q.jersey}번</span>`:''}<span class="hint" style="display:block;margin:0">${esc(q.phone||'')}${q.note?` · ${esc(q.note)}`:''}</span></span><button class="btn ghost sm" onclick="joinReqDone(${q.id})">처리</button></div>`).join('')}
     </div>` : '';
   const secRoster = `
     ${_jrHtml}

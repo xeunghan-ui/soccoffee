@@ -189,6 +189,7 @@ create table if not exists join_requests (
   name text not null,
   gender text,
   phone text,
+  jersey int,
   note text,
   status text not null default 'pending',
   created_at timestamptz not null default now()
@@ -197,6 +198,12 @@ alter table join_requests enable row level security;
 create policy "join_insert" on join_requests for insert with check (true);
 create policy "join_select" on join_requests for select using (true);
 create policy "join_update" on join_requests for update using (true);
+```
+
+이미 테이블을 만들었다면 컬럼만 추가:
+
+```sql
+alter table join_requests add column if not exists jersey int;
 ```
 
 - 접수 확인: 운영진 콘솔 → 설정 탭 상단 '가입 신청' + 할 일 카드.

@@ -66,6 +66,9 @@
       </div>
       <label>전화번호 <em>*</em></label>
       <input type="text" id="jContact" inputmode="tel" maxlength="20" placeholder="010-0000-0000" required>
+      <label>희망 등번호 <em>*</em></label>
+      <input type="text" id="jJersey" inputmode="numeric" maxlength="3" placeholder="0~999" required>
+      <p class="hint" style="text-align:left;margin-top:6px" id="jerseyHint">숫자만 입력. 이미 쓰는 번호면 알려드려요.</p>
       <label>하고 싶은 말 <span style="color:var(--muted);font-weight:600">(선택)</span></label>
       <textarea id="jNote" maxlength="300" placeholder="축구 경력, 알게 된 경로, 궁금한 점 등 자유롭게"></textarea>
       <button class="submit" id="jBtn" type="submit">가입 신청하기</button>
@@ -84,6 +87,23 @@
 const SB_URL = 'https://fjgxhguogsuypcdzcieg.supabase.co/rest/v1/join_requests';
 const SB_KEY = 'sb_publishable_K7TsALmaFyb2pPOZO-2i2w_UeirVr8l';
 let jGender = null;
+let usedNums = null;
+(async () => {   // 사용 중 등번호 미리 로드 (실패해도 폼은 동작)
+  try {
+    const r = await fetch('https://fjgxhguogsuypcdzcieg.supabase.co/rest/v1/club_settings?id=eq.teambuilder&select=data', { headers: { apikey: SB_KEY, Authorization: 'Bearer ' + SB_KEY } });
+    const d = await r.json();
+    usedNums = new Set((d[0].data.players || []).filter(p => (p.status || 'active') !== 'former' && p.jersey != null).map(p => Number(p.jersey)));
+  } catch (e) {}
+})();
+document.addEventListener('input', e => {
+  if (e.target && e.target.id === 'jJersey') {
+    const h = document.getElementById('jerseyHint');
+    const v = e.target.value.trim();
+    if (!/^\d{1,3}$/.test(v)) { h.textContent = '숫자만 입력. 이미 쓰는 번호면 알려드려요.'; h.style.color = ''; return; }
+    if (usedNums && usedNums.has(Number(v))) { h.textContent = v + '번은 이미 사용 중이에요 — 다른 번호를 골라주세요.'; h.style.color = '#E0A530'; }
+    else { h.textContent = v + '번 사용 가능!'; h.style.color = '#A4B39A'; }
+  }
+});
 function setG(g){ jGender = g;
   document.getElementById('gM').classList.toggle('on', g==='남');
   document.getElementById('gF').classList.toggle('on', g==='여');
@@ -93,15 +113,18 @@ async function submitJoin(e){
   const name = document.getElementById('jName').value.trim();
   const contact = document.getElementById('jContact').value.trim();
   const note = document.getElementById('jNote').value.trim();
+  const jersey = document.getElementById('jJersey').value.trim();
   if (!name || !contact) return false;
   if (!jGender) { alert('성별을 선택해 주세요.'); return false; }
+  if (!/^\d{1,3}$/.test(jersey)) { alert('희망 등번호를 숫자로 입력해 주세요.'); return false; }
+  if (usedNums && usedNums.has(Number(jersey)) && !confirm(jersey + '번은 이미 사용 중이에요. 이대로 제출하면 운영진과 조정하게 돼요. 제출할까요?')) return false;
   const btn = document.getElementById('jBtn');
   btn.disabled = true; btn.textContent = '전송 중...';
   try {
     const res = await fetch(SB_URL, {
       method: 'POST',
       headers: { apikey: SB_KEY, Authorization: 'Bearer ' + SB_KEY, 'Content-Type': 'application/json' },
-      body: JSON.stringify({ name, gender: jGender, phone: contact, note })
+      body: JSON.stringify({ name, gender: jGender, phone: contact, jersey: Number(jersey), note })
     });
     if (!res.ok) throw new Error(res.status);
     document.getElementById('formView').style.display = 'none';

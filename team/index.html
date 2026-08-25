@@ -2400,6 +2400,8 @@ function renderTable(filtered){
     const dormantDisplay=st==='dormant'?(p.dormantReason?`💤 ${(p.dormantMemo&&p.dormantMemo.trim())?p.dormantMemo:p.dormantReason}`:'💤 휴면'):'';
     const pillTxt=st==='dormant'?dormantDisplay:st==='former'?'🚪 전 멤버':st==='friends'?'🌟 친구들':'✅ 활성';
     const balBadge=st!=='former'&&st!=='friends'&&p.inBalance===false?'<span style="font-size:9px;font-weight:700;padding:1px 5px;border-radius:4px;background:#fce7f3;color:#9d174d;margin-left:3px">⛔배분</span>':'';
+    const _tNow=new Date(); const _todayStr=`${_tNow.getFullYear()}-${String(_tNow.getMonth()+1).padStart(2,'0')}-${String(_tNow.getDate()).padStart(2,'0')}`;
+    const futureBadge=p.joinDate&&p.joinDate>_todayStr?`<span style="font-size:9px;font-weight:700;padding:1px 5px;border-radius:4px;background:#e0e7ff;color:#3730a3;margin-left:3px">🔜 ${parseInt(p.joinDate.slice(5,7),10)}월 가입</span>`:'';
     const isExpP=expandedPlayer===p.id;
     const fmtDate=d=>d?d.replace(/-/g,'.'):'';
     const histHtml=(()=>{
@@ -2454,7 +2456,7 @@ function renderTable(filtered){
       <td><span class="gender-tag ${p.gender}">${p.gender}</span></td>
       <td><div class="att-cell"><div class="att-bar-wrap"><div class="att-bar" style="width:${p.attendance}%;background:${ac.bar}"></div></div><span class="att-txt ${ac.cls}">${p.attendance}%</span><span style="font-size:9px;color:#a0aec0;margin-left:3px">${p.attCount??'-'}/${p.attTotal??'-'}</span></div></td>
       <td><div class="att-cell"><div class="att-bar-wrap"><div class="att-bar" style="width:${p.dormancyRateYr??0}%;background:${(p.dormancyRateYr??0)>=30?'#dc2626':(p.dormancyRateYr??0)>=15?'#d97706':'#94a3b8'}"></div></div><span style="font-size:12px;font-weight:700;color:${(p.dormancyRateYr??0)>=30?'#dc2626':(p.dormancyRateYr??0)>=15?'#d97706':'#64748b'}">${p.dormancyRateYr??0}%</span></div></td>
-      <td><span class="status-pill ${pillCls}">${pillTxt}</span>${balBadge}</td>
+      <td><span class="status-pill ${pillCls}">${pillTxt}</span>${futureBadge}${balBadge}</td>
       <td onclick="event.stopPropagation()"><button class="settings-btn" onclick="openSettingsPopup(${p.id},this,event)">⚙️</button></td>
     </tr>${detailRow}`;
   }).join('');
@@ -3471,6 +3473,11 @@ function renderChart(){
 function isBalIncluded(p){
   const st=p.status||'active';
   if(st==='former'||st==='friends') return false;
+  // 가입 예정(가입일이 미래)인 멤버는 가입일 전까지 팀 배분에서 제외
+  if(p.joinDate){
+    const t=new Date(); const today=`${t.getFullYear()}-${String(t.getMonth()+1).padStart(2,'0')}-${String(t.getDate()).padStart(2,'0')}`;
+    if(p.joinDate>today) return false;
+  }
   if(st==='dormant') return p.inBalance===true;
   return p.inBalance!==false;
 }

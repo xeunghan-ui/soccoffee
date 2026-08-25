@@ -2599,7 +2599,12 @@ async function renderSquad() {
   let tb = null;
   try { tb = await tbForStats(); } catch(e) {}   // 캐시를 채워 카드 클릭 시 지표가 바로 뜨게
   const month = squadMonth();   // 이번 달 마지막 수요일이 지나면 다음 달 명단
-  const players = (tb && Array.isArray(tb.players) ? tb.players : []).filter(p => (p.status||'active') !== 'former');
+  // 가입일이 이 달보다 뒤인 멤버(다음 달 가입 예정)는 이 달 명단에서 제외
+  const [_sqY, _sqM] = month.split('-').map(Number);
+  const _sqEnd = new Date(_sqY, _sqM, 0);
+  const players = (tb && Array.isArray(tb.players) ? tb.players : [])
+    .filter(p => (p.status||'active') !== 'former')
+    .filter(p => !p.joinDate || new Date(p.joinDate) <= _sqEnd);
   if (!players.length) { el.innerHTML = `<div class="section-title">팀 현황</div><div class="card"><div class="empty">명단을 불러오지 못했어요.</div></div>`; return; }
   // ⚠️ 휴면 판정은 반드시 정본(isDormantFor)을 쓴다. 예전엔 여기서 status/dormantMonths만 보는 자체 판정을
   //    써서, 영구 휴면(status:'dormant') 회원이 홈에서 그 달을 '활동'으로 되돌려도(activeMonths 기록)

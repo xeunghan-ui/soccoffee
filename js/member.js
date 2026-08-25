@@ -902,7 +902,8 @@ async function getVoteStats(yearPrefix){
     (byMC[key] = byMC[key] || {}); byMC[key][v.candidate_id] = (byMC[key][v.candidate_id]||0) + 1;
   });
   const winsByMember = {};
-  Object.keys(byMC).forEach(key => {   // 동점이면 공동 수상 — 전원 1회씩 인정
+  Object.keys(byMC).forEach(key => {   // 동점이면 공동 수상 — 전원 1회씩 인정 ('감사한 분'은 수상·점수 제외)
+    if (key.endsWith('|thanks')) return;
     const t = byMC[key];
     let bc = 0; for (const k in t) { if (t[k] > bc) bc = t[k]; }
     if (bc > 0) Object.keys(t).filter(k => t[k] === bc).forEach(k => { winsByMember[Number(k)] = (winsByMember[Number(k)]||0) + 1; });
@@ -1347,6 +1348,7 @@ async function sessAttEligible(sess, memberId){
 const VOTE_CATS = [
   { key:'mvp',    label:'이달의 선수',     pick:'이달의 선수를 골라주세요',      sub:'가장 좋았던 한 명을 선택하세요. (본인 제외)' },
   { key:'growth', label:'가장 성장한 선수', pick:'가장 성장한 선수를 골라주세요',  sub:'이번 달 가장 성장한 한 명을 선택하세요. (본인 제외)' },
+  { key:'thanks', label:'감사한 분',       pick:'감사한 분을 골라주세요',        sub:'이번 달 고마웠던 한 명을 선택하세요. (본인 제외)' },
 ];
 let potmCat = 'mvp';        // 현재 보고 있는 부문
 
@@ -1390,7 +1392,7 @@ async function resetVotes(month, cat) {
 
 /* ---------- 투표 상태 & 렌더 ---------- */
 let potmVoterId = null;     // 로그인한 본인 (getMe)
-let potmPick = { mvp:null, growth:null };   // 부문별 선택 (한 번에 두 명)
+let potmPick = { mvp:null, growth:null, thanks:null };   // 부문별 선택 (한 번에 제출)
 
 function refreshPotmIfOpen() {
   if (!document.getElementById('tab-potm').classList.contains('hidden')) rerender(renderPotm);
@@ -1408,7 +1410,7 @@ async function renderPotm() {
     const pMonth = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
     const pMembers = votingMembers(pMonth);
     if (!el.innerHTML.trim()) el.innerHTML = `<div class="empty">불러오는 중...</div>`;
-    const [pMvp, pGrowth] = await Promise.all([fetchVotes(pMonth, 'mvp'), fetchVotes(pMonth, 'growth')]);
+    const [pMvp, pGrowth, pThanks] = await Promise.all([fetchVotes(pMonth, 'mvp'), fetchVotes(pMonth, 'growth'), fetchVotes(pMonth, 'thanks')]);
     const adminP = isAdmin();
     el.innerHTML = `
       <div class="potm-hero">
@@ -1418,12 +1420,13 @@ async function renderPotm() {
         <div class="turnout">${parseInt(month.slice(5))}월 투표는 <b>25일</b>부터 열려요</div>
       </div>
       <div class="card"><h2>이달의 선수 결과</h2>${resultsHtml(pMvp, pMembers, adminP)}</div>
-      <div class="card"><h2>가장 성장한 선수 결과</h2>${resultsHtml(pGrowth, pMembers, adminP)}</div>`;
+      <div class="card"><h2>가장 성장한 선수 결과</h2>${resultsHtml(pGrowth, pMembers, adminP)}</div>
+      ${pThanks.length ? `<div class="card"><h2>감사한 분 결과</h2>${resultsHtml(pThanks, pMembers, adminP)}</div>` : ''}`;
     return;
   }
 
   if (!el.innerHTML.trim()) el.innerHTML = `<div class="empty">불러오는 중...</div>`;
-  const [votesMvp, votesGrowth] = await Promise.all([fetchVotes(month,'mvp'), fetchVotes(month,'growth')]);
+  const [votesMvp, votesGrowth, votesThanks] = await Promise.all([fetchVotes(month,'mvp'), fetchVotes(month,'growth'), fetchVotes(month,'thanks')]);
   const total = members.length;
 
   let body = `
@@ -1458,13 +1461,15 @@ async function renderPotm() {
 
   const myMvp = votesMvp.find(v => v.voter_id === voter.id);
   const myGrowth = votesGrowth.find(v => v.voter_id === voter.id);
+  const myThanks = votesThanks.find(v => v.voter_id === voter.id);
 
-  // 2) 두 부문 모두 투표함 → 결과
+  // 2) 전 부문 투표함 → 결과 (감사한 분 도입 전 완료자는 두 부문 기준 유지)
   if (myMvp && myGrowth) {
     const pm = members.find(m => m.id === myMvp.candidate_id);
     const pg = members.find(m => m.id === myGrowth.candidate_id);
+    const pt = myThanks ? members.find(m => m.id === myThanks.candidate_id) : null;
     body += `<div class="card"><h2>투표 완료</h2>
-      <p class="sub">이달의 선수 <b>${pm?esc(pm.name):'-'}</b> · 가장 성장한 선수 <b>${pg?esc(pg.name):'-'}</b></p>
+      <p class="sub">이달의 선수 <b>${pm?esc(pm.name):'-'}</b> · 가장 성장한 선수 <b>${pg?esc(pg.name):'-'}</b>${pt?` · 감사한 분 <b>${esc(pt.name)}</b>`:''}</p>
       <p class="sub" style="margin-top:8px;color:var(--muted)">결과는 <b>투표 종료 후(다음 달 1일)</b> 공개돼요.</p>${admin?`<p class="sub" style="margin-top:4px;color:var(--muted)">운영진은 <b>더보기 › 투표</b>에서 실시간 현황을 볼 수 있어요.</p>`:''}</div>`;
     el.innerHTML = body;
     return;
@@ -1483,10 +1488,15 @@ async function renderPotm() {
       <p class="sub">이번 달 가장 성장한 한 명 (본인 제외)</p>
       ${candSelect(candidates, 'growth')}
     </div>
-    <div class="vote-cta">
-      <button class="btn accent" id="potmVoteBtn" onclick="submitVote()" disabled>두 부문 투표하기</button>
+    <div class="card">
+      <h2>감사한 분</h2>
+      <p class="sub">이번 달 고마웠던 한 명 (본인 제외)</p>
+      ${candSelect(candidates, 'thanks')}
     </div>
-    <p class="potm-note">두 부문 모두 선택해야 제출돼요. 투표 후엔 변경할 수 없어요.</p>`;
+    <div class="vote-cta">
+      <button class="btn accent" id="potmVoteBtn" onclick="submitVote()" disabled>세 부문 투표하기</button>
+    </div>
+    <p class="potm-note">세 부문 모두 선택해야 제출돼요. 투표 후엔 변경할 수 없어요.</p>`;
   el.innerHTML = body;
   syncVoteBtn();
 }
@@ -1560,23 +1570,24 @@ function adminPanel(cat, month, votes, members) {
 
 function syncVoteBtn() {
   const btn = document.getElementById('potmVoteBtn');
-  if (btn) btn.disabled = !(potmPick.mvp && potmPick.growth);
+  if (btn) btn.disabled = !(potmPick.mvp && potmPick.growth && potmPick.thanks);
 }
 async function submitVote() {
   if (!potmVoterId) return;
   // 투표 대상(그 달 활동 회원, 친구·휴면 제외)만 투표 가능 — UI 우회·명단 변동 대비 제출 시 재검증
   if (!votingMembers(potmMonth()).some(m => m.id === potmVoterId)) { toast('투표 대상이 아니에요'); return rerender(renderPotm); }
-  if (!potmPick.mvp || !potmPick.growth) return toast('두 부문 모두 선택해 주세요');
+  if (!potmPick.mvp || !potmPick.growth || !potmPick.thanks) return toast('세 부문 모두 선택해 주세요');
   if (!isVotingOpen() && !isAdmin()) { toast(`투표는 ${fmtOpenTime(votingOpensAt())}부터 가능해요`); return rerender(renderPotm); }
-  const pm = ROSTER.find(m => m.id === potmPick.mvp), pg = ROSTER.find(m => m.id === potmPick.growth);
-  if (!confirm(`이달의 선수: ${pm?pm.name:''}\n가장 성장한 선수: ${pg?pg.name:''}\n\n제출할까요? 투표 후엔 변경할 수 없어요.`)) return;
+  const pm = ROSTER.find(m => m.id === potmPick.mvp), pg = ROSTER.find(m => m.id === potmPick.growth), pt = ROSTER.find(m => m.id === potmPick.thanks);
+  if (!confirm(`이달의 선수: ${pm?pm.name:''}\n가장 성장한 선수: ${pg?pg.name:''}\n감사한 분: ${pt?pt.name:''}\n\n제출할까요? 투표 후엔 변경할 수 없어요.`)) return;
   const btn = document.getElementById('potmVoteBtn');
   if (btn) { btn.disabled = true; btn.textContent = '투표 중...'; }
   const m = potmMonth();
   const r1 = await castVote(m, 'mvp', potmVoterId, potmPick.mvp);
   const r2 = await castVote(m, 'growth', potmVoterId, potmPick.growth);
-  potmPick = { mvp:null, growth:null };
-  if (r1 !== 'dup' && r2 !== 'dup' && r1 && r2) {
+  const r3 = await castVote(m, 'thanks', potmVoterId, potmPick.thanks);
+  potmPick = { mvp:null, growth:null, thanks:null };
+  if (r1 !== 'dup' && r2 !== 'dup' && r1 && r2 && r3) {
     try { const t = await pushTpl('vote_done', {'월':parseInt(m.split('-')[1])}); queuePush(potmVoterId, t.title, t.body, './member.html#potm'); } catch(e){}
   }
   await rerender(renderPotm);
@@ -2255,7 +2266,7 @@ function renderFaq() {
   const refs = [
     ['로그인 / PIN', ['이름 선택 + <b>PIN 4자리</b>', '첫 로그인 때 PIN 등록', '변경: 더보기 → 내 PIN 변경', '잊으면 운영진에 초기화 요청']],
     ['참석 · 일정', ['홈/일정 탭에서 참석·불참·미정 선택', '홈에서 <b>미응답 일정 개수</b> 알림']],
-    ['MVP · 성장 투표', ['매월 <b>25일~말일</b> 진행', '1~24일: 지난달 결과 표시', '대상: 그 달 <b>활동 회원</b> · <b>친구·휴면 제외</b>', '두 부문 1표씩 · 제출 후 변경 불가']],
+    ['MVP · 성장 · 감사 투표', ['매월 <b>25일~말일</b> 진행', '1~24일: 지난달 결과 표시', '대상: 그 달 <b>활동 회원</b> · <b>친구·휴면 제외</b>', '세 부문 1표씩 · 제출 후 변경 불가', '감사한 분 부문은 수상·모범생 점수와 무관']],
     ['WHITE / BLACK 팀', ['경기 밸런스용 두 팀', '<b>팀 리그</b> 달: 감독(캡틴)이 팀원 선발', '팀 구분 켠 달엔 이름 옆 팀 표시']],
     ['카풀', ['운전자가 출발지 · 좌석 등록', '탑승자는 빈 좌석 눌러 신청', '지난 카풀은 접혀서 정리']],
     ['내 프로필 · 기록', ['홈에서 가입월 · 기간 · 참여 · 출석률 · 수상 확인', '포지션·스타일·한 줄 소개로 프로필 꾸미기 (멤버 현황에서 서로 확인)']],
@@ -2475,7 +2486,7 @@ async function renderHome() {
     try { const mo=potmMonth(); const [vm,vg]=await Promise.all([fetchVotes(mo,'mvp'),fetchVotes(mo,'growth')]); voted = vm.some(v=>v.voter_id===me) && vg.some(v=>v.voter_id===me); } catch(e){}
     const vmoNum = parseInt(potmMonth().split('-')[1]);
     voteHome = `<button class="card" style="width:100%;box-sizing:border-box;padding:14px 16px;margin-bottom:12px;display:flex;align-items:center;justify-content:space-between;gap:12px;cursor:pointer;font-family:inherit;text-align:left" onclick="switchTab('potm')">
-      <span style="min-width:0"><span style="display:block;font-size:14px;font-weight:800;color:#ece6d2">${vmoNum}월 이달의 선수 투표${voted?'':' <span style="font-size:11px;color:var(--alert);font-weight:800">진행중</span>'}</span><span style="display:block;font-size:12px;color:${voted?'var(--muted)':'var(--accent)'};margin-top:2px">${voted?'투표 완료 · 결과는 종료 후 공개':'MVP·성장상 두 부문을 뽑아 주세요'}</span></span>
+      <span style="min-width:0"><span style="display:block;font-size:14px;font-weight:800;color:#ece6d2">${vmoNum}월 이달의 선수 투표${voted?'':' <span style="font-size:11px;color:var(--alert);font-weight:800">진행중</span>'}</span><span style="display:block;font-size:12px;color:${voted?'var(--muted)':'var(--accent)'};margin-top:2px">${voted?'투표 완료 · 결과는 종료 후 공개':'MVP·성장·감사 세 부문을 뽑아 주세요'}</span></span>
       <span style="font-size:12px;font-weight:800;color:var(--accent);white-space:nowrap">${voted?'확인':'투표'} →</span>
     </button>`;
   }
@@ -3985,8 +3996,8 @@ function duesCancelDraft(){ duesDraft = {}; rerender(renderDues); }
 async function opsTodoHtml(){
   if (!isAdmin()) return '';
   const month = potmMonth();
-  const [allSessions, votesMvp, votesGrowth] = await Promise.all([
-    getSessions(), fetchVotes(month,'mvp'), fetchVotes(month,'growth')
+  const [allSessions, votesMvp, votesGrowth, votesThanks] = await Promise.all([
+    getSessions(), fetchVotes(month,'mvp'), fetchVotes(month,'growth'), fetchVotes(month,'thanks')
   ]);
   const _next = await nearestSession();
   let _noResp = 0, _nextLbl = '';
@@ -4010,7 +4021,7 @@ async function opsTodoHtml(){
   const _guestPend = GUEST_REQS.filter(g => g.status==='pending' && (_upIds.size===0 || _upIds.has(String(g.sid)))).length;
   const _pinMissing = PLAYERS.filter(p => p.status !== 'former' && !CLUB_PINS[p.id]).length;
   const _vPool = votingMembers(month);
-  const _vDone = new Set(votesMvp.concat(votesGrowth).map(v=>v.voter_id));
+  const _vDone = new Set(votesMvp.concat(votesGrowth, votesThanks).map(v=>v.voter_id));
   const _vMissing = _vPool.filter(m=>!_vDone.has(m.id));
   const _todoItems = [
     { n:_noResp,            label:'다음 세션 미응답'+(_nextLbl?' ('+_nextLbl+')':''), go:"switchTab('att')" },
@@ -4040,8 +4051,8 @@ async function renderOps() {
   if (!isAdmin()) { el.innerHTML = `<div class="card"><div class="empty">운영진 모드에서만 보여요.</div></div>`; return; }
   if (!el.innerHTML.trim()) el.innerHTML = `<div class="empty">불러오는 중...</div>`;
   const month = potmMonth();
-  const [allSessions, notices, dues, votesMvp, votesGrowth] = await Promise.all([
-    getSessions(), fetchNotices(), fetchDues(month), fetchVotes(month,'mvp'), fetchVotes(month,'growth')
+  const [allSessions, notices, dues, votesMvp, votesGrowth, votesThanks] = await Promise.all([
+    getSessions(), fetchNotices(), fetchDues(month), fetchVotes(month,'mvp'), fetchVotes(month,'growth'), fetchVotes(month,'thanks')
   ]);
   const members = activeMembers(month);
   const paidCount = members.filter(m=>dues.find(d=>d.member_id===m.id && d.paid)).length;
@@ -4193,7 +4204,7 @@ async function renderOps() {
 
   // 투표 현황 (할 일 함수 분리 때 같이 빠졌던 지역 변수 복원 — 2026-08-16 회귀 수정)
   const _vPool = votingMembers(month);
-  const _vDone = new Set(votesMvp.concat(votesGrowth).map(v=>v.voter_id));
+  const _vDone = new Set(votesMvp.concat(votesGrowth, votesThanks).map(v=>v.voter_id));
   const _vMissing = _vPool.filter(m=>!_vDone.has(m.id));
   const secVote = `
     <p class="hint" style="margin:0 0 10px">투표 대상 ${_vPool.length}명 중 <b style="color:#ece6d2">${_vDone.size}명 참여</b>${_vMissing.length?` · 미투표 ${_vMissing.length}명`:''}</p>
@@ -4203,7 +4214,10 @@ async function renderOps() {
     <button class="btn ghost sm" style="color:var(--red);margin-top:10px" onclick="opsResetVote('mvp')">이달의 선수 초기화</button>
     <p class="hint" style="margin:18px 0 6px;font-weight:800;color:#ece6d2">가장 성장한 선수 (${votesGrowth.length}표)</p>
     ${resultsHtml(votesGrowth, members, true)}
-    <button class="btn ghost sm" style="color:var(--red);margin-top:10px" onclick="opsResetVote('growth')">가장 성장한 선수 초기화</button>`;
+    <button class="btn ghost sm" style="color:var(--red);margin-top:10px" onclick="opsResetVote('growth')">가장 성장한 선수 초기화</button>
+    <p class="hint" style="margin:18px 0 6px;font-weight:800;color:#ece6d2">감사한 분 (${votesThanks.length}표)</p>
+    ${resultsHtml(votesThanks, members, true)}
+    <button class="btn ghost sm" style="color:var(--red);margin-top:10px" onclick="opsResetVote('thanks')">감사한 분 초기화</button>`;
 
   const _mpMembers = [...PLAYERS].filter(p => p.status !== 'former').sort((a,b)=>a.name.localeCompare(b.name,'ko'));
   const secPush = `

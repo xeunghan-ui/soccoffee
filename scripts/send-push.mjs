@@ -305,7 +305,7 @@ async function main() {
         const pd = new Date(Date.now() + 9 * 3600e3); pd.setUTCDate(0);   // 전월 말일
         const pm = pd.toISOString().slice(0, 7);
         const votes = await j(await rest(`potm_votes?select=category,candidate_id,voter_id&month=eq.${pm}`)) || [];
-        const CATS = [['mvp', '이달의 선수'], ['growth', '가장 성장한 선수']];
+        const CATS = [['mvp', '이달의 선수'], ['growth', '가장 성장한 선수'], ['thanks', '감사한 분']];
         for (const [cat, catLbl] of CATS) {
           const tally = {};
           votes.filter(v => v.category === cat).forEach(v => { tally[v.candidate_id] = (tally[v.candidate_id] || 0) + 1; });

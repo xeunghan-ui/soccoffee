@@ -2909,6 +2909,13 @@ function gateNameChanged(){
     ? '등록된 PIN을 입력하세요.'
     : '처음이에요 — 사용할 PIN 4자리를 정해 입력하면 등록돼요.';
 }
+// 가입 신청 처리(운영진) — 연락·등록을 마친 신청을 목록에서 내린다
+async function joinReqDone(id){
+  if (!isAdmin()) return;
+  try { if (USE_DB) await sb.from('join_requests').update({ status:'done' }).eq('id', id); } catch(e){ toast('처리 중 오류'); return; }
+  toast('처리했어요');
+  rerender(renderOps);
+}
 async function resetPin(id){
   if (!isAdmin()) return;
   const p = PLAYERS.find(x => x.id === id);
@@ -4020,6 +4027,8 @@ async function opsTodoHtml(){
   const _upIds = new Set(allSessions.filter(x=>(x.date||'')>=todayStr()).map(x=>String(x.id)));
   const _guestPend = GUEST_REQS.filter(g => g.status==='pending' && (_upIds.size===0 || _upIds.has(String(g.sid)))).length;
   const _pinMissing = PLAYERS.filter(p => p.status !== 'former' && !CLUB_PINS[p.id]).length;
+  let _joinPend = 0;
+  try { if (USE_DB) { const { data } = await sb.from('join_requests').select('id').eq('status','pending'); _joinPend = (data||[]).length; } } catch(e){}
   const _vPool = votingMembers(month);
   const _vDone = new Set(votesMvp.concat(votesGrowth, votesThanks).map(v=>v.voter_id));
   const _vMissing = _vPool.filter(m=>!_vDone.has(m.id));
@@ -4031,6 +4040,7 @@ async function opsTodoHtml(){
     { n:_duesRows.filter(r => r.paid && !isDuesConfirmed(_dm, r.member_id) && _dMemberIds.has(r.member_id)).length, label:parseInt(_dm.split('-')[1])+'월 입금확인 대기', go:"switchTab('dues')" },
     { n:isVotingOpen() ? _vMissing.length : 0,   label:'이달 투표 미참여', go:"opsSwitch('vote')" },   // 투표 창(25일~)이 열린 뒤에만 할 일
     { n:_guestPend,         label:'게스트 신청 대기', go:"switchTab('att')" },
+    { n:_joinPend,          label:'가입 신청 대기', go:"opsSwitch('roster')" },
     { n:_pinMissing,        label:'PIN 미설정(미로그인)', go:"opsSwitch('roster')" },
   ].filter(x => x.n > 0);
   const _todoHtml = `
@@ -4187,7 +4197,16 @@ async function renderOps() {
   const pinRows = pinMembers.map(p=>`<div class="dues-row"><span class="nm">${esc(p.name)}</span>${CLUB_PINS[p.id]
       ? `<span class="dues-badge paid">설정됨</span> <button class="btn ghost sm" onclick="resetPin(${p.id})">초기화</button>`
       : `<span class="dues-badge unpaid">미설정</span>`}</div>`).join('');
+  let _jr = [];
+  try { if (USE_DB) { const { data } = await sb.from('join_requests').select('*').eq('status','pending').order('created_at'); _jr = data||[]; } } catch(e){}
+  const _jrHtml = _jr.length ? `
+    <div style="margin:0 0 16px;border-bottom:1px solid #2a3d30;padding-bottom:14px">
+      <b style="color:#ece6d2">가입 신청 <span class="cnt-tag">${_jr.length}</span></b>
+      <div class="hint" style="margin:2px 0 8px">연락 후 팀빌더에 등록하고 '처리'를 눌러요.</div>
+      ${_jr.map(q => `<div class="dues-row"><span class="nm" style="min-width:0">${esc(q.name)} <span class="cnt-tag">${esc(q.gender||'?')}</span><span class="hint" style="display:block;margin:0">${esc(q.phone||'')}${q.note?` · ${esc(q.note)}`:''}</span></span><button class="btn ghost sm" onclick="joinReqDone(${q.id})">처리</button></div>`).join('')}
+    </div>` : '';
   const secRoster = `
+    ${_jrHtml}
     <div class="ops-row" style="border:none;padding:0 0 12px">
       <div style="min-width:0"><b style="color:#ece6d2">이번 달 팀 구분 (WHITE/BLACK)</b><div class="hint" style="margin:0">끄면 홈·참석이 전체 명단으로 표시돼요</div></div>
       <button class="dues-badge toggle ${teamSplitOn?'paid':'unpaid'}" style="flex-shrink:0" onclick="opsToggleTeamSplit()">${teamSplitOn?'사용 중':'미사용'}</button>

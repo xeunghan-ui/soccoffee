@@ -178,3 +178,27 @@ create policy "cap_confirm all" on public.cap_confirm for all using (true) with 
 모든 정책이 "익명 키로 누구나 읽기/쓰기"(링크 기반 신뢰 그룹용)입니다.
 회비·명단 등 민감 데이터를 더 엄격히 막으려면 정책을 손봐야 합니다(필요 시 도와드림).
 키는 공개용 anon(publishable) 키만 사용 — `service_role` 키는 절대 페이지에 넣지 마세요.
+
+## join_requests — 가입 신청 (2026-08-25)
+
+가입 신청 페이지(join.html — 비공개, 링크 직접 전달)가 쓰는 테이블. **Supabase SQL Editor에서 실행해야 폼이 동작한다.**
+
+```sql
+create table if not exists join_requests (
+  id bigserial primary key,
+  name text not null,
+  gender text,
+  phone text,
+  note text,
+  status text not null default 'pending',
+  created_at timestamptz not null default now()
+);
+alter table join_requests enable row level security;
+create policy "join_insert" on join_requests for insert with check (true);
+create policy "join_select" on join_requests for select using (true);
+create policy "join_update" on join_requests for update using (true);
+```
+
+- 접수 확인: 운영진 콘솔 → 설정 탭 상단 '가입 신청' + 할 일 카드.
+- 처리 흐름: 연락 → 팀빌더에 등록 → [처리됨] 버튼(status='done').
+- 주의: 다른 테이블과 같은 공개 RLS라 전화번호도 anon key로 읽힌다(신뢰 기반 운영 전제, 페이지는 비공개 링크).

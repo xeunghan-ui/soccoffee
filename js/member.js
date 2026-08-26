@@ -2751,7 +2751,7 @@ function badgeRowHtml(b){
   const items = BADGE_DEFS.map(([k,name,desc,svg]) => {
     const s = b[k] || { n:0, need:1 };
     const got = s.n >= s.need;
-    const prog = got ? (s.n > s.need ? `<div class="b-prog on">${s.n}회</div>` : '')
+    const prog = got ? `<div class="b-prog on">${s.n}회</div>`
                      : `<div class="b-prog">${s.n}/${s.need}</div>`;
     return `<div class="badge ${got?'':'off'}" title="${desc}"><svg viewBox="0 0 48 48" width="48" height="48">${svg}</svg><div class="b-name">${name}</div>${prog}</div>`;
   }).join('');

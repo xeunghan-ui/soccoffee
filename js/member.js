@@ -2385,7 +2385,7 @@ async function renderHome() {
     const st = myStatusOf(s.id); return st === 'none';   // 미정/참석/불참은 응답으로 간주
   }) : [];
   const nextSess = sessions[0];
-  let dash = '';
+  let dash = '', dash2 = '';
   if (meActive) {
     const meP = PLAYERS.find(x => x.id === me) || {};
     const meT = TEAM_SHEET[meP.name] || {};
@@ -2469,9 +2469,9 @@ async function renderHome() {
       ${profileHtml}
       ${miniHtml}
     </div>`;
-    // 카드 ② 현황(상태 · 참석예정 · 미확정)
+    // 카드 ② 현황(상태 · 참석예정 · 미확정) — 뱃지·투표 카드보다 아래에 배치(2026-08-26 총괄: "일정 위로")
     const _c2 = [ statusHtml ? `<div class="pc-right">${statusHtml}</div>` : '', respondHtml, upcomingHtml, pendingHtml ].filter(Boolean);
-    if (_c2.length) dash += `<div class="card home-c2" style="padding:16px;margin-bottom:12px">${_c2.join('')}</div>`;
+    if (_c2.length) dash2 = `<div class="card home-c2" style="padding:16px;margin-bottom:12px">${_c2.join('')}</div>`;
   }
 
   const sessCards = sessions.map((s,i)=>{
@@ -2577,7 +2577,7 @@ async function renderHome() {
       }
     }
   } catch(e){}
-  let html = seasonBanner + lgApplyHome + dash + badgeHome + voteHome + uniHome + `<div class="section-title">다가오는 매치</div>`;
+  let html = seasonBanner + lgApplyHome + dash + badgeHome + voteHome + dash2 + uniHome + `<div class="section-title">다가오는 매치</div>`;
   html += sessions.length > 1
     ? `<div class="sess-carousel" id="sessCarousel" onscroll="updateSessDots()">${sessCards.join('')}</div>
        <div class="sess-dots">

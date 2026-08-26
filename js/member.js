@@ -253,7 +253,8 @@ function toggleCreate(forceClose) {
   const open = forceClose ? false : panel.classList.contains('hidden');
   panel.classList.toggle('hidden', !open);
   if (btn) btn.textContent = open ? '닫기' : '+ 카풀 등록하기';
-  if (open) { setDefaults(); const f = document.getElementById('f-driver'); if (f) { if (!f.value) f.value = meName(); f.focus(); } }
+  // 차주는 로그인 계정으로 고정 (2026-08-26 총괄) — 표기 통일 + 드라이버 뱃지 집계 정확성
+  if (open) { setDefaults(); const f = document.getElementById('f-driver'); if (f) f.value = meName(); const p = document.getElementById('f-place'); if (p) p.focus(); }
 }
 
 function toast(msg) {
@@ -284,7 +285,7 @@ function setDefaults() {
 setDefaults();
 
 async function createRide() {
-  const driver = val('f-driver'), place = val('f-place'),
+  const driver = meName() || val('f-driver'), place = val('f-place'),
         date = val('f-date'), time = val('f-time'),
         seats = parseInt(val('f-seats'));
   const destSel = document.getElementById('f-dest-sel').value;

@@ -2837,10 +2837,12 @@ function closeMemberCard(){ mmState=null; const h=document.getElementById('mmHos
       document.body.style.position = 'fixed';
       document.body.style.left = '0'; document.body.style.right = '0'; document.body.style.width = '100%';
       document.body.style.overflow = 'hidden';
+      document.body.classList.add('modal-lock');   // 하단 바가 sticky 기준을 잃고 밀리는 것 방지(CSS에서 fixed 전환)
     } else if (!open && locked) {
       document.body.style.position = ''; document.body.style.top = '';
       document.body.style.left = ''; document.body.style.right = ''; document.body.style.width = '';
       document.body.style.overflow = '';
+      document.body.classList.remove('modal-lock');
       window.scrollTo(0, lockY);
     }
   }

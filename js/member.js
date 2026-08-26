@@ -2570,7 +2570,7 @@ async function renderHome() {
         const b = await badgeComputeFull(_btp, _btb);
         const icons = BADGE_DEFS.map(([k,,,svg]) => { const s = b[k]||{n:0,need:1};
           return `<svg viewBox="0 0 48 48" width="30" height="30" style="${s.n>=s.need?'':'filter:grayscale(1);opacity:.25'}">${svg}</svg>`; }).join('');
-        badgeHome = `<button class="card" style="width:100%;box-sizing:border-box;padding:10px 14px;margin-bottom:12px;display:flex;align-items:center;gap:10px;cursor:pointer;font-family:inherit;border:none;text-align:left" onclick="openMemberCard(${_bm})">
+        badgeHome = `<button class="card" style="width:100%;box-sizing:border-box;padding:10px 14px;margin-bottom:12px;display:flex;align-items:center;gap:10px;cursor:pointer;font-family:inherit;border:none;text-align:left" onclick="showMyBadges()">
           <span style="flex-shrink:0;font-size:12px;font-weight:800;color:var(--coffee)">${b.year} 뱃지</span>
           <span style="display:flex;gap:3px;flex:1;justify-content:flex-end">${icons}</span>
         </button>`;
@@ -2748,16 +2748,30 @@ const BADGE_DEFS = [
   ['driver','드라이버','카풀 운전 3회 이상',
    `<circle cx="24" cy="24" r="22" fill="#E4E1FB"/><path d="M13 27 l2.6 -6.6 a3 3 0 0 1 2.8 -1.9 h11.2 a3 3 0 0 1 2.8 1.9 L35 27 z" fill="#6D5BD0"/><rect x="10.5" y="26" width="27" height="7" rx="2.6" fill="#7C6FDB"/><rect x="19.2" y="20.6" width="4.4" height="4" rx="1" fill="#DCD8FA"/><rect x="24.8" y="20.6" width="4.4" height="4" rx="1" fill="#DCD8FA"/><circle cx="17" cy="34" r="3.2" fill="#2D2A45"/><circle cx="31" cy="34" r="3.2" fill="#2D2A45"/><circle cx="17" cy="34" r="1.3" fill="#fff"/><circle cx="31" cy="34" r="1.3" fill="#fff"/><circle cx="13.5" cy="29.5" r="1.3" fill="#FDE68A"/><circle cx="34.5" cy="29.5" r="1.3" fill="#FDE68A"/>`]
 ];
-function badgeRowHtml(b){
-  if (!b) return '';
-  const items = BADGE_DEFS.map(([k,name,desc,svg]) => {
+function badgeItemsHtml(b){
+  return `<div class="badge-row">${BADGE_DEFS.map(([k,name,desc,svg]) => {
     const s = b[k] || { n:0, need:1 };
     const got = s.n >= s.need;
     const prog = got ? `<div class="b-prog on">${s.n}회</div>`
                      : `<div class="b-prog">${s.n}/${s.need}</div>`;
     return `<div class="badge ${got?'':'off'}" title="${desc}"><svg viewBox="0 0 48 48" width="48" height="48">${svg}</svg><div class="b-name">${name}</div>${prog}</div>`;
-  }).join('');
-  return `<div class="mm-sec" style="margin-top:14px">${b.year} 뱃지</div><div class="badge-row">${items}</div>`;
+  }).join('')}</div>`;
+}
+function badgeRowHtml(b){
+  if (!b) return '';
+  return `<div class="mm-sec" style="margin-top:14px">${b.year} 뱃지</div>${badgeItemsHtml(b)}`;
+}
+// 홈 뱃지 스트립 클릭 → 뱃지만 담긴 팝업 (2026-08-26 총괄)
+async function showMyBadges(){
+  const me = getMe(); if (me == null) return;
+  let tb = null; try { tb = await tbForStats(); } catch(e){}
+  const tp = (tb && tb.players || []).find(x => x.id === me); if (!tp) return;
+  const b = await badgeComputeFull(tp, tb);
+  let h = document.getElementById('mmHost'); if (!h) { h = document.createElement('div'); h.id = 'mmHost'; document.body.appendChild(h); }
+  h.innerHTML = `<div class="mm-back" onclick="if(event.target===this)closeMemberCard()"><div class="mm-box">
+    <div class="mm-head"><div class="mm-name">${b.year} 뱃지</div><button class="mm-x" onclick="closeMemberCard()">×</button></div>
+    ${badgeItemsHtml(b)}
+  </div></div>`;
 }
 async function memberStats(id, joinDate){
   const st = { join: joinDate || null, months: monthsSince(joinDate), att: 0, rate: null, r3: null, win: null };

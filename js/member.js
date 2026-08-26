@@ -2664,6 +2664,43 @@ async function tbForStats(){
   if (tb) { _tbStats = tb; _tbStatsAt = Date.now(); }
   return tb;
 }
+/* ===== 뱃지 제도 (2026-08-26 총괄) — 매년 1/1 리셋, 팀빌더 세션 기록 기반 자동 계산 =====
+   여름(7~8월 3회+) · 겨울(1월+12월 3회+) · 팀 리그(리그 달 3·5·9·11 풋살 3회+, 2026년부터) ·
+   축구(축구 세션 1회+) · 회식(회식 세션 1회+) · 싸커피 데이(메모/라벨에 '데이' 포함 세션 1회+) */
+function badgeCompute(tp, tb){
+  const Y = new Date().getFullYear();
+  const S = (tb && tb.sessions || []).filter(s => s.date && s.date.startsWith(String(Y)));
+  const att = s => Array.isArray(s.attendees) && s.attendees.includes(tp.id);
+  const mo = s => Number(s.date.slice(5,7));
+  const cnt = f => S.filter(s => f(s) && att(s)).length;
+  return { year: Y,
+    summer: cnt(s => mo(s)===7 || mo(s)===8) >= 3,
+    winter: cnt(s => mo(s)===1 || mo(s)===12) >= 3,
+    league: Y >= 2026 && cnt(s => [3,5,9,11].includes(mo(s)) && (s.type||'풋살')==='풋살') >= 3,
+    soccer: cnt(s => s.type==='축구') >= 1,
+    dinner: cnt(s => s.type==='회식') >= 1,
+    day:    cnt(s => (((s.notes||'')+(s.label||'')).includes('데이'))) >= 1 };
+}
+const BADGE_DEFS = [
+  ['summer','여름','여름 시즌(7~8월) 3회 이상 참여',
+   `<circle cx="24" cy="24" r="22" fill="#FFDF8E"/><circle cx="24" cy="20" r="7" fill="#F59E0B"/><g stroke="#F59E0B" stroke-width="2.4" stroke-linecap="round"><line x1="24" y1="7" x2="24" y2="10.5"/><line x1="33.5" y1="10.5" x2="31" y2="13"/><line x1="14.5" y1="10.5" x2="17" y2="13"/><line x1="37" y1="20" x2="33.5" y2="20"/><line x1="11" y1="20" x2="14.5" y2="20"/></g><path d="M8 34 q4 -4 8 0 t8 0 t8 0 t8 0" fill="none" stroke="#38BDF8" stroke-width="3" stroke-linecap="round"/><path d="M11 40 q4 -4 8 0 t8 0 t8 0" fill="none" stroke="#7DD3FC" stroke-width="3" stroke-linecap="round"/>`],
+  ['winter','겨울','겨울 시즌(12~1월) 3회 이상 참여',
+   `<circle cx="24" cy="24" r="22" fill="#DCEBFB"/><g stroke="#3B82F6" stroke-width="2.4" stroke-linecap="round"><line x1="24" y1="10" x2="24" y2="38"/><line x1="12" y1="17" x2="36" y2="31"/><line x1="36" y1="17" x2="12" y2="31"/><line x1="24" y1="10" x2="20.5" y2="13.5"/><line x1="24" y1="10" x2="27.5" y2="13.5"/><line x1="24" y1="38" x2="20.5" y2="34.5"/><line x1="24" y1="38" x2="27.5" y2="34.5"/></g><circle cx="24" cy="24" r="3.4" fill="#3B82F6"/>`],
+  ['league','팀 리그','리그 달(3·5·9·11월) 3회 이상 참여',
+   `<circle cx="24" cy="24" r="22" fill="#FCE7A2"/><path d="M16 12 h16 v7 a8 8 0 0 1 -16 0 z" fill="#D97706"/><path d="M16 14 h-4 a5 5 0 0 0 5 6 M32 14 h4 a5 5 0 0 1 -5 6" fill="none" stroke="#D97706" stroke-width="2.4"/><rect x="21.5" y="26" width="5" height="5" fill="#D97706"/><rect x="17" y="31" width="14" height="4" rx="1.4" fill="#B45309"/><path d="M21 15.5 l1.6 3.4 -3 -2 h3.6 l-3 2 z" fill="#FCE7A2"/>`],
+  ['soccer','축구','축구 경기 참여',
+   `<circle cx="24" cy="24" r="22" fill="#D8F3DC"/><circle cx="24" cy="24" r="12.5" fill="#fff" stroke="#1F2937" stroke-width="2"/><path d="M24 17.5 l5.2 3.8 -2 6.1 h-6.4 l-2 -6.1 z" fill="#1F2937"/><g stroke="#1F2937" stroke-width="1.6"><line x1="24" y1="17.5" x2="24" y2="12"/><line x1="29.2" y1="21.3" x2="34.6" y2="19.4"/><line x1="27.2" y1="27.4" x2="30.6" y2="32"/><line x1="20.8" y1="27.4" x2="17.4" y2="32"/><line x1="18.8" y1="21.3" x2="13.4" y2="19.4"/></g>`],
+  ['dinner','회식','회식 참여',
+   `<circle cx="24" cy="24" r="22" fill="#FFE9C7"/><g transform="rotate(-12 17 27)"><rect x="12" y="19" width="10" height="15" rx="2" fill="#F59E0B"/><rect x="12" y="19" width="10" height="4.5" rx="2" fill="#FDF3E3"/></g><g transform="rotate(12 31 27)"><rect x="26" y="19" width="10" height="15" rx="2" fill="#D97706"/><rect x="26" y="19" width="10" height="4.5" rx="2" fill="#FDF3E3"/></g><g fill="#F5C86B"><circle cx="24" cy="12.5" r="1.6"/><circle cx="19" cy="15" r="1.2"/><circle cx="29" cy="15" r="1.2"/></g>`],
+  ['day','싸커피 데이','싸커피 데이 참여',
+   `<circle cx="24" cy="24" r="22" fill="#EFE5D2"/><path d="M14 19 h17 v10 a7 7 0 0 1 -7 7 h-3 a7 7 0 0 1 -7 -7 z" fill="#3E2C1C"/><path d="M31 21.5 h3.2 a3.6 3.6 0 0 1 0 7.2 h-3.6" fill="none" stroke="#3E2C1C" stroke-width="2.2"/><path d="M19 15.5 q-1.6 -2 0 -3.8 M24.5 15.5 q-1.6 -2 0 -3.8" fill="none" stroke="#8a6f4d" stroke-width="1.8" stroke-linecap="round"/><path d="M36.5 10.5 l1.2 2.6 2.6 1.2 -2.6 1.2 -1.2 2.6 -1.2 -2.6 -2.6 -1.2 2.6 -1.2 z" fill="#D9A441"/>`]
+];
+function badgeRowHtml(b){
+  if (!b) return '';
+  const items = BADGE_DEFS.map(([k,name,desc,svg]) =>
+    `<div class="badge ${b[k]?'':'off'}" title="${desc}"><svg viewBox="0 0 48 48" width="48" height="48">${svg}</svg><div class="b-name">${name}</div></div>`).join('');
+  return `<div class="mm-sec" style="margin-top:14px">${b.year} 뱃지 <span style="font-weight:400;color:var(--muted)">매년 리셋</span></div><div class="badge-row">${items}</div>`;
+}
 async function memberStats(id, joinDate){
   const st = { join: joinDate || null, months: monthsSince(joinDate), att: 0, rate: null, r3: null, win: null };
   try {
@@ -2677,6 +2714,7 @@ async function memberStats(id, joinDate){
       st.att  = tp.attCountAll ?? tp.attCount ?? 0;
       st.rate = tp.attendanceAll ?? tp.attendance ?? null;
       st.r3   = recent3Rate(tp, tb.sessions);
+      try { st.badges = badgeCompute(tp, tb); } catch(e) {}
     }
     const w = computeWinStats(tb && tb.matches)[id];
     if (w && w.played) st.win = Math.round((w.w + w.d*0.5)/w.played*100);
@@ -2799,6 +2837,7 @@ function renderMemberCard(){
     const bio = (s.pf.bio||'').trim() ? `<div class="pf-bio">"${esc(s.pf.bio.trim())}"</div>` : '';
     body = (skills || bio) ? bio + skills : `<div class="empty" style="font-size:13px;padding:14px 0">${s.own?'포지션·스타일·한 줄 소개를 채워보세요.':'아직 프로필이 없어요.'}</div>`;
     body += memberStatsHtml(s.stats);   // 가입월·함께한 기간·참여 세션·전체 출석률·최근 3개월·승률
+    body += badgeRowHtml(s.stats && s.stats.badges);   // 뱃지 6종 — 획득은 컬러, 미획득은 회색 (매년 리셋)
     if(s.own) body += `<button class="btn ghost sm" onclick="mmEdit(true)" style="margin-top:10px;width:100%">프로필 편집</button>`;
   }
   h.innerHTML = `<div class="mm-back" onclick="if(event.target===this)closeMemberCard()"><div class="mm-box"><div class="mm-head"><span class="mm-no">${s.jersey!=null?s.jersey:'–'}</span><div><div class="mm-name">${esc(s.name)}${winHtml}${!s.edit&&roleHtml?` ${roleHtml}`:''}</div>${!s.edit?profilePosHtml(s.pf):''}</div><button class="mm-x" onclick="closeMemberCard()">×</button></div>${body}</div></div>`;

@@ -2679,6 +2679,7 @@ function badgeCompute(tp, tb){
     league: Y >= 2026 && cnt(s => [3,5,9,11].includes(mo(s)) && (s.type||'풋살')==='풋살') >= 3,
     soccer: cnt(s => s.type==='축구') >= 1,
     dinner: cnt(s => s.type==='회식') >= 1,
+    outing: cnt(s => s.type==='야유회') >= 1,
     day:    cnt(s => (((s.notes||'')+(s.label||'')).includes('데이'))) >= 1 };
 }
 const BADGE_DEFS = [
@@ -2692,6 +2693,8 @@ const BADGE_DEFS = [
    `<circle cx="24" cy="24" r="22" fill="#D8F3DC"/><circle cx="24" cy="24" r="12.5" fill="#fff" stroke="#1F2937" stroke-width="2"/><path d="M24 17.5 l5.2 3.8 -2 6.1 h-6.4 l-2 -6.1 z" fill="#1F2937"/><g stroke="#1F2937" stroke-width="1.6"><line x1="24" y1="17.5" x2="24" y2="12"/><line x1="29.2" y1="21.3" x2="34.6" y2="19.4"/><line x1="27.2" y1="27.4" x2="30.6" y2="32"/><line x1="20.8" y1="27.4" x2="17.4" y2="32"/><line x1="18.8" y1="21.3" x2="13.4" y2="19.4"/></g>`],
   ['dinner','회식','회식 참여',
    `<circle cx="24" cy="24" r="22" fill="#FFE9C7"/><g transform="rotate(-12 17 27)"><rect x="12" y="19" width="10" height="15" rx="2" fill="#F59E0B"/><rect x="12" y="19" width="10" height="4.5" rx="2" fill="#FDF3E3"/></g><g transform="rotate(12 31 27)"><rect x="26" y="19" width="10" height="15" rx="2" fill="#D97706"/><rect x="26" y="19" width="10" height="4.5" rx="2" fill="#FDF3E3"/></g><g fill="#F5C86B"><circle cx="24" cy="12.5" r="1.6"/><circle cx="19" cy="15" r="1.2"/><circle cx="29" cy="15" r="1.2"/></g>`],
+  ['outing','야유회','싸커피 여름 야유회 참여',
+   `<circle cx="24" cy="24" r="22" fill="#CFF2EE"/><path d="M9 36 q15 -6 30 0 v10 h-30 z" fill="#F5D9A0"/><path d="M12 22 a14 14 0 0 1 24 0 z" fill="#F97316"/><path d="M12 22 a14 14 0 0 1 24 0" fill="none" stroke="#EA580C" stroke-width="1.4"/><path d="M17 22 q3.5 -9 7 -11 q3.5 2 7 11" fill="#FDBA74"/><line x1="24" y1="11" x2="24" y2="37" stroke="#92400E" stroke-width="2.4" stroke-linecap="round"/><circle cx="24" cy="9.6" r="1.8" fill="#92400E"/><circle cx="33.5" cy="34" r="3" fill="#FB7185"/><circle cx="33.5" cy="34" r="1.2" fill="#fff"/>`],
   ['day','싸커피 데이','싸커피 데이 참여',
    `<circle cx="24" cy="24" r="22" fill="#EFE5D2"/><path d="M14 19 h17 v10 a7 7 0 0 1 -7 7 h-3 a7 7 0 0 1 -7 -7 z" fill="#3E2C1C"/><path d="M31 21.5 h3.2 a3.6 3.6 0 0 1 0 7.2 h-3.6" fill="none" stroke="#3E2C1C" stroke-width="2.2"/><path d="M19 15.5 q-1.6 -2 0 -3.8 M24.5 15.5 q-1.6 -2 0 -3.8" fill="none" stroke="#8a6f4d" stroke-width="1.8" stroke-linecap="round"/><path d="M36.5 10.5 l1.2 2.6 2.6 1.2 -2.6 1.2 -1.2 2.6 -1.2 -2.6 -2.6 -1.2 2.6 -1.2 z" fill="#D9A441"/>`]
 ];

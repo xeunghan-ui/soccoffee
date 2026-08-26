@@ -732,8 +732,8 @@
   .back-fab:active { opacity: .72; }
   .back-fab.hidden { display: none; }
   /* 뱃지 (멤버 카드) — 획득은 컬러, 미획득은 회색 실루엣 (2026-08-26) */
-  .badge-row { display: flex; flex-wrap: wrap; gap: 10px 6px; margin-top: 8px; }
-  .badge { display: flex; flex-direction: column; align-items: center; gap: 4px; width: 56px; }
+  .badge-row { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px 4px; margin-top: 8px; justify-items: center; }
+  .badge { display: flex; flex-direction: column; align-items: center; gap: 4px; }
   .badge .b-name { font-size: 10px; font-weight: 700; color: var(--cream); text-align: center; line-height: 1.2; }
   .badge.off svg { filter: grayscale(1); opacity: .28; }
   .badge.off .b-name { color: var(--muted); opacity: .6; }

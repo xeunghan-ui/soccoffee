@@ -2689,7 +2689,7 @@ function badgeCompute(tp, tb){
 }
 // 카풀 드라이버 뱃지 — 그 해 운전 3회 이상. 등록 이름이 "희범"처럼 이름만인 경우가 많아
 // 전체 이름 + 성 뺀 이름 두 가지로 합산한다(닉네임 등록은 매칭 불가).
-const DRIVER_ALIAS = { '방판맨': '최승호' };   // 카풀 닉네임 → 멤버 이름 (총괄 확인)
+const DRIVER_ALIAS = { '방판맨': '최승호', '카쩨쥔장': '한승재' };   // 카풀 닉네임 → 멤버 이름 (총괄 확인)
 let _ridesBadgeCache = { at:0, by:{} };
 async function ridesDriverCounts(){
   if (Date.now() - _ridesBadgeCache.at < 60000) return _ridesBadgeCache.by;

@@ -2570,7 +2570,7 @@ async function renderHome() {
         const b = await badgeComputeFull(_btp, _btb);
         const icons = BADGE_DEFS.map(([k,,,svg]) => { const s = b[k]||{n:0,need:1};
           return `<svg viewBox="0 0 48 48" width="30" height="30" style="${s.n>=s.need?'':'filter:grayscale(1);opacity:.25'}">${svg}</svg>`; }).join('');
-        badgeHome = `<button class="card" style="width:100%;box-sizing:border-box;padding:10px 14px;margin-bottom:12px;display:flex;align-items:center;gap:10px;cursor:pointer;font-family:inherit;border:none;text-align:left" onclick="switchTab('mine')">
+        badgeHome = `<button class="card" style="width:100%;box-sizing:border-box;padding:10px 14px;margin-bottom:12px;display:flex;align-items:center;gap:10px;cursor:pointer;font-family:inherit;border:none;text-align:left" onclick="openMemberCard(${_bm})">
           <span style="flex-shrink:0;font-size:12px;font-weight:800;color:var(--coffee)">${b.year} 뱃지</span>
           <span style="display:flex;gap:3px;flex:1;justify-content:flex-end">${icons}</span>
         </button>`;

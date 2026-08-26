@@ -2708,7 +2708,7 @@ function badgeCompute(tp, tb){
     outing: { n: cnt(s => s.type==='야유회'), need: 1 },
     day:    { n: cnt(s => { const t = ((s.notes||'')+' '+(s.label||'')+' '+(s.type||'')).replace(/\s/g,''); return t.includes('싸커피데이'); }), need: 1 } };
 }
-// 카풀 드라이버 뱃지 — 그 해 운전 3회 이상. 등록 이름이 "희범"처럼 이름만인 경우가 많아
+// 카풀 드라이버 뱃지 — 그 해 운전 5회 이상. 등록 이름이 "희범"처럼 이름만인 경우가 많아
 // 전체 이름 + 성 뺀 이름 두 가지로 합산한다(닉네임 등록은 매칭 불가).
 const DRIVER_ALIAS = { '방판맨': '최승호', '카쩨쥔장': '한승재' };   // 카풀 닉네임 → 멤버 이름 (총괄 확인)
 let _ridesBadgeCache = { at:0, by:{} };
@@ -2726,8 +2726,8 @@ async function badgeComputeFull(tp, tb){
   try {
     const by = await ridesDriverCounts();
     const given = tp.name.length >= 2 ? tp.name.slice(1) : tp.name;
-    b.driver = { n: (by[tp.name]||0) + (given!==tp.name ? (by[given]||0) : 0), need: 3 };
-  } catch(e){ b.driver = { n: 0, need: 3 }; }
+    b.driver = { n: (by[tp.name]||0) + (given!==tp.name ? (by[given]||0) : 0), need: 5 };
+  } catch(e){ b.driver = { n: 0, need: 5 }; }
   return b;
 }
 const BADGE_DEFS = [
@@ -2745,7 +2745,7 @@ const BADGE_DEFS = [
    `<circle cx="24" cy="24" r="22" fill="#CFF2EE"/><path d="M9 36 q15 -6 30 0 v10 h-30 z" fill="#F5D9A0"/><path d="M12 22 a14 14 0 0 1 24 0 z" fill="#F97316"/><path d="M12 22 a14 14 0 0 1 24 0" fill="none" stroke="#EA580C" stroke-width="1.4"/><path d="M17 22 q3.5 -9 7 -11 q3.5 2 7 11" fill="#FDBA74"/><line x1="24" y1="11" x2="24" y2="37" stroke="#92400E" stroke-width="2.4" stroke-linecap="round"/><circle cx="24" cy="9.6" r="1.8" fill="#92400E"/><circle cx="33.5" cy="34" r="3" fill="#FB7185"/><circle cx="33.5" cy="34" r="1.2" fill="#fff"/>`],
   ['day','싸커피 데이','싸커피 데이 참여',
    `<circle cx="24" cy="24" r="22" fill="#EFE5D2"/><path d="M14 19 h17 v10 a7 7 0 0 1 -7 7 h-3 a7 7 0 0 1 -7 -7 z" fill="#3E2C1C"/><path d="M31 21.5 h3.2 a3.6 3.6 0 0 1 0 7.2 h-3.6" fill="none" stroke="#3E2C1C" stroke-width="2.2"/><path d="M19 15.5 q-1.6 -2 0 -3.8 M24.5 15.5 q-1.6 -2 0 -3.8" fill="none" stroke="#8a6f4d" stroke-width="1.8" stroke-linecap="round"/><path d="M36.5 10.5 l1.2 2.6 2.6 1.2 -2.6 1.2 -1.2 2.6 -1.2 -2.6 -2.6 -1.2 2.6 -1.2 z" fill="#D9A441"/>`],
-  ['driver','드라이버','카풀 운전 3회 이상',
+  ['driver','드라이버','카풀 운전 5회 이상',
    `<circle cx="24" cy="24" r="22" fill="#E4E1FB"/><path d="M13 27 l2.6 -6.6 a3 3 0 0 1 2.8 -1.9 h11.2 a3 3 0 0 1 2.8 1.9 L35 27 z" fill="#6D5BD0"/><rect x="10.5" y="26" width="27" height="7" rx="2.6" fill="#7C6FDB"/><rect x="19.2" y="20.6" width="4.4" height="4" rx="1" fill="#DCD8FA"/><rect x="24.8" y="20.6" width="4.4" height="4" rx="1" fill="#DCD8FA"/><circle cx="17" cy="34" r="3.2" fill="#2D2A45"/><circle cx="31" cy="34" r="3.2" fill="#2D2A45"/><circle cx="17" cy="34" r="1.3" fill="#fff"/><circle cx="31" cy="34" r="1.3" fill="#fff"/><circle cx="13.5" cy="29.5" r="1.3" fill="#FDE68A"/><circle cx="34.5" cy="29.5" r="1.3" fill="#FDE68A"/>`]
 ];
 function badgeItemsHtml(b){

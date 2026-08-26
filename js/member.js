@@ -2242,6 +2242,10 @@ async function renderMine() {
   const dues = await fetchDues(month);
   const myPaid = dues.some(d => d.member_id === me && d.paid);
   const dorm = isDormantFor(p, month);
+  // 뱃지 — 개인 프로필에도 노출 (2026-08-26 총괄)
+  let myBadges = '';
+  try { const tb = await tbForStats(); const tp = (tb && tb.players || []).find(x => x.id === me);
+        if (tp) myBadges = badgeRowHtml(badgeCompute(tp, tb)); } catch(e) {}
   el.innerHTML = `
     <div class="mine-hero">
       <div class="num">${jersey === '–' ? '–' : jersey}</div>
@@ -2252,6 +2256,7 @@ async function renderMine() {
       <div class="mine-stat"><div class="v" style="color:${myPaid ? 'var(--win)' : 'var(--alert)'}">${myPaid ? '납부' : '미납'}</div><div class="k">${potmMonthLabel(month)} 회비</div></div>
       <div class="mine-stat"><div class="v">T${p.tier || '–'}</div><div class="k">티어</div></div>
     </div>
+    ${myBadges ? `<div class="card" style="padding:12px 14px;margin-top:14px">${myBadges}</div>` : ''}
     <button class="btn ghost" style="margin-top:14px" onclick="switchTab('rank')">출석 랭킹에서 내 순위 보기</button>
     <button class="btn ghost" style="margin-top:8px" onclick="switchTab('dues')">회비 화면으로</button>`;
 }
@@ -2702,7 +2707,7 @@ function badgeRowHtml(b){
   if (!b) return '';
   const items = BADGE_DEFS.map(([k,name,desc,svg]) =>
     `<div class="badge ${b[k]?'':'off'}" title="${desc}"><svg viewBox="0 0 48 48" width="48" height="48">${svg}</svg><div class="b-name">${name}</div></div>`).join('');
-  return `<div class="mm-sec" style="margin-top:14px">${b.year} 뱃지 <span style="font-weight:400;color:var(--muted)">매년 리셋</span></div><div class="badge-row">${items}</div>`;
+  return `<div class="mm-sec" style="margin-top:14px">${b.year} 뱃지</div><div class="badge-row">${items}</div>`;
 }
 async function memberStats(id, joinDate){
   const st = { join: joinDate || null, months: monthsSince(joinDate), att: 0, rate: null, r3: null, win: null };

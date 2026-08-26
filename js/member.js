@@ -2569,7 +2569,7 @@ async function renderHome() {
       if (_btp) {
         const b = await badgeComputeFull(_btp, _btb);
         const icons = BADGE_DEFS.map(([k,,,svg]) => { const s = b[k]||{n:0,need:1};
-          return `<svg viewBox="0 0 48 48" width="30" height="30" style="${s.n>=s.need?'':'filter:grayscale(1);opacity:.25'}">${svg}</svg>`; }).join('');
+          return `<svg class="bsvg" viewBox="0 0 48 48" width="30" height="30" style="${s.n>=s.need?'':'filter:grayscale(1);opacity:.25'}">${svg}</svg>`; }).join('');
         badgeHome = `<button class="card" style="width:100%;box-sizing:border-box;padding:10px 14px;margin-bottom:12px;display:flex;align-items:center;gap:10px;cursor:pointer;font-family:inherit;border:none;text-align:left" onclick="showMyBadges()">
           <span style="flex-shrink:0;font-size:12px;font-weight:800;color:var(--coffee)">${b.year} 뱃지</span>
           <span style="display:flex;gap:3px;flex:1;justify-content:flex-end">${icons}</span>
@@ -2732,7 +2732,7 @@ async function badgeComputeFull(tp, tb){
 }
 const BADGE_DEFS = [
   ['summer','여름','여름 시즌(7~8월) 3회 이상 참여',
-   `<circle cx="24" cy="24" r="22" fill="#FFE9B4"/><circle cx="15" cy="14.5" r="5.2" fill="#F59E0B"/><g stroke="#F59E0B" stroke-width="1.8" stroke-linecap="round"><line x1="15" y1="6" x2="15" y2="8.2"/><line x1="21.5" y1="8" x2="20" y2="9.6"/><line x1="8.5" y1="8" x2="10" y2="9.6"/><line x1="23.2" y1="14.5" x2="21" y2="14.5"/><line x1="6.8" y1="14.5" x2="9" y2="14.5"/></g><path d="M32 13.5 q2 -2.4 4 0 M36 13.5 q2 -2.4 4 0" fill="none" stroke="#8a7350" stroke-width="1.4" stroke-linecap="round"/><path d="M3.5 31 Q9 29 14 30.8 Q19 32.6 24 30.8 Q29 29 34 30.8 Q39 32.6 44.5 31 A 22 22 0 0 1 3.5 31 Z" fill="#38BDF8"/><path d="M9 35.5 q3 -2.2 6 0 M21 38 q3 -2.2 6 0 M31 34.5 q3 -2.2 6 0" fill="none" stroke="#BAE6FD" stroke-width="1.8" stroke-linecap="round"/>`],
+   `<circle cx="24" cy="24" r="22" fill="#FFE9B4"/><circle cx="15.5" cy="14" r="7.4" fill="#FBBF24" opacity=".4"/><circle cx="15.5" cy="14" r="5" fill="#F59E0B"/><circle cx="14" cy="12.6" r="1.5" fill="#FDE68A" opacity=".9"/><path d="M32 13.5 q2 -2.4 4 0 M36 13.5 q2 -2.4 4 0" fill="none" stroke="#8a7350" stroke-width="1.4" stroke-linecap="round"/><path d="M3.15 31 Q9 29 14 30.8 Q19 32.6 24 30.8 Q29 29 34 30.8 Q39 32.6 44.85 31 A 22 22 0 0 1 3.15 31 Z" fill="#38BDF8"/><path d="M9 35.5 q3 -2.2 6 0 M21 38 q3 -2.2 6 0 M31 34.5 q3 -2.2 6 0" fill="none" stroke="#BAE6FD" stroke-width="1.8" stroke-linecap="round"/>`],
   ['winter','겨울','겨울 시즌(전년 12월~1월) 3회 이상 참여',
    `<circle cx="24" cy="24" r="22" fill="#C9E2F6"/><path d="M4 33 Q13 26.5 24 31 Q35 26.5 44 33 A 22 22 0 0 1 4 33 Z" fill="#FFFFFF"/><path d="M14 19.5 l4.6 9.5 h-9.2 z" fill="#2F7A55"/><path d="M14 24 l3.8 7.5 h-7.6 z" fill="#3C8F63"/><rect x="13.1" y="29" width="1.8" height="3" fill="#7A5B3A"/><g fill="#FFFFFF"><circle cx="22" cy="11" r="1.5"/><circle cx="31" cy="14" r="1.3"/><circle cx="38" cy="21" r="1.4"/><circle cx="27" cy="20" r="1.2"/><circle cx="19" cy="15.5" r="1.1"/><circle cx="34" cy="26" r="1.2"/><circle cx="10" cy="22" r="1.3"/><circle cx="24" cy="26.5" r="1"/></g>`],
   ['league','팀 리그','리그 달(3·5·9·11월) 3회 이상 참여',
@@ -2742,7 +2742,7 @@ const BADGE_DEFS = [
   ['dinner','회식','회식 참여',
    `<circle cx="24" cy="24" r="22" fill="#FFE9C7"/><g transform="rotate(-12 17 27)"><rect x="12" y="19" width="10" height="15" rx="2" fill="#F59E0B"/><rect x="12" y="19" width="10" height="4.5" rx="2" fill="#FDF3E3"/></g><g transform="rotate(12 31 27)"><rect x="26" y="19" width="10" height="15" rx="2" fill="#D97706"/><rect x="26" y="19" width="10" height="4.5" rx="2" fill="#FDF3E3"/></g><g fill="#F5C86B"><circle cx="24" cy="12.5" r="1.6"/><circle cx="19" cy="15" r="1.2"/><circle cx="29" cy="15" r="1.2"/></g>`],
   ['outing','야유회','싸커피 여름 야유회 참여',
-   `<circle cx="24" cy="24" r="22" fill="#CFF2EE"/><path d="M9 36 q15 -6 30 0 v10 h-30 z" fill="#F5D9A0"/><path d="M12 22 a14 14 0 0 1 24 0 z" fill="#F97316"/><path d="M12 22 a14 14 0 0 1 24 0" fill="none" stroke="#EA580C" stroke-width="1.4"/><path d="M17 22 q3.5 -9 7 -11 q3.5 2 7 11" fill="#FDBA74"/><line x1="24" y1="11" x2="24" y2="37" stroke="#92400E" stroke-width="2.4" stroke-linecap="round"/><circle cx="24" cy="9.6" r="1.8" fill="#92400E"/><circle cx="33.5" cy="34" r="3" fill="#FB7185"/><circle cx="33.5" cy="34" r="1.2" fill="#fff"/>`],
+   `<circle cx="24" cy="24" r="22" fill="#CFF2EE"/><path d="M4.4 34 Q24 26.5 43.6 34 A 22 22 0 0 1 4.4 34 Z" fill="#F5D9A0"/><path d="M12 22 a14 14 0 0 1 24 0 z" fill="#F97316"/><path d="M12 22 a14 14 0 0 1 24 0" fill="none" stroke="#EA580C" stroke-width="1.4"/><path d="M17 22 q3.5 -9 7 -11 q3.5 2 7 11" fill="#FDBA74"/><line x1="24" y1="11" x2="24" y2="37" stroke="#92400E" stroke-width="2.4" stroke-linecap="round"/><circle cx="24" cy="9.6" r="1.8" fill="#92400E"/><circle cx="33.5" cy="34" r="3" fill="#FB7185"/><circle cx="33.5" cy="34" r="1.2" fill="#fff"/>`],
   ['day','싸커피 데이','싸커피 데이 참여',
    `<circle cx="24" cy="24" r="22" fill="#EFE5D2"/><path d="M14 19 h17 v10 a7 7 0 0 1 -7 7 h-3 a7 7 0 0 1 -7 -7 z" fill="#3E2C1C"/><path d="M31 21.5 h3.2 a3.6 3.6 0 0 1 0 7.2 h-3.6" fill="none" stroke="#3E2C1C" stroke-width="2.2"/><path d="M19 15.5 q-1.6 -2 0 -3.8 M24.5 15.5 q-1.6 -2 0 -3.8" fill="none" stroke="#8a6f4d" stroke-width="1.8" stroke-linecap="round"/><path d="M36.5 10.5 l1.2 2.6 2.6 1.2 -2.6 1.2 -1.2 2.6 -1.2 -2.6 -2.6 -1.2 2.6 -1.2 z" fill="#D9A441"/>`],
   ['driver','드라이버','카풀 운전 5회 이상',
@@ -2754,7 +2754,7 @@ function badgeItemsHtml(b){
     const got = s.n >= s.need;
     const prog = got ? `<div class="b-prog on">${s.n}회</div>`
                      : `<div class="b-prog">${s.n}/${s.need}</div>`;
-    return `<div class="badge ${got?'':'off'}" title="${desc}"><svg viewBox="0 0 48 48" width="48" height="48">${svg}</svg><div class="b-name">${name}</div>${prog}</div>`;
+    return `<div class="badge ${got?'':'off'}" title="${desc}"><svg class="bsvg" viewBox="0 0 48 48" width="48" height="48">${svg}</svg><div class="b-name">${name}</div>${prog}</div>`;
   }).join('')}</div>`;
 }
 function badgeRowHtml(b){

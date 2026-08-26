@@ -739,6 +739,7 @@
   .badge.off .b-name { color: var(--muted); opacity: .6; }
   .badge .b-prog { font-size: 9px; font-weight: 700; color: var(--muted); line-height: 1; }
   .badge .b-prog.on { color: var(--accent); }
+  .bsvg { clip-path: circle(50% at 50% 50%); -webkit-clip-path: circle(50% at 50% 50%); }
   /* 모달 열림(배경 스크롤 잠금) 중엔 하단 바를 뷰포트 하단에 고정 — body fixed 시 sticky가 밀리는 문제 방지 */
   body.modal-lock .bottomnav { position: fixed; left: 0; right: 0; bottom: 0; margin: 0 auto; }
   .bn-badge { position: absolute; top: 2px; left: calc(50% + 5px); min-width: 16px; height: 16px; padding: 0 4px; border-radius: 8px; background: var(--alert); color: #fff; font-size: 10px; font-weight: 800; line-height: 16px; text-align: center; box-sizing: border-box; }

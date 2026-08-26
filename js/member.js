@@ -2697,9 +2697,11 @@ function badgeCompute(tp, tb){
   const att = s => Array.isArray(s.attendees) && s.attendees.includes(tp.id);
   const mo = s => Number(s.date.slice(5,7));
   const cnt = f => S.filter(s => f(s) && att(s)).length;
+  // 겨울 시즌은 해를 넘긴다 — Y년 겨울 = (Y-1)년 12월 + Y년 1월 (2026-08-26 총괄)
+  const winterN = (tb && tb.sessions || []).filter(s => s.date && (s.date.startsWith(`${Y-1}-12`) || s.date.startsWith(`${Y}-01`)) && att(s)).length;
   return { year: Y,
     summer: { n: cnt(s => mo(s)===7 || mo(s)===8), need: 3 },
-    winter: { n: cnt(s => mo(s)===1 || mo(s)===12), need: 3 },
+    winter: { n: winterN, need: 3 },
     league: { n: Y >= 2026 ? cnt(s => [3,5,9,11].includes(mo(s)) && (s.type||'풋살')==='풋살') : 0, need: 3 },
     soccer: { n: cnt(s => s.type==='축구'), need: 1 },
     dinner: { n: cnt(s => s.type==='회식'), need: 1 },
@@ -2731,7 +2733,7 @@ async function badgeComputeFull(tp, tb){
 const BADGE_DEFS = [
   ['summer','여름','여름 시즌(7~8월) 3회 이상 참여',
    `<circle cx="24" cy="24" r="22" fill="#FFDF8E"/><circle cx="24" cy="20" r="7" fill="#F59E0B"/><g stroke="#F59E0B" stroke-width="2.4" stroke-linecap="round"><line x1="24" y1="7" x2="24" y2="10.5"/><line x1="33.5" y1="10.5" x2="31" y2="13"/><line x1="14.5" y1="10.5" x2="17" y2="13"/><line x1="37" y1="20" x2="33.5" y2="20"/><line x1="11" y1="20" x2="14.5" y2="20"/></g><path d="M8 34 q4 -4 8 0 t8 0 t8 0 t8 0" fill="none" stroke="#38BDF8" stroke-width="3" stroke-linecap="round"/><path d="M11 40 q4 -4 8 0 t8 0 t8 0" fill="none" stroke="#7DD3FC" stroke-width="3" stroke-linecap="round"/>`],
-  ['winter','겨울','겨울 시즌(12~1월) 3회 이상 참여',
+  ['winter','겨울','겨울 시즌(전년 12월~1월) 3회 이상 참여',
    `<circle cx="24" cy="24" r="22" fill="#DCEBFB"/><g stroke="#3B82F6" stroke-width="2.4" stroke-linecap="round"><line x1="24" y1="10" x2="24" y2="38"/><line x1="12" y1="17" x2="36" y2="31"/><line x1="36" y1="17" x2="12" y2="31"/><line x1="24" y1="10" x2="20.5" y2="13.5"/><line x1="24" y1="10" x2="27.5" y2="13.5"/><line x1="24" y1="38" x2="20.5" y2="34.5"/><line x1="24" y1="38" x2="27.5" y2="34.5"/></g><circle cx="24" cy="24" r="3.4" fill="#3B82F6"/>`],
   ['league','팀 리그','리그 달(3·5·9·11월) 3회 이상 참여',
    `<circle cx="24" cy="24" r="22" fill="#FCE7A2"/><path d="M16 12 h16 v7 a8 8 0 0 1 -16 0 z" fill="#D97706"/><path d="M16 14 h-4 a5 5 0 0 0 5 6 M32 14 h4 a5 5 0 0 1 -5 6" fill="none" stroke="#D97706" stroke-width="2.4"/><rect x="21.5" y="26" width="5" height="5" fill="#D97706"/><rect x="17" y="31" width="14" height="4" rx="1.4" fill="#B45309"/><path d="M21 15.5 l1.6 3.4 -3 -2 h3.6 l-3 2 z" fill="#FCE7A2"/>`],

@@ -2559,7 +2559,25 @@ async function renderHome() {
       }
     }
   }
-  let html = seasonBanner + lgApplyHome + dash + voteHome + uniHome + `<div class="section-title">다가오는 매치</div>`;
+  // 홈 미니 뱃지 스트립 — 아이콘 한 줄, 탭하면 내 정보로 (2026-08-26 총괄)
+  let badgeHome = '';
+  try {
+    const _bm = getMe();
+    if (_bm != null) {
+      const _btb = await tbForStats();
+      const _btp = (_btb && _btb.players || []).find(x => x.id === _bm);
+      if (_btp) {
+        const b = await badgeComputeFull(_btp, _btb);
+        const icons = BADGE_DEFS.map(([k,,,svg]) => { const s = b[k]||{n:0,need:1};
+          return `<svg viewBox="0 0 48 48" width="30" height="30" style="${s.n>=s.need?'':'filter:grayscale(1);opacity:.25'}">${svg}</svg>`; }).join('');
+        badgeHome = `<button class="card" style="width:100%;box-sizing:border-box;padding:10px 14px;margin-bottom:12px;display:flex;align-items:center;gap:10px;cursor:pointer;font-family:inherit;border:none;text-align:left" onclick="switchTab('mine')">
+          <span style="flex-shrink:0;font-size:12px;font-weight:800;color:var(--coffee)">${b.year} 뱃지</span>
+          <span style="display:flex;gap:3px;flex:1;justify-content:flex-end">${icons}</span>
+        </button>`;
+      }
+    }
+  } catch(e){}
+  let html = seasonBanner + lgApplyHome + dash + badgeHome + voteHome + uniHome + `<div class="section-title">다가오는 매치</div>`;
   html += sessions.length > 1
     ? `<div class="sess-carousel" id="sessCarousel" onscroll="updateSessDots()">${sessCards.join('')}</div>
        <div class="sess-dots">

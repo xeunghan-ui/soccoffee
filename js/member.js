@@ -2679,13 +2679,13 @@ function badgeCompute(tp, tb){
   const mo = s => Number(s.date.slice(5,7));
   const cnt = f => S.filter(s => f(s) && att(s)).length;
   return { year: Y,
-    summer: cnt(s => mo(s)===7 || mo(s)===8) >= 3,
-    winter: cnt(s => mo(s)===1 || mo(s)===12) >= 3,
-    league: Y >= 2026 && cnt(s => [3,5,9,11].includes(mo(s)) && (s.type||'풋살')==='풋살') >= 3,
-    soccer: cnt(s => s.type==='축구') >= 1,
-    dinner: cnt(s => s.type==='회식') >= 1,
-    outing: cnt(s => s.type==='야유회') >= 1,
-    day:    cnt(s => (((s.notes||'')+(s.label||'')).includes('데이'))) >= 1 };
+    summer: { n: cnt(s => mo(s)===7 || mo(s)===8), need: 3 },
+    winter: { n: cnt(s => mo(s)===1 || mo(s)===12), need: 3 },
+    league: { n: Y >= 2026 ? cnt(s => [3,5,9,11].includes(mo(s)) && (s.type||'풋살')==='풋살') : 0, need: 3 },
+    soccer: { n: cnt(s => s.type==='축구'), need: 1 },
+    dinner: { n: cnt(s => s.type==='회식'), need: 1 },
+    outing: { n: cnt(s => s.type==='야유회'), need: 1 },
+    day:    { n: cnt(s => (((s.notes||'')+(s.label||'')).includes('데이'))), need: 1 } };
 }
 // 카풀 드라이버 뱃지 — 그 해 운전 3회 이상. 등록 이름이 "희범"처럼 이름만인 경우가 많아
 // 전체 이름 + 성 뺀 이름 두 가지로 합산한다(닉네임 등록은 매칭 불가).
@@ -2705,8 +2705,8 @@ async function badgeComputeFull(tp, tb){
   try {
     const by = await ridesDriverCounts();
     const given = tp.name.length >= 2 ? tp.name.slice(1) : tp.name;
-    b.driver = ((by[tp.name]||0) + (given!==tp.name ? (by[given]||0) : 0)) >= 3;
-  } catch(e){ b.driver = false; }
+    b.driver = { n: (by[tp.name]||0) + (given!==tp.name ? (by[given]||0) : 0), need: 3 };
+  } catch(e){ b.driver = { n: 0, need: 3 }; }
   return b;
 }
 const BADGE_DEFS = [
@@ -2729,8 +2729,13 @@ const BADGE_DEFS = [
 ];
 function badgeRowHtml(b){
   if (!b) return '';
-  const items = BADGE_DEFS.map(([k,name,desc,svg]) =>
-    `<div class="badge ${b[k]?'':'off'}" title="${desc}"><svg viewBox="0 0 48 48" width="48" height="48">${svg}</svg><div class="b-name">${name}</div></div>`).join('');
+  const items = BADGE_DEFS.map(([k,name,desc,svg]) => {
+    const s = b[k] || { n:0, need:1 };
+    const got = s.n >= s.need;
+    const prog = got ? (s.n > s.need ? `<div class="b-prog on">${s.n}회</div>` : '')
+                     : `<div class="b-prog">${s.n}/${s.need}</div>`;
+    return `<div class="badge ${got?'':'off'}" title="${desc}"><svg viewBox="0 0 48 48" width="48" height="48">${svg}</svg><div class="b-name">${name}</div>${prog}</div>`;
+  }).join('');
   return `<div class="mm-sec" style="margin-top:14px">${b.year} 뱃지</div><div class="badge-row">${items}</div>`;
 }
 async function memberStats(id, joinDate){

@@ -2671,6 +2671,9 @@ async function memberStats(id, joinDate){
     const tp = (tb && tb.players || []).find(x => x.id === id);
     if (tp) {
       if (!st.join && tp.joinDate) { st.join = tp.joinDate; st.months = monthsSince(tp.joinDate); }
+      // 탈퇴~재가입 공백 제외 — 팀빌더 '가입 개월수'와 동일 규칙 (이일웅·박우성·박광우 등)
+      if (tp.leaveDate && tp.rejoinDate) st.months = Math.max(0, st.months - monthsBetween(tp.leaveDate, tp.rejoinDate));
+      else if (tp.leaveDate) st.months = monthsBetween(st.join || tp.joinDate, tp.leaveDate);
       st.att  = tp.attCountAll ?? tp.attCount ?? 0;
       st.rate = tp.attendanceAll ?? tp.attendance ?? null;
       st.r3   = recent3Rate(tp, tb.sessions);
@@ -3286,6 +3289,14 @@ function recent3Rate(tp, sessions) {
     if (Array.isArray(s.attendees) && s.attendees.includes(tp.id)) num++;
   });
   return den ? Math.round(num / den * 100) : null;
+}
+// 두 날짜 사이 개월 수(내림) — 탈퇴~재가입 공백 계산용
+function monthsBetween(aIso, bIso) {
+  const a = new Date(aIso), b = new Date(bIso);
+  if (isNaN(a) || isNaN(b)) return 0;
+  let m = (b.getFullYear() - a.getFullYear()) * 12 + (b.getMonth() - a.getMonth());
+  if (b.getDate() < a.getDate()) m -= 1;
+  return Math.max(0, m);
 }
 // 가입일로부터 함께한 개월 수
 function monthsSince(iso) {

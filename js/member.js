@@ -2704,7 +2704,7 @@ function badgeCompute(tp, tb){
     soccer: { n: cnt(s => s.type==='축구'), need: 1 },
     dinner: { n: cnt(s => s.type==='회식'), need: 1 },
     outing: { n: cnt(s => s.type==='야유회'), need: 1 },
-    day:    { n: cnt(s => (((s.notes||'')+(s.label||'')).includes('데이'))), need: 1 } };
+    day:    { n: cnt(s => { const t = ((s.notes||'')+' '+(s.label||'')+' '+(s.type||'')).replace(/\s/g,''); return t.includes('싸커피데이'); }), need: 1 } };
 }
 // 카풀 드라이버 뱃지 — 그 해 운전 3회 이상. 등록 이름이 "희범"처럼 이름만인 경우가 많아
 // 전체 이름 + 성 뺀 이름 두 가지로 합산한다(닉네임 등록은 매칭 불가).

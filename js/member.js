@@ -15,7 +15,10 @@ const STORE = 'socoffee_carpool_v1';
 let sb = null;
 
 if (USE_DB) {
-  sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+  // supabase.js 로드 실패 시에도 스크립트 전체가 죽지 않게 — 로그인 게이트(populateGate)는 항상 떠야 한다.
+  // (2026-08-26: jsDelivr CDN이 모바일 통신망에서 간헐 실패 → 로그인 이름 목록이 비는 사고. 이후 self-host로 전환)
+  try { sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY); }
+  catch (e) { console.error('supabase 초기화 실패:', e); }
 }
 
 /* ---------- 데이터 계층 (DB 또는 로컬) ---------- */

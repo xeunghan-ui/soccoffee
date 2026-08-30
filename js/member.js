@@ -1260,6 +1260,27 @@ async function leagueRecommend(id){
   lgRecClose();
   await rerender(renderHome);
 }
+/* ---- 감독 결선 투표 (2026-08-30 총괄) — 동률 후보 2명 중 확정(입금확인) 회원이 1인 1표 ----
+   저장: league[월].runoff = { cands:[id,id], votes:[{by,to,at}], open:true } — 감독 2명 확정 시 카드 자동 종료 */
+async function leagueRunoffVote(id){
+  const m = statusMonth(); if (!isLeague(m)) return;
+  const me = getMe(); if (!me) return;
+  if (!isDuesConfirmed(m, me)) { toast('결선 투표는 입금확인 완료 회원만 가능'); return; }
+  let cur = {};
+  try { if (USE_DB){ const {data:row}=await sb.from('club_settings').select('data').eq('id','current').maybeSingle(); cur=(row&&row.data)||{}; } else cur=await fetchSettings(); } catch(e){}
+  const lg = Object.assign({}, cur.league || {});
+  const d = Object.assign({}, lg[m] || {});
+  const ro = Object.assign({}, d.runoff || {});
+  if (!ro.open || !(ro.cands||[]).includes(id)) { toast('투표가 마감됐어요'); return; }
+  const mine = (ro.votes || []).find(v => v.by === me);
+  const votes = (ro.votes || []).filter(v => v.by !== me);
+  if (!(mine && mine.to === id)) votes.push({ by: me, to: id, at: Date.now() });
+  ro.votes = votes; d.runoff = ro; lg[m] = d; LEAGUE = lg;
+  if (!(await saveSettings({ league: lg }))) { toast('저장 중 오류가 났어요'); return; }
+  const nm = (ROSTER.find(x=>x.id===id)||{}).name || '';
+  toast(mine && mine.to === id ? '투표 취소함' : `${nm} 투표 완료`);
+  await rerender(renderHome);
+}
 // 운영진: 팀 배정 순환 (미정 → WHITE → BLACK → 미정)
 async function opsLgSetTeam(m, id){
   if (!isAdmin()) return;
@@ -2529,7 +2550,27 @@ async function renderHome() {
         : '';
       // 서브 텍스트 최소화(2026-08-15 총괄) — 설명문 없이 지원 수(+관리자에겐 이름)만. 내용 없으면 한 줄 카드.
       const _sub = [apps.length ? `지원 ${apps.length}명` : '', appNames.replace(/^ · /,''), mineApp ? '지원 완료' : ''].filter(Boolean).join(' · ');
-      if (!apps.length) {
+      const _ro = dN.runoff;
+      if (_ro && _ro.open && (_ro.cands||[]).length === 2) {
+        // 감독 결선 투표 (2026-08-30 총괄) — 동률 후보 2명 중 1인 1표, 집계는 총괄에게만
+        const _rnm = id => (ROSTER.find(x=>x.id===Number(id))||{}).name || '';
+        const _rv = _ro.votes || [];
+        const _myV = _rv.find(v => v.by === me);
+        const _rc = {}; _rv.forEach(v => { _rc[v.to] = (_rc[v.to]||0) + 1; });
+        const _aggR = isAdmin()
+          ? _ro.cands.map(c => `${esc(_rnm(c))} ${_rc[c]||0}`).join(' · ') + ` · 총 ${_rv.length}표`
+          : '';
+        const _subR = [_aggR, _myV ? `내 투표 ${esc(_rnm(_myV.to))}` : ''].filter(Boolean).join(' · ');
+        const _canV = isDuesConfirmed(_lgNext, me);
+        lgApplyHome = `<div class="card" style="padding:14px 16px;margin-bottom:12px">
+          <div style="display:flex;align-items:center;justify-content:space-between;gap:12px">
+            <span style="min-width:0;font-size:14px;font-weight:800;color:#ece6d2">${nmN}월 감독 결선 투표</span>
+            ${_canV ? `<span style="display:flex;gap:6px;flex-shrink:0">${_ro.cands.map(c =>
+              `<button class="btn ${_myV && _myV.to === c ? 'accent' : 'ghost'} sm" onclick="leagueRunoffVote(${c})">${esc(_rnm(c))}</button>`).join('')}</span>` : ''}
+          </div>
+          ${_subR ? `<div style="font-size:12px;color:var(--muted);margin-top:6px">${_subR}</div>` : ''}
+        </div>`;
+      } else if (!apps.length) {
         // 지원자가 없으면 추천제 (2026-08-16 총괄) — 확정(입금확인) 회원이 감독을 추천
         const recs = dN.recs || [];
         const cnt = {}; recs.forEach(r => { cnt[r.to] = (cnt[r.to]||0) + 1; });

@@ -1272,6 +1272,7 @@ async function leagueRunoffVote(id){
   const d = Object.assign({}, lg[m] || {});
   const ro = Object.assign({}, d.runoff || {});
   if (!ro.open || !(ro.cands||[]).includes(id)) { toast('투표가 마감됐어요'); return; }
+  if (ro.deadline && Date.now() >= ro.deadline) { toast('투표가 마감됐어요'); return; }
   const mine = (ro.votes || []).find(v => v.by === me);
   const votes = (ro.votes || []).filter(v => v.by !== me);
   if (!(mine && mine.to === id)) votes.push({ by: me, to: id, at: Date.now() });
@@ -2560,7 +2561,20 @@ async function renderHome() {
         const _aggR = isAdmin()
           ? _ro.cands.map(c => `${esc(_rnm(c))} ${_rc[c]||0}`).join(' · ') + ` · 총 ${_rv.length}표`
           : '';
-        const _subR = [_aggR, _myV ? `내 투표 ${esc(_rnm(_myV.to))}` : ''].filter(Boolean).join(' · ');
+        const _dlR = _ro.deadline || 0;
+        const _overR = !!_dlR && Date.now() >= _dlR;
+        if (_overR) {
+          // 마감 후 — 결과를 모두에게 노출 (감독 확정 전까지)
+          const _resC = _ro.cands.slice().sort((a,b)=>(_rc[b]||0)-(_rc[a]||0));
+          const _resTxt = _resC.map(c => `${esc(_rnm(c))} <b style="color:#ece6d2">${_rc[c]||0}표</b>`).join(' · ');
+          lgApplyHome = `<div class="card" style="padding:14px 16px;margin-bottom:12px">
+            <div style="font-size:14px;font-weight:800;color:#ece6d2">${nmN}월 감독 결선 결과</div>
+            <div style="font-size:12px;color:var(--muted);margin-top:6px">${_resTxt} · 총 ${_rv.length}표 · 투표 마감</div>
+          </div>`;
+        } else {
+        const _dlD = _dlR ? new Date(_dlR) : null;
+        const _dlTxt = _dlD ? `~${_dlD.getMonth()+1}/${_dlD.getDate()} ${_dlD.getHours()}시` : '';
+        const _subR = [_aggR, _myV ? `내 투표 ${esc(_rnm(_myV.to))}` : '', _dlTxt].filter(Boolean).join(' · ');
         const _canV = isDuesConfirmed(_lgNext, me);
         lgApplyHome = `<div class="card" style="padding:14px 16px;margin-bottom:12px">
           <div style="display:flex;align-items:center;justify-content:space-between;gap:12px">
@@ -2570,6 +2584,7 @@ async function renderHome() {
           </div>
           ${_subR ? `<div style="font-size:12px;color:var(--muted);margin-top:6px">${_subR}</div>` : ''}
         </div>`;
+        }
       } else if (!apps.length) {
         // 지원자가 없으면 추천제 (2026-08-16 총괄) — 확정(입금확인) 회원이 감독을 추천
         const recs = dN.recs || [];

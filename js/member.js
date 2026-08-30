@@ -2038,7 +2038,7 @@ async function bellFeed(){
         BADGE_DEFS.forEach(([k, nm]) => {
           const st = bb[k];
           if (!st || st.n < st.need || !st.at || st.at < cutoff) return;
-          items.push({ id:'b'+bb.year+'-'+k, tag:'뱃지', title:`${nm} 뱃지를 획득했어요!`, at:st.at, go:'mine' });
+          items.push({ id:'b'+bb.year+'-'+k, tag:'뱃지', title:`${nm} 뱃지를 획득했어요!`, at:st.at, go:'home', link:'badges' });
         });
       }
     }
@@ -2137,6 +2137,7 @@ async function bellReadAll(){
 function bellOpen(id, go, link){
   bellMarkRead(id);
   document.getElementById('bellPanel').classList.add('hidden');
+  if (link === 'badges') { showMyBadges(); return; }   // 뱃지 알림은 팝업만, 페이지 이동 없음 (2026-08-31 총괄)
   if (link && /^tab:/.test(link)) { switchTab(link.slice(4)); return; }
   if (link && /^https?:/i.test(link)) { window.open(link, '_blank', 'noopener'); return; }
   switchTab(go || 'home');
@@ -2342,10 +2343,7 @@ async function renderMine() {
   const dues = await fetchDues(month);
   const myPaid = dues.some(d => d.member_id === me && d.paid);
   const dorm = isDormantFor(p, month);
-  // 뱃지 — 개인 프로필에도 노출 (2026-08-26 총괄)
-  let myBadges = '';
-  try { const tb = await tbForStats(); const tp = (tb && tb.players || []).find(x => x.id === me);
-        if (tp) myBadges = badgeRowHtml(await badgeComputeFull(tp, tb)); } catch(e) {}
+  // 뱃지는 홈 스트립 → 팝업(showMyBadges)에서만 — 내 정보 뱃지 카드 삭제 (2026-08-31 총괄)
   el.innerHTML = `
     <div class="mine-hero">
       <div class="num">${jersey === '–' ? '–' : jersey}</div>
@@ -2356,7 +2354,6 @@ async function renderMine() {
       <div class="mine-stat"><div class="v" style="color:${myPaid ? 'var(--win)' : 'var(--alert)'}">${myPaid ? '납부' : '미납'}</div><div class="k">${potmMonthLabel(month)} 회비</div></div>
       <div class="mine-stat"><div class="v">T${p.tier || '–'}</div><div class="k">티어</div></div>
     </div>
-    ${myBadges ? `<div class="card" style="padding:12px 14px;margin-top:14px">${myBadges}</div>` : ''}
     <button class="btn ghost" style="margin-top:14px" onclick="switchTab('rank')">출석 랭킹에서 내 순위 보기</button>
     <button class="btn ghost" style="margin-top:8px" onclick="switchTab('dues')">회비 화면으로</button>`;
 }

@@ -2009,6 +2009,22 @@ async function bellFeed(){
       items.push({ id:'s'+sx.id, tag:'세션', title:`${fmtSessionDate(sx.date, sx.time, sx.endTime, sx.allDay, sx.endDate)} · ${sx.place||''}`, at, go:'att' });
     });
   } catch(e){}
+  // 내 뱃지 획득 알림 (2026-08-31 총괄) — 필요 횟수를 채운 세션 날짜 기준, 최근 2주만
+  try {
+    const meB = getMe();
+    if (meB != null) {
+      const tbB = await tbForStats();
+      const tpB = (tbB && tbB.players || []).find(x => x.id === meB);
+      if (tpB) {
+        const bb = await badgeComputeFull(tpB, tbB);
+        BADGE_DEFS.forEach(([k, nm]) => {
+          const st = bb[k];
+          if (!st || st.n < st.need || !st.at || st.at < cutoff) return;
+          items.push({ id:'b'+bb.year+'-'+k, tag:'뱃지', title:`${nm} 뱃지를 획득했어요!`, at:st.at, go:'mine' });
+        });
+      }
+    }
+  } catch(e){}
   return items.sort((a,b) => (b.pinned?1:0)-(a.pinned?1:0) || b.at - a.at).slice(0, 12);
 }
 async function bellDotRefresh(){
@@ -2485,7 +2501,7 @@ async function renderHome() {
     dash += `<div class="card" style="padding:16px;margin-bottom:12px">
       <div style="display:flex;align-items:center;gap:14px">
         <div class="pc-jersey" style="font-size:38px">${jersey}</div>
-        <div style="min-width:0;flex:1"><div class="pc-name" style="margin:0">${esc(meName())}${(myProfile&&myProfile.pos)?` <span class="pf-chip pos" style="font-size:10px;font-weight:800;padding:1px 6px;border-radius:5px;vertical-align:middle">${esc(String(myProfile.pos).replace(/\s*\(.*\)\s*$/,''))}</span>`:''}${myWins.map(t=>` <span class="win-badge ${t==='MVP'?'mvp':'grow'}">${t}</span>`).join('')}${teamPill}</div></div>
+        <div style="min-width:0;flex:1"><div class="pc-name" style="margin:0">${esc(meName())}${(myProfile&&myProfile.pos)?` <span class="pf-chip pos" style="font-size:10px;font-weight:800;padding:1px 6px;border-radius:5px;vertical-align:middle">${esc(posLabel(myProfile.pos))}</span>`:''}${myWins.map(t=>` <span class="win-badge ${t==='MVP'?'mvp':'grow'}">${t}</span>`).join('')}${teamPill}</div></div>
         <button class="pf-edit-link" style="flex-shrink:0;align-self:flex-start" onclick="openMemberCard(${me}, true)">${myProfile?'수정':'만들기'}</button>
       </div>
       ${profileHtml}
@@ -2524,15 +2540,16 @@ async function renderHome() {
       <span style="font-size:12px;font-weight:800;color:var(--accent);white-space:nowrap">${voted?'확인':'투표'} →</span>
     </button>`;
   }
-  const _lgNow = isLeague();
-  const _lgM = nowMonthStr();
+  const _lgM = squadMonth();   // 시즌 배너 기준월 — 마지막 정기 세션이 지나면 다음 달 시즌으로 (2026-08-31 총괄)
+  const _lgNow = isLeague(_lgM);
+  const _lgMoN = parseInt(_lgM.split('-')[1], 10);
   const _lgD = _lgNow ? leagueData(_lgM) : {};
   const _lgMy = (_lgNow && me != null) ? leagueTeamOf(_lgM, me) : null;
   const _lgCaps = (_lgD.captains||[]).map(id => { const p = ROSTER.find(x=>x.id===id); return p ? p.name : null; }).filter(Boolean);
   const _lgRes = (_lgD.match && _lgD.match.result) ? _lgD.match.result : null;
   const _lgTxt = _lgNow
-    ? `이번 달은 <b>팀 리그</b> · 20–23시${_lgCaps.length?` · 감독 ${esc(_lgCaps.join(' · '))}`:''}${_lgMy?` · 내 팀 <b>${_lgMy}</b>`:''}${_lgRes?` · 매치 <b>${_lgRes==='draw'?'무승부':_lgRes+' 승'}</b>`:''}`
-    : '이번 달은 <b>일반 경기</b> · 21–23시';
+    ? `${_lgMoN}월은 <b>팀 리그</b> · 20–23시${_lgCaps.length?` · 감독 ${esc(_lgCaps.join(' · '))}`:''}${_lgMy?` · 내 팀 <b>${_lgMy}</b>`:''}${_lgRes?` · 매치 <b>${_lgRes==='draw'?'무승부':_lgRes+' 승'}</b>`:''}`
+    : `${_lgMoN}월은 <b>일반 경기</b> · 21–23시`;
   const seasonBanner = `<div style="display:flex;align-items:center;gap:9px;padding:10px 14px;margin-bottom:12px;border-radius:12px;background:${_lgNow?'rgba(224,165,48,.12)':'transparent'};border:1px solid ${_lgNow?'var(--gold)':'var(--line)'}">
       <span style="flex-shrink:0;font-size:11px;font-weight:800;letter-spacing:.04em;padding:3px 9px;border-radius:999px;background:${_lgNow?'var(--gold)':'var(--muted)'};color:${_lgNow?'#15281b':'#0d1420'}">${_lgNow?'팀 리그':'일반'}</span>
       <span style="font-size:12.5px;color:var(--cream);line-height:1.4">${_lgTxt}</span>
@@ -2752,38 +2769,42 @@ function badgeCompute(tp, tb){
   const S = (tb && tb.sessions || []).filter(s => s.date && s.date.startsWith(String(Y)));
   const att = s => Array.isArray(s.attendees) && s.attendees.includes(tp.id);
   const mo = s => Number(s.date.slice(5,7));
-  const cnt = f => S.filter(s => f(s) && att(s)).length;
+  const dts = f => S.filter(s => f(s) && att(s)).map(s => s.date).sort();
+  // 획득 시점(at) = 필요 횟수를 채운 세션 날짜 — 종 알림에 쓴다 (2026-08-31 총괄)
+  const mk = (arr, need) => ({ n: arr.length, need, at: arr.length >= need ? new Date(arr[need-1] + 'T12:00:00').getTime() : 0 });
   // 겨울 시즌은 해를 넘긴다 — Y년 겨울 = (Y-1)년 12월 + Y년 1월 (2026-08-26 총괄)
-  const winterN = (tb && tb.sessions || []).filter(s => s.date && (s.date.startsWith(`${Y-1}-12`) || s.date.startsWith(`${Y}-01`)) && att(s)).length;
+  const winterD = (tb && tb.sessions || []).filter(s => s.date && (s.date.startsWith(`${Y-1}-12`) || s.date.startsWith(`${Y}-01`)) && att(s)).map(s => s.date).sort();
   return { year: Y,
-    summer: { n: cnt(s => mo(s)===7 || mo(s)===8), need: 3 },
-    winter: { n: winterN, need: 3 },
-    league: { n: Y >= 2026 ? cnt(s => [3,5,9,11].includes(mo(s)) && (s.type||'풋살')==='풋살') : 0, need: 3 },
-    soccer: { n: cnt(s => s.type==='축구'), need: 1 },
-    dinner: { n: cnt(s => s.type==='회식'), need: 1 },
-    outing: { n: cnt(s => s.type==='야유회'), need: 1 },
-    day:    { n: cnt(s => { const t = ((s.notes||'')+' '+(s.label||'')+' '+(s.type||'')).replace(/\s/g,''); return t.includes('싸커피데이'); }), need: 1 } };
+    summer: mk(dts(s => mo(s)===7 || mo(s)===8), 3),
+    winter: mk(winterD, 3),
+    league: mk(Y >= 2026 ? dts(s => [3,5,9,11].includes(mo(s)) && (s.type||'풋살')==='풋살') : [], 3),
+    soccer: mk(dts(s => s.type==='축구'), 1),
+    dinner: mk(dts(s => s.type==='회식'), 1),
+    outing: mk(dts(s => s.type==='야유회'), 1),
+    day:    mk(dts(s => { const t = ((s.notes||'')+' '+(s.label||'')+' '+(s.type||'')).replace(/\s/g,''); return t.includes('싸커피데이'); }), 1) };
 }
 // 카풀 드라이버 뱃지 — 그 해 운전 5회 이상. 등록 이름이 "희범"처럼 이름만인 경우가 많아
 // 전체 이름 + 성 뺀 이름 두 가지로 합산한다(닉네임 등록은 매칭 불가).
 const DRIVER_ALIAS = { '방판맨': '최승호', '카쩨쥔장': '한승재' };   // 카풀 닉네임 → 멤버 이름 (총괄 확인)
-let _ridesBadgeCache = { at:0, by:{} };
+let _ridesBadgeCache = { at:0, by:{}, dts:{} };
 async function ridesDriverCounts(){
-  if (Date.now() - _ridesBadgeCache.at < 60000) return _ridesBadgeCache.by;
+  if (Date.now() - _ridesBadgeCache.at < 60000) return _ridesBadgeCache;
   let rides = []; try { rides = await fetchRides(); } catch(e){}
   const Y = String(new Date().getFullYear());
-  const by = {};
-  rides.forEach(r => { if ((r.date||'').slice(0,4)!==Y) return; let dv=(r.driver||'').trim(); dv=DRIVER_ALIAS[dv]||dv; if (dv) by[dv]=(by[dv]||0)+1; });
-  _ridesBadgeCache = { at:Date.now(), by };
-  return by;
+  const by = {}, dts = {};
+  rides.forEach(r => { if ((r.date||'').slice(0,4)!==Y) return; let dv=(r.driver||'').trim(); dv=DRIVER_ALIAS[dv]||dv; if (dv){ by[dv]=(by[dv]||0)+1; (dts[dv]=dts[dv]||[]).push(r.date); } });
+  _ridesBadgeCache = { at:Date.now(), by, dts };
+  return _ridesBadgeCache;
 }
 async function badgeComputeFull(tp, tb){
   const b = badgeCompute(tp, tb);
   try {
-    const by = await ridesDriverCounts();
+    const { by, dts } = await ridesDriverCounts();
     const given = tp.name.length >= 2 ? tp.name.slice(1) : tp.name;
-    b.driver = { n: (by[tp.name]||0) + (given!==tp.name ? (by[given]||0) : 0), need: 5 };
-  } catch(e){ b.driver = { n: 0, need: 5 }; }
+    const n = (by[tp.name]||0) + (given!==tp.name ? (by[given]||0) : 0);
+    const dd = [ ...(dts[tp.name]||[]), ...(given!==tp.name ? (dts[given]||[]) : []) ].sort();
+    b.driver = { n, need: 5, at: n >= 5 && dd[4] ? new Date(dd[4] + 'T12:00:00').getTime() : 0 };
+  } catch(e){ b.driver = { n: 0, need: 5, at: 0 }; }
   return b;
 }
 const BADGE_DEFS = [

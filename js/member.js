@@ -280,7 +280,7 @@ function setDefaults() {
   const yyyy = wed.getFullYear(), mm = String(wed.getMonth() + 1).padStart(2, '0'), dd = String(wed.getDate()).padStart(2, '0');
   const dateEl = document.getElementById('f-date'), timeEl = document.getElementById('f-time');
   if (!dateEl.value) dateEl.value = `${yyyy}-${mm}-${dd}`;
-  if (!timeEl.value) timeEl.value = '20:00';
+  if (!timeEl.value) timeEl.value = '21:00';
 }
 setDefaults();
 
@@ -758,7 +758,7 @@ function potmMonthLabel(m) {
   const [y, mo] = m.split('-');
   return `${y}년 ${parseInt(mo)}월`;
 }
-// 연간 운영 시즌: 팀 리그(3·5·9·11월) vs 일반(그 외 전부 — 혹서기·혹한기 포함). 팀 리그는 20–23시.
+// 연간 운영 시즌: 팀 리그(3·5·9·11월) vs 일반(그 외 전부 — 혹서기·혹한기 포함). 시간은 공통 21–23시 (2026-08-31 총괄: 리그 20시 시작 폐지).
 const LEAGUE_MONTHS = [3, 5, 9, 11];
 function monthNumOf(dateOrMonth) {
   if (dateOrMonth == null) return new Date().getMonth() + 1;
@@ -769,8 +769,8 @@ function monthNumOf(dateOrMonth) {
 }
 function isLeague(dateOrMonth) { return LEAGUE_MONTHS.includes(monthNumOf(dateOrMonth)); }
 function seasonLabel(dateOrMonth) { return isLeague(dateOrMonth) ? '팀 리그' : '일반'; }
-// 시즌별 기본 세션 시간: 팀 리그 20:00–23:00, 일반 21:00–23:00
-function seasonDefaultTime(dateOrMonth) { return isLeague(dateOrMonth) ? { start:'20:00', end:'23:00' } : { start:'21:00', end:'23:00' }; }
+// 시즌별 기본 세션 시간: 팀 리그·일반 모두 21:00–23:00
+function seasonDefaultTime(dateOrMonth) { return { start:'21:00', end:'23:00' }; }
 // 회비 표시 월: 매월 15일부터 다음 달 회비를 띄움 (활동/휴면 확인·투표와 동일 기준)
 function duesMonth() {
   const d = new Date();
@@ -1282,6 +1282,22 @@ async function leagueRunoffVote(id){
   toast(mine && mine.to === id ? '투표 취소함' : `${nm} 투표 완료`);
   await rerender(renderHome);
 }
+// 팀 리그 안내 팝업 — 시즌 배너 ? 버튼 (2026-08-31 총괄)
+function showLeagueInfo(){
+  let h = document.getElementById('mmHost');
+  if (!h) { h = document.createElement('div'); h.id = 'mmHost'; document.body.appendChild(h); }
+  h.innerHTML = `<div class="mm-back" onclick="if(event.target===this)lgRecClose()"><div class="mm-box">
+    <div class="mm-head"><div><div class="mm-name">팀 리그란?</div></div><button class="mm-x" onclick="lgRecClose()">×</button></div>
+    <div style="font-size:13px;color:var(--cream);line-height:1.75;margin-top:8px">
+      <b style="color:#ece6d2">3·5·9·11월</b>에 진행하는 시즌이에요. 감독(캡틴) 2명이 팀원을 뽑아 한 달간 <b>WHITE</b>·<b>BLACK</b> 두 팀으로 경기해요.
+      <div style="margin-top:10px;padding-top:10px;border-top:1px solid var(--line)">
+        · <b style="color:#ece6d2">시간</b> — 매주 수요일 21–23시 (일반 달과 동일)<br>
+        · <b style="color:#ece6d2">감독</b> — 지원자 우선, 없으면 회원 추천·투표로 선발<br>
+        · <b style="color:#ece6d2">팀</b> — 감독이 드래프트로 번갈아 팀원 선발<br>
+        · <b style="color:#ece6d2">결과</b> — 그 달 매치 결과를 홈 배너에 표시</div>
+    </div>
+  </div></div>`;
+}
 // 운영진: 팀 배정 순환 (미정 → WHITE → BLACK → 미정)
 async function opsLgSetTeam(m, id){
   if (!isAdmin()) return;
@@ -1290,7 +1306,7 @@ async function opsLgSetTeam(m, id){
   let w = (d.white||[]).filter(x=>x!==id), b = (d.black||[]).filter(x=>x!==id);
   if (cur === null) w.push(id);
   else if (cur === 'WHITE') b.push(id);
-  if (!(await saveLeaguePatch(m, { white:w, black:b }))) { toast('저장 중 오류가 났어요'); return; }
+  if (!(await saveLeaguePatch(m, { white:w, black:b, teamsAt: Date.now() }))) { toast('저장 중 오류가 났어요'); return; }
   await rerender(renderOps);
 }
 // 운영진: 감독 지명 토글 (최대 2명)
@@ -1300,7 +1316,9 @@ async function opsLgToggleCaptain(m, id){
   let caps = (d.captains||[]).slice();
   if (caps.includes(id)) caps = caps.filter(x=>x!==id);
   else { if (caps.length >= 2) { toast('감독은 2명까지예요'); return; } caps.push(id); }
-  if (!(await saveLeaguePatch(m, { captains: caps }))) { toast('저장 중 오류가 났어요'); return; }
+  const _cp = { captains: caps };
+  if (caps.length >= 2) _cp.captainsAt = Date.now();   // 확정 시점 — 종 알림 기준 (2026-08-31)
+  if (!(await saveLeaguePatch(m, _cp))) { toast('저장 중 오류가 났어요'); return; }
   await rerender(renderOps);
 }
 // 운영진: 매치 결과 기록 (월 1매치 — 결과만)
@@ -1694,10 +1712,10 @@ function fmtSessionDate(ds, time, endTime, allDay, endDate) {
   if (endDate && endDate > ds) {   // 여러 날(1박2일 등)
     const d2 = new Date(endDate + 'T12:00');
     const range = `${base} ~ ${d2.getMonth()+1}월 ${d2.getDate()}일 (${days[d2.getDay()]})`;
-    return allDay ? range : `${range} ${fmtClock(time||'20:00')}`;
+    return allDay ? range : `${range} ${fmtClock(time||'21:00')}`;
   }
   if (allDay) return `${base} 하루 종일`;
-  const start = fmtClock(time||'20:00');
+  const start = fmtClock(time||'21:00');
   const end = endTime ? ' - ' + fmtClock(endTime) : '';
   return `${base} ${start}${end}`;
 }
@@ -2025,7 +2043,50 @@ async function bellFeed(){
       }
     }
   } catch(e){}
-  return items.sort((a,b) => (b.pinned?1:0)-(a.pinned?1:0) || b.at - a.at).slice(0, 12);
+  // 리그 알림 (2026-08-31 총괄) — 감독 결선·확정, 내 팀 배정
+  try {
+    const meL = getMe();
+    const mL = statusMonth();
+    const moL = parseInt(mL.split('-')[1], 10);
+    if (isLeague(mL) && dormFeatureOn()) {
+      let dL = {};
+      try { dL = ((await fetchSettings()).league || {})[mL] || {}; } catch(e){}
+      const capsL = dL.captains || [];
+      const roL = dL.runoff;
+      const _lnm = id => (ROSTER.find(x=>x.id===id)||{}).name || '';
+      if (capsL.length >= 2) {
+        const atC = dL.captainsAt || (roL && roL.deadline) || 0;
+        if (atC >= cutoff) items.push({ id:'lgc'+mL, tag:'리그', title:`${moL}월 감독 확정 — ${capsL.map(_lnm).filter(Boolean).join(' · ')}`, at:atC, go:'home' });
+      } else if (roL && roL.open && (roL.cands||[]).length === 2) {
+        if (roL.deadline && Date.now() >= roL.deadline)
+          items.push({ id:'lgrr'+mL, tag:'투표', title:`${moL}월 감독 결선 결과가 나왔어요`, at:roL.deadline, go:'home' });
+        else if ((roL.at||0) >= cutoff)
+          items.push({ id:'lgro'+mL, tag:'투표', title:`${moL}월 감독 결선 투표 — ${roL.cands.map(_lnm).filter(Boolean).join(' vs ')}`, at:roL.at, go:'home' });
+      }
+      if (meL != null && (dL.teamsAt||0) >= cutoff) {
+        const myT = (dL.white||[]).includes(meL) ? 'WHITE' : (dL.black||[]).includes(meL) ? 'BLACK' : null;
+        if (myT) items.push({ id:'lgt'+mL, tag:'리그', title:`${moL}월 팀 배정 — 내 팀 ${myT}`, at:dL.teamsAt, go:'home' });
+      }
+    }
+  } catch(e){}
+  // 이달의 선수 (2026-08-31 총괄) — 25일 투표 오픈 · 지난달 내 수상
+  try {
+    const meP = getMe();
+    if (isVotingOpen()) {
+      const vm = nowMonthStr();
+      items.push({ id:'vo'+vm, tag:'투표', title:`${parseInt(vm.split('-')[1],10)}월 이달의 선수 투표가 열렸어요`, at:votingOpensAt().getTime(), go:'potm' });
+    }
+    if (meP != null) {
+      const w = await getPrevWinners();
+      const wAt = new Date(nowMonthStr()+'-01T00:00:00').getTime();
+      if (wAt >= cutoff && w.month) {
+        const pmN = parseInt(w.month.split('-')[1], 10);
+        if ((w.mvp||[]).includes(meP)) items.push({ id:'wm'+w.month, tag:'수상', title:`${pmN}월 MVP 수상을 축하해요!`, at:wAt, go:'home' });
+        if ((w.growth||[]).includes(meP)) items.push({ id:'wg'+w.month, tag:'수상', title:`${pmN}월 성장상 수상을 축하해요!`, at:wAt, go:'home' });
+      }
+    }
+  } catch(e){}
+  return items.sort((a,b) => (b.pinned?1:0)-(a.pinned?1:0) || b.at - a.at).slice(0, 15);
 }
 async function bellDotRefresh(){
   try {
@@ -2306,7 +2367,7 @@ function setFaqTab(t){ faqTab = t; renderFaq(); }
 function renderFaq() {
   const el = document.getElementById('faqContent');
   const rules = [
-    ['연간 운영 시즌', ['<b>팀 리그</b> — 3·5·9·11월 · <b>20~23시</b> · 감독(캡틴)이 팀원 선발', '<b>일반 경기</b> — 그 외 전부(혹서기 7·8월 · 혹한기 12·1·2월 포함) · <b>21~23시</b>', '홈 배너·세션 카드에 이번 달 시즌 표시']],
+    ['연간 운영 시즌', ['<b>팀 리그</b> — 3·5·9·11월 · <b>21~23시</b> · 감독(캡틴)이 팀원 선발', '<b>일반 경기</b> — 그 외 전부(혹서기 7·8월 · 혹한기 12·1·2월 포함) · <b>21~23시</b>', '홈 배너·세션 카드에 이번 달 시즌 표시']],
     ['회비', ['매월 <b>15일</b>부터 다음 달 회비 표시', (BANK&&BANK.number)?`입금 계좌: <b>${esc(BANK.bank||'')} ${esc(BANK.number)}</b>${BANK.holder?` (${esc(BANK.holder)})`:''}`:'입금 계좌: 운영진에게 문의', '입금 후 회비 화면에서 <b>직접 납부 표시</b>', '전체 금액 비공개 · 납부/미납 인원만 공개']],
     ['참석 신청', ['<b>매치 직전 일요일 23:59</b> 마감', '당일 불참 시 반드시 <b>불참으로 체크</b>', '마감 후 참가는 <b>불참이 생긴 경우에만</b> 가능', '당일 참가도 <b>당일 불참이 생긴 경우에만</b> 가능']],
     ['게스트', ['싸커피 <b>인스타그램 세션 일정 댓글</b> 필히 작성', '게스트 확정은 <b>월요일</b> 인스타그램으로 전달', '확정 후 <b>계좌로 입금</b>']],
@@ -2548,11 +2609,12 @@ async function renderHome() {
   const _lgCaps = (_lgD.captains||[]).map(id => { const p = ROSTER.find(x=>x.id===id); return p ? p.name : null; }).filter(Boolean);
   const _lgRes = (_lgD.match && _lgD.match.result) ? _lgD.match.result : null;
   const _lgTxt = _lgNow
-    ? `${_lgMoN}월은 <b>팀 리그</b> · 20–23시${_lgCaps.length?` · 감독 ${esc(_lgCaps.join(' · '))}`:''}${_lgMy?` · 내 팀 <b>${_lgMy}</b>`:''}${_lgRes?` · 매치 <b>${_lgRes==='draw'?'무승부':_lgRes+' 승'}</b>`:''}`
+    ? `${_lgMoN}월은 <b>팀 리그</b> · 21–23시${_lgCaps.length?` · 감독 ${esc(_lgCaps.join(' · '))}`:''}${_lgMy?` · 내 팀 <b>${_lgMy}</b>`:''}${_lgRes?` · 매치 <b>${_lgRes==='draw'?'무승부':_lgRes+' 승'}</b>`:''}`
     : `${_lgMoN}월은 <b>일반 경기</b> · 21–23시`;
   const seasonBanner = `<div style="display:flex;align-items:center;gap:9px;padding:10px 14px;margin-bottom:12px;border-radius:12px;background:${_lgNow?'rgba(224,165,48,.12)':'transparent'};border:1px solid ${_lgNow?'var(--gold)':'var(--line)'}">
       <span style="flex-shrink:0;font-size:11px;font-weight:800;letter-spacing:.04em;padding:3px 9px;border-radius:999px;background:${_lgNow?'var(--gold)':'var(--muted)'};color:${_lgNow?'#15281b':'#0d1420'}">${_lgNow?'팀 리그':'일반'}</span>
       <span style="font-size:12.5px;color:var(--cream);line-height:1.4">${_lgTxt}</span>
+      ${_lgNow?`<button onclick="showLeagueInfo()" aria-label="팀 리그 안내" style="flex-shrink:0;margin-left:auto;width:19px;height:19px;border-radius:50%;border:1px solid var(--gold);background:transparent;color:var(--gold);font-size:11px;font-weight:800;line-height:1;cursor:pointer;padding:0;font-family:inherit">?</button>`:''}
     </div>`;
   let lgApplyHome = '';
   const _lgNext = statusMonth();
@@ -4631,7 +4693,7 @@ function opsSyncDeadline() {
   const dt = document.getElementById('opsSessDate');
   const dd = document.getElementById('opsSessDeadline');
   if (dt && dd) dd.value = autoDeadlineStr(dt.value);
-  // 시즌별 기본 시간 자동(팀 리그 20–23시 · 일반 21–23시)
+  // 시즌 공통 기본 시간(21–23시)
   const tt = document.getElementById('opsSessTime'), te = document.getElementById('opsSessEnd');
   if (dt && dt.value && tt && te) { const st = seasonDefaultTime(dt.value); tt.value = st.start; te.value = st.end; }
   const lbl = document.getElementById('opsSessSeasonLbl');

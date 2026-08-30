@@ -159,7 +159,7 @@ async function main() {
     return active;
   }
   // 매월 15일: 다음 달 수요일 정기 세션 자동 등록 (2026-08-15 총괄 지시)
-  // 리그 달(3·5·9·11) 20:00, 일반 21:00 — 종료 23:00 · 상암 풋살장 · 마감 직전 일요일.
+  // 시즌 공통 21:00 (2026-08-31 리그 20시 폐지) — 종료 23:00 · 상암 풋살장 · 마감 직전 일요일.
   // 이미 있는 날짜는 건너뛰므로 운영진 수동 등록과 충돌하지 않는다. 15일 실행이 누락돼도 다음 실행이 잡는다(>=15 + once).
   {
     let sy = Number(today.slice(0,4)), smo = Number(today.slice(5,7)) + 1; if (smo > 12) { smo = 1; sy++; }
@@ -177,7 +177,7 @@ async function main() {
       const add3 = wed.filter(ds => !exist3.has(ds));
       if (add3.length) {
         add3.forEach(ds => list3.push({ id:'s'+Date.now().toString(36)+Math.random().toString(36).slice(2,5)+ds.slice(-2),
-          date:ds, time:isLg?'20:00':'21:00', endTime:'23:00', type:'풋살', place:'상암 풋살장', placeUrl:'', guestUrl:'',
+          date:ds, time:'21:00', endTime:'23:00', type:'풋살', place:'상암 풋살장', placeUrl:'', guestUrl:'',
           deadline:dl(ds), label:'', desc:'', duesOnly:false, allowDormant:false }));
         c3.sessions = list3;
         const sres = await rest('club_settings', { method:'POST', headers:{ Prefer:'resolution=merge-duplicates' },

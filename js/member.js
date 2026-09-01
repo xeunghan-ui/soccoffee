@@ -2797,16 +2797,22 @@ async function renderSquad() {
   let activeHtml = gridOf(active, false);
   const _lgSq = isLeague(month) ? leagueData(month) : {};
   if (((_lgSq.white||[]).length + (_lgSq.black||[]).length) > 0) {
-    const inB = active.filter(p => (_lgSq.black||[]).includes(p.id));
-    const inW = active.filter(p => (_lgSq.white||[]).includes(p.id));
+    const _caps = _lgSq.captains || [];
+    const capFirst = (a,b) => (_caps.includes(b.id)?1:0) - (_caps.includes(a.id)?1:0) || sortJ(a,b);
+    const inB = active.filter(p => (_lgSq.black||[]).includes(p.id)).sort(capFirst);
+    const inW = active.filter(p => (_lgSq.white||[]).includes(p.id)).sort(capFirst);
     const rest = active.filter(p => !inB.includes(p) && !inW.includes(p));
+    // 감독은 각 팀 맨 위 + 감독 뱃지 (2026-08-31 총괄)
+    const chipT = p => _caps.includes(p.id)
+      ? chip(p).replace('<span class="sq-dot"', '<span class="win-badge" style="flex-shrink:0;background:var(--gold);color:#23180a">감독</span><span class="sq-dot"')
+      : chip(p);
     // 한 페이지 좌우 배치: 왼쪽 BLACK · 오른쪽 WHITE (2026-08-31 총괄)
     const col = (title, sw, arr) => `<div style="flex:1;min-width:0">
         <div style="display:flex;align-items:center;gap:6px;margin:0 0 8px">
           <span style="width:11px;height:11px;border-radius:3px;background:${sw};border:1px solid var(--line);display:inline-block;flex-shrink:0"></span>
           <b style="font-size:12.5px;color:#ece6d2;letter-spacing:.03em">${title} <span style="color:var(--muted);font-weight:600">${arr.length}</span></b>
         </div>
-        <div style="display:flex;flex-direction:column;gap:8px">${arr.map(chip).join('')}</div>
+        <div style="display:flex;flex-direction:column;gap:8px">${arr.map(chipT).join('')}</div>
       </div>`;
     activeHtml = `<div style="display:flex;gap:10px;align-items:flex-start">${col('BLACK', '#20242b', inB)}${col('WHITE', '#f2efe6', inW)}</div>`
       + (rest.length ? `<div style="margin-top:16px"><b style="font-size:12.5px;color:#ece6d2">미배정 <span style="color:var(--muted);font-weight:600">${rest.length}</span></b><div style="margin-top:8px">${gridOf(rest, false)}</div></div>` : '');

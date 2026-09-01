@@ -89,12 +89,12 @@
     display: flex; justify-content: space-between; align-items: center; }
   .refresh { background: none; border: none; color: var(--accent); font-size: 13px; font-weight: 600;
     cursor: pointer; padding: 4px 8px; }
-  #rideList { display: grid; grid-template-columns: 1fr; gap: 10px; align-items: start; }
+  #rideList { display: grid; grid-template-columns: 1fr; gap: 12px; align-items: start; }
   #rideList .empty { grid-column: 1 / -1; }
   @media (min-width: 768px) { #rideList { grid-template-columns: repeat(2, 1fr); } }
-  .ride {
-    background: var(--card); border-radius: 13px; box-shadow: var(--shadow);
-    padding: 13px 15px; margin-bottom: 0; border: 1.5px solid transparent; min-width: 0;
+  .ride {   /* 다른 탭 .card와 동일 프레임 (2026-08-31 총괄: 카풀 디자인 통일) */
+    background: var(--card); border-radius: var(--radius); box-shadow: var(--shadow);
+    padding: 16px; margin-bottom: 0; border: 1px solid var(--line); min-width: 0;
   }
   .ride.full { opacity: .72; }
   .ride-top { display: flex; justify-content: space-between; align-items: center; gap: 12px; }
@@ -105,8 +105,8 @@
     flex-shrink: 0; padding: 4px 10px; border-radius: 20px; font-size: 12px; font-weight: 800;
     background: var(--green-soft); color: var(--green); white-space: nowrap;
   }
-  .seats-badge.full { background: #f4e0dc; color: var(--red); }
-  .seats-badge.done { background: #ece5db; color: var(--muted); }
+  .seats-badge.full { background: var(--alert-bg); color: var(--alert); }
+  .seats-badge.done { background: var(--gold-bg); color: var(--muted); }
   .ride-meta { margin: 8px 0 0; display: grid; gap: 3px; }
   .meta-line { font-size: 13px; color: var(--text); line-height: 1.5; word-break: keep-all; overflow-wrap: anywhere; }
   .meta-line .sep { color: var(--muted); margin: 0 2px; }

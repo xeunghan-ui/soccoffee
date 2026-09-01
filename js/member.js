@@ -834,9 +834,9 @@ async function getPrevWinners(){
   const d = new Date(); d.setDate(1); d.setMonth(d.getMonth()-1);
   const pm = `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}`;
   try {
-    const [mvp, growth] = await Promise.all([fetchVotes(pm,'mvp'), fetchVotes(pm,'growth')]);
-    _prevWinners = { mvp: topIds(mvp), growth: topIds(growth), month: pm };
-  } catch(e){ _prevWinners = { mvp:[], growth:[], month:pm }; }
+    const [mvp, growth, thanks] = await Promise.all([fetchVotes(pm,'mvp'), fetchVotes(pm,'growth'), fetchVotes(pm,'thanks')]);
+    _prevWinners = { mvp: topIds(mvp), growth: topIds(growth), thanks: topIds(thanks), month: pm };
+  } catch(e){ _prevWinners = { mvp:[], growth:[], thanks:[], month:pm }; }
   return _prevWinners;
 }
 // 최다 득표자 — 동점이면 전원(공동 수상). 표가 없으면 빈 배열.
@@ -851,7 +851,7 @@ function topIds(votes){
 // 수상 배지 — w.mvp / w.growth 는 공동 수상을 담는 배열
 function myWinTitles(id, w){
   if (id == null || !w) return [];
-  return [ (w.mvp||[]).includes(id) ? 'MVP' : '', (w.growth||[]).includes(id) ? '성장' : '' ].filter(Boolean);
+  return [ (w.mvp||[]).includes(id) ? 'MVP' : '', (w.growth||[]).includes(id) ? '성장' : '', (w.thanks||[]).includes(id) ? 'TX' : '' ].filter(Boolean);
 }
 
 // 올해 모범생 랭킹 등수 (renderRank model과 동일 계산) — {rank,total} 또는 null
@@ -2559,7 +2559,7 @@ async function renderHome() {
     dash += `<div class="card" style="padding:16px;margin-bottom:12px">
       <div style="display:flex;align-items:center;gap:14px">
         <div class="pc-jersey" style="font-size:38px">${jersey}</div>
-        <div style="min-width:0;flex:1"><div class="pc-name" style="margin:0">${esc(meName())}${(myProfile&&myProfile.pos)?` <span class="pf-chip pos" style="font-size:10px;font-weight:800;padding:1px 6px;border-radius:5px;vertical-align:middle">${esc(posLabel(myProfile.pos))}</span>`:''}${myWins.map(t=>` <span class="win-badge ${t==='MVP'?'mvp':'grow'}">${t}</span>`).join('')}${teamPill}</div></div>
+        <div style="min-width:0;flex:1"><div class="pc-name" style="margin:0">${esc(meName())}${(myProfile&&myProfile.pos)?` <span class="pf-chip pos" style="font-size:10px;font-weight:800;padding:1px 6px;border-radius:5px;vertical-align:middle">${esc(posLabel(myProfile.pos))}</span>`:''}${myWins.map(t=>` <span class="win-badge ${t==='MVP'?'mvp':t==='TX'?'tx':'grow'}">${t}</span>`).join('')}${teamPill}</div></div>
         <button class="pf-edit-link" style="flex-shrink:0;align-self:flex-start" onclick="openMemberCard(${me}, true)">${myProfile?'수정':'만들기'}</button>
       </div>
       ${profileHtml}
@@ -2788,12 +2788,30 @@ async function renderSquad() {
   const chip = p => {
     const rc = '';   // 역할 색 구분 제거
     const sk = hasProfile(p.id) ? ' has-skill' : '';
-    const wb = `${(w.mvp||[]).includes(p.id)?'<span class="win-badge mvp" style="flex-shrink:0">MVP</span>':''}${(w.growth||[]).includes(p.id)?'<span class="win-badge grow" style="flex-shrink:0">성장</span>':''}`;
+    const wb = `${(w.mvp||[]).includes(p.id)?'<span class="win-badge mvp" style="flex-shrink:0">MVP</span>':''}${(w.growth||[]).includes(p.id)?'<span class="win-badge grow" style="flex-shrink:0">성장</span>':''}${(w.thanks||[]).includes(p.id)?'<span class="win-badge tx" style="flex-shrink:0">TX</span>':''}`;
     return `<button class="sq-chip${rc}${sk}" onclick="openMemberCard(${p.id})"><span class="sq-no">${p.jersey!=null?p.jersey:'–'}</span><span class="sq-nm">${esc(p.name)}</span>${wb}<span class="sq-dot" title="${hasProfile(p.id)?'프로필 있음':'프로필 없음'}"></span></button>`;
   };
   const staff = players.filter(p => (MEMBER_ROLES[p.name]||{}).type==='admin').sort(sortJ);   // 운영진 = admin 역할만(김균원·조은애·김이연 제외)
   const gridOf = (arr, dim) => arr.length ? `<div class="sq-grid${dim?' dim':''}">${arr.map(chip).join('')}</div>` : '<div class="empty" style="font-size:13px;padding:20px 0;text-align:center">해당 인원이 없어요.</div>';
-  _squadGroups = { active: gridOf(active,false), dormant: gridOf(dormant,true), staff: gridOf(staff,false) };
+  // 리그 달 팀 배정이 있으면 활동 명단을 BLACK·WHITE로 나눠서 노출 (2026-08-31 총괄)
+  let activeHtml = gridOf(active, false);
+  const _lgSq = isLeague(month) ? leagueData(month) : {};
+  if (((_lgSq.white||[]).length + (_lgSq.black||[]).length) > 0) {
+    const _caps = _lgSq.captains || [];
+    const capFirst = (a,b) => (_caps.includes(b.id)?1:0) - (_caps.includes(a.id)?1:0) || sortJ(a,b);
+    const inB = active.filter(p => (_lgSq.black||[]).includes(p.id)).sort(capFirst);
+    const inW = active.filter(p => (_lgSq.white||[]).includes(p.id)).sort(capFirst);
+    const rest = active.filter(p => !inB.includes(p) && !inW.includes(p));
+    const capOf = arr => { const c = arr.find(p => _caps.includes(p.id)); return c ? c.name : ''; };
+    const sec = (title, sw, arr) => arr.length ? `<div style="display:flex;align-items:center;gap:7px;margin:16px 2px 8px">
+        <span style="width:11px;height:11px;border-radius:3px;background:${sw};border:1px solid var(--line);display:inline-block;flex-shrink:0"></span>
+        <b style="font-size:12.5px;color:#ece6d2;letter-spacing:.03em">${title} <span style="color:var(--muted);font-weight:600">${arr.length}명</span></b>
+        ${capOf(arr) ? `<span style="font-size:11.5px;color:var(--gold)">감독 ${esc(capOf(arr))}</span>` : ''}
+      </div>${gridOf(arr, false)}` : '';
+    activeHtml = sec('BLACK', '#20242b', inB) + sec('WHITE', '#f2efe6', inW)
+      + (rest.length ? sec('미배정', 'transparent', rest) : '');
+  }
+  _squadGroups = { active: activeHtml, dormant: gridOf(dormant,true), staff: gridOf(staff,false) };
   if (!['active','dormant','staff'].includes(squadFilter)) squadFilter = 'active';
   const _nextView = month !== nowMonthStr();   // 마지막 세션이 끝나 다음 달을 미리 보는 중
   el.innerHTML = `<div class="section-title">${potmMonthLabel(month)} 팀 현황${_nextView ? ` <span style="font-size:11px;font-weight:800;color:var(--muted);letter-spacing:.02em">다음 달</span>` : ''}</div>
@@ -3031,7 +3049,7 @@ function renderMemberCard(){
   if(!mmState){ h.innerHTML=''; return; }
   const s=mmState;
   const roleHtml = s.role ? `<span class="mm-role" style="font-size:10px;padding:2px 8px;margin-top:0;vertical-align:middle">${esc(s.role.role)}</span>` : '';
-  const winHtml = (s.wins && s.wins.length) ? ' ' + s.wins.map(t=>`<span class="win-badge ${t==='MVP'?'mvp':'grow'}">${t}</span>`).join(' ') : '';
+  const winHtml = (s.wins && s.wins.length) ? ' ' + s.wins.map(t=>`<span class="win-badge ${t==='MVP'?'mvp':t==='TX'?'tx':'grow'}">${t}</span>`).join(' ') : '';
   let body;
   if(s.edit){
     const posChips = PROFILE_POS.map(p=>`<button class="pf-pick ${posLabel(s.pf.pos)===p?'on':''}" onclick="mmSetPos('${p}')">${p}</button>`).join('');

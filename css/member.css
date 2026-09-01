@@ -781,6 +781,7 @@
   .win-badge { font-size: 10px; font-weight: 800; padding: 1px 6px; border-radius: 5px; vertical-align: middle; white-space: nowrap; }
   .win-badge.mvp { background: #e0a530; color: #3a2600; }
   .win-badge.grow { background: var(--win); color: #fff; }
+  .win-badge.tx { background: #6d5db0; color: #fff; }   /* 감사한 분 (2026-08-31 총괄) */
   .sv-q { margin-bottom: 14px; }
   .sv-qt { font-size: 14px; font-weight: 800; color: #ece6d2; margin-bottom: 8px; }
   .sv-opt { display: flex; align-items: center; gap: 8px; font-size: 14px; color: var(--cream); padding: 6px 0; cursor: pointer; }

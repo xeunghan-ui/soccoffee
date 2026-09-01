@@ -3816,7 +3816,9 @@ async function renderAtt() {
     listHtml = _grps.map(([key,label])=>{
       const _stKey = ['yes','no','maybe','none'].includes(attFilter) ? attFilter : 'yes';
       const _stLbl = ({yes:'참석',no:'불참',maybe:'미정',none:'미응답'})[_stKey];
-      const gm = sortedM.filter(m=>_teamOf(m)===key && eff(m.id)===_stKey);
+      // 팀별 명단은 본인 우선 없이 등번호순 (2026-08-31 총괄)
+      const _byJ = (a,b) => ((a.jersey==null?999:a.jersey)-(b.jersey==null?999:b.jersey)) || a.name.localeCompare(b.name,'ko');
+      const gm = sortedM.filter(m=>_teamOf(m)===key && eff(m.id)===_stKey).sort(_byJ);
       if (!gm.length) return '';
       return `<div class="att-grp${attCollapsed[key]?' collapsed':''}"><div class="att-grp-h" onclick="toggleAttGrp('${key}',this)">${label}${_myT===key?' <span style="font-size:10.5px;font-weight:800;color:var(--gold)">내 팀</span>':''} <span>${_stLbl} ${gm.length}명</span><span class="grp-caret"></span></div><div class="att-grp-body">${gm.map(rosterRow).join('')}</div></div>`;
     }).join('') || `<div class="empty" style="font-size:13px;padding:16px 0;text-align:center">해당 인원이 없어요.</div>`;

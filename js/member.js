@@ -2606,7 +2606,7 @@ async function renderHome() {
   const _lgCaps = (_lgD.captains||[]).map(id => { const p = ROSTER.find(x=>x.id===id); return p ? p.name : null; }).filter(Boolean);
   const _lgRes = (_lgD.match && _lgD.match.result) ? _lgD.match.result : null;
   const _lgTxt = _lgNow
-    ? `${_lgMoN}월은 <b>팀 리그</b> · 21–23시${_lgCaps.length?` · 감독 ${esc(_lgCaps.join(' · '))}`:''}${_lgMy?` · 내 팀 <b>${_lgMy}</b>`:''}${_lgRes?` · 매치 <b>${_lgRes==='draw'?'무승부':_lgRes+' 승'}</b>`:''}`
+    ? `${_lgMoN}월은 <b>팀 리그</b> · 21–23시${_lgMy?` · 내 팀 <b>${_lgMy}</b>`:''}${_lgRes?` · 매치 <b>${_lgRes==='draw'?'무승부':_lgRes+' 승'}</b>`:''}`
     : `${_lgMoN}월은 <b>일반 경기</b> · 21–23시`;
   const seasonBanner = `<div style="display:flex;align-items:center;gap:9px;padding:10px 14px;margin-bottom:12px;border-radius:12px;background:${_lgNow?'rgba(224,165,48,.12)':'transparent'};border:1px solid ${_lgNow?'var(--gold)':'var(--line)'}">
       <span style="flex-shrink:0;font-size:11px;font-weight:800;letter-spacing:.04em;padding:3px 9px;border-radius:999px;background:${_lgNow?'var(--gold)':'var(--muted)'};color:${_lgNow?'#15281b':'#0d1420'}">${_lgNow?'팀 리그':'일반'}</span>
@@ -3604,7 +3604,10 @@ let _attRows = null;         // 상태별 명단 행 캐시(필터 즉시 전환
 function toggleAttTeam(){ attTeamView = !attTeamView; rerender(renderAtt); }
 function setAttFilter(st){
   attFilter = st;
-  if (attTeamView) { attTeamView = false; rerender(renderAtt); return; }   // 팀뷰였으면 일반뷰로 전환
+  if (attTeamView) {   // 팀별 보기 유지 — 선택한 상태를 팀별로 보여준다 (2026-08-31 총괄. 게스트만 일반뷰)
+    if (st === 'guest') attTeamView = false;
+    rerender(renderAtt); return;
+  }
   const b = document.getElementById('attListBody'); if (b && _attRows) b.innerHTML = _attRows[st] || '';
   const lbl = document.getElementById('attFilterLabel'); if (lbl) lbl.textContent = ({yes:'참석',no:'불참',maybe:'미정',none:'미응답',guest:'게스트'})[st] || '명단';
   document.querySelectorAll('.att-counts .att-cnt').forEach(c=>c.classList.toggle('sel', c.classList.contains(st)));
@@ -3805,12 +3808,18 @@ async function renderAtt() {
   if (_lgSess && _attLgAutoSid !== sess.id) { _attLgAutoSid = sess.id; attTeamView = true; }   // 리그 세션은 팀별 보기 기본
   let listHtml;
   if ((teamSplitOn || _lgSess) && attTeamView) {
-    listHtml = [['WHITE','WHITE'],['BLACK','BLACK'],['기타',_lgSess?'팀 미정':'기타']].map(([key,label])=>{
-      const gm = sortedM.filter(m=>_teamOf(m)===key);
+    // 팀별 보기 = 참석자만, 내 팀이 맨 위 (2026-08-31 총괄)
+    const _meM = sortedM.find(m => m.id === getMe());
+    const _myT = _meM ? _teamOf(_meM) : null;
+    let _grps = [['WHITE','WHITE'],['BLACK','BLACK'],['기타',_lgSess?'팀 미정':'기타']];
+    if (_myT === 'BLACK') _grps = [_grps[1], _grps[0], _grps[2]];
+    listHtml = _grps.map(([key,label])=>{
+      const _stKey = ['yes','no','maybe','none'].includes(attFilter) ? attFilter : 'yes';
+      const _stLbl = ({yes:'참석',no:'불참',maybe:'미정',none:'미응답'})[_stKey];
+      const gm = sortedM.filter(m=>_teamOf(m)===key && eff(m.id)===_stKey);
       if (!gm.length) return '';
-      const gy = gm.filter(m=>eff(m.id)==='yes').length;
-      return `<div class="att-grp${attCollapsed[key]?' collapsed':''}"><div class="att-grp-h" onclick="toggleAttGrp('${key}',this)">${label} <span>참석 ${gy} / ${gm.length}명</span><span class="grp-caret"></span></div><div class="att-grp-body">${gm.map(rosterRow).join('')}</div></div>`;
-    }).join('');
+      return `<div class="att-grp${attCollapsed[key]?' collapsed':''}"><div class="att-grp-h" onclick="toggleAttGrp('${key}',this)">${label}${_myT===key?' <span style="font-size:10.5px;font-weight:800;color:var(--gold)">내 팀</span>':''} <span>${_stLbl} ${gm.length}명</span><span class="grp-caret"></span></div><div class="att-grp-body">${gm.map(rosterRow).join('')}</div></div>`;
+    }).join('') || `<div class="empty" style="font-size:13px;padding:16px 0;text-align:center">해당 인원이 없어요.</div>`;
   } else {
     listHtml = _attRows[attFilter] || _emptyRow;   // 선택된 상태(기본 참석)만 표시
   }

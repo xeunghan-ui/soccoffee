@@ -2797,16 +2797,12 @@ async function renderSquad() {
   let activeHtml = gridOf(active, false);
   const _lgSq = isLeague(month) ? leagueData(month) : {};
   if (((_lgSq.white||[]).length + (_lgSq.black||[]).length) > 0) {
-    const _caps = _lgSq.captains || [];
-    const capFirst = (a,b) => (_caps.includes(b.id)?1:0) - (_caps.includes(a.id)?1:0) || sortJ(a,b);
-    const inB = active.filter(p => (_lgSq.black||[]).includes(p.id)).sort(capFirst);
-    const inW = active.filter(p => (_lgSq.white||[]).includes(p.id)).sort(capFirst);
+    const inB = active.filter(p => (_lgSq.black||[]).includes(p.id));
+    const inW = active.filter(p => (_lgSq.white||[]).includes(p.id));
     const rest = active.filter(p => !inB.includes(p) && !inW.includes(p));
-    const capOf = arr => { const c = arr.find(p => _caps.includes(p.id)); return c ? c.name : ''; };
     const sec = (title, sw, arr) => arr.length ? `<div style="display:flex;align-items:center;gap:7px;margin:16px 2px 8px">
         <span style="width:11px;height:11px;border-radius:3px;background:${sw};border:1px solid var(--line);display:inline-block;flex-shrink:0"></span>
         <b style="font-size:12.5px;color:#ece6d2;letter-spacing:.03em">${title} <span style="color:var(--muted);font-weight:600">${arr.length}명</span></b>
-        ${capOf(arr) ? `<span style="font-size:11.5px;color:var(--gold)">감독 ${esc(capOf(arr))}</span>` : ''}
       </div>${gridOf(arr, false)}` : '';
     activeHtml = sec('BLACK', '#20242b', inB) + sec('WHITE', '#f2efe6', inW)
       + (rest.length ? sec('미배정', 'transparent', rest) : '');

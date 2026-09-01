@@ -72,32 +72,55 @@
       function _isDormant(p,ym){ var am=p.activeMonths||[]; if(am.indexOf(ym)>=0) return false; if((p.status||'active')==='dormant') return true; var dm=p.dormantMonths||[]; return dm.indexOf(ym)>=0 || dm.indexOf(_nowMonth())>=0; }
       var sqm=_squadMonth();
       // 정원제(2026-09~) 확정 결과가 있으면 그게 활동/휴면 최종 기준 — 멤버앱 isDormantFor와 일치
-      var capRes=null;
+      var capRes=null, lgB=[], lgW=[], lgC=[];
       try{
         var cr=await sb.from('club_settings').select('data').eq('id','current').maybeSingle();
-        var _cap=((cr&&cr.data&&cr.data.data)||{}).capacity||{};
+        var _curD=((cr&&cr.data&&cr.data.data)||{});
+        var _cap=_curD.capacity||{};
         var _cm=_cap[sqm];
         if(sqm>='2026-09'&&_cm&&_cm.result&&Array.isArray(_cm.result.active)) capRes=_cm.result.active;
+        // 리그 달 팀 배정 (2026-08-31 총괄: 소개도 BLACK/WHITE 구분 노출)
+        if([3,5,9,11].indexOf(parseInt(sqm.split('-')[1],10))>=0){
+          var _lg=(_curD.league||{})[sqm]||{};
+          lgB=_lg.black||[]; lgW=_lg.white||[]; lgC=_lg.captains||[];
+        }
       }catch(e){}
       // 전 달(확정) MVP·성장 — 동점이면 공동 수상 전원(멤버앱 topIds와 동일)
-      var mvpIds=[], growthIds=[];
+      var mvpIds=[], growthIds=[], thanksIds=[];
       try{
         var _d=new Date(); _d.setDate(1); _d.setMonth(_d.getMonth()-1);
         var pm=_d.getFullYear()+'-'+('0'+(_d.getMonth()+1)).slice(-2);   // 전 달(확정)만 표시
         var vr=await sb.from('potm_votes').select('category,candidate_id').eq('month', pm);
         var votes=(vr&&vr.data)||[];
         function topIds(cat){ var t={}; votes.forEach(function(v){ if(v.category===cat) t[v.candidate_id]=(t[v.candidate_id]||0)+1; }); var bc=0; for(var k in t){ if(t[k]>bc) bc=t[k]; } return bc>0?Object.keys(t).filter(function(k){return t[k]===bc;}).map(Number):[]; }
-        mvpIds=topIds('mvp'); growthIds=topIds('growth');
+        mvpIds=topIds('mvp'); growthIds=topIds('growth'); thanksIds=topIds('thanks');
       }catch(e){}
       var BST='font-size:9px;font-weight:800;border-radius:5px;padding:1px 5px;margin-left:6px;vertical-align:middle;';
-      box.innerHTML=players.map(function(p){
-        var dorm=(capRes ? capRes.indexOf(p.id)<0 : _isDormant(p,sqm))?' dorm':'';
+      function chipOf(p, dorm){
         var no=(p.jersey!=null)?p.jersey:'-';
         var badge='';
+        if(lgC.indexOf(p.id)>=0) badge+=' <span style="'+BST+'background:var(--gold-bright,#ece6d2);color:#23180a">감독</span>';
         if(mvpIds.indexOf(p.id)>=0) badge+=' <span style="'+BST+'background:#e0a530;color:#3a2600">MVP</span>';
         if(growthIds.indexOf(p.id)>=0) badge+=' <span style="'+BST+'background:var(--win);color:#fff">성장</span>';
-        return '<div class="pl'+dorm+'"><span class="no">'+no+'</span><span class="nm">'+esc(p.name)+badge+'</span></div>';
-      }).join('');
+        if(thanksIds.indexOf(p.id)>=0) badge+=' <span style="'+BST+'background:#6d5db0;color:#fff">TX</span>';
+        return '<div class="pl'+(dorm?' dorm':'')+'"><span class="no">'+no+'</span><span class="nm">'+esc(p.name)+badge+'</span></div>';
+      }
+      var isDormOf=function(p){ return capRes ? capRes.indexOf(p.id)<0 : _isDormant(p,sqm); };
+      if(lgB.length+lgW.length>0){
+        // 리그 달: BLACK · WHITE 구분 노출(감독 맨 앞), 휴면은 아래
+        var capFirst=function(a,b){ return (lgC.indexOf(b.id)>=0?1:0)-(lgC.indexOf(a.id)>=0?1:0); };
+        var inB=players.filter(function(p){return lgB.indexOf(p.id)>=0;}).sort(capFirst);
+        var inW=players.filter(function(p){return lgW.indexOf(p.id)>=0;}).sort(capFirst);
+        var rest=players.filter(function(p){return lgB.indexOf(p.id)<0&&lgW.indexOf(p.id)<0;});
+        var head=function(t,swatch,n){ return '<div style="grid-column:1/-1;display:flex;align-items:center;gap:7px;margin:8px 2px 0">'
+          +'<span style="width:11px;height:11px;border-radius:3px;background:'+swatch+';border:1px solid var(--line);flex-shrink:0"></span>'
+          +'<b style="font-size:12.5px;color:var(--cream);letter-spacing:.04em">'+t+' <span style="color:var(--muted);font-weight:600">'+n+'</span></b></div>'; };
+        box.innerHTML = head('BLACK','#20242b',inB.length) + inB.map(function(p){return chipOf(p,false);}).join('')
+          + head('WHITE','#f2efe6',inW.length) + inW.map(function(p){return chipOf(p,false);}).join('')
+          + (rest.length ? head('휴면','transparent',rest.length) + rest.map(function(p){return chipOf(p,true);}).join('') : '');
+      } else {
+        box.innerHTML=players.map(function(p){ return chipOf(p, isDormOf(p)); }).join('');
+      }
     }catch(e){ box.innerHTML='<p class="muted" style="font-size:13px">명단을 불러오지 못했어요.</p>'; }
   }
 

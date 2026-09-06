@@ -219,8 +219,10 @@ function switchTab(tab, mode) {
   // 히스토리: 기본은 pushState(탭마다 항목 → 뒤로가기로 탭 이동). 'replace'=초기/대체, 'none'=뒤로가기 처리 중(조작 안 함)
   if (mode !== 'none' && location.hash.slice(1) !== tab) {
     try {
-      if (mode === 'replace') history.replaceState(null, '', '#' + tab);
-      else { history.pushState(null, '', '#' + tab); _navDepth++; }
+      // base href="/" 때문에 '#tab'이 '/#tab'으로 풀림 → 현재 경로(/member/)를 명시 (2026-09-06)
+      const _hu = location.pathname + location.search + '#' + tab;
+      if (mode === 'replace') history.replaceState(null, '', _hu);
+      else { history.pushState(null, '', _hu); _navDepth++; }
     } catch(e){ location.hash = tab; }
   }
   // 하단 왼편 뒤로가기 버튼 — 홈에서만 숨김 (홈 화면 앱엔 브라우저 뒤로가기가 없어서. 2026-08-25 총괄)

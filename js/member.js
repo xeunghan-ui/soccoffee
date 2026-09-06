@@ -3803,7 +3803,7 @@ async function renderAtt() {
   _attRows = {}; ['yes','no','maybe','none'].forEach(st=>{ _attRows[st] = sortedM.filter(m=>eff(m.id)===st).map(rosterRow).join('') || _emptyRow; });
   _attRows.guest = guestRowsHtml(sess.id);
   const _sm = (sess.date||'').slice(0,7);
-  const _lgSess = isLeague(_sm) && leagueAssigned(_sm);   // 리그 세션 + 팀 배정 존재
+  const _lgSess = isLeague(_sm) && leagueAssigned(_sm) && (sess.type||'풋살')==='풋살';   // 팀 구분은 풋살 세션만 — 야유회·회식·데이 등 이벤트 제외 (2026-09-06 총괄)
   const _teamOf = mm => _lgSess ? (leagueTeamOf(_sm, mm.id) || '기타') : (mm.team || '기타');
   if (_lgSess && _attLgAutoSid !== sess.id) { _attLgAutoSid = sess.id; attTeamView = true; }   // 리그 세션은 팀별 보기 기본
   let listHtml;

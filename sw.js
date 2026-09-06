@@ -9,15 +9,15 @@ self.addEventListener('push', e => {
     body: d.body || '',
     icon: 'scf-icon-180.png',
     badge: 'scf-icon-180.png',
-    data: { url: d.url || './member.html' }
+    data: { url: d.url || '/member/' }
   }));
 });
 
 self.addEventListener('notificationclick', e => {
   e.notification.close();
-  const url = (e.notification.data && e.notification.data.url) || './member.html';
+  const url = (e.notification.data && e.notification.data.url) || '/member/';
   e.waitUntil(self.clients.matchAll({ type: 'window', includeUncontrolled: true }).then(list => {
-    for (const c of list) { if (c.url.includes('member.html') && 'focus' in c) return c.focus(); }
+    for (const c of list) { if (c.url.includes('/member') && 'focus' in c) return c.focus(); }
     return self.clients.openWindow(url);
   }));
 });

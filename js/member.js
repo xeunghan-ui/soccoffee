@@ -478,7 +478,7 @@ async function saveRideEdit(id){
     const pl = PLAYERS.find(p => p.name === String(rd.name||'').trim());
     if (!pl || pl.id === meId || seen.has(pl.id)) continue;
     seen.add(pl.id);
-    await queuePush(pl.id, '카풀 정보 변경', `${r.driver}님 카풀이 변경됐어요 · ${when} ${np}${dest}`, './member.html#list');
+    await queuePush(pl.id, '카풀 정보 변경', `${r.driver}님 카풀이 변경됐어요 · ${when} ${np}${dest}`, '/member/#list');
   }
   await rerender(render);
   toast(seen.size ? `수정 완료 · 탑승자 ${seen.size}명에게 알림 보냄` : '수정 완료');
@@ -1635,7 +1635,7 @@ async function submitVote() {
   const r3 = await castVote(m, 'thanks', potmVoterId, potmPick.thanks);
   potmPick = { mvp:null, growth:null, thanks:null };
   if (r1 !== 'dup' && r2 !== 'dup' && r1 && r2 && r3) {
-    try { const t = await pushTpl('vote_done', {'월':parseInt(m.split('-')[1])}); queuePush(potmVoterId, t.title, t.body, './member.html#potm'); } catch(e){}
+    try { const t = await pushTpl('vote_done', {'월':parseInt(m.split('-')[1])}); queuePush(potmVoterId, t.title, t.body, '/member/#potm'); } catch(e){}
   }
   await rerender(renderPotm);
   refreshNewBadges();
@@ -1967,7 +1967,7 @@ async function notifyDriver(ride, title, body){
   const drv = PLAYERS.find(p => p.name === String(ride.driver).trim());
   if (!drv || drv.id === getMe()) return;   // 본인 행동은 알림 없음
   const t = `${(ride.date||'').slice(5).replace('-','/')} ${ride.time||''}`.trim();
-  queuePush(drv.id, title, body.replace('{일시}', t), './member.html#list');
+  queuePush(drv.id, title, body.replace('{일시}', t), '/member/#list');
 }
 
 /* ---------- 상단 알림 종(통합 알림함: 공지·카풀·세션) ---------- */
@@ -2151,7 +2151,7 @@ document.addEventListener('click', e => {
 // 개인 알림 큐 — 발송기(GitHub Actions)가 매시간 비우며 해당 멤버에게 전송
 async function queuePush(targetId, title, body, url){   // targetId 0 = 전체 발송
   if (!USE_DB || targetId == null) return;
-  try { await sb.from('push_queue').insert({ target_member_id: targetId, title, body, url: url||'./member.html' }); } catch(e){}
+  try { await sb.from('push_queue').insert({ target_member_id: targetId, title, body, url: url||'/member/' }); } catch(e){}
 }
 // 알림 종류(멤버 선택) — 기본 전부 켜짐. 개인 알림·수동 발송·휴면 복귀 확인, 그리고 회비·세션은 항상 감(설정에서 끌 수 없음)
 let _notifOpen = false;   // 알림 설정 펼침 상태(재렌더에도 유지)
@@ -3880,7 +3880,7 @@ async function attSaveDraft(){
     if (mid !== getMe() && st !== 'none') {
       const stLbl = ({yes:'참석',no:'불참',maybe:'미정'})[st] || st;
       const t = await pushTpl('att_change', {'세션':_lbl,'상태':stLbl});
-      queuePush(mid, t.title, t.body, './member.html#att');
+      queuePush(mid, t.title, t.body, '/member/#att');
     }
   }
   attDraft = {};
@@ -3924,7 +3924,7 @@ async function adminSetAtt(memberId, cur, target){
       const lbl = s && s.date ? `${parseInt(s.date.split('-')[1])}/${parseInt(s.date.split('-')[2])} 세션` : '세션';
       const stLbl = ({yes:'참석',no:'불참',maybe:'미정'})[target] || target;
       const t = await pushTpl('att_change', {'세션':lbl,'상태':stLbl});
-      queuePush(memberId, t.title, t.body, './member.html#att');
+      queuePush(memberId, t.title, t.body, '/member/#att');
     }
     await rerender(renderAtt);
   }
@@ -4000,7 +4000,7 @@ async function toggleDuesConfirm(month, id){
   const arr = new Set(dc[month]||[]); if (arr.has(id)) arr.delete(id); else arr.add(id); dc[month] = [...arr];
   DUES_CONFIRMED = dc;
   if (!(await saveSettings({ duesConfirmed: dc }))) { toast('저장 중 오류가 났어요'); return; }
-  if ((dc[month]||[]).includes(id)) { const t = await pushTpl('dues_confirm', {'월':parseInt(month.split('-')[1])}); queuePush(id, t.title, t.body, './member.html#dues'); }
+  if ((dc[month]||[]).includes(id)) { const t = await pushTpl('dues_confirm', {'월':parseInt(month.split('-')[1])}); queuePush(id, t.title, t.body, '/member/#dues'); }
   await rerender(renderDues);
 }
 let duesGrpSel = 'wait';   // 회비 명단 탭 (운영진·총무): wait|noresp|unpaid|done|dorm
@@ -4260,7 +4260,7 @@ async function toggleDue(memberId, currentlyPaid) {
   if (!ok) return;
   if (isAdmin() && memberId !== getMe()) {
     const t = await pushTpl('dues_change', {'월':parseInt(duesMonth().split('-')[1]),'상태':!currentlyPaid?'납부':'미납'});
-    queuePush(memberId, t.title, t.body, './member.html#dues');
+    queuePush(memberId, t.title, t.body, '/member/#dues');
   }
   await renderDues();
   window.scrollTo(0, y);
@@ -4304,7 +4304,7 @@ async function duesSaveDraft(){
     else {
       const ok = await setDuesPaid(mo, mid, st === 'paid', dueAmount(m?m.name:''));
       if(!ok) anyErr = true;
-      else if (mid !== getMe()) { const t = await pushTpl('dues_change', {'월':parseInt(mo.split('-')[1]),'상태':st==='paid'?'납부':'미납'}); queuePush(mid, t.title, t.body, './member.html#dues'); }
+      else if (mid !== getMe()) { const t = await pushTpl('dues_change', {'월':parseInt(mo.split('-')[1]),'상태':st==='paid'?'납부':'미납'}); queuePush(mid, t.title, t.body, '/member/#dues'); }
     }
   }
   // 휴면: 팀빌더 명단에 해당 월 등록(roster에 쓰면 mergeTbMembers가 덮어쓰므로 팀빌더가 단일 출처)
@@ -4655,7 +4655,7 @@ async function opsManualPush(){
     lbl = m.name + ' 님';
   }
   if (!confirm(`${lbl}에게 보낼까요?\n\n${t||'싸커피'}\n${bd}`)) return;
-  await queuePush(target, t || '싸커피', bd, './member.html#home');
+  await queuePush(target, t || '싸커피', bd, '/member/#home');
   document.getElementById('mpTitle').value=''; document.getElementById('mpBody').value='';
   toast(`발송 예약됐어요 (${lbl}) — 15분 내 전송됩니다.`);
 }
@@ -4832,7 +4832,7 @@ async function opsSaveSession(id) {
         const tid = Number(a.member_id);
         if (tid === meId || seen.has(tid)) continue;
         seen.add(tid);
-        await queuePush(tid, '세션 일정 변경', `참석 신청한 세션이 변경됐어요 · ${when} ${s.place||''}`, './member.html#att');
+        await queuePush(tid, '세션 일정 변경', `참석 신청한 세션이 변경됐어요 · ${when} ${s.place||''}`, '/member/#att');
       }
     } catch(e){}
   }

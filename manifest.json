@@ -1,8 +1,8 @@
 {
   "name": "싸커피 SOCCOFFEE FC",
   "short_name": "싸커피",
-  "start_url": "./member.html",
-  "scope": "./",
+  "start_url": "/member/",
+  "scope": "/",
   "display": "standalone",
   "background_color": "#15281b",
   "theme_color": "#15281b",

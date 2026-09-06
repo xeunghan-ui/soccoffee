@@ -226,11 +226,11 @@ async function main() {
     else if (q.target_member_id === -1) tg = 'ACTIVE';
     else if (q.target_member_id === -2) tg = 'DORMANT';
     else tg = [q.target_member_id];
-    msgs.push({ title: q.title, body: q.body, url: q.url || './member.html', targets: tg });
+    msgs.push({ title: q.title, body: q.body, url: q.url || '/member/', targets: tg });
   }
 
   if (MANUAL_TITLE || MANUAL_BODY) {
-    msgs.push({ title: MANUAL_TITLE || '싸커피', body: MANUAL_BODY, url: './member.html' });
+    msgs.push({ title: MANUAL_TITLE || '싸커피', body: MANUAL_BODY, url: '/member/' });
   } else {
     // ⑦ 새 공지 (등록 후 최대 1시간 내)
     const notices = await j(await rest('notices?select=id,title,publish_at,created_at&order=created_at.desc&limit=20')) || [];
@@ -240,7 +240,7 @@ async function main() {
       if (n.publish_at && new Date(n.publish_at) > new Date()) continue;
       st.noticeIds.push(String(n.id));
       if (firstRun) continue;
-      msgs.push({ ...T('notice', {'제목': n.title}), url: './member.html#home' });
+      msgs.push({ ...T('notice', {'제목': n.title}), url: '/member/#home' });
     }
     // ③ 새 카풀 — 전체 푸시 제거(2026-07-24 결정). 드라이버 개인 알림(push_queue)만 유지, 알림함에는 계속 표시
     const rides = await j(await rest('rides?select=id,created_at&order=created_at.desc&limit=10')) || [];
@@ -252,7 +252,7 @@ async function main() {
       st.sessionIds.push(sid);
       if (firstRun) continue;
       if (!s.date || s.date < today) continue;
-      msgs.push({ cat:'session_new', legacy:'session', ...T('session_new', {'날짜': mdLabel(s.date), '시간': s.time || '', '장소': s.place || ''}), url: './member.html#att', targets: idsFor(players, monthOf(s.date), s.allowDormant, thisMonth) });
+      msgs.push({ cat:'session_new', legacy:'session', ...T('session_new', {'날짜': mdLabel(s.date), '시간': s.time || '', '장소': s.place || ''}), url: '/member/#att', targets: idsFor(players, monthOf(s.date), s.allowDormant, thisMonth) });
     }
     if (evening) {
       // ⑧ 내일 세션 리마인드 — '참석'으로 응답한 멤버에게만
@@ -261,7 +261,7 @@ async function main() {
         if (!once('rem-' + (s.id || s.date))) continue;
         const att = await j(await rest(`attendance?select=member_id,status&session_id=eq.${encodeURIComponent(s.id)}`)) || [];
         const going = att.filter(a => a.status === 'yes').map(a => a.member_id);
-        if (going.length) msgs.push({ ...T('tomorrow', {'날짜': mdLabel(s.date), '시간': s.time || '', '장소': s.place || ''}), url: './member.html#att', targets: going });
+        if (going.length) msgs.push({ ...T('tomorrow', {'날짜': mdLabel(s.date), '시간': s.time || '', '장소': s.place || ''}), url: '/member/#att', targets: going });
       }
       // ① 마감 하루 전 — 미응답·미정만 타겟
       for (const s of sessions) {
@@ -272,33 +272,33 @@ async function main() {
           const att = await j(await rest(`attendance?select=member_id,status&session_id=eq.${encodeURIComponent(s.id)}`)) || [];
           const done = new Set(att.filter(a => a.status === 'yes' || a.status === 'no').map(a => a.member_id));
           const need = activeFor(players, monthOf(s.date), thisMonth).filter(p => !done.has(p.id)).map(p => p.id);
-          if (need.length) msgs.push({ ...T('deadline', {'날짜': mdLabel(s.date)}), url: './member.html#att', targets: need });
+          if (need.length) msgs.push({ ...T('deadline', {'날짜': mdLabel(s.date)}), url: '/member/#att', targets: need });
           st.sent.push('dl-' + (s.id || s.date));
         }
       }
       // ② 투표 시작 (25일)
       if (dom === 25 && once('vote-' + thisMonth)) {
-        msgs.push({ cat:'vote', ...T('vote', {}), url: './member.html#potm', targets: idsFor(players, thisMonth, false, thisMonth) });
+        msgs.push({ cat:'vote', ...T('vote', {}), url: '/member/#potm', targets: idsFor(players, thisMonth, false, thisMonth) });
       }
       // ⑤ 회비 시작 (15일 — 다음 달 회비)
       if (dom === 15 && once('dues-open-' + thisMonth)) {
         const nm = Number(thisMonth.slice(5, 7)) % 12 + 1;
         const dmStart = `${nm === 1 ? Number(thisMonth.slice(0,4))+1 : thisMonth.slice(0,4)}-${String(nm).padStart(2,'0')}`;
-        msgs.push({ cat:'dues_open', legacy:'dues', ...T('dues_open', {'월': nm}), url: './member.html#dues', targets: idsFor(players, dmStart, false, thisMonth) });
+        msgs.push({ cat:'dues_open', legacy:'dues', ...T('dues_open', {'월': nm}), url: '/member/#dues', targets: idsFor(players, dmStart, false, thisMonth) });
       }
       // ⑪ 투표 마감 임박 (말일) — 미투표자 타겟
       if (monthOf(kstDate(1)) !== thisMonth && once('vote-close-' + thisMonth)) {   // 내일이 다음 달 = 오늘이 말일
         const vts = await j(await rest(`potm_votes?select=voter_id&month=eq.${thisMonth}`)) || [];
         const votedIds = new Set(vts.map(v => v.voter_id));
         const notVoted = activeFor(players, thisMonth, thisMonth).filter(p => !votedIds.has(p.id)).map(p => p.id);
-        if (notVoted.length) msgs.push({ cat:'vote_close', legacy:'vote', ...T('vote_close', {'월': Number(thisMonth.slice(5, 7))}), url: './member.html#potm', targets: notVoted });
+        if (notVoted.length) msgs.push({ cat:'vote_close', legacy:'vote', ...T('vote_close', {'월': Number(thisMonth.slice(5, 7))}), url: '/member/#potm', targets: notVoted });
       }
       // ⑨ 휴면 멤버 복귀 확인 (15일 — 다음 달 상태 선택이 열리는 날)
       if (dom === 15 && once('dorm-ask-' + thisMonth)) {
         const nm2 = Number(thisMonth.slice(5, 7)) % 12 + 1;
         const dmAsk = `${nm2 === 1 ? Number(thisMonth.slice(0,4))+1 : thisMonth.slice(0,4)}-${String(nm2).padStart(2,'0')}`;
         const dorm = dormantFor(players, dmAsk, thisMonth).map(p => p.id);
-        if (dorm.length) msgs.push({ ...T('dorm_ask', {'월': nm2}), url: './member.html#home', targets: dorm });
+        if (dorm.length) msgs.push({ ...T('dorm_ask', {'월': nm2}), url: '/member/#home', targets: dorm });
       }
       // ⑩ 투표 선정 축하 (매월 1일 — 전월 결과 확정)
       if (dom === 1 && once('winner-' + thisMonth)) {
@@ -312,11 +312,11 @@ async function main() {
           const max = Math.max(0, ...Object.values(tally));
           if (max < 1) continue;
           const winners = Object.keys(tally).filter(k => tally[k] === max).map(Number);   // 동률 공동 수상
-          msgs.push({ ...T('winner', {'월': Number(pm.slice(5, 7)), '부문': catLbl}), url: './member.html#potm', targets: winners });
+          msgs.push({ ...T('winner', {'월': Number(pm.slice(5, 7)), '부문': catLbl}), url: '/member/#potm', targets: winners });
         }
         // 투표 종료 → 투표한 사람 전원에게 결과 공개 알림
         const voters = [...new Set(votes.map(v => v.voter_id).filter(x => x != null))];
-        if (voters.length) msgs.push({ ...T('results_open', {'월': Number(pm.slice(5, 7))}), url: './member.html#potm', targets: voters });
+        if (voters.length) msgs.push({ ...T('results_open', {'월': Number(pm.slice(5, 7))}), url: '/member/#potm', targets: voters });
       }
       // ⑥ 회비 마감(25일) 하루 전 — 미납만 타겟
       if (dom === 24 && once('dues-urge-' + thisMonth)) {
@@ -334,7 +334,7 @@ async function main() {
           return capOnDm ? (!(c && c.s === 'active') || !dconfU.has(p.id)) : !paid.has(p.id);
         }).map(p => p.id);
         const urgeTo = [...new Set(need)];
-        if (urgeTo.length) msgs.push({ cat:'dues_urge', legacy:'dues', ...T('dues_urge', {'월': Number(dm.slice(5, 7))}), url: './member.html#dues', targets: urgeTo });
+        if (urgeTo.length) msgs.push({ cat:'dues_urge', legacy:'dues', ...T('dues_urge', {'월': Number(dm.slice(5, 7))}), url: '/member/#dues', targets: urgeTo });
       }
     }
     st.noticeIds = st.noticeIds.slice(-100); st.rideIds = st.rideIds.slice(-50);

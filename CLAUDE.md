@@ -18,7 +18,8 @@
 ## 구조
 - **⚠️ `index.html`이 두 개다(헷갈림 주의):** 루트 `index.html`=소개, `team/index.html`=팀빌더. 정적 호스팅이라 각 폴더가 `index.html`이어야 하므로 이름은 못 바꾼다. **루트는 절대 팀빌더로 덮지 말 것.** 식별: 각 파일 맨 위 주석 + 팀빌더엔 `Soccoffee Team Builder` 메타가 있음.
 - `index.html` (루트) = **소개(랜딩)·공개**. 히어로의 "멤버 로그인 →" → `member.html`.
-- `member.html` = **멤버 앱**(로그인 후 공지·참석·회비·카풀·투표·랭킹·운영진). 스타일·로직은 `css/member.css`·`js/member.js`(소개는 `css/intro.css`·`js/intro.js`).
+- `member/index.html` = **멤버 앱**(로그인 후 공지·참석·회비·카풀·투표·랭킹·운영진). 스타일·로직은 `css/member.css`·`js/member.js`(소개는 `css/intro.css`·`js/intro.js`).
+- **클린 URL 재편(2026-09-06)**: `/member/`·`/day/`·`/join/`이 실제 페이지(각 폴더의 index.html), 루트의 `member.html`·`day.html`·`join.html`은 **리다이렉트 스텁**이다. 실제 페이지 head에 `<base href="/">`가 있어 상대경로가 루트 기준으로 풀린다 — **base 태그를 지우지 말 것**, 새 최상위 페이지를 만들 땐 같은 패턴(폴더/index.html + base + 스텁). 푸시 URL·manifest는 `/member/` 기준.
 - `team/index.html` = **팀빌더**(운영진 전용, 비번 `soccoffee1234`). 원본은 `~/Documents/Claude/Artifacts/soccoffee-team-builder/index.html` → 수정 후 `team/`으로 복사. **루트 index.html로 복사 금지.**
 - `img/` = 소개 갤러리. `.nojekyll`(루트) = Pages 빌드 필수(지우지 말 것).
 

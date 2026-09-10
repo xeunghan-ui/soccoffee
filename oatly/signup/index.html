@@ -1,0 +1,197 @@
+<!DOCTYPE html>
+<!-- 오틀리 풋살 챔피언십 — 참가 모집 폼 (개인 + 카페 팀). 저장: Supabase oatly_signups -->
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>오틀리 풋살 챔피언십 — 참가 신청</title>
+<meta name="description" content="오틀리 풋살 챔피언십 참가 신청. 카페 소속 참가자 대상 — 개인 또는 카페 팀 단위로 신청하세요.">
+<meta property="og:type" content="website">
+<meta property="og:title" content="오틀리 풋살 챔피언십 — 참가 신청">
+<meta property="og:description" content="오틀리 × 싸커피 · 카페 소속 참가자 모집">
+<meta property="og:url" content="https://soccoffee.co.kr/oatly/signup/">
+<meta property="og:image" content="https://soccoffee.co.kr/poster.png">
+<meta name="twitter:card" content="summary_large_image">
+<link rel="stylesheet" as="style" crossorigin href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css">
+<style>
+  @font-face {
+    font-family: 'WildGag';
+    src: url('../../wildgag.woff2') format('woff2'), url('../../wildgag.ttf') format('truetype');
+    font-weight: 700; font-display: swap;
+  }
+  :root {
+    --paper: #e8e8e6; --card: #ffffff; --ink: #141414; --ink2: #44443f;
+    --muted: #8a8a86; --line: #141414; --radius: 14px; --hard: 4px 4px 0 var(--ink);
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; background: var(--paper); color: var(--ink);
+    font-family: "Pretendard", "Pretendard Variable", -apple-system, BlinkMacSystemFont, "Apple SD Gothic Neo", "Malgun Gothic", sans-serif;
+    line-height: 1.6; -webkit-font-smoothing: antialiased;
+  }
+  .wrap { max-width: 560px; margin: 0 auto; padding: 30px 18px 80px; }
+  .back { display: inline-block; margin-bottom: 20px; color: var(--muted); text-decoration: none; font-size: 13px; font-weight: 700; }
+  .head { border: 3px solid var(--ink); border-radius: var(--radius); background: var(--card); box-shadow: var(--hard); padding: 22px 20px; }
+  .kicker { font-size: 12px; font-weight: 800; letter-spacing: .16em; }
+  .title { font-family: 'WildGag', 'Pretendard', sans-serif; font-size: clamp(26px, 7vw, 38px); line-height: 1.05; margin: 8px 0 4px; letter-spacing: 0; }
+  .subtitle { font-size: 14px; color: var(--ink2); font-weight: 600; }
+  .info { margin-top: 14px; border-top: 2px dashed var(--ink); padding-top: 12px; font-size: 13.5px; }
+  .info .r { display: flex; gap: 10px; padding: 3px 0; }
+  .info .k { flex-shrink: 0; width: 66px; font-weight: 800; }
+  .info .v { color: var(--ink2); font-weight: 600; }
+  .tag-tbd { display: inline-block; font-size: 11px; font-weight: 800; background: var(--ink); color: var(--card); border-radius: 5px; padding: 1px 6px; margin-left: 4px; }
+
+  .modebar { display: flex; gap: 10px; margin: 22px 0 4px; }
+  .modebar button { flex: 1; background: var(--card); border: 2.5px solid var(--ink); border-radius: 11px; padding: 13px; font-size: 15px; font-weight: 800; cursor: pointer; font-family: inherit; color: var(--ink); }
+  .modebar button.on { background: var(--ink); color: var(--card); box-shadow: var(--hard); }
+  .mode-hint { font-size: 12.5px; color: var(--muted); font-weight: 600; margin: 8px 2px 0; }
+
+  form { margin-top: 18px; }
+  label { display: block; font-size: 13px; font-weight: 800; margin: 16px 0 6px; }
+  label em { font-style: normal; }
+  label .opt { color: var(--muted); font-weight: 600; }
+  input, textarea { width: 100%; background: #fff; border: 2.5px solid var(--ink); border-radius: 10px; padding: 12px 13px; color: var(--ink); font-size: 15px; font-family: inherit; font-weight: 600; }
+  input:focus, textarea:focus { outline: none; box-shadow: var(--hard); }
+  textarea { min-height: 84px; resize: vertical; }
+  .gsel { display: flex; gap: 8px; }
+  .gsel button { flex: 1; background: #fff; border: 2.5px solid var(--ink); border-radius: 10px; padding: 12px; font-size: 15px; font-weight: 800; cursor: pointer; font-family: inherit; color: var(--ink); }
+  .gsel button.on { background: var(--ink); color: var(--card); }
+  .submit { width: 100%; margin-top: 26px; background: var(--ink); color: var(--card); border: 2.5px solid var(--ink); border-radius: 999px; padding: 16px; font-size: 16px; font-weight: 900; cursor: pointer; font-family: inherit; box-shadow: var(--hard); }
+  .submit:disabled { opacity: .5; box-shadow: none; }
+  .hint { font-size: 12px; color: var(--muted); margin-top: 12px; text-align: center; font-weight: 600; }
+  .hidden { display: none; }
+  .done { display: none; text-align: center; padding: 60px 6px; }
+  .done .big { font-family: 'WildGag', 'Pretendard', sans-serif; font-size: 30px; margin-bottom: 12px; }
+  .done p { color: var(--ink2); font-size: 14.5px; font-weight: 600; }
+  .done a { display: inline-block; margin-top: 24px; color: var(--ink); font-weight: 800; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <a class="back" href="/">← 싸커피 소개</a>
+
+  <div id="formView">
+    <div class="head">
+      <div class="kicker">OATLY FUTSAL CHAMPIONSHIP</div>
+      <div class="title">오틀리 풋살<br>챔피언십 참가 신청</div>
+      <div class="subtitle">오틀리 × 싸커피 · 카페 소속 참가자 모집</div>
+      <div class="info">
+        <div class="r"><span class="k">일시</span><span class="v">추후 안내<span class="tag-tbd">확정 예정</span></span></div>
+        <div class="r"><span class="k">장소</span><span class="v">추후 안내<span class="tag-tbd">확정 예정</span></span></div>
+        <div class="r"><span class="k">신청 마감</span><span class="v">추후 안내<span class="tag-tbd">확정 예정</span></span></div>
+        <div class="r"><span class="k">대상</span><span class="v">카페에 소속된 참가자 (개인 또는 카페 팀)</span></div>
+      </div>
+    </div>
+
+    <div class="modebar">
+      <button type="button" id="mIndiv" class="on" onclick="setMode('individual')">개인 참가</button>
+      <button type="button" id="mTeam" onclick="setMode('team')">카페 팀</button>
+    </div>
+    <p class="mode-hint" id="modeHint">혼자 참가 신청해요. 운영진이 카페별로 팀을 구성합니다.</p>
+
+    <!-- 개인 신청 -->
+    <form id="formIndiv" onsubmit="return submitForm(event)">
+      <label>이름 <em>*</em></label>
+      <input type="text" id="iName" maxlength="20" placeholder="실명" required>
+      <label>성별 <em>*</em></label>
+      <div class="gsel">
+        <button type="button" id="gM" onclick="setG('남')">남</button>
+        <button type="button" id="gF" onclick="setG('여')">여</button>
+      </div>
+      <label>연락처 <em>*</em></label>
+      <input type="text" id="iPhone" inputmode="tel" maxlength="20" placeholder="010-0000-0000" required>
+      <label>소속 카페 <em>*</em></label>
+      <input type="text" id="iCafe" maxlength="30" placeholder="예: ACR · 펠트 · 보난자 · 위커피 · 샌드스톤" required>
+      <label>포지션 <span class="opt">(선택)</span></label>
+      <input type="text" id="iPos" maxlength="20" placeholder="예: 공격 · 수비 · 골키퍼 · 상관없음">
+      <label>하고 싶은 말 <span class="opt">(선택)</span></label>
+      <textarea id="iNote" maxlength="300" placeholder="풋살 경력, 궁금한 점 등 자유롭게"></textarea>
+      <button class="submit" id="iBtn" type="submit">참가 신청하기</button>
+      <p class="hint">연락처는 참가 안내 연락에만 사용해요.</p>
+    </form>
+
+    <!-- 카페 팀 신청 -->
+    <form id="formTeam" class="hidden" onsubmit="return submitForm(event)">
+      <label>카페 / 팀명 <em>*</em></label>
+      <input type="text" id="tCafe" maxlength="30" placeholder="예: ACR" required>
+      <label>대표자 이름 <em>*</em></label>
+      <input type="text" id="tName" maxlength="20" placeholder="팀 대표(주장) 실명" required>
+      <label>대표 연락처 <em>*</em></label>
+      <input type="text" id="tPhone" inputmode="tel" maxlength="20" placeholder="010-0000-0000" required>
+      <label>예상 참가 인원 <em>*</em></label>
+      <input type="text" id="tCount" inputmode="numeric" maxlength="3" placeholder="숫자만 (예: 6)" required>
+      <label>팀원 명단 <span class="opt">(선택 · 정해졌으면)</span></label>
+      <textarea id="tMembers" maxlength="500" placeholder="한 줄에 한 명씩 이름을 적어주세요"></textarea>
+      <label>하고 싶은 말 <span class="opt">(선택)</span></label>
+      <textarea id="tNote" maxlength="300" placeholder="문의 사항 등 자유롭게"></textarea>
+      <button class="submit" id="tBtn" type="submit">팀 참가 신청하기</button>
+      <p class="hint">연락처는 참가 안내 연락에만 사용해요.</p>
+    </form>
+  </div>
+
+  <div class="done" id="doneView">
+    <div class="big">신청 완료!</div>
+    <p>운영진이 확인 후 남겨주신 번호로 연락드릴게요.<br>대회 일정이 확정되면 안내해 드립니다.</p>
+    <a href="/">싸커피 소개 보러 가기 →</a>
+  </div>
+</div>
+
+<script>
+const SB_URL = 'https://fjgxhguogsuypcdzcieg.supabase.co/rest/v1/oatly_signups';
+const SB_KEY = 'sb_publishable_K7TsALmaFyb2pPOZO-2i2w_UeirVr8l';
+let mode = 'individual';
+let gender = null;
+
+function setMode(m){
+  mode = m;
+  document.getElementById('mIndiv').classList.toggle('on', m === 'individual');
+  document.getElementById('mTeam').classList.toggle('on', m === 'team');
+  document.getElementById('formIndiv').classList.toggle('hidden', m !== 'individual');
+  document.getElementById('formTeam').classList.toggle('hidden', m !== 'team');
+  document.getElementById('modeHint').textContent = m === 'individual'
+    ? '혼자 참가 신청해요. 운영진이 카페별로 팀을 구성합니다.'
+    : '카페 대표(주장)가 팀 단위로 신청해요.';
+}
+function setG(g){
+  gender = g;
+  document.getElementById('gM').classList.toggle('on', g === '남');
+  document.getElementById('gF').classList.toggle('on', g === '여');
+}
+function val(id){ return (document.getElementById(id).value || '').trim(); }
+
+async function submitForm(e){
+  e.preventDefault();
+  let payload, btn;
+  if (mode === 'individual'){
+    btn = document.getElementById('iBtn');
+    const name = val('iName'), phone = val('iPhone'), cafe = val('iCafe');
+    if (!name || !phone || !cafe) return false;
+    if (!gender){ alert('성별을 선택해 주세요.'); return false; }
+    payload = { kind:'individual', name, gender, phone, cafe, position: val('iPos'), note: val('iNote') };
+  } else {
+    btn = document.getElementById('tBtn');
+    const cafe = val('tCafe'), name = val('tName'), phone = val('tPhone'), count = val('tCount');
+    if (!cafe || !name || !phone || !count) return false;
+    if (!/^\d{1,3}$/.test(count)){ alert('예상 인원을 숫자로 입력해 주세요.'); return false; }
+    payload = { kind:'team', name, phone, cafe, team_name: cafe, headcount: Number(count), members: val('tMembers'), note: val('tNote') };
+  }
+  btn.disabled = true; const label = btn.textContent; btn.textContent = '전송 중...';
+  try {
+    const res = await fetch(SB_URL, {
+      method: 'POST',
+      headers: { apikey: SB_KEY, Authorization: 'Bearer ' + SB_KEY, 'Content-Type': 'application/json', Prefer: 'return=minimal' },
+      body: JSON.stringify(payload)
+    });
+    if (!res.ok) throw new Error(res.status);
+    document.getElementById('formView').style.display = 'none';
+    document.getElementById('doneView').style.display = 'block';
+    window.scrollTo(0, 0);
+  } catch (err) {
+    btn.disabled = false; btn.textContent = label;
+    alert('전송에 실패했어요. 잠시 후 다시 시도해 주세요.');
+  }
+  return false;
+}
+</script>
+</body>
+</html>

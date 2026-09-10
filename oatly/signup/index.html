@@ -41,6 +41,12 @@
   .info .v { color: var(--ink2); font-weight: 600; }
   .tag-tbd { display: inline-block; font-size: 11px; font-weight: 800; background: var(--ink); color: var(--card); border-radius: 5px; padding: 1px 6px; margin-left: 4px; }
   .info .v a { color: var(--ink); font-weight: 800; text-decoration: underline; text-underline-offset: 2px; }
+  .mrow { display: flex; gap: 6px; margin-bottom: 8px; }
+  .mrow .m-name { flex: 1; min-width: 0; }
+  .mrow select { width: 82px; flex-shrink: 0; background: #fff; border: 2.5px solid var(--ink); border-radius: 10px; padding: 12px 6px; font-size: 14px; font-family: inherit; font-weight: 600; color: var(--ink); }
+  .mrow .m-del { width: 42px; flex-shrink: 0; background: #fff; border: 2.5px solid var(--ink); border-radius: 10px; font-size: 17px; font-weight: 800; cursor: pointer; color: var(--ink); font-family: inherit; line-height: 1; }
+  .addbtn { width: 100%; background: #fff; border: 2.5px dashed var(--ink); border-radius: 10px; padding: 11px; font-size: 14px; font-weight: 800; cursor: pointer; color: var(--ink); font-family: inherit; }
+  .addbtn:active { transform: translateY(1px); }
 
   .modebar { display: flex; gap: 10px; margin: 22px 0 4px; }
   .modebar button { flex: 1; background: var(--card); border: 2.5px solid var(--ink); border-radius: 11px; padding: 13px; font-size: 15px; font-weight: 800; cursor: pointer; font-family: inherit; color: var(--ink); }
@@ -134,14 +140,10 @@
       <input type="text" id="tName" maxlength="20" placeholder="팀 대표(주장) 실명" required>
       <label>대표 연락처 <em>*</em></label>
       <input type="text" id="tPhone" inputmode="tel" maxlength="20" placeholder="010-0000-0000" required>
-      <label>참가 인원 (성별별) <em>*</em></label>
-      <div style="display:flex;gap:8px">
-        <input type="text" id="tMale" inputmode="numeric" maxlength="3" placeholder="남 (명)">
-        <input type="text" id="tFemale" inputmode="numeric" maxlength="3" placeholder="여 (명) *필수">
-      </div>
-      <p class="hint" style="text-align:left;margin-top:6px">모든 팀은 <b>여성 1명 이상 필수</b>. 인원이 부족하면 운영진이 성별에 맞춰 추가 인원을 소싱해 드려요.</p>
-      <label>팀원 명단 <span class="opt">(선택 · 정해졌으면)</span></label>
-      <textarea id="tMembers" maxlength="500" placeholder="한 줄에 한 명씩 이름을 적어주세요"></textarea>
+      <label>팀원 명단 <em>*</em> <span class="opt">(대표자 포함 전원)</span></label>
+      <div id="memberList"></div>
+      <button type="button" class="addbtn" onclick="addMember()">＋ 팀원 추가</button>
+      <p class="hint" style="text-align:left;margin-top:8px">이름·성별을 한 명씩 추가하면 인원이 자동 집계돼요. 모든 팀은 <b>여성 1명 이상 필수</b> — 부족하면 운영진이 성별에 맞춰 소싱해 드립니다.</p>
       <label>하고 싶은 말 <span class="opt">(선택)</span></label>
       <textarea id="tNote" maxlength="300" placeholder="문의 사항 등 자유롭게"></textarea>
       <button class="submit" id="tBtn" type="submit">팀 참가 신청하기</button>
@@ -195,6 +197,20 @@ function setP(v){
     document.getElementById('p' + (i + 1)).classList.toggle('on', v === x);
   });
 }
+function addMember(){
+  var d = document.createElement('div');
+  d.className = 'mrow';
+  d.innerHTML = '<input type="text" class="m-name" maxlength="20" placeholder="이름">'
+    + '<select class="m-gender"><option value="">성별</option><option value="남">남</option><option value="여">여</option></select>'
+    + '<button type="button" class="m-del" onclick="removeMember(this)" aria-label="삭제">×</button>';
+  document.getElementById('memberList').appendChild(d);
+}
+function removeMember(btn){
+  var list = document.getElementById('memberList');
+  if (list.children.length <= 1) return;   // 최소 1행 유지
+  var row = btn.closest('.mrow');
+  if (row) row.remove();
+}
 function val(id){ return (document.getElementById(id).value || '').trim(); }
 
 async function submitForm(e){
@@ -210,14 +226,17 @@ async function submitForm(e){
   } else {
     btn = document.getElementById('tBtn');
     const cafe = val('tCafe'), name = val('tName'), phone = val('tPhone');
-    const male = val('tMale'), female = val('tFemale');
     if (!cafe || !name || !phone) return false;
-    const mOk = male === '' || /^\d{1,3}$/.test(male);
-    const fOk = /^\d{1,3}$/.test(female);
-    if (!mOk || !fOk){ alert('참가 인원을 숫자로 입력해 주세요.'); return false; }
-    const mN = male === '' ? 0 : Number(male), fN = Number(female);
+    const rows = Array.prototype.slice.call(document.querySelectorAll('#memberList .mrow')).map(function(r){
+      return { name: r.querySelector('.m-name').value.trim(), gender: r.querySelector('.m-gender').value };
+    }).filter(function(m){ return m.name; });
+    if (!rows.length){ alert('팀원을 1명 이상 입력해 주세요.'); return false; }
+    if (rows.some(function(m){ return !m.gender; })){ alert('팀원 성별을 모두 선택해 주세요.'); return false; }
+    const fN = rows.filter(function(m){ return m.gender === '여'; }).length;
+    const mN = rows.filter(function(m){ return m.gender === '남'; }).length;
     if (fN < 1){ alert('모든 팀은 여성 1명 이상이 필수예요.'); return false; }
-    payload = { kind:'team', name, phone, cafe, team_name: cafe, male_count: mN, female_count: fN, headcount: mN + fN, members: val('tMembers'), note: val('tNote') };
+    const membersText = rows.map(function(m){ return m.name + '(' + m.gender + ')'; }).join(', ');
+    payload = { kind:'team', name, phone, cafe, team_name: cafe, male_count: mN, female_count: fN, headcount: rows.length, members: membersText, note: val('tNote') };
   }
   btn.disabled = true; const label = btn.textContent; btn.textContent = '전송 중...';
   try {
@@ -236,6 +255,8 @@ async function submitForm(e){
   }
   return false;
 }
+// 팀 폼 초기 팀원 행 3개
+for (var _i = 0; _i < 3; _i++) addMember();
 </script>
 </body>
 </html>

@@ -41,10 +41,10 @@
   .info .v { color: var(--ink2); font-weight: 600; }
   .tag-tbd { display: inline-block; font-size: 11px; font-weight: 800; background: var(--ink); color: var(--card); border-radius: 5px; padding: 1px 6px; margin-left: 4px; }
   .info .v a { color: var(--ink); font-weight: 800; text-decoration: underline; text-underline-offset: 2px; }
-  .mrow { display: flex; gap: 6px; margin-bottom: 8px; }
-  .mrow .m-name { flex: 1; min-width: 0; }
-  .mrow select { width: 82px; flex-shrink: 0; background: #fff; border: 2.5px solid var(--ink); border-radius: 10px; padding: 12px 6px; font-size: 14px; font-family: inherit; font-weight: 600; color: var(--ink); }
-  .mrow .m-del { width: 42px; flex-shrink: 0; background: #fff; border: 2.5px solid var(--ink); border-radius: 10px; font-size: 17px; font-weight: 800; cursor: pointer; color: var(--ink); font-family: inherit; line-height: 1; }
+  .mrow { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 10px; }
+  .mrow .m-name { flex: 1 1 100%; min-width: 0; }
+  .mrow select { flex: 1 1 0; min-width: 0; background: #fff; border: 2.5px solid var(--ink); border-radius: 10px; padding: 12px 8px; font-size: 15px; font-family: inherit; font-weight: 600; color: var(--ink); }
+  .mrow .m-del { flex: 0 0 46px; background: #fff; border: 2.5px solid var(--ink); border-radius: 10px; font-size: 17px; font-weight: 800; cursor: pointer; color: var(--ink); font-family: inherit; line-height: 1; }
   .addbtn { width: 100%; background: #fff; border: 2.5px dashed var(--ink); border-radius: 10px; padding: 11px; font-size: 14px; font-weight: 800; cursor: pointer; color: var(--ink); font-family: inherit; }
   .addbtn:active { transform: translateY(1px); }
 
@@ -143,7 +143,7 @@
       <label>팀원 명단 <em>*</em> <span class="opt">(대표자 포함 전원)</span></label>
       <div id="memberList"></div>
       <button type="button" class="addbtn" onclick="addMember()">＋ 팀원 추가</button>
-      <p class="hint" style="text-align:left;margin-top:8px">이름·성별을 한 명씩 추가하면 인원이 자동 집계돼요. 모든 팀은 <b>여성 1명 이상 필수</b> — 부족하면 운영진이 성별에 맞춰 소싱해 드립니다.</p>
+      <p class="hint" style="text-align:left;margin-top:8px">이름·성별·실력을 한 명씩 추가하면 인원이 자동 집계돼요. 모든 팀은 <b>여성 1명 이상 필수</b> — 부족하면 운영진이 성별에 맞춰 소싱해 드립니다.</p>
       <label>하고 싶은 말 <span class="opt">(선택)</span></label>
       <textarea id="tNote" maxlength="300" placeholder="문의 사항 등 자유롭게"></textarea>
       <button class="submit" id="tBtn" type="submit">팀 참가 신청하기</button>
@@ -202,6 +202,7 @@ function addMember(){
   d.className = 'mrow';
   d.innerHTML = '<input type="text" class="m-name" maxlength="20" placeholder="이름">'
     + '<select class="m-gender"><option value="">성별</option><option value="남">남</option><option value="여">여</option></select>'
+    + '<select class="m-level"><option value="">실력</option><option value="초급">초급</option><option value="중급">중급</option><option value="상급">상급</option></select>'
     + '<button type="button" class="m-del" onclick="removeMember(this)" aria-label="삭제">×</button>';
   document.getElementById('memberList').appendChild(d);
 }
@@ -228,14 +229,14 @@ async function submitForm(e){
     const cafe = val('tCafe'), name = val('tName'), phone = val('tPhone');
     if (!cafe || !name || !phone) return false;
     const rows = Array.prototype.slice.call(document.querySelectorAll('#memberList .mrow')).map(function(r){
-      return { name: r.querySelector('.m-name').value.trim(), gender: r.querySelector('.m-gender').value };
+      return { name: r.querySelector('.m-name').value.trim(), gender: r.querySelector('.m-gender').value, level: r.querySelector('.m-level').value };
     }).filter(function(m){ return m.name; });
     if (!rows.length){ alert('팀원을 1명 이상 입력해 주세요.'); return false; }
     if (rows.some(function(m){ return !m.gender; })){ alert('팀원 성별을 모두 선택해 주세요.'); return false; }
     const fN = rows.filter(function(m){ return m.gender === '여'; }).length;
     const mN = rows.filter(function(m){ return m.gender === '남'; }).length;
     if (fN < 1){ alert('모든 팀은 여성 1명 이상이 필수예요.'); return false; }
-    const membersText = rows.map(function(m){ return m.name + '(' + m.gender + ')'; }).join(', ');
+    const membersText = rows.map(function(m){ return m.name + '(' + m.gender + (m.level ? '·' + m.level : '') + ')'; }).join(', ');
     payload = { kind:'team', name, phone, cafe, team_name: cafe, male_count: mN, female_count: fN, headcount: rows.length, members: membersText, note: val('tNote') };
   }
   btn.disabled = true; const label = btn.textContent; btn.textContent = '전송 중...';

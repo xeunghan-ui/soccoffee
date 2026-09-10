@@ -112,8 +112,13 @@
       <input type="text" id="iPhone" inputmode="tel" maxlength="20" placeholder="010-0000-0000" required>
       <label>소속 카페 <em>*</em></label>
       <input type="text" id="iCafe" maxlength="30" placeholder="예: ACR · 펠트 · 보난자 · 위커피 · 샌드스톤" required>
-      <label>포지션 <span class="opt">(선택)</span></label>
-      <input type="text" id="iPos" maxlength="20" placeholder="예: 공격 · 수비 · 골키퍼 · 상관없음">
+      <label>선호 포지션 <span class="opt">(선택)</span></label>
+      <div class="gsel">
+        <button type="button" id="p1" onclick="setP('공격')">공격</button>
+        <button type="button" id="p2" onclick="setP('수비')">수비</button>
+        <button type="button" id="p3" onclick="setP('골키퍼')">골키퍼</button>
+        <button type="button" id="p4" onclick="setP('상관없음')">상관없음</button>
+      </div>
       <label>하고 싶은 말 <span class="opt">(선택)</span></label>
       <textarea id="iNote" maxlength="300" placeholder="풋살 경력, 궁금한 점 등 자유롭게"></textarea>
       <button class="submit" id="iBtn" type="submit">참가 신청하기</button>
@@ -160,6 +165,7 @@ const SB_KEY = 'sb_publishable_K7TsALmaFyb2pPOZO-2i2w_UeirVr8l';
 let mode = 'individual';
 let gender = null;
 let level = null;
+let pos = null;
 
 function setMode(m){
   mode = m;
@@ -182,6 +188,12 @@ function setL(v){
   document.getElementById('lv2').classList.toggle('on', v === '중급');
   document.getElementById('lv3').classList.toggle('on', v === '상급');
 }
+function setP(v){
+  pos = v;
+  ['공격','수비','골키퍼','상관없음'].forEach(function(x, i){
+    document.getElementById('p' + (i + 1)).classList.toggle('on', v === x);
+  });
+}
 function val(id){ return (document.getElementById(id).value || '').trim(); }
 
 async function submitForm(e){
@@ -193,7 +205,7 @@ async function submitForm(e){
     if (!name || !phone || !cafe) return false;
     if (!gender){ alert('성별을 선택해 주세요.'); return false; }
     if (!level){ alert('실력을 선택해 주세요.'); return false; }
-    payload = { kind:'individual', name, gender, level, phone, cafe, position: val('iPos'), note: val('iNote') };
+    payload = { kind:'individual', name, gender, level, phone, cafe, position: pos || '', note: val('iNote') };
   } else {
     btn = document.getElementById('tBtn');
     const cafe = val('tCafe'), name = val('tName'), phone = val('tPhone');

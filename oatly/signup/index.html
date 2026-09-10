@@ -75,11 +75,6 @@
 <div class="wrap">
   <a class="back" href="/">← 싸커피 소개</a>
 
-  <div class="edition">
-    <a class="ed" href="../2026_1st/">제1회<span class="yr">2026</span></a>
-    <span class="ed active">제2회<span class="yr">2026</span></span>
-  </div>
-
   <div id="formView">
     <div class="head">
       <div class="kicker">OATLY FUTSAL CHAMPIONSHIP · 2ND</div>
@@ -97,7 +92,7 @@
       <button type="button" id="mIndiv" class="on" onclick="setMode('individual')">개인 참가</button>
       <button type="button" id="mTeam" onclick="setMode('team')">카페 팀</button>
     </div>
-    <p class="mode-hint" id="modeHint">혼자 참가 신청해요. 운영진이 카페별로 팀을 구성합니다.</p>
+    <p class="mode-hint" id="modeHint">혼자 참가 신청해요. 운영진이 성별·실력을 참고해 팀을 구성합니다.</p>
 
     <!-- 개인 신청 -->
     <form id="formIndiv" onsubmit="return submitForm(event)">
@@ -107,6 +102,12 @@
       <div class="gsel">
         <button type="button" id="gM" onclick="setG('남')">남</button>
         <button type="button" id="gF" onclick="setG('여')">여</button>
+      </div>
+      <label>실력 <em>*</em> <span class="opt">(팀 배정 참고용)</span></label>
+      <div class="gsel">
+        <button type="button" id="lv1" onclick="setL('초급')">초급</button>
+        <button type="button" id="lv2" onclick="setL('중급')">중급</button>
+        <button type="button" id="lv3" onclick="setL('상급')">상급</button>
       </div>
       <label>연락처 <em>*</em></label>
       <input type="text" id="iPhone" inputmode="tel" maxlength="20" placeholder="010-0000-0000" required>
@@ -128,8 +129,12 @@
       <input type="text" id="tName" maxlength="20" placeholder="팀 대표(주장) 실명" required>
       <label>대표 연락처 <em>*</em></label>
       <input type="text" id="tPhone" inputmode="tel" maxlength="20" placeholder="010-0000-0000" required>
-      <label>예상 참가 인원 <em>*</em></label>
-      <input type="text" id="tCount" inputmode="numeric" maxlength="3" placeholder="숫자만 (예: 6)" required>
+      <label>참가 인원 (성별별) <em>*</em></label>
+      <div style="display:flex;gap:8px">
+        <input type="text" id="tMale" inputmode="numeric" maxlength="3" placeholder="남 (명)">
+        <input type="text" id="tFemale" inputmode="numeric" maxlength="3" placeholder="여 (명) *필수">
+      </div>
+      <p class="hint" style="text-align:left;margin-top:6px">모든 팀은 <b>여성 1명 이상 필수</b>. 인원이 부족하면 운영진이 성별에 맞춰 추가 인원을 소싱해 드려요.</p>
       <label>팀원 명단 <span class="opt">(선택 · 정해졌으면)</span></label>
       <textarea id="tMembers" maxlength="500" placeholder="한 줄에 한 명씩 이름을 적어주세요"></textarea>
       <label>하고 싶은 말 <span class="opt">(선택)</span></label>
@@ -144,6 +149,10 @@
     <p>운영진이 확인 후 남겨주신 번호로 연락드릴게요.<br>대회 일정이 확정되면 안내해 드립니다.</p>
     <a href="/">싸커피 소개 보러 가기 →</a>
   </div>
+
+  <div style="text-align:center;margin-top:30px">
+    <a href="../2026_1st/" style="color:var(--muted);font-size:12.5px;font-weight:600;text-decoration:none">지난 대회 · 제1회(2026) 기록 →</a>
+  </div>
 </div>
 
 <script>
@@ -151,6 +160,7 @@ const SB_URL = 'https://fjgxhguogsuypcdzcieg.supabase.co/rest/v1/oatly_signups';
 const SB_KEY = 'sb_publishable_K7TsALmaFyb2pPOZO-2i2w_UeirVr8l';
 let mode = 'individual';
 let gender = null;
+let level = null;
 
 function setMode(m){
   mode = m;
@@ -159,13 +169,19 @@ function setMode(m){
   document.getElementById('formIndiv').classList.toggle('hidden', m !== 'individual');
   document.getElementById('formTeam').classList.toggle('hidden', m !== 'team');
   document.getElementById('modeHint').textContent = m === 'individual'
-    ? '혼자 참가 신청해요. 운영진이 카페별로 팀을 구성합니다.'
+    ? '혼자 참가 신청해요. 운영진이 성별·실력을 참고해 팀을 구성합니다.'
     : '카페 대표(주장)가 팀 단위로 신청해요.';
 }
 function setG(g){
   gender = g;
   document.getElementById('gM').classList.toggle('on', g === '남');
   document.getElementById('gF').classList.toggle('on', g === '여');
+}
+function setL(v){
+  level = v;
+  document.getElementById('lv1').classList.toggle('on', v === '초급');
+  document.getElementById('lv2').classList.toggle('on', v === '중급');
+  document.getElementById('lv3').classList.toggle('on', v === '상급');
 }
 function val(id){ return (document.getElementById(id).value || '').trim(); }
 
@@ -177,13 +193,19 @@ async function submitForm(e){
     const name = val('iName'), phone = val('iPhone'), cafe = val('iCafe');
     if (!name || !phone || !cafe) return false;
     if (!gender){ alert('성별을 선택해 주세요.'); return false; }
-    payload = { kind:'individual', name, gender, phone, cafe, position: val('iPos'), note: val('iNote') };
+    if (!level){ alert('실력을 선택해 주세요.'); return false; }
+    payload = { kind:'individual', name, gender, level, phone, cafe, position: val('iPos'), note: val('iNote') };
   } else {
     btn = document.getElementById('tBtn');
-    const cafe = val('tCafe'), name = val('tName'), phone = val('tPhone'), count = val('tCount');
-    if (!cafe || !name || !phone || !count) return false;
-    if (!/^\d{1,3}$/.test(count)){ alert('예상 인원을 숫자로 입력해 주세요.'); return false; }
-    payload = { kind:'team', name, phone, cafe, team_name: cafe, headcount: Number(count), members: val('tMembers'), note: val('tNote') };
+    const cafe = val('tCafe'), name = val('tName'), phone = val('tPhone');
+    const male = val('tMale'), female = val('tFemale');
+    if (!cafe || !name || !phone) return false;
+    const mOk = male === '' || /^\d{1,3}$/.test(male);
+    const fOk = /^\d{1,3}$/.test(female);
+    if (!mOk || !fOk){ alert('참가 인원을 숫자로 입력해 주세요.'); return false; }
+    const mN = male === '' ? 0 : Number(male), fN = Number(female);
+    if (fN < 1){ alert('모든 팀은 여성 1명 이상이 필수예요.'); return false; }
+    payload = { kind:'team', name, phone, cafe, team_name: cafe, male_count: mN, female_count: fN, headcount: mN + fN, members: val('tMembers'), note: val('tNote') };
   }
   btn.disabled = true; const label = btn.textContent; btn.textContent = '전송 중...';
   try {

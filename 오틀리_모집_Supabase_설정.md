@@ -9,10 +9,13 @@ create table if not exists public.oatly_signups (
   kind       text not null check (kind in ('individual','team')),
   name       text not null,      -- 개인=본인 / 팀=대표(주장)
   gender     text,               -- 개인만
+  level      text,               -- 개인 실력(초급/중급/상급) — 팀 배정 참고
   phone      text not null,
   cafe       text,               -- 소속 카페 / 팀 카페
   team_name  text,               -- 팀 신청 시 팀명(카페와 동일 저장)
-  headcount  int,                -- 팀 예상 인원
+  male_count   int,              -- 팀 남자 인원
+  female_count int,              -- 팀 여자 인원(모든 팀 1명 이상 필수)
+  headcount    int,              -- 팀 총 인원(남+여)
   members    text,               -- 팀원 명단(자유 텍스트)
   position   text,               -- 개인 포지션(선택)
   note       text,
@@ -26,6 +29,17 @@ alter table public.oatly_signups enable row level security;
 drop policy if exists "oatly_signups anon insert" on public.oatly_signups;
 create policy "oatly_signups anon insert"
   on public.oatly_signups for insert to anon with check (true);
+```
+
+## ⚠️ 이미 테이블을 만든 경우 — 컬럼 추가 (한 번 실행)
+
+기존에 `oatly_signups`를 만드셨다면, 새로 추가된 필드(실력·성별별 인원)만 반영하세요. **이걸 안 하면 새 폼 제출이 실패합니다.**
+
+```sql
+alter table public.oatly_signups
+  add column if not exists level        text,
+  add column if not exists male_count   int,
+  add column if not exists female_count int;
 ```
 
 ## 확인 방법

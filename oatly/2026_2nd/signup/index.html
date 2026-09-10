@@ -47,6 +47,10 @@
   .modebar button.on { background: var(--ink); color: var(--card); box-shadow: var(--hard); }
   .mode-hint { font-size: 12.5px; color: var(--muted); font-weight: 600; margin: 8px 2px 0; }
 
+  .edition { display: flex; gap: 8px; justify-content: center; margin: 18px 0 6px; }
+  .edition .ed { flex: 1; text-align: center; padding: 10px; border: 2.5px solid var(--ink); border-radius: 10px; background: var(--card); color: var(--ink); font-weight: 800; font-size: 14px; text-decoration: none; font-family: inherit; }
+  .edition .ed.active { background: var(--ink); color: var(--card); box-shadow: var(--hard); }
+  .edition .ed .yr { font-size: 11px; font-weight: 700; opacity: .6; margin-left: 4px; }
   form { margin-top: 18px; }
   label { display: block; font-size: 13px; font-weight: 800; margin: 16px 0 6px; }
   label em { font-style: normal; }
@@ -70,6 +74,11 @@
 <body>
 <div class="wrap">
   <a class="back" href="/">← 싸커피 소개</a>
+
+  <div class="edition">
+    <a class="ed" href="../../">제1회<span class="yr">2026</span></a>
+    <span class="ed active">제2회<span class="yr">2026</span></span>
+  </div>
 
   <div id="formView">
     <div class="head">

@@ -1,6 +1,6 @@
 # 오틀리 모집 폼 — Supabase 설정
 
-`/oatly/2026_2nd/signup/` (제2회) 참가 신청 폼이 저장하는 테이블. **아래 SQL을 Supabase 대시보드 → SQL Editor에서 한 번 실행**하면 됩니다. (재실행 안전)
+`/oatly/signup/` (현재 회차 참가 신청, 고정 URL) 폼이 저장하는 테이블. **아래 SQL을 Supabase 대시보드 → SQL Editor에서 한 번 실행**하면 됩니다. (재실행 안전)
 
 ```sql
 -- 오틀리 풋살 챔피언십 참가 신청 저장 테이블

@@ -1,0 +1,255 @@
+<!DOCTYPE html>
+<!-- 오틀리 풋살 챔피언십 — 참가 신청 조회(운영진 전용). 읽기: Supabase oatly_signups -->
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>오틀리 챔피언십 — 신청 현황</title>
+<meta name="robots" content="noindex,nofollow">
+<link rel="stylesheet" as="style" crossorigin href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css">
+<style>
+  @font-face {
+    font-family: 'WildGag';
+    src: url('../../wildgag.woff2') format('woff2'), url('../../wildgag.ttf') format('truetype');
+    font-weight: 700; font-display: swap;
+  }
+  :root {
+    --paper: #e8e8e6; --card: #ffffff; --ink: #141414; --ink2: #44443f;
+    --muted: #8a8a86; --line: #141414; --radius: 14px; --hard: 4px 4px 0 var(--ink);
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; background: var(--paper); color: var(--ink);
+    font-family: "Pretendard", "Pretendard Variable", -apple-system, BlinkMacSystemFont, "Apple SD Gothic Neo", "Malgun Gothic", sans-serif;
+    line-height: 1.6; -webkit-font-smoothing: antialiased;
+  }
+  .wrap { max-width: 880px; margin: 0 auto; padding: 26px 16px 80px; }
+  .back { display: inline-block; margin-bottom: 16px; color: var(--muted); text-decoration: none; font-size: 13px; font-weight: 700; }
+  .head { border: 3px solid var(--ink); border-radius: var(--radius); background: var(--card); box-shadow: var(--hard); padding: 18px 20px; }
+  .kicker { font-size: 11.5px; font-weight: 800; letter-spacing: .16em; }
+  .title { font-family: 'WildGag', 'Pretendard', sans-serif; font-size: clamp(23px, 6vw, 32px); line-height: 1.05; margin: 7px 0 3px; }
+  .subtitle { font-size: 13px; color: var(--ink2); font-weight: 600; }
+
+  /* 잠금 */
+  #gate { margin-top: 24px; border: 3px solid var(--ink); border-radius: var(--radius); background: var(--card); box-shadow: var(--hard); padding: 22px 20px; }
+  #gate h2 { margin: 0 0 4px; font-size: 17px; font-weight: 800; }
+  #gate p { margin: 0 0 14px; font-size: 13px; color: var(--muted); font-weight: 600; }
+  input[type=password], input[type=text] { width: 100%; background: #fff; border: 2.5px solid var(--ink); border-radius: 10px; padding: 13px 12px; font-size: 15px; font-family: inherit; font-weight: 600; color: var(--ink); }
+  input:focus { outline: none; box-shadow: 3px 3px 0 var(--ink); }
+  .btn { width: 100%; margin-top: 10px; background: var(--ink); color: var(--card); border: 2.5px solid var(--ink); border-radius: 11px; padding: 13px; font-size: 15px; font-weight: 800; cursor: pointer; font-family: inherit; }
+  .btn:active { transform: translateY(1px); }
+  .btn.ghost { background: var(--card); color: var(--ink); }
+  .err { color: #b33; font-size: 12.5px; font-weight: 700; margin-top: 8px; min-height: 18px; }
+
+  /* 요약 */
+  .stats { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; margin: 18px 0 6px; }
+  .stat { border: 2.5px solid var(--ink); border-radius: 11px; background: var(--card); padding: 10px 11px; }
+  .stat .l { font-size: 10.5px; font-weight: 800; color: var(--muted); letter-spacing: .04em; }
+  .stat .v { font-size: 21px; font-weight: 800; line-height: 1.2; margin-top: 1px; font-variant-numeric: tabular-nums; }
+  .stat .s { font-size: 10.5px; color: var(--muted); font-weight: 600; }
+  @media (max-width: 560px) { .stats { grid-template-columns: repeat(2, 1fr); } }
+
+  .bar { display: flex; gap: 8px; margin: 14px 0 10px; flex-wrap: wrap; }
+  .bar button { background: var(--card); border: 2.5px solid var(--ink); border-radius: 10px; padding: 9px 14px; font-size: 13.5px; font-weight: 800; cursor: pointer; font-family: inherit; color: var(--ink); }
+  .bar button.on { background: var(--ink); color: var(--card); box-shadow: 3px 3px 0 var(--ink); }
+  .bar .sp { flex: 1; }
+
+  .sec-h { font-size: 13px; font-weight: 800; letter-spacing: .04em; margin: 20px 0 8px; }
+  .tbl-box { border: 2.5px solid var(--ink); border-radius: 11px; background: var(--card); overflow-x: auto; }
+  table { width: 100%; border-collapse: collapse; font-size: 13px; min-width: 620px; }
+  th { text-align: left; font-size: 11px; font-weight: 800; letter-spacing: .03em; color: var(--muted); padding: 9px 10px; border-bottom: 2px solid var(--ink); white-space: nowrap; }
+  td { padding: 9px 10px; border-bottom: 1px solid #e2e0da; vertical-align: top; font-weight: 600; }
+  tr:last-child td { border-bottom: none; }
+  td.nm { font-weight: 800; white-space: nowrap; }
+  td.tel a { color: var(--ink); font-weight: 700; text-decoration: underline; text-underline-offset: 2px; white-space: nowrap; }
+  .chip { display: inline-block; font-size: 10.5px; font-weight: 800; border: 1.5px solid var(--ink); border-radius: 99px; padding: 1px 7px; }
+  .chip.f { background: var(--ink); color: var(--card); }
+  .memo { color: var(--ink2); font-size: 12px; max-width: 220px; }
+  .when { color: var(--muted); font-size: 11.5px; white-space: nowrap; }
+  .empty { padding: 26px 14px; text-align: center; color: var(--muted); font-size: 13px; font-weight: 700; }
+  .hidden { display: none !important; }
+  .foot { margin-top: 22px; font-size: 11.5px; color: var(--muted); font-weight: 600; text-align: center; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <a class="back" href="../">← 오틀리 챔피언십</a>
+
+  <div class="head">
+    <div class="kicker">OATLY × SOCCOFFEE · ADMIN</div>
+    <div class="title">참가 신청 현황</div>
+    <div class="subtitle">제2회 오틀리 풋살 챔피언십 · 2026.10.19 (월) 16:30 · 토모스포츠</div>
+  </div>
+
+  <div id="gate">
+    <h2>운영진 확인</h2>
+    <p>신청자 연락처가 포함된 화면이에요. 비밀번호를 입력해 주세요.</p>
+    <input id="pw" type="password" placeholder="비밀번호" autocomplete="off"
+           onkeydown="if(event.key==='Enter')unlock()">
+    <div class="err" id="err"></div>
+    <button class="btn" onclick="unlock()">확인</button>
+  </div>
+
+  <div id="view" class="hidden">
+    <div class="stats">
+      <div class="stat"><div class="l">총 신청</div><div class="v" id="sTotal">0</div><div class="s" id="sTotalSub">개인 0 · 팀 0</div></div>
+      <div class="stat"><div class="l">총 인원</div><div class="v" id="sPeople">0</div><div class="s" id="sPeopleSub">명</div></div>
+      <div class="stat"><div class="l">남 / 여</div><div class="v" id="sGender">0 / 0</div><div class="s" id="sGenderSub">성별 비율</div></div>
+      <div class="stat"><div class="l">참여 카페</div><div class="v" id="sCafe">0</div><div class="s">곳</div></div>
+    </div>
+
+    <div class="bar">
+      <button id="tabAll" class="on" onclick="setTab('all')">전체</button>
+      <button id="tabIndiv" onclick="setTab('individual')">개인</button>
+      <button id="tabTeam" onclick="setTab('team')">팀</button>
+      <span class="sp"></span>
+      <button onclick="load()">새로고침</button>
+      <button onclick="copyCsv()">CSV 복사</button>
+    </div>
+
+    <div id="secIndiv">
+      <div class="sec-h">개인 신청 <span id="cntIndiv" style="color:var(--muted)"></span></div>
+      <div class="tbl-box"><table id="tblIndiv"><thead><tr>
+        <th>이름</th><th>성별</th><th>실력</th><th>포지션</th><th>카페</th><th>연락처</th><th>메모</th><th>신청</th>
+      </tr></thead><tbody></tbody></table><div class="empty hidden" id="emptyIndiv">아직 개인 신청이 없어요.</div></div>
+    </div>
+
+    <div id="secTeam">
+      <div class="sec-h">팀 신청 <span id="cntTeam" style="color:var(--muted)"></span></div>
+      <div class="tbl-box"><table id="tblTeam"><thead><tr>
+        <th>카페 / 팀</th><th>주장</th><th>연락처</th><th>인원</th><th>팀원</th><th>메모</th><th>신청</th>
+      </tr></thead><tbody></tbody></table><div class="empty hidden" id="emptyTeam">아직 팀 신청이 없어요.</div></div>
+    </div>
+
+    <div class="foot" id="foot"></div>
+  </div>
+</div>
+
+<script>
+const SB_URL = 'https://fjgxhguogsuypcdzcieg.supabase.co/rest/v1/oatly_signups';
+const SB_KEY = 'sb_publishable_K7TsALmaFyb2pPOZO-2i2w_UeirVr8l';
+const PW_HASH = 'b1a7965b1819d360fd33f10022657358f801eec4e08950cf70ea6fbf2968441e';   // soccoffee1234 (SHA-256)
+const KEY = 'oatly_admin_ok';
+let ROWS = [], TAB = 'all';
+
+async function sha(s){
+  const b = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(s));
+  return Array.from(new Uint8Array(b)).map(x => x.toString(16).padStart(2, '0')).join('');
+}
+async function unlock(){
+  const v = document.getElementById('pw').value.trim();
+  if (!v) return;
+  const h = await sha(v);
+  if (h !== PW_HASH){ document.getElementById('err').textContent = '비밀번호가 맞지 않아요.'; return; }
+  try { sessionStorage.setItem(KEY, '1'); } catch(e){}
+  open_();
+}
+function open_(){
+  document.getElementById('gate').classList.add('hidden');
+  document.getElementById('view').classList.remove('hidden');
+  load();
+}
+function esc(s){ return String(s == null ? '' : s).replace(/[<>&"]/g, c => ({'<':'&lt;','>':'&gt;','&':'&amp;','"':'&quot;'}[c])); }
+function tel(p){ const t = String(p || '').trim(); return t ? '<a href="tel:' + esc(t.replace(/[^0-9+]/g,'')) + '">' + esc(t) + '</a>' : '—'; }
+function when(s){
+  if (!s) return '—';
+  const d = new Date(s); if (isNaN(d)) return '—';
+  return (d.getMonth()+1) + '/' + d.getDate() + ' ' + String(d.getHours()).padStart(2,'0') + ':' + String(d.getMinutes()).padStart(2,'0');
+}
+function g(x){ return x === '여' ? '<span class="chip f">여</span>' : x === '남' ? '<span class="chip">남</span>' : '—'; }
+
+async function load(){
+  try {
+    const r = await fetch(SB_URL + '?select=*&order=created_at.desc', {
+      headers: { apikey: SB_KEY, Authorization: 'Bearer ' + SB_KEY }
+    });
+    ROWS = await r.json();
+    if (!Array.isArray(ROWS)) ROWS = [];
+  } catch(e){ ROWS = []; }
+  render();
+}
+
+function render(){
+  const ind = ROWS.filter(x => x.kind !== 'team');
+  const tm  = ROWS.filter(x => x.kind === 'team');
+
+  const tmM = tm.reduce((a, x) => a + (Number(x.male_count) || 0), 0);
+  const tmF = tm.reduce((a, x) => a + (Number(x.female_count) || 0), 0);
+  const indM = ind.filter(x => x.gender === '남').length;
+  const indF = ind.filter(x => x.gender === '여').length;
+  const people = ind.length + tm.reduce((a, x) => a + (Number(x.headcount) || 0), 0);
+  const cafes = new Set(ROWS.map(x => (x.cafe || '').trim()).filter(Boolean)).size;
+
+  document.getElementById('sTotal').textContent = ROWS.length;
+  document.getElementById('sTotalSub').textContent = '개인 ' + ind.length + ' · 팀 ' + tm.length;
+  document.getElementById('sPeople').textContent = people;
+  document.getElementById('sPeopleSub').textContent = '개인 ' + ind.length + ' + 팀원 ' + (people - ind.length);
+  document.getElementById('sGender').textContent = (indM + tmM) + ' / ' + (indF + tmF);
+  document.getElementById('sCafe').textContent = cafes;
+
+  const bi = document.querySelector('#tblIndiv tbody');
+  bi.innerHTML = ind.map(x => '<tr>'
+    + '<td class="nm">' + esc(x.name) + '</td>'
+    + '<td>' + g(x.gender) + '</td>'
+    + '<td>' + esc(x.level || '—') + '</td>'
+    + '<td>' + esc(x.position || '—') + '</td>'
+    + '<td>' + esc(x.cafe || '—') + '</td>'
+    + '<td class="tel">' + tel(x.phone) + '</td>'
+    + '<td class="memo">' + esc(x.note || '') + '</td>'
+    + '<td class="when">' + when(x.created_at) + '</td>'
+    + '</tr>').join('');
+  document.getElementById('emptyIndiv').classList.toggle('hidden', ind.length > 0);
+  document.getElementById('cntIndiv').textContent = ind.length ? ind.length + '명' : '';
+
+  const bt = document.querySelector('#tblTeam tbody');
+  bt.innerHTML = tm.map(x => '<tr>'
+    + '<td class="nm">' + esc(x.team_name || x.cafe) + '</td>'
+    + '<td class="nm">' + esc(x.name) + '</td>'
+    + '<td class="tel">' + tel(x.phone) + '</td>'
+    + '<td>' + (Number(x.headcount) || 0) + '명<br><span class="when">남 ' + (Number(x.male_count)||0) + ' · 여 ' + (Number(x.female_count)||0) + '</span></td>'
+    + '<td class="memo">' + esc(x.members || '') + '</td>'
+    + '<td class="memo">' + esc(x.note || '') + '</td>'
+    + '<td class="when">' + when(x.created_at) + '</td>'
+    + '</tr>').join('');
+  document.getElementById('emptyTeam').classList.toggle('hidden', tm.length > 0);
+  document.getElementById('cntTeam').textContent = tm.length ? tm.length + '팀' : '';
+
+  document.getElementById('foot').textContent = '마지막 조회 ' + when(new Date().toISOString());
+  applyTab();
+}
+
+function setTab(t){
+  TAB = t;
+  document.getElementById('tabAll').classList.toggle('on', t === 'all');
+  document.getElementById('tabIndiv').classList.toggle('on', t === 'individual');
+  document.getElementById('tabTeam').classList.toggle('on', t === 'team');
+  applyTab();
+}
+function applyTab(){
+  document.getElementById('secIndiv').classList.toggle('hidden', TAB === 'team');
+  document.getElementById('secTeam').classList.toggle('hidden', TAB === 'individual');
+}
+
+function copyCsv(){
+  const q = s => '"' + String(s == null ? '' : s).replace(/"/g, '""') + '"';
+  const lines = [['구분','이름/주장','성별','실력','포지션','카페/팀','연락처','인원','남','여','팀원','메모','신청일시'].map(q).join(',')];
+  ROWS.forEach(x => {
+    const t = x.kind === 'team';
+    lines.push([
+      t ? '팀' : '개인', x.name, t ? '' : (x.gender || ''), t ? '' : (x.level || ''), t ? '' : (x.position || ''),
+      t ? (x.team_name || x.cafe) : (x.cafe || ''), x.phone,
+      t ? (x.headcount || '') : 1, t ? (x.male_count || '') : (x.gender === '남' ? 1 : 0), t ? (x.female_count || '') : (x.gender === '여' ? 1 : 0),
+      t ? (x.members || '') : '', x.note || '', x.created_at || ''
+    ].map(q).join(','));
+  });
+  const csv = '﻿' + lines.join('\n');
+  navigator.clipboard.writeText(csv).then(
+    () => alert('CSV를 복사했어요. 스프레드시트에 붙여넣으세요.'),
+    () => alert('복사에 실패했어요.')
+  );
+}
+
+try { if (sessionStorage.getItem(KEY) === '1') open_(); } catch(e){}
+</script>
+</body>
+</html>

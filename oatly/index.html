@@ -56,6 +56,11 @@
       <div class="no">제2회<span class="yr">2026</span><span class="badge">신청 접수 중</span></div>
       <div class="st">2026.10.19 (월) 16:30 · 토모스포츠 (성북)</div>
     </a>
+    <a class="ed-card admin-link" href="admin/" style="display:none">
+      <span class="go">신청 현황 →</span>
+      <div class="no">운영진<span class="yr">ADMIN</span></div>
+      <div class="st">참가 신청 조회 · 연락처 포함</div>
+    </a>
     <a class="ed-card" href="2026_1st/">
       <span class="go">기록 보기 →</span>
       <div class="no">제1회<span class="yr">2026</span></div>
@@ -63,5 +68,8 @@
     </a>
   </div>
 </div>
-</body>
-</html>
+<script>
+// 운영진 카드는 주소 뒤에 #admin 을 붙였을 때만 보임 (2026-09-14)
+(function(){ if (location.hash === '#admin') { var a=document.querySelector('.admin-link'); if(a) a.style.display=''; } })();
+</script>
+</body></html>

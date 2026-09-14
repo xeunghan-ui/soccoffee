@@ -97,14 +97,14 @@
       <div class="info">
         <div class="r"><span class="k">일시</span><span class="v">2026년 10월 19일 (월) 16:30 시작</span></div>
         <div class="r"><span class="k">장소</span><span class="v"><a href="https://map.naver.com/p/search/토모스포츠" target="_blank" rel="noopener" title="서울 성북구 월계로 32 3층 (하월곡동)">토모스포츠 (성북) ↗</a></span></div>
-        <div class="r"><span class="k">대상</span><span class="v">카페에 소속된 참가자 (개인 · 그룹 · 카페 팀)</span></div>
+        <div class="r"><span class="k">대상</span><span class="v">카페에 소속된 참가자 (개인 · 연합 · 카페 팀)</span></div>
       </div>
       <p style="font-size:12.5px;color:var(--muted);font-weight:600;margin:12px 0 0;line-height:1.5">※ 프로·실업·대학 선수부 출신은 참가할 수 없어요.</p>
     </div>
 
     <div class="modebar">
       <button type="button" id="mIndiv" class="on" onclick="setMode('individual')">개인</button>
-      <button type="button" id="mGroup" onclick="setMode('group')">그룹</button>
+      <button type="button" id="mGroup" onclick="setMode('group')">연합</button>
       <button type="button" id="mTeam" onclick="setMode('team')">카페 팀</button>
     </div>
     <p class="mode-hint" id="modeHint">혼자 참가 신청해요. 운영진이 성별·실력을 참고해 팀을 구성합니다.</p>
@@ -141,21 +141,21 @@
       <p class="hint">연락처는 참가 안내 연락에만 사용해요.</p>
     </form>
 
-    <!-- 그룹 신청 (여러 카페 사람들이 모여 한 팀) -->
+    <!-- 연합 신청 (여러 카페 사람들이 모여 한 팀) -->
     <form id="formGroup" class="hidden" onsubmit="return submitForm(event)">
-      <label>그룹명 <em>*</em></label>
+      <label>연합명 <em>*</em></label>
       <input type="text" id="gName2" maxlength="30" placeholder="예: 수요풋살단" required>
       <label>대표자 이름 <em>*</em></label>
-      <input type="text" id="gLeader" maxlength="20" placeholder="그룹 대표 실명" required>
+      <input type="text" id="gLeader" maxlength="20" placeholder="연합 대표 실명" required>
       <label>대표 연락처 <em>*</em></label>
       <input type="text" id="gPhone" inputmode="tel" maxlength="20" placeholder="010-0000-0000" required>
       <label>구성원 명단 <em>*</em> <span class="opt">(대표자 포함 전원 · 각자 소속 카페)</span></label>
       <div id="groupList"></div>
       <button type="button" class="addbtn" onclick="addGroupMember()">＋ 구성원 추가</button>
-      <p class="hint" style="text-align:left;margin-top:8px">서로 다른 카페 사람들이 모인 그룹이에요. 한 명씩 <b>이름·소속 카페·성별·실력</b>을 입력해 주세요. 모든 팀은 <b>여성 1명 이상 필수</b> — 부족하면 운영진이 성별에 맞춰 소싱해 드립니다.</p>
+      <p class="hint" style="text-align:left;margin-top:8px">서로 다른 카페 사람들이 모인 연합이에요. 한 명씩 <b>이름·소속 카페·성별·실력</b>을 입력해 주세요. 모든 팀은 <b>여성 1명 이상 필수</b> — 부족하면 운영진이 성별에 맞춰 소싱해 드립니다.</p>
       <label>하고 싶은 말 <span class="opt">(선택)</span></label>
       <textarea id="gNote" maxlength="300" placeholder="문의 사항 등 자유롭게"></textarea>
-      <button class="submit" id="gBtn" type="submit">그룹 참가 신청하기</button>
+      <button class="submit" id="gBtn" type="submit">연합 참가 신청하기</button>
       <p class="hint">연락처는 참가 안내 연락에만 사용해요.</p>
     </form>
 
@@ -234,7 +234,7 @@ function setMode(m){
   document.getElementById('formTeam').classList.toggle('hidden', m !== 'team');
   document.getElementById('modeHint').textContent =
     m === 'individual' ? '혼자 참가 신청해요. 운영진이 성별·실력을 참고해 팀을 구성합니다.'
-  : m === 'group'      ? '서로 다른 카페 사람들이 모여 한 팀으로 참가해요. 구성원마다 소속 카페를 적어주세요.'
+  : m === 'group'      ? '서로 다른 카페 사람들이 연합해서 한 팀으로 참가해요. 구성원마다 소속 카페를 적어주세요.'
   :                      '한 카페 대표(주장)가 팀 단위로 신청해요.';
 }
 function setG(g){

@@ -45,6 +45,14 @@
   .mrow .m-name { flex: 1 1 auto; min-width: 0; }
   .mrow select { flex: 0 0 auto; width: 78px; background: #fff; border: 2.5px solid var(--ink); border-radius: 10px; padding: 12px 6px; font-size: 14px; font-family: inherit; font-weight: 600; color: var(--ink); }
   .mrow .m-del { flex: 0 0 40px; background: #fff; border: 2.5px solid var(--ink); border-radius: 10px; font-size: 17px; font-weight: 800; cursor: pointer; color: var(--ink); font-family: inherit; line-height: 1; }
+  .grow { border: 2.5px solid var(--ink); border-radius: 10px; padding: 8px; margin-bottom: 8px; background: #fff; }
+  .grow .l1 { display: flex; gap: 6px; margin-bottom: 6px; }
+  .grow .l2 { display: flex; gap: 6px; }
+  .grow input, .grow select { border-width: 2px; border-radius: 8px; padding: 10px 8px; font-size: 14px; }
+  .grow .g-name { flex: 1 1 auto; min-width: 0; }
+  .grow .g-cafe { flex: 1 1 auto; min-width: 0; }
+  .grow select { flex: 0 0 auto; width: 78px; background: #fff; border: 2px solid var(--ink); font-family: inherit; font-weight: 600; color: var(--ink); }
+  .grow .g-del { flex: 0 0 40px; background: #fff; border: 2px solid var(--ink); border-radius: 8px; font-size: 17px; font-weight: 800; cursor: pointer; color: var(--ink); font-family: inherit; line-height: 1; }
   .addbtn { width: 100%; background: #fff; border: 2.5px dashed var(--ink); border-radius: 10px; padding: 11px; font-size: 14px; font-weight: 800; cursor: pointer; color: var(--ink); font-family: inherit; }
   .addbtn:active { transform: translateY(1px); }
 
@@ -89,13 +97,14 @@
       <div class="info">
         <div class="r"><span class="k">일시</span><span class="v">2026년 10월 19일 (월) 16:30 시작</span></div>
         <div class="r"><span class="k">장소</span><span class="v"><a href="https://map.naver.com/p/search/토모스포츠" target="_blank" rel="noopener" title="서울 성북구 월계로 32 3층 (하월곡동)">토모스포츠 (성북) ↗</a></span></div>
-        <div class="r"><span class="k">대상</span><span class="v">카페에 소속된 참가자 (개인 또는 카페 팀)</span></div>
+        <div class="r"><span class="k">대상</span><span class="v">카페에 소속된 참가자 (개인 · 그룹 · 카페 팀)</span></div>
       </div>
       <p style="font-size:12.5px;color:var(--muted);font-weight:600;margin:12px 0 0;line-height:1.5">※ 프로·실업·대학 선수부 출신은 참가할 수 없어요.</p>
     </div>
 
     <div class="modebar">
-      <button type="button" id="mIndiv" class="on" onclick="setMode('individual')">개인 참가</button>
+      <button type="button" id="mIndiv" class="on" onclick="setMode('individual')">개인</button>
+      <button type="button" id="mGroup" onclick="setMode('group')">그룹</button>
       <button type="button" id="mTeam" onclick="setMode('team')">카페 팀</button>
     </div>
     <p class="mode-hint" id="modeHint">혼자 참가 신청해요. 운영진이 성별·실력을 참고해 팀을 구성합니다.</p>
@@ -129,6 +138,24 @@
       <label>하고 싶은 말 <span class="opt">(선택)</span></label>
       <textarea id="iNote" maxlength="300" placeholder="풋살 경력, 궁금한 점 등 자유롭게"></textarea>
       <button class="submit" id="iBtn" type="submit">참가 신청하기</button>
+      <p class="hint">연락처는 참가 안내 연락에만 사용해요.</p>
+    </form>
+
+    <!-- 그룹 신청 (여러 카페 사람들이 모여 한 팀) -->
+    <form id="formGroup" class="hidden" onsubmit="return submitForm(event)">
+      <label>그룹명 <em>*</em></label>
+      <input type="text" id="gName2" maxlength="30" placeholder="예: 수요풋살단" required>
+      <label>대표자 이름 <em>*</em></label>
+      <input type="text" id="gLeader" maxlength="20" placeholder="그룹 대표 실명" required>
+      <label>대표 연락처 <em>*</em></label>
+      <input type="text" id="gPhone" inputmode="tel" maxlength="20" placeholder="010-0000-0000" required>
+      <label>구성원 명단 <em>*</em> <span class="opt">(대표자 포함 전원 · 각자 소속 카페)</span></label>
+      <div id="groupList"></div>
+      <button type="button" class="addbtn" onclick="addGroupMember()">＋ 구성원 추가</button>
+      <p class="hint" style="text-align:left;margin-top:8px">서로 다른 카페 사람들이 모인 그룹이에요. 한 명씩 <b>이름·소속 카페·성별·실력</b>을 입력해 주세요. 모든 팀은 <b>여성 1명 이상 필수</b> — 부족하면 운영진이 성별에 맞춰 소싱해 드립니다.</p>
+      <label>하고 싶은 말 <span class="opt">(선택)</span></label>
+      <textarea id="gNote" maxlength="300" placeholder="문의 사항 등 자유롭게"></textarea>
+      <button class="submit" id="gBtn" type="submit">그룹 참가 신청하기</button>
       <p class="hint">연락처는 참가 안내 연락에만 사용해요.</p>
     </form>
 
@@ -200,12 +227,15 @@ let pos = null;
 function setMode(m){
   mode = m;
   document.getElementById('mIndiv').classList.toggle('on', m === 'individual');
+  document.getElementById('mGroup').classList.toggle('on', m === 'group');
   document.getElementById('mTeam').classList.toggle('on', m === 'team');
   document.getElementById('formIndiv').classList.toggle('hidden', m !== 'individual');
+  document.getElementById('formGroup').classList.toggle('hidden', m !== 'group');
   document.getElementById('formTeam').classList.toggle('hidden', m !== 'team');
-  document.getElementById('modeHint').textContent = m === 'individual'
-    ? '혼자 참가 신청해요. 운영진이 성별·실력을 참고해 팀을 구성합니다.'
-    : '카페 대표(주장)가 팀 단위로 신청해요.';
+  document.getElementById('modeHint').textContent =
+    m === 'individual' ? '혼자 참가 신청해요. 운영진이 성별·실력을 참고해 팀을 구성합니다.'
+  : m === 'group'      ? '서로 다른 카페 사람들이 모여 한 팀으로 참가해요. 구성원마다 소속 카페를 적어주세요.'
+  :                      '한 카페 대표(주장)가 팀 단위로 신청해요.';
 }
 function setG(g){
   markStart();
@@ -242,6 +272,23 @@ function removeMember(btn){
   var row = btn.closest('.mrow');
   if (row) row.remove();
 }
+function addGroupMember(){
+  var d = document.createElement('div');
+  d.className = 'grow';
+  d.innerHTML = '<div class="l1"><input type="text" class="g-name" maxlength="20" placeholder="이름">'
+    + '<input type="text" class="g-cafe" maxlength="30" placeholder="소속 카페"></div>'
+    + '<div class="l2"><select class="g-gender"><option value="">성별</option><option value="남">남</option><option value="여">여</option></select>'
+    + '<select class="g-level"><option value="">실력</option><option value="초급">초급</option><option value="중급">중급</option><option value="상급">상급</option></select>'
+    + '<span style="flex:1"></span>'
+    + '<button type="button" class="g-del" onclick="removeGroupMember(this)" aria-label="삭제">×</button></div>';
+  document.getElementById('groupList').appendChild(d);
+}
+function removeGroupMember(btn){
+  var list = document.getElementById('groupList');
+  if (list.children.length <= 1) return;
+  var row = btn.closest('.grow');
+  if (row) row.remove();
+}
 function val(id){ return (document.getElementById(id).value || '').trim(); }
 
 async function submitForm(e){
@@ -254,6 +301,30 @@ async function submitForm(e){
     if (!gender){ alert('성별을 선택해 주세요.'); return false; }
     if (!level){ alert('실력을 선택해 주세요.'); return false; }
     payload = { kind:'individual', name, gender, level, phone, cafe, position: pos || '', note: val('iNote') };
+  } else if (mode === 'group'){
+    btn = document.getElementById('gBtn');
+    const gname = val('gName2'), leader = val('gLeader'), phone = val('gPhone');
+    if (!gname || !leader || !phone) return false;
+    const rows = Array.prototype.slice.call(document.querySelectorAll('#groupList .grow')).map(function(r){
+      return {
+        name: r.querySelector('.g-name').value.trim(),
+        cafe: r.querySelector('.g-cafe').value.trim(),
+        gender: r.querySelector('.g-gender').value,
+        level: r.querySelector('.g-level').value
+      };
+    }).filter(function(m){ return m.name; });
+    if (!rows.length){ alert('구성원을 1명 이상 입력해 주세요.'); return false; }
+    if (rows.some(function(m){ return !m.cafe; })){ alert('구성원의 소속 카페를 모두 입력해 주세요.'); return false; }
+    if (rows.some(function(m){ return !m.gender; })){ alert('구성원 성별을 모두 선택해 주세요.'); return false; }
+    const fN = rows.filter(function(m){ return m.gender === '여'; }).length;
+    const mN = rows.filter(function(m){ return m.gender === '남'; }).length;
+    if (fN < 1){ alert('모든 팀은 여성 1명 이상이 필수예요.'); return false; }
+    const cafes = rows.map(function(m){ return m.cafe; }).filter(function(c, i, a){ return a.indexOf(c) === i; });
+    const membersText = rows.map(function(m){
+      return m.name + '(' + m.cafe + '·' + m.gender + (m.level ? '·' + m.level : '') + ')';
+    }).join(', ');
+    payload = { kind:'group', name: leader, phone: phone, cafe: cafes.join(' / '), team_name: gname,
+                male_count: mN, female_count: fN, headcount: rows.length, members: membersText, note: val('gNote') };
   } else {
     btn = document.getElementById('tBtn');
     const cafe = val('tCafe'), name = val('tName'), phone = val('tPhone');
@@ -289,6 +360,7 @@ async function submitForm(e){
 }
 // 팀 폼 초기 팀원 행 3개
 for (var _i = 0; _i < 3; _i++) addMember();
+for (var _j = 0; _j < 3; _j++) addGroupMember();
 </script>
 </body>
 </html>

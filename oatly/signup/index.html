@@ -51,8 +51,8 @@
   .grow input, .grow select { border-width: 2px; border-radius: 8px; padding: 10px 8px; font-size: 14px; }
   .grow .g-name { flex: 1 1 auto; min-width: 0; }
   .grow .g-cafe { flex: 1 1 auto; min-width: 0; }
-  .grow select { flex: 0 0 auto; width: 78px; background: #fff; border: 2px solid var(--ink); font-family: inherit; font-weight: 600; color: var(--ink); }
-  .grow .g-del { flex: 0 0 40px; background: #fff; border: 2px solid var(--ink); border-radius: 8px; font-size: 17px; font-weight: 800; cursor: pointer; color: var(--ink); font-family: inherit; line-height: 1; }
+  .grow select { flex: 1 1 0; width: auto; min-width: 0; background: #fff; border: 2px solid var(--ink); font-family: inherit; font-weight: 600; color: var(--ink); }
+  .grow .g-del { flex: 0 0 44px; background: #fff; border: 2px solid var(--ink); border-radius: 8px; font-size: 17px; font-weight: 800; cursor: pointer; color: var(--ink); font-family: inherit; line-height: 1; }
   .addbtn { width: 100%; background: #fff; border: 2.5px dashed var(--ink); border-radius: 10px; padding: 11px; font-size: 14px; font-weight: 800; cursor: pointer; color: var(--ink); font-family: inherit; }
   .addbtn:active { transform: translateY(1px); }
 
@@ -279,7 +279,6 @@ function addGroupMember(){
     + '<input type="text" class="g-cafe" maxlength="30" placeholder="소속 카페"></div>'
     + '<div class="l2"><select class="g-gender"><option value="">성별</option><option value="남">남</option><option value="여">여</option></select>'
     + '<select class="g-level"><option value="">실력</option><option value="초급">초급</option><option value="중급">중급</option><option value="상급">상급</option></select>'
-    + '<span style="flex:1"></span>'
     + '<button type="button" class="g-del" onclick="removeGroupMember(this)" aria-label="삭제">×</button></div>';
   document.getElementById('groupList').appendChild(d);
 }

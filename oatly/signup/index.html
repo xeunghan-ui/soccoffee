@@ -165,6 +165,33 @@
 <script>
 const SB_URL = 'https://fjgxhguogsuypcdzcieg.supabase.co/rest/v1/oatly_signups';
 const SB_KEY = 'sb_publishable_K7TsALmaFyb2pPOZO-2i2w_UeirVr8l';
+/* 신청 퍼널 집계 (2026-09-14) — 개인정보 없이 조회·입력시작·제출만 기록 */
+const EV_URL = 'https://fjgxhguogsuypcdzcieg.supabase.co/rest/v1/oatly_events';
+function evSid(){
+  var k = 'oatly_sid', v = null;
+  try { v = localStorage.getItem(k); if (!v) { v = Math.random().toString(36).slice(2) + Date.now().toString(36); localStorage.setItem(k, v); } }
+  catch(e) { v = 'tmp' + Date.now().toString(36); }
+  return v;
+}
+function track(kind, m){
+  try {
+    fetch(EV_URL, { method:'POST', keepalive:true,
+      headers:{ apikey:SB_KEY, Authorization:'Bearer ' + SB_KEY, 'Content-Type':'application/json', Prefer:'return=minimal' },
+      body: JSON.stringify({ sid: evSid(), kind: kind, mode: m || null }) }).catch(function(){});
+  } catch(e) {}
+}
+let _started = false;
+function markStart(){
+  if (_started) return;
+  _started = true;
+  var seen = false;
+  try { seen = localStorage.getItem('oatly_started') === '1'; if (!seen) localStorage.setItem('oatly_started', '1'); } catch(e) {}
+  if (!seen) track('start', mode);
+}
+track('view');
+document.addEventListener('input', function(e){ if (e.target && e.target.closest && e.target.closest('form')) markStart(); });
+document.addEventListener('change', function(e){ if (e.target && e.target.closest && e.target.closest('form')) markStart(); });
+
 let mode = 'individual';
 let gender = null;
 let level = null;
@@ -181,17 +208,20 @@ function setMode(m){
     : '카페 대표(주장)가 팀 단위로 신청해요.';
 }
 function setG(g){
+  markStart();
   gender = g;
   document.getElementById('gM').classList.toggle('on', g === '남');
   document.getElementById('gF').classList.toggle('on', g === '여');
 }
 function setL(v){
+  markStart();
   level = v;
   document.getElementById('lv1').classList.toggle('on', v === '초급');
   document.getElementById('lv2').classList.toggle('on', v === '중급');
   document.getElementById('lv3').classList.toggle('on', v === '상급');
 }
 function setP(v){
+  markStart();
   pos = v;
   ['공격','수비','골키퍼','상관없음'].forEach(function(x, i){
     document.getElementById('p' + (i + 1)).classList.toggle('on', v === x);
@@ -247,6 +277,7 @@ async function submitForm(e){
       body: JSON.stringify(payload)
     });
     if (!res.ok) throw new Error(res.status);
+    track('submit', mode);
     document.getElementById('formView').style.display = 'none';
     document.getElementById('doneView').style.display = 'block';
     window.scrollTo(0, 0);

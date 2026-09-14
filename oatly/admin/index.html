@@ -91,6 +91,15 @@
   </div>
 
   <div id="view" class="hidden">
+    <div class="sec-h" style="margin-top:16px">신청 폼 퍼널 <span style="color:var(--muted);font-weight:600" id="funNote"></span></div>
+    <div class="stats">
+      <div class="stat"><div class="l">페이지 조회</div><div class="v" id="fView">0</div><div class="s" id="fViewSub">순 방문 0명</div></div>
+      <div class="stat"><div class="l">입력 시작</div><div class="v" id="fStart">0</div><div class="s">명</div></div>
+      <div class="stat"><div class="l">제출 완료</div><div class="v" id="fDone">0</div><div class="s" id="fDoneSub">전환 0%</div></div>
+      <div class="stat"><div class="l">입력하다 이탈</div><div class="v" id="fDrop">0</div><div class="s">명</div></div>
+    </div>
+
+    <div class="sec-h">신청 현황</div>
     <div class="stats">
       <div class="stat"><div class="l">총 신청</div><div class="v" id="sTotal">0</div><div class="s" id="sTotalSub">개인 0 · 팀 0</div></div>
       <div class="stat"><div class="l">총 인원</div><div class="v" id="sPeople">0</div><div class="s" id="sPeopleSub">명</div></div>
@@ -128,6 +137,8 @@
 <script>
 const SB_URL = 'https://fjgxhguogsuypcdzcieg.supabase.co/rest/v1/oatly_signups';
 const SB_KEY = 'sb_publishable_K7TsALmaFyb2pPOZO-2i2w_UeirVr8l';
+const EV_URL = 'https://fjgxhguogsuypcdzcieg.supabase.co/rest/v1/oatly_events';
+let EVENTS = [];
 const PW_HASH = 'b1a7965b1819d360fd33f10022657358f801eec4e08950cf70ea6fbf2968441e';   // soccoffee1234 (SHA-256)
 const KEY = 'oatly_admin_ok';
 let ROWS = [], TAB = 'all';
@@ -166,10 +177,39 @@ async function load(){
     ROWS = await r.json();
     if (!Array.isArray(ROWS)) ROWS = [];
   } catch(e){ ROWS = []; }
+  try {
+    const e2 = await fetch(EV_URL + '?select=sid,kind,mode,created_at&limit=20000', {
+      headers: { apikey: SB_KEY, Authorization: 'Bearer ' + SB_KEY }
+    });
+    EVENTS = await e2.json();
+    if (!Array.isArray(EVENTS)) EVENTS = [];
+  } catch(e){ EVENTS = []; }
   render();
 }
 
+function renderFunnel(){
+  const viewRows = EVENTS.filter(e => e.kind === 'view');
+  const uniqView = new Set(viewRows.map(e => e.sid)).size;
+  const startSids = new Set(EVENTS.filter(e => e.kind === 'start').map(e => e.sid));
+  const doneSids  = new Set(EVENTS.filter(e => e.kind === 'submit').map(e => e.sid));
+  const drop = Math.max(0, [...startSids].filter(x => !doneSids.has(x)).length);
+  const conv = uniqView ? Math.round(doneSids.size / uniqView * 100) : 0;
+
+  document.getElementById('fView').textContent = viewRows.length;
+  document.getElementById('fViewSub').textContent = '순 방문 ' + uniqView + '명';
+  document.getElementById('fStart').textContent = startSids.size;
+  document.getElementById('fDone').textContent = doneSids.size;
+  document.getElementById('fDoneSub').textContent = '순 방문 대비 ' + conv + '%';
+  document.getElementById('fDrop').textContent = drop;
+
+  const first = EVENTS.length ? EVENTS.map(e => e.created_at).sort()[0] : null;
+  document.getElementById('funNote').textContent = first
+    ? '· ' + when(first) + ' 집계 시작'
+    : '· 아직 집계된 방문이 없어요';
+}
+
 function render(){
+  renderFunnel();
   const ind = ROWS.filter(x => x.kind !== 'team');
   const tm  = ROWS.filter(x => x.kind === 'team');
 

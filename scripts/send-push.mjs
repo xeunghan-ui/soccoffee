@@ -46,13 +46,21 @@ async function capConfirmFor(m) {
 }
 
 // 사이트 isDormantFor와 동일 규칙 — 정원제 확정 결과 최우선, activeMonths, 영구휴면, 해당 월·이번 달 월휴면
+// ⚠️ 마지막 '이번 달 휴면 이어받기'는 이번 달 상태도 같은 정본으로 봐야 한다. dm.includes(curM)만 보면,
+//    이번 달을 활동 예외(activeMonths)나 정원 확정 결과로 '활동' 중인 회원이 다음 달 휴면으로 분류돼
+//    푸시 대상(activeFor)에서 통째로 빠진다 — 2026-09 박지원·이민국 케이스. (js/member.js와 같이 고칠 것)
 function isDormantLike(p, m, curM) {
   const _r = (typeof m === 'string' && m >= CAP_START) ? capResultFor(m) : null;
   if (_r) return !_r.active.includes(p.id);
   if ((p.activeMonths || []).includes(m)) return false;
   if ((p.status || 'active') === 'dormant') return true;
   const dm = p.dormantMonths || [];
-  return dm.includes(m) || dm.includes(curM);
+  if (dm.includes(m)) return true;
+  if (!curM || curM === m) return false;
+  const _rN = (typeof curM === 'string' && curM >= CAP_START) ? capResultFor(curM) : null;
+  if (_rN) return !_rN.active.includes(p.id);
+  if ((p.activeMonths || []).includes(curM)) return false;
+  return dm.includes(curM);
 }
 // 그 달 활동 멤버 (former·friends 제외)
 function activeFor(players, m, curM) {

@@ -71,6 +71,9 @@
       function _nowMonth(){ var n=new Date(); return n.getFullYear()+'-'+('0'+(n.getMonth()+1)).slice(-2); }
       function _isDormant(p,ym){ var am=p.activeMonths||[]; if(am.indexOf(ym)>=0) return false; if((p.status||'active')==='dormant') return true; var dm=p.dormantMonths||[]; return dm.indexOf(ym)>=0 || dm.indexOf(_nowMonth())>=0; }
       var sqm=_squadMonth();
+      // 다음 달 가입 예정자는 이 달 명단에서 제외 (멤버앱 renderSquad와 동일 기준)
+      var _sqEnd=new Date(parseInt(sqm.split('-')[0],10), parseInt(sqm.split('-')[1],10), 0);
+      players=players.filter(function(p){ return !p.joinDate || new Date(p.joinDate)<=_sqEnd; });
       // 정원제(2026-09~) 확정 결과가 있으면 그게 활동/휴면 최종 기준 — 멤버앱 isDormantFor와 일치
       var capRes=null, lgB=[], lgW=[], lgC=[];
       try{
@@ -107,17 +110,22 @@
       }
       var isDormOf=function(p){ return capRes ? capRes.indexOf(p.id)<0 : _isDormant(p,sqm); };
       if(lgB.length+lgW.length>0){
-        // 리그 달: BLACK · WHITE 구분 노출(감독 맨 앞), 휴면은 아래
+        // 리그 달: BLACK · WHITE 구분 노출(감독 맨 앞), 아래에 미배정·휴면
+        // ⚠️ 팀 미배정 = 휴면이 아니다. 예전엔 rest를 통째로 '휴면'으로 찍어서, 리그 배정만 안 된
+        //    활동 회원까지 휴면으로 보였다. 휴면 판정은 반드시 isDormOf(정원 확정 결과 우선)로 한다.
         var capFirst=function(a,b){ return (lgC.indexOf(b.id)>=0?1:0)-(lgC.indexOf(a.id)>=0?1:0); };
         var inB=players.filter(function(p){return lgB.indexOf(p.id)>=0;}).sort(capFirst);
         var inW=players.filter(function(p){return lgW.indexOf(p.id)>=0;}).sort(capFirst);
         var rest=players.filter(function(p){return lgB.indexOf(p.id)<0&&lgW.indexOf(p.id)<0;});
+        var restDorm=rest.filter(isDormOf);
+        var restAct=rest.filter(function(p){return !isDormOf(p);});
         var head=function(t,swatch,n){ return '<div style="grid-column:1/-1;display:flex;align-items:center;gap:7px;margin:8px 2px 0">'
-          +'<span style="width:11px;height:11px;border-radius:3px;background:'+swatch+';border:1px solid var(--line);flex-shrink:0"></span>'
+          +(swatch?'<span style="width:11px;height:11px;border-radius:3px;background:'+swatch+';border:1px solid var(--line);flex-shrink:0"></span>':'')
           +'<b style="font-size:12.5px;color:var(--cream);letter-spacing:.04em">'+t+' <span style="color:var(--muted);font-weight:600">'+n+'</span></b></div>'; };
         box.innerHTML = head('BLACK','#20242b',inB.length) + inB.map(function(p){return chipOf(p,false);}).join('')
           + head('WHITE','#f2efe6',inW.length) + inW.map(function(p){return chipOf(p,false);}).join('')
-          + (rest.length ? head('휴면','transparent',rest.length) + rest.map(function(p){return chipOf(p,true);}).join('') : '');
+          + (restAct.length ? head('미배정','',restAct.length) + restAct.map(function(p){return chipOf(p,false);}).join('') : '')
+          + (restDorm.length ? head('휴면','',restDorm.length) + restDorm.map(function(p){return chipOf(p,true);}).join('') : '');
       } else {
         box.innerHTML=players.map(function(p){ return chipOf(p, isDormOf(p)); }).join('');
       }

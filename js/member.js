@@ -955,7 +955,17 @@ function isDormantFor(p, monthStr){
   if (activeMonthsOf(p).includes(monthStr)) return false;   // 멤버가 이 달을 '활동'으로 지정
   if ((p.status||'active')==='dormant') return true;
   const dm = dormantMonthsOf(p);
-  return dm.includes(monthStr) || dm.includes(nowMonthStr());
+  if (dm.includes(monthStr)) return true;
+  // ③ '이번 달 휴면'을 다음 달로 이어받는 규칙 — 이번 달 상태도 ⓪①②와 같은 정본으로 본다.
+  // ⚠️ 예전엔 dm.includes(nowMonth)만 봐서, 이번 달을 활동 예외(activeMonths)나 정원 확정 결과로
+  //    '활동' 중인 회원이 dm에 이번 달이 남아 있다는 이유만으로 다음 달 휴면으로 찍혔다
+  //    (2026-10 박지원·이민국 — 본인은 아무것도 고르지 않았는데 휴면으로 표시됨).
+  const nm = nowMonthStr();
+  if (nm === monthStr) return false;
+  const _crN = capOn(nm) ? capResult(nm) : null;
+  if (_crN) return !_crN.active.includes(p.id);
+  if (activeMonthsOf(p).includes(nm)) return false;
+  return dm.includes(nm);
 }
 
 
@@ -4078,15 +4088,13 @@ async function renderDues() {
   const _sMon = statusMonth();
   const _curM = nowMonthStr();
   const _moLbl = parseInt(_sMon.split('-')[1], 10);
-  // 휴면→활동 = 실제로 휴면 중이던(영구 휴면 or 이번 달 휴면) 회원이 다음 달을 활동으로 되돌린 경우만
-  const toActive = ROSTER.filter(p => {
-    const st = p.status||'active';
-    if (st==='former'||st==='friends') return false;
-    if (!activeMonthsOf(p).includes(_sMon)) return false;
-    return st==='dormant' || dormantMonthsOf(p).includes(_curM);
-  });
-  const _toActiveIds = new Set(toActive.map(p=>p.id));
-  const toDormant = ROSTER.filter(p => { const st = p.status||'active'; if (st!=='active') return false; if (_toActiveIds.has(p.id)) return false; const dm = dormantMonthsOf(p); return dm.includes(_sMon) && !dm.includes(_curM); });
+  // 변동 = '이번 달 상태'와 '다음 달 상태'를 같은 정본(isDormantFor)으로 비교한 차이.
+  // ⚠️ 예전엔 status/dormantMonths/activeMonths를 직접 조합해 판정했는데, 그러면 이번 달을
+  //    activeMonths 예외나 정원 확정 결과로 '활동' 중인 회원(영구 휴면 플래그만 남은 경우)이
+  //    전부 '휴면→활동'으로 잡혔다(2026-10 김유솔·정하림·한승재). 두 달 모두 정본으로 본다.
+  const _chg = ROSTER.filter(p => { const st = p.status||'active'; return st!=='former' && st!=='friends'; });
+  const toActive  = _chg.filter(p =>  isDormantFor(p, _curM) && !isDormantFor(p, _sMon));
+  const toDormant = _chg.filter(p => !isDormantFor(p, _curM) &&  isDormantFor(p, _sMon));
   // 신규 가입: 가입일이 해당 월인 멤버 (탈퇴·친구 제외)
   const toNew = ROSTER.filter(p => { const st = p.status||'active'; if (st==='former'||st==='friends') return false; return (p.joinDate||'').slice(0,7) === _sMon; });
   const _transLines = [];
@@ -4922,7 +4930,10 @@ async function rolloverDormancyIfNeeded(){
   tb.players.forEach(p => {
     if ((p.status || 'active') === 'former') return;
     const dm = p.dormantMonths || [];
-    const curDorm = dm.includes(curMonth) || (p.status || 'active') === 'dormant';
+    // ⚠️ '이번 달 휴면' 판정은 반드시 정본(isDormantFor)으로. 예전엔 dm/status만 봐서,
+    //    영구 휴면이거나 dm에 이번 달이 남아 있어도 activeMonths 예외·정원 확정 결과로
+    //    '활동' 중인 회원까지 다음 달 휴면으로 자동 등록해버렸다(2026-09 박지원·이민국·김재유).
+    const curDorm = isDormantFor(p, curMonth);
     if (curDorm && !dm.includes(nextMonth) && !(p.activeMonths||[]).includes(nextMonth)) { dm.push(nextMonth); p.dormantMonths = dm; }
   });
   tb.dormRollover = nextMonth;
@@ -4939,6 +4950,31 @@ function rkAtt(p, sess){
   let a=0,c=0;
   sess.forEach(s=>{ if(!rkInPool(p,s.date)) return; if(rkDormant(p,s.date.slice(0,7))) return; c++; if((s.attendees||[]).includes(p.id)) a++; });
   return { rate: c>0?Math.round(a/c*1000)/10:0, attended:a, counted:c };
+}
+// 미응답 집계 — '사이트 일정 응답(attendance 테이블)'에 아무 기록도 없던 비율.
+// ⚠️ attendance는 사이트 응답 기능 도입(2026-06) 이후분만 있다. 그 전 세션은 모수에서 빠지므로
+//    출석율·승률처럼 전 기간 지표와 나란히 두면 안 되고, 불량배 점수 안에서만 쓴다.
+let _noRespCache = null;
+async function getNoRespStats(){
+  if (_noRespCache) return _noRespCache;
+  _noRespCache = { sess: [], resp: {} };
+  if (!USE_DB) return _noRespCache;
+  try {
+    const st = await fetchSettings();
+    const today = todayStr();
+    const ss = (st.sessions||[]).filter(s => s && s.date && s.id && ((s.deadline || s.date) < today));
+    if (!ss.length) return _noRespCache;
+    const { data } = await sb.from('attendance').select('session_id, member_id').in('session_id', ss.map(s=>s.id));
+    const resp = {};
+    (data||[]).forEach(r => { (resp[r.session_id] = resp[r.session_id] || new Set()).add(r.member_id); });
+    _noRespCache = { sess: ss, resp };
+  } catch(e) {}
+  return _noRespCache;
+}
+function rkNoResp(p, nr, year){
+  const ss = (nr.sess||[]).filter(s => (!year || s.date.startsWith(year)) && rkInPool(p, s.date) && !rkDormant(p, s.date.slice(0,7)));
+  const miss = ss.filter(s => !((nr.resp[s.id] || new Set()).has(p.id))).length;
+  return { n: miss, t: ss.length, rate: ss.length ? Math.round(miss/ss.length*1000)/10 : 0 };
 }
 function rkRanks(list, key){ const r=[]; list.forEach((x,i)=>{ if(i===0){r.push(1);return;} r.push(key(x)===key(list[i-1])?r[i-1]:i+1); }); return r; }
 
@@ -4988,6 +5024,7 @@ async function renderRank(){
     valFn=x=>x._r+'%'; subFn=x=>`${x._d}/${x._m}개월`; pctFn=x=>x._r;
     note=`${yearLabel} · ${data.length}명 · 휴면율`;
   } else if (rankTab==='bad'){
+    const nr = await getNoRespStats();   // 일정 미응답 (2026-06 응답 기능 도입 이후분)
     data = elig.map(p=>{
       const pool=sess.filter(s=>rkInPool(p,s.date)&&!rkDormant(p,s.date.slice(0,7)));
       const lmaCnt=pool.filter(s=>(s.lastMinuteAbsentIds||[]).includes(p.id)).length;
@@ -4995,12 +5032,13 @@ async function renderRank(){
       const pm=new Set(sess.filter(s=>rkInPool(p,s.date)).map(s=>s.date.slice(0,7)));
       const dm=new Set((p.dormantMonths||[]).filter(mo=>pm.has(mo)));
       const dr=pm.size>0?Math.round(dm.size/pm.size*1000)/10:0;
-      return {p,_lma:lmaRate,_dr:dr,_c:lmaCnt,_s:Math.round((lmaRate*2+dr)*10)/10};
+      const nrs=rkNoResp(p, nr, rankYear);
+      return {p,_lma:lmaRate,_dr:dr,_c:lmaCnt,_nr:nrs.rate,_nrn:nrs.n,_nrt:nrs.t,_s:Math.round((lmaRate*2+nrs.rate*1.5+dr)*10)/10};
     }).filter(x=>x._s>0).sort((a,b)=>b._s-a._s);
     ranks = rkRanks(data,x=>String(x._s));
     const maxs = data.length?(data[0]._s||1):1;
-    valFn=x=>x._s+'점'; subFn=x=>`당일불참 ${x._lma}% · 휴면 ${x._dr}%`; pctFn=x=>Math.round(x._s/maxs*100);
-    note=`${yearLabel} · ${data.length}명 · 당일불참율×2+휴면율 (나만 보기)`;
+    valFn=x=>x._s+'점'; subFn=x=>`당일불참 ${x._lma}% · 미응답 ${x._nr}%${x._nrt?`(${x._nrn}/${x._nrt})`:''} · 휴면 ${x._dr}%`; pctFn=x=>Math.round(x._s/maxs*100);
+    note=`${yearLabel} · ${data.length}명 · 당일불참율×2 + 미응답율×1.5 + 휴면율 (미응답은 2026-06~ · 나만 보기)`;
   } else {
     const tot=sess.length, min=Math.ceil(tot*0.5);
     const vs = await getVoteStats(rankYear);   // 투표 참여 + 수상 집계

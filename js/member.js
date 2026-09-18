@@ -2957,13 +2957,10 @@ async function showMyBadges(){
       그래서 '차단'이 아니라 '육안 판별'로 설계했다 — 서로 반대 방향으로 계속 흐르는 홀로그램 띠
       두 줄(css .mcard::before/::after) + 1초마다 갱신되는 실시간 시계. 정지 화면이면 둘 다 멈춘다.
       카페 사장님은 앱 설치도 스캔도 필요 없고, 띠가 움직이는지만 보면 된다. (2026-09-18 총괄) */
+// ⚠️ 여기는 '제휴를 맺은 가게'만 넣는다. 소개 페이지 CAFES 섹션(멤버들이 운영하는 카페·바)과는 다른 목록이다.
+// benefit: 혜택 문구(확정되면 채운다)
 const PARTNER_CAFES = [
-  { nm:'도덕과 규범',   area:'마포 상수' },
-  { nm:'로잉 커피',     area:'마포 연남' },
-  { nm:'로잉 커피바',   area:'마포 망원' },
-  { nm:'토니 카페',     area:'용산 효창' },
-  { nm:'카쩨',          area:'서대문 대현' },
-  { nm:'뱅가드 레코드바', area:'마포 공덕' },
+  { nm:'뱅가드 레코드바', area:'마포 공덕', benefit:'' },
 ];
 function mcClockStr(){
   const d = new Date(), z = n => String(n).padStart(2,'0');
@@ -3009,7 +3006,8 @@ function showMemberPass(){
       <p class="mc-hint">띠가 계속 움직이고 시계 초가 흐르면 진짜 회원증이에요. 캡처 화면은 멈춰 있어요.</p>
       <div class="mc-cafes">
         <b>제휴 가게</b>
-        ${PARTNER_CAFES.map(c=>`<div class="mc-cafe">${esc(c.nm)}<span>${esc(c.area)}</span></div>`).join('')}
+        ${PARTNER_CAFES.map(c=>`<div class="mc-cafe">${esc(c.nm)}<span>${esc(c.benefit || c.area)}</span></div>`).join('')}
+        <p class="mc-hint" style="margin-top:8px">제휴 가게는 계속 늘려갈 예정이에요.</p>
       </div>
     </div>
   </div></div>`;

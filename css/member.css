@@ -973,7 +973,6 @@
   .mc-clock { font-size:12px; font-weight:800; color:var(--coffee); font-variant-numeric:tabular-nums;
     letter-spacing:.01em; white-space:nowrap; margin-left:auto; }
   @media (max-width:380px){ .mc-since{ font-size:9px } .mc-clock{ font-size:11px } .mc-no{ font-size:52px } }
-  .mc-hint { font-size:11.5px; color:var(--muted); line-height:1.6; margin:12px 2px 0; }
   .mc-cafes { margin-top:14px; }
   .mc-cafes b { display:block; font-size:11px; font-weight:800; letter-spacing:.05em; color:var(--muted); margin-bottom:7px; }
   .mc-cafe { display:flex; align-items:baseline; gap:8px; font-size:13px; color:var(--coffee);

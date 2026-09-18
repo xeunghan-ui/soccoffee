@@ -2385,6 +2385,7 @@ function renderFaq() {
   ];
   const refs = [
     ['로그인 / PIN', ['이름 선택 + <b>PIN 4자리</b>', '첫 로그인 때 PIN 등록', '변경: 더보기 → 내 PIN 변경', '잊으면 운영진에 초기화 요청']],
+    ['회원증', ['홈에서 <b>싸커피 회원증</b> 열어 제휴 가게에 보여주기', '띠가 계속 움직이고 초시계가 흐르면 진짜 — 캡처 화면은 멈춰 있어요']],
     ['참석 · 일정', ['홈/일정 탭에서 참석·불참·미정 선택', '홈에서 <b>미응답 일정 개수</b> 알림']],
     ['MVP · 성장 · 감사 투표', ['매월 <b>25일~말일</b> 진행', '1~24일: 지난달 결과 표시', '대상: 그 달 <b>활동 회원</b> · <b>친구·휴면 제외</b>', '세 부문 1표씩 · 제출 후 변경 불가', '감사한 분 부문은 수상·모범생 점수와 무관']],
     ['WHITE / BLACK 팀', ['경기 밸런스용 두 팀', '<b>팀 리그</b> 달: 감독(캡틴)이 팀원 선발', '팀 구분 켠 달엔 이름 옆 팀 표시']],
@@ -2721,7 +2722,13 @@ async function renderHome() {
       }
     }
   } catch(e){}
-  let html = seasonBanner + lgApplyHome + dash + badgeHome + voteHome + dash2 + uniHome + `<div class="section-title">다가오는 매치</div>`;
+  // 회원증 진입 — 제휴 가게에서 바로 열 수 있게 홈 상단에 둔다 (2026-09-18 총괄)
+  const passHome = getMe() != null ? `<button class="card" style="width:100%;box-sizing:border-box;padding:10px 14px;margin-bottom:12px;display:flex;align-items:center;gap:10px;cursor:pointer;font-family:inherit;border:none;text-align:left" onclick="showMemberPass()">
+      <span style="flex-shrink:0;font-size:12px;font-weight:800;color:var(--coffee)">싸커피 회원증</span>
+      <span style="font-size:11.5px;color:var(--muted);min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">제휴 가게에서 보여주세요</span>
+      <span style="margin-left:auto;flex-shrink:0;font-size:12px;font-weight:800;color:var(--accent)">열기 →</span>
+    </button>` : '';
+  let html = seasonBanner + lgApplyHome + dash + passHome + badgeHome + voteHome + dash2 + uniHome + `<div class="section-title">다가오는 매치</div>`;
   html += sessions.length > 1
     ? `<div class="sess-carousel" id="sessCarousel" onscroll="updateSessDots()">${sessCards.join('')}</div>
        <div class="sess-dots">
@@ -2944,6 +2951,74 @@ async function showMyBadges(){
     <div class="mm-head"><div class="mm-name">${b.year} 뱃지</div><button class="mm-x" onclick="closeMemberCard()">×</button></div>
     ${badgeItemsHtml(b)}
   </div></div>`;
+}
+/* ---------- 회원증 (멤버십 카드) — 제휴 가게에서 보여주는 용도 ----------
+   ⚠️ 화면 캡처 위조는 어떤 방법으로도 완전히 막을 수 없다(스크린샷을 남에게 보내면 그만).
+      그래서 '차단'이 아니라 '육안 판별'로 설계했다 — 서로 반대 방향으로 계속 흐르는 홀로그램 띠
+      두 줄(css .mcard::before/::after) + 1초마다 갱신되는 실시간 시계. 정지 화면이면 둘 다 멈춘다.
+      카페 사장님은 앱 설치도 스캔도 필요 없고, 띠가 움직이는지만 보면 된다. (2026-09-18 총괄) */
+const PARTNER_CAFES = [
+  { nm:'도덕과 규범',   area:'마포 상수' },
+  { nm:'로잉 커피',     area:'마포 연남' },
+  { nm:'로잉 커피바',   area:'마포 망원' },
+  { nm:'토니 카페',     area:'용산 효창' },
+  { nm:'카쩨',          area:'서대문 대현' },
+  { nm:'뱅가드 레코드바', area:'마포 공덕' },
+];
+function mcClockStr(){
+  const d = new Date(), z = n => String(n).padStart(2,'0');
+  const w = ['일','월','화','수','목','금','토'][d.getDay()];
+  return `${d.getFullYear()}.${z(d.getMonth()+1)}.${z(d.getDate())} (${w}) ${z(d.getHours())}:${z(d.getMinutes())}:${z(d.getSeconds())}`;
+}
+function showMemberPass(){
+  const me = getMe(); if (me == null) return;
+  const p = PLAYERS.find(x => x.id === me); if (!p) return;
+  const cm = nowMonthStr();
+  const dorm = isDormantFor(p, cm);
+  const eng = (p.eng || (TEAM_SHEET_SEED[p.name]||{}).eng || '').toUpperCase();
+  const no = (p.jersey != null) ? p.jersey : '–';
+  const since = p.joinDate ? p.joinDate.slice(0,7).replace('-', '.') : '';
+  const lgT = leagueTeamOf(squadMonth(), me);
+  let h = document.getElementById('mmHost');
+  if (!h) { h = document.createElement('div'); h.id = 'mmHost'; document.body.appendChild(h); }
+  h.innerHTML = `<div class="mm-back" onclick="if(event.target===this)closeMemberCard()"><div class="mm-box">
+    <div class="mm-head"><div class="mm-name">회원증</div><button class="mm-x" onclick="closeMemberCard()">×</button></div>
+    <div class="mc-wrap" style="margin-top:10px">
+      <div class="mcard">
+        <div class="mc-in">
+          <div class="mc-top">
+            <div>
+              <div class="mc-mark">SOCCOFFEE</div>
+              <div class="mc-est">MEMBER PASS · EST. 2024</div>
+            </div>
+            <span class="mc-state${dorm?' off':''}">${dorm?'휴면':'활동 중'}</span>
+          </div>
+          <div class="mc-body">
+            <div class="mc-no">${no}</div>
+            <div class="mc-nm">
+              <b>${esc(p.name)}</b>
+              <span>${esc(eng || '싸커피 멤버')}${lgT?` · ${lgT}`:''}</span>
+            </div>
+          </div>
+          <div class="mc-foot">
+            <span class="mc-since">${since?`MEMBER SINCE ${since}`:'SOCCOFFEE MEMBER'}</span>
+            <span class="mc-clock" id="mcClock">${mcClockStr()}</span>
+          </div>
+        </div>
+      </div>
+      <p class="mc-hint">띠가 계속 움직이고 시계 초가 흐르면 진짜 회원증이에요. 캡처 화면은 멈춰 있어요.</p>
+      <div class="mc-cafes">
+        <b>제휴 가게</b>
+        ${PARTNER_CAFES.map(c=>`<div class="mc-cafe">${esc(c.nm)}<span>${esc(c.area)}</span></div>`).join('')}
+      </div>
+    </div>
+  </div></div>`;
+  // 시계는 모달이 사라지면 스스로 멈춘다(닫기 경로가 여러 개라 엘리먼트 존재로 판정)
+  const t = setInterval(() => {
+    const el = document.getElementById('mcClock');
+    if (!el) { clearInterval(t); return; }
+    el.textContent = mcClockStr();
+  }, 1000);
 }
 async function memberStats(id, joinDate){
   const st = { join: joinDate || null, months: monthsSince(joinDate), att: 0, rate: null, r3: null, win: null };

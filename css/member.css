@@ -925,3 +925,58 @@
   .bp-sec { font-size:11px; font-weight:800; color:var(--muted); letter-spacing:.05em;
     padding:10px 0 2px; border-top:1px solid var(--line); margin-top:6px; }
   .bell-panel { max-height:70vh; overflow-y:auto; }
+
+  /* ===== 회원증 (멤버십 카드) =====
+     가게에서 보여주는 용도. 화면 캡처 위조는 완전히 막을 수 없으므로,
+     '계속 움직이는 홀로그램 띠 + 실시간 초시계'로 정지 화면을 육안 판별하게 한다.
+     ⚠️ prefers-reduced-motion에서도 애니메이션을 끄지 않는다 — 여기선 모션이 기능 자체다(속도만 늦춤). */
+  .mc-wrap { width:100%; }
+  .mcard { position:relative; overflow:hidden; border-radius:18px; padding:18px 18px 14px;
+    background:linear-gradient(158deg,#22412e 0%,#172d1e 52%,#101d16 100%);
+    border:1px solid var(--line); box-shadow:0 14px 40px rgba(0,0,0,.55); isolation:isolate; }
+  /* 굵은 띠 — 좌→우 */
+  .mcard::before { content:''; position:absolute; inset:-50% -70%; z-index:1; pointer-events:none;
+    background:linear-gradient(112deg, transparent 40%,
+      rgba(236,230,210,.03) 44%, rgba(236,230,210,.26) 48.5%,
+      rgba(90,146,119,.34) 50%, rgba(221,214,182,.26) 51.5%,
+      rgba(236,230,210,.03) 56%, transparent 60%);
+    animation:mcSweep 3.4s linear infinite; }
+  /* 가는 띠 — 우→좌 (반대 방향이라 정지 화면과 확실히 구분된다) */
+  .mcard::after { content:''; position:absolute; inset:-50% -70%; z-index:1; pointer-events:none;
+    background:linear-gradient(68deg, transparent 45%,
+      rgba(236,230,210,.16) 49.4%, rgba(236,230,210,.22) 50%, rgba(236,230,210,.16) 50.6%,
+      transparent 55%);
+    animation:mcSweepB 5.1s linear infinite; }
+  @keyframes mcSweep  { 0%{transform:translateX(-58%)} 100%{transform:translateX(58%)} }
+  @keyframes mcSweepB { 0%{transform:translateX(58%)}  100%{transform:translateX(-58%)} }
+  @media (prefers-reduced-motion: reduce) {
+    .mcard::before { animation-duration:7s; }
+    .mcard::after  { animation-duration:10s; }
+  }
+  .mc-in { position:relative; z-index:2; }
+  .mc-top { display:flex; align-items:flex-start; justify-content:space-between; gap:10px; }
+  .mc-mark { font-family:var(--disp); font-size:21px; letter-spacing:.06em; color:var(--gold-bright); line-height:1; }
+  .mc-est { font-size:9.5px; font-weight:800; letter-spacing:.14em; color:var(--muted); margin-top:4px; }
+  .mc-state { font-size:10px; font-weight:800; letter-spacing:.04em; padding:3px 8px; border-radius:999px;
+    white-space:nowrap; background:var(--win-bg); color:var(--win); border:1px solid rgba(90,146,119,.45); }
+  .mc-state.off { background:rgba(164,179,154,.10); color:var(--muted); border-color:var(--line); }
+  .mc-body { display:flex; align-items:flex-end; gap:14px; margin:20px 0 4px; }
+  .mc-no { font-family:var(--disp); font-size:58px; line-height:.82; color:var(--gold-bright); letter-spacing:-.01em; }
+  .mc-nm { min-width:0; }
+  .mc-nm b { display:block; font-size:22px; font-weight:800; color:var(--coffee); letter-spacing:-.01em; }
+  .mc-nm span { display:block; font-size:10.5px; font-weight:700; letter-spacing:.11em; color:var(--muted); margin-top:3px;
+    white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+  /* 좁은 화면에선 시계가 아랫줄로 내려가 잘리지 않게 wrap (360px에서 잘림 발생) */
+  .mc-foot { display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:2px 10px;
+    margin-top:16px; padding-top:11px; border-top:1px solid rgba(236,230,210,.14); }
+  .mc-since { font-size:9.5px; font-weight:800; letter-spacing:.07em; color:var(--muted); white-space:nowrap; }
+  .mc-clock { font-size:12px; font-weight:800; color:var(--coffee); font-variant-numeric:tabular-nums;
+    letter-spacing:.01em; white-space:nowrap; margin-left:auto; }
+  @media (max-width:380px){ .mc-since{ font-size:9px } .mc-clock{ font-size:11px } .mc-no{ font-size:52px } }
+  .mc-hint { font-size:11.5px; color:var(--muted); line-height:1.6; margin:12px 2px 0; }
+  .mc-cafes { margin-top:14px; }
+  .mc-cafes b { display:block; font-size:11px; font-weight:800; letter-spacing:.05em; color:var(--muted); margin-bottom:7px; }
+  .mc-cafe { display:flex; align-items:baseline; gap:8px; font-size:13px; color:var(--coffee);
+    padding:7px 0; border-bottom:1px solid var(--line); text-decoration:none; }
+  .mc-cafe:last-child { border-bottom:none; }
+  .mc-cafe span { font-size:11px; color:var(--muted); margin-left:auto; white-space:nowrap; }

@@ -3101,16 +3101,26 @@ function closeMemberCard(){ mmState=null; const h=document.getElementById('mmHos
     const open = !!(h && h.innerHTML.trim());
     const locked = document.body.style.position === 'fixed';
     if (open && !locked) {
+      // ⚠️ body를 top:-스크롤량 으로 밀면 body 박스가 뷰포트보다 위로 올라가 '아래쪽이 모자란' 박스가 된다.
+      //    iOS WebKit은 position:fixed + overflow:hidden 조상 안의 fixed 자식을 그 조상 박스에 가둬버려서,
+      //    오버레이(.mm-back)·하단 네비·배경(body::before)이 전부 화면 바닥에 못 닿고 스크롤량만큼 띠가 남았다
+      //    (회원증·뱃지 등 모달을 열 때마다 하단에 빈 줄. 2026-09-18 총괄 제보 — 영상으로 확인).
+      //    → body 박스를 top:0/bottom:0 으로 '정확히 뷰포트 크기'로 고정하고,
+      //      스크롤 위치는 안쪽 .wrap 을 음수 margin 으로 밀어서 재현한다(transform은 새 containing block을 만들어 금지).
       lockY = window.scrollY || document.documentElement.scrollTop || 0;
-      document.body.style.top = `-${lockY}px`;
       document.body.style.position = 'fixed';
+      document.body.style.top = '0'; document.body.style.bottom = '0';
       document.body.style.left = '0'; document.body.style.right = '0'; document.body.style.width = '100%';
       document.body.style.overflow = 'hidden';
+      const _w = document.querySelector('.wrap');
+      if (_w) _w.style.marginTop = `-${lockY}px`;
       document.body.classList.add('modal-lock');   // 하단 바가 sticky 기준을 잃고 밀리는 것 방지(CSS에서 fixed 전환)
     } else if (!open && locked) {
-      document.body.style.position = ''; document.body.style.top = '';
+      document.body.style.position = ''; document.body.style.top = ''; document.body.style.bottom = '';
       document.body.style.left = ''; document.body.style.right = ''; document.body.style.width = '';
       document.body.style.overflow = '';
+      const _w = document.querySelector('.wrap');
+      if (_w) _w.style.marginTop = '';
       document.body.classList.remove('modal-lock');
       window.scrollTo(0, lockY);
     }

@@ -3029,7 +3029,6 @@ function showMemberPass(){
           </div>
         </div>
       </div>
-      <p class="mc-hint">띠가 계속 움직이고 시계 초가 흐르면 진짜 회원증이에요. 캡처 화면은 멈춰 있어요.</p>
       <div class="mc-cafes">
         <b>제휴 가게</b>
         ${PARTNERS.map(c=>`<div class="mc-cafe">${esc(c.nm)}<span>${esc(c.benefit || c.area)}</span></div>`).join('')}

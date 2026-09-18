@@ -2960,13 +2960,38 @@ async function showMyBadges(){
 // ⚠️ 여기는 '제휴를 맺은 가게'만 넣는다. 소개 페이지 CAFES 섹션(멤버들이 운영하는 카페·바)과는 다른 목록이고,
 //    멤버 카페라고 전부 참여하는 게 아니다. 혜택도 가게마다 다르므로 benefit에 가게별 문구를 따로 적는다.
 //    (혜택을 뭉뚱그리면 "저 카페도 되는 줄 알았다"는 현장 분쟁이 난다 — 2026-09-18 총괄)
-const PARTNER_CAFES = [
+//    실제 목록은 club_settings.current.partners에 있고, 운영진 탭 '제휴'에서 편집한다.
+//    아래는 설정이 비었을 때만 쓰는 시드다 — 여기를 고쳐 배포하지 말고 운영진 화면에서 바꿀 것.
+const PARTNER_SEED = [
   { nm:'뱅가드 레코드바', area:'마포 공덕', benefit:'' },
 ];
+let PARTNERS = PARTNER_SEED.slice();
 function mcClockStr(){
   const d = new Date(), z = n => String(n).padStart(2,'0');
   const w = ['일','월','화','수','목','금','토'][d.getDay()];
   return `${d.getFullYear()}.${z(d.getMonth()+1)}.${z(d.getDate())} (${w}) ${z(d.getHours())}:${z(d.getMinutes())}:${z(d.getSeconds())}`;
+}
+/* 운영진 '제휴' 탭 — 제휴 가게 편집. 화면의 입력값을 원본으로 삼아(_ptDraft) 추가·삭제 시에도 타이핑이 날아가지 않게 한다. */
+let _ptDraft = null;
+function ptReadInputs(){
+  const base = _ptDraft || PARTNERS;
+  const out = [];
+  for (let i = 0; i < base.length; i++) {
+    const nm = document.getElementById('ptNm'+i), ar = document.getElementById('ptAr'+i), bf = document.getElementById('ptBf'+i);
+    if (!nm) { out.push(Object.assign({}, base[i])); continue; }   // 아직 안 그려졌으면 원본 유지
+    out.push({ nm:nm.value.trim(), area:(ar?ar.value:'').trim(), benefit:(bf?bf.value:'').trim() });
+  }
+  return out;
+}
+async function opsPtAdd(){ if(!isAdmin()) return; _ptDraft = ptReadInputs(); _ptDraft.push({nm:'',area:'',benefit:''}); await rerender(renderOps); }
+async function opsPtDel(i){ if(!isAdmin()) return; const l = ptReadInputs(); l.splice(i,1); _ptDraft = l; await rerender(renderOps); }
+async function opsPtSave(){
+  if(!isAdmin()) return;
+  const list = ptReadInputs().filter(c => c.nm);   // 이름 없는 줄은 저장하지 않는다
+  if (!(await saveSettings({ partners: list }))) return;
+  PARTNERS = list; _ptDraft = null;
+  toast('제휴 가게를 저장했어요');
+  await rerender(renderOps);
 }
 function showMemberPass(){
   const me = getMe(); if (me == null) return;
@@ -3007,7 +3032,7 @@ function showMemberPass(){
       <p class="mc-hint">띠가 계속 움직이고 시계 초가 흐르면 진짜 회원증이에요. 캡처 화면은 멈춰 있어요.</p>
       <div class="mc-cafes">
         <b>제휴 가게</b>
-        ${PARTNER_CAFES.map(c=>`<div class="mc-cafe">${esc(c.nm)}<span>${esc(c.benefit || c.area)}</span></div>`).join('')}
+        ${PARTNERS.map(c=>`<div class="mc-cafe">${esc(c.nm)}<span>${esc(c.benefit || c.area)}</span></div>`).join('')}
         <p class="mc-hint" style="margin-top:8px">여기 적힌 가게에서만 혜택이 적용되고, 혜택 내용은 가게마다 달라요. 제휴 가게는 계속 늘려갈 예정이에요.</p>
       </div>
     </div>
@@ -4488,6 +4513,7 @@ async function renderOps() {
     { key:'vote',    label:'투표' },
     { key:'push',    label:'푸시' },
     { key:'league',  label:'리그' },
+    { key:'partner', label:'제휴' },
     { key:'roster',  label:'설정' },
   ];
   if (!OPS_TABS.some(t => t.key === opsTabSel)) opsTabSel = 'notice';
@@ -4628,6 +4654,25 @@ async function renderOps() {
       ${pinRows}
     </div>`;
 
+  // 제휴 가게 — 회원증에 그대로 노출된다. 코드 배포 없이 여기서 고친다.
+  const _ptList = _ptDraft || PARTNERS;
+  const secPartner = `
+    <p class="hint" style="margin:0 0 12px;line-height:1.6">여기 적은 가게가 <b style="color:#ece6d2">회원증</b>에 그대로 나와요.<br>혜택은 가게마다 달라서 한 줄씩 따로 적어요. 비워두면 지역이 대신 표시돼요.</p>
+    ${_ptList.length ? _ptList.map((c,i)=>`
+      <div style="border:1px solid var(--line);border-radius:12px;padding:10px 12px;margin-bottom:10px">
+        <div class="row">
+          <div class="field" style="margin-bottom:8px"><label>가게 이름</label><input id="ptNm${i}" value="${esc(c.nm||'')}" maxlength="30" placeholder="예: 뱅가드 레코드바"></div>
+          <div class="field" style="margin-bottom:8px"><label>지역</label><input id="ptAr${i}" value="${esc(c.area||'')}" maxlength="20" placeholder="예: 마포 공덕"></div>
+        </div>
+        <div class="field" style="margin-bottom:8px"><label>혜택 <span style="color:var(--muted);font-weight:400">(선택)</span></label><input id="ptBf${i}" value="${esc(c.benefit||'')}" maxlength="40" placeholder="예: 음료 1,000원 할인"></div>
+        <button class="btn ghost sm" style="color:var(--red)" onclick="opsPtDel(${i})">이 가게 삭제</button>
+      </div>`).join('') : `<div class="empty" style="padding:18px 0">등록된 제휴 가게가 없어요.</div>`}
+    <div style="display:flex;gap:8px;margin-top:4px">
+      <button class="btn ghost sm" onclick="opsPtAdd()">+ 가게 추가</button>
+      <button class="btn accent sm" onclick="opsPtSave()">저장</button>
+    </div>
+    <button class="btn ghost sm" style="margin-top:12px" onclick="showMemberPass()">회원증 미리보기</button>`;
+
   const secDues = `
     <button class="btn sm" onclick="switchTab('dues')">회비 현황판 열기</button>`;
 
@@ -4713,7 +4758,7 @@ async function renderOps() {
         <div style="display:flex;gap:6px;flex-wrap:wrap">${_mrBtn('WHITE','WHITE 승')}${_mrBtn('draw','무승부')}${_mrBtn('BLACK','BLACK 승')}${_mr?`<button class="btn ghost sm" style="color:var(--red)" onclick="opsLgResult('${_lgOpsM}',null)">지우기</button>`:''}</div>
       </div>`;
   }
-  const bodyMap = { notice:secNotice, session:secSession, roster:secRoster, dues:secDues, vote:secVote, push:secPush, league:secLeague };
+  const bodyMap = { notice:secNotice, session:secSession, roster:secRoster, dues:secDues, vote:secVote, push:secPush, league:secLeague, partner:secPartner };
 
   el.innerHTML = `
     ${_todoHtml}
@@ -5240,7 +5285,7 @@ async function refreshCurrent(){
     try { const s = await fetchSettings(); teamSplitOn = s.teamSplit !== false; CLUB_PINS = s.pins || {};
       BANK = s.bank || null; SURVEY = s.survey || null; UNIFORM = s.uniform || null; RESULTS = s.results || null;
       GUEST_REQS = s.guestReqs || []; GUEST_EXTRA = s.guestExtra || {}; DUES_CONFIRMED = s.duesConfirmed || {};
-      CAPACITY = s.capacity || {}; LEAGUE = s.league || {}; } catch(e){}
+      CAPACITY = s.capacity || {}; LEAGUE = s.league || {}; PARTNERS = Array.isArray(s.partners) ? s.partners : PARTNER_SEED.slice(); } catch(e){}
     try { await loadCapConfirm(statusMonth()); } catch(e){}
     try { await loadTbDormant(); } catch(e){}
     const fn = TAB_RENDERERS[currentTab()];
@@ -5303,7 +5348,7 @@ async function initApp() {
   if (!((IS_LOCAL || localStorage.getItem(GATE_KEY) === '1') && getMe() != null)) {
     try { populateGate(); showGate(true); } catch (e) {}
   }
-  try { const s = await fetchSettings(); teamSplitOn = s.teamSplit !== false; CLUB_PINS = s.pins || {}; BANK = s.bank || null; SURVEY = s.survey || null; UNIFORM = s.uniform || null; RESULTS = s.results || null; GUEST_REQS = s.guestReqs || []; GUEST_EXTRA = s.guestExtra || {}; DUES_CONFIRMED = s.duesConfirmed || {}; CAPACITY = s.capacity || {}; LEAGUE = s.league || {}; } catch (e) {}
+  try { const s = await fetchSettings(); teamSplitOn = s.teamSplit !== false; CLUB_PINS = s.pins || {}; BANK = s.bank || null; SURVEY = s.survey || null; UNIFORM = s.uniform || null; RESULTS = s.results || null; GUEST_REQS = s.guestReqs || []; GUEST_EXTRA = s.guestExtra || {}; DUES_CONFIRMED = s.duesConfirmed || {}; CAPACITY = s.capacity || {}; LEAGUE = s.league || {}; PARTNERS = Array.isArray(s.partners) ? s.partners : PARTNER_SEED.slice(); } catch (e) {}
   try { await loadCapConfirm(statusMonth()); } catch (e) {}   // 정원제 자리 확인(cap_confirm) — 정원제 달에만 실제 조회
   try { await loadTbDormant(); } catch (e) {}
   try { await rolloverDormancyIfNeeded(); } catch (e) {}   // 15일 이후 다음 달 휴면 자동 롤오버(월 1회)

@@ -2957,8 +2957,9 @@ async function showMyBadges(){
       그래서 '차단'이 아니라 '육안 판별'로 설계했다 — 서로 반대 방향으로 계속 흐르는 홀로그램 띠
       두 줄(css .mcard::before/::after) + 1초마다 갱신되는 실시간 시계. 정지 화면이면 둘 다 멈춘다.
       카페 사장님은 앱 설치도 스캔도 필요 없고, 띠가 움직이는지만 보면 된다. (2026-09-18 총괄) */
-// ⚠️ 여기는 '제휴를 맺은 가게'만 넣는다. 소개 페이지 CAFES 섹션(멤버들이 운영하는 카페·바)과는 다른 목록이다.
-// benefit: 혜택 문구(확정되면 채운다)
+// ⚠️ 여기는 '제휴를 맺은 가게'만 넣는다. 소개 페이지 CAFES 섹션(멤버들이 운영하는 카페·바)과는 다른 목록이고,
+//    멤버 카페라고 전부 참여하는 게 아니다. 혜택도 가게마다 다르므로 benefit에 가게별 문구를 따로 적는다.
+//    (혜택을 뭉뚱그리면 "저 카페도 되는 줄 알았다"는 현장 분쟁이 난다 — 2026-09-18 총괄)
 const PARTNER_CAFES = [
   { nm:'뱅가드 레코드바', area:'마포 공덕', benefit:'' },
 ];
@@ -3007,7 +3008,7 @@ function showMemberPass(){
       <div class="mc-cafes">
         <b>제휴 가게</b>
         ${PARTNER_CAFES.map(c=>`<div class="mc-cafe">${esc(c.nm)}<span>${esc(c.benefit || c.area)}</span></div>`).join('')}
-        <p class="mc-hint" style="margin-top:8px">제휴 가게는 계속 늘려갈 예정이에요.</p>
+        <p class="mc-hint" style="margin-top:8px">여기 적힌 가게에서만 혜택이 적용되고, 혜택 내용은 가게마다 달라요. 제휴 가게는 계속 늘려갈 예정이에요.</p>
       </div>
     </div>
   </div></div>`;

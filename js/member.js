@@ -2262,7 +2262,8 @@ async function renderMore() {
   const draftBtn = `<button class="more-item" onclick="openDraft()"><div class="mi-name">팀 뽑기 (드래프트)</div><div class="mi-desc">감독 2명이 번갈아 팀원 선발 · 팀 리그 현장용</div></button>`;
   // 회원 메뉴 = 카테고리 탭(이용 / 설정)
   const useGrid = memberItems.map(btn).join('') + draftBtn + bankBtn + introLink;   // 이용: FAQ·팀뽑기·회비계좌·소개
-  const setGrid = notifBtn + pinBtn + guideBtn + logoutBtn;                                     // 설정: PIN·홈추가·로그아웃
+  const passBtn = `<button class="more-item" onclick="showMemberPass()"><div class="mi-name">싸커피 회원증</div><div class="mi-desc">제휴 가게에서 보여주는 회원 카드</div></button>`;
+  const setGrid = passBtn + notifBtn + pinBtn + guideBtn + logoutBtn;                           // 설정: 회원증·PIN·홈추가·로그아웃
   const mt = (moreTab === 'set') ? 'set' : 'use';
   const memberTabbed = `<div class="more-tabs">
       <button class="more-tab ${mt==='use'?'on':''}" onclick="setMoreTab('use')">이용</button>
@@ -2385,7 +2386,7 @@ function renderFaq() {
   ];
   const refs = [
     ['로그인 / PIN', ['이름 선택 + <b>PIN 4자리</b>', '첫 로그인 때 PIN 등록', '변경: 더보기 → 내 PIN 변경', '잊으면 운영진에 초기화 요청']],
-    ['회원증', ['홈에서 <b>싸커피 회원증</b> 열어 제휴 가게에 보여주기']],
+    ['회원증', ['<b>더보기 &gt; 설정</b>에서 싸커피 회원증 열어 제휴 가게에 보여주기']],
     ['참석 · 일정', ['홈/일정 탭에서 참석·불참·미정 선택', '홈에서 <b>미응답 일정 개수</b> 알림']],
     ['MVP · 성장 · 감사 투표', ['매월 <b>25일~말일</b> 진행', '1~24일: 지난달 결과 표시', '대상: 그 달 <b>활동 회원</b> · <b>친구·휴면 제외</b>', '세 부문 1표씩 · 제출 후 변경 불가', '감사한 분 부문은 수상·모범생 점수와 무관']],
     ['WHITE / BLACK 팀', ['경기 밸런스용 두 팀', '<b>팀 리그</b> 달: 감독(캡틴)이 팀원 선발', '팀 구분 켠 달엔 이름 옆 팀 표시']],
@@ -2722,13 +2723,8 @@ async function renderHome() {
       }
     }
   } catch(e){}
-  // 회원증 진입 — 제휴 가게에서 바로 열 수 있게 홈 상단에 둔다 (2026-09-18 총괄)
-  const passHome = getMe() != null ? `<button class="card" style="width:100%;box-sizing:border-box;padding:10px 14px;margin-bottom:12px;display:flex;align-items:center;gap:10px;cursor:pointer;font-family:inherit;border:none;text-align:left" onclick="showMemberPass()">
-      <span style="flex-shrink:0;font-size:12px;font-weight:800;color:var(--coffee)">싸커피 회원증</span>
-      <span style="font-size:11.5px;color:var(--muted);min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">제휴 가게에서 보여주세요</span>
-      <span style="margin-left:auto;flex-shrink:0;font-size:12px;font-weight:800;color:var(--accent)">열기 →</span>
-    </button>` : '';
-  let html = seasonBanner + lgApplyHome + dash + passHome + badgeHome + voteHome + dash2 + uniHome + `<div class="section-title">다가오는 매치</div>`;
+  // 회원증은 홈에 두지 않는다 — 제휴가 아직 확정 전이라 노출 최소화, 더보기 > 설정에만 둔다 (2026-09-18 총괄)
+  let html = seasonBanner + lgApplyHome + dash + badgeHome + voteHome + dash2 + uniHome + `<div class="section-title">다가오는 매치</div>`;
   html += sessions.length > 1
     ? `<div class="sess-carousel" id="sessCarousel" onscroll="updateSessDots()">${sessCards.join('')}</div>
        <div class="sess-dots">

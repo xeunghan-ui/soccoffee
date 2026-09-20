@@ -2562,7 +2562,7 @@ async function renderHome() {
         ? `<div style="margin-top:14px;padding-top:14px;border-top:1px solid var(--line)"><div style="font-size:11px;color:var(--muted);font-weight:800;letter-spacing:.04em;margin-bottom:9px">${sessLabel} 참석</div><div style="font-size:12px;color:var(--muted);line-height:1.6">${capBlockMsg('cap-'+targetCapBlk, targetSessMonth)}</div></div>`
       : targetBlockedDues
         ? `<div style="margin-top:14px;padding-top:14px;border-top:1px solid var(--line)"><div style="font-size:11px;color:var(--muted);font-weight:800;letter-spacing:.04em;margin-bottom:9px">${sessLabel} 참석</div><div style="font-size:12px;color:var(--muted);line-height:1.6;margin-bottom:9px">${targetMoNum}월 회비를 납부해야 이 세션에 참석 신청할 수 있어요.</div><button class="btn accent" style="width:100%" onclick="switchTab('dues')">회비 납부하러 가기</button></div>`
-        : `<div style="margin-top:14px;padding-top:14px;border-top:1px solid var(--line)"><div style="font-size:11px;color:var(--muted);font-weight:800;letter-spacing:.04em;margin-bottom:9px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${sessLabel} 참석</div><div style="display:flex;gap:6px">${qbtn('yes','참석','var(--win)','var(--cream)')}${qbtn('no','불참','var(--alert)','var(--cream)')}${qbtn('maybe','미정','var(--accent)','#15281b')}</div></div>`) : '';
+        : `<div style="margin-top:14px;padding-top:14px;border-top:1px solid var(--line)"><div style="font-size:11px;color:var(--muted);font-weight:800;letter-spacing:.04em;margin-bottom:9px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${sessLabel} 참석</div><div style="display:flex;gap:6px">${qbtn('yes','참석','var(--win)','var(--cream)')}${qbtn('no','불참','var(--alert)','var(--cream)')}${qbtn('maybe','미정','var(--accent)','var(--bg)')}</div></div>`) : '';
     const upcomingHtml = myYes.length ? `<div style="margin-top:12px;padding-top:12px;border-top:1px solid var(--line)"><div style="font-size:11px;color:var(--muted);font-weight:800;letter-spacing:.04em;margin-bottom:4px">참석 예정 ${myYes.length}개</div>${myYes.map(s => `<div style="padding:5px 0;font-size:13px;color:var(--cream)"><div style="display:flex;align-items:center;gap:8px"><span style="color:var(--cream);font-size:7px;opacity:.7">●</span><span style="min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(sessChipLabel(s))}</span><span style="margin-left:auto;flex-shrink:0;color:var(--muted);font-size:12px">${s.allDay?'하루 종일':(esc((s.time||'').slice(0,5))+(s.endTime?'–'+esc(s.endTime.slice(0,5)):''))}</span></div>${s.place ? `<div style="margin-left:17px;color:var(--muted);font-size:12px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(s.place)}</div>` : ''}</div>`).join('')}</div>` : '';
     const pendingHtml = pending.length ? `<div style="margin-top:12px;padding-top:12px;border-top:1px solid var(--line)"><button onclick="openAtt('${pending[0].id}')" style="width:100%;text-align:left;cursor:pointer;font-family:inherit;border:none;background:transparent;padding:0;display:flex;align-items:center;justify-content:space-between;gap:10px"><span style="font-size:13px;font-weight:600;color:#ece6d2">미응답한 일정 ${pending.length}개</span><span style="font-size:12px;font-weight:800;color:var(--accent)">응답하기 →</span></button></div>` : '';
     const profileHtml = myProfile
@@ -2595,7 +2595,7 @@ async function renderHome() {
         ${isAdmin()
           ? `<span><b>${c.yes}</b> 참석</span><span><b>${c.no}</b> 불참</span><span><b>${c.maybe}</b> 미정</span><span style="opacity:.6">응답 ${c.responded}/${c.total}</span>`
           : `<span><b>${c.yes}</b> 참석</span><span><b>${c.maybe}</b> 미정</span>`}
-        <span style="margin-left:auto"><a href="#" onclick="openAtt('${s.id}');return false;" style="color:#15281b;text-decoration:underline">참석 체크 →</a></span>
+        <span style="margin-left:auto"><a href="#" onclick="openAtt('${s.id}');return false;" style="color:var(--bg);text-decoration:underline">참석 체크 →</a></span>
       </div>
     </div>`;
   });
@@ -2623,7 +2623,7 @@ async function renderHome() {
     ? `${_lgMoN}월은 <b>팀 리그</b> · 21–23시${_lgMy?` · 내 팀 <b>${_lgMy}</b>`:''}${_lgRes?` · 매치 <b>${_lgRes==='draw'?'무승부':_lgRes+' 승'}</b>`:''}`
     : `${_lgMoN}월은 <b>일반 경기</b> · 21–23시`;
   const seasonBanner = `<div style="display:flex;align-items:center;gap:9px;padding:10px 14px;margin-bottom:12px;border-radius:12px;background:${_lgNow?'rgba(224,165,48,.12)':'transparent'};border:1px solid ${_lgNow?'var(--gold)':'var(--line)'}">
-      <span style="flex-shrink:0;font-size:11px;font-weight:800;letter-spacing:.04em;padding:3px 9px;border-radius:999px;background:${_lgNow?'var(--gold)':'var(--muted)'};color:${_lgNow?'#15281b':'#0d1420'}">${_lgNow?'팀 리그':'일반'}</span>
+      <span style="flex-shrink:0;font-size:11px;font-weight:800;letter-spacing:.04em;padding:3px 9px;border-radius:999px;background:${_lgNow?'var(--gold)':'var(--muted)'};color:${_lgNow?'var(--bg)':'#0d1420'}">${_lgNow?'팀 리그':'일반'}</span>
       <span style="font-size:12.5px;color:var(--cream);line-height:1.4">${_lgTxt}</span>
       ${_lgNow?`<button onclick="showLeagueInfo()" aria-label="팀 리그 안내" style="flex-shrink:0;margin-left:auto;width:19px;height:19px;border-radius:50%;border:1px solid var(--gold);background:transparent;color:var(--gold);font-size:11px;font-weight:800;line-height:1;cursor:pointer;padding:0;font-family:inherit">?</button>`:''}
     </div>`;
@@ -3846,7 +3846,7 @@ async function renderAtt() {
   const _alg = isLeague(sess.date);
   html += `
     <div class="session-card">
-      <span style="display:inline-block;font-size:10px;font-weight:800;padding:2px 8px;border-radius:999px;margin-bottom:6px;background:${_alg?'var(--gold)':'rgba(255,255,255,.12)'};color:${_alg?'#15281b':'var(--cream)'}">${_alg?'팀 리그':'일반'}</span>
+      <span style="display:inline-block;font-size:10px;font-weight:800;padding:2px 8px;border-radius:999px;margin-bottom:6px;background:${_alg?'var(--gold)':'rgba(255,255,255,.12)'};color:${_alg?'var(--bg)':'var(--cream)'}">${_alg?'팀 리그':'일반'}</span>
       <div class="lbl">${sess.label?esc(sess.label):'참석 체크'}</div>
       <div class="when">${fmtSessionDate(sess.date, sess.time, sess.endTime, sess.allDay, sess.endDate)}</div>
       <div class="where">${sessPlaceHtml(sess)}</div>
@@ -4337,7 +4337,7 @@ async function renderDues() {
   }
 
   let html = `
-    <div class="potm-hero" style="background:linear-gradient(135deg,#2f7a4f,#245f3e)">
+    <div class="potm-hero">
       <div class="trophy"></div>
       <h2>${potmMonthLabel(month)} 회비</h2>
       <div class="month">납부 ${paidCount}/${total}명 · 입금확인 ${confirmedCount}명</div>
@@ -4488,7 +4488,7 @@ async function opsTodoHtml(){
       ${_todoItems.length === 0
         ? `<div class="hint" style="margin:6px 0 0">지금 처리할 일이 없어요.</div>`
         : `<div style="display:grid;gap:6px;margin-top:9px">${_todoItems.map(x=>`
-            <button onclick="${x.go}" style="display:flex;justify-content:space-between;align-items:center;gap:10px;width:100%;padding:9px 12px;border-radius:10px;border:1px solid var(--line);background:#18301f;color:var(--cream);font-family:inherit;font-size:13px;font-weight:600;cursor:pointer;text-align:left">
+            <button onclick="${x.go}" style="display:flex;justify-content:space-between;align-items:center;gap:10px;width:100%;padding:9px 12px;border-radius:10px;border:1px solid var(--line);background:var(--card);color:var(--cream);font-family:inherit;font-size:13px;font-weight:600;cursor:pointer;text-align:left">
               <span>${x.label}</span>
               <span style="flex-shrink:0;display:inline-flex;align-items:center;gap:6px"><span class="dues-badge unpaid">${x.n}명</span><span style="color:var(--muted)">→</span></span>
             </button>`).join('')}</div>`}
@@ -4570,7 +4570,7 @@ async function renderOps() {
         let badge = '';
         if (n.publish_at && new Date(n.publish_at) > _now) badge = `<span class="pin-tag" style="background:#7a5b2e;color:#fff">노출예정 ${mdLabel(n.publish_at)}~</span> `;
         else if (n.hide_at && new Date(n.hide_at) < _now) badge = `<span class="pin-tag" style="background:#5b5b5b;color:#fff">노출종료</span> `;
-        else if (n.publish_at || n.hide_at) badge = `<span class="pin-tag" style="background:#3b6b46;color:#fff">노출 ${n.publish_at?mdLabel(n.publish_at):''}~${n.hide_at?mdLabel(n.hide_at):''}</span> `;
+        else if (n.publish_at || n.hide_at) badge = `<span class="pin-tag" style="background:var(--win);color:#fff">노출 ${n.publish_at?mdLabel(n.publish_at):''}~${n.hide_at?mdLabel(n.hide_at):''}</span> `;
         return `<div class="notice ${n.pinned?'pinned':''}">
           <div class="n-top"><div class="n-title">${n.pinned?'<span class="pin-tag">고정</span>':''}${badge}${esc(n.title)}</div><div class="n-date">${noticeWhenLabel(n)}</div></div>
           ${n.body?`<div class="n-body">${linkify(n.body)}</div>`:''}
@@ -4640,7 +4640,7 @@ async function renderOps() {
   let _jr = [];
   try { if (USE_DB) { const { data } = await sb.from('join_requests').select('*').eq('status','pending').order('created_at'); _jr = data||[]; } } catch(e){}
   const _jrHtml = _jr.length ? `
-    <div style="margin:0 0 16px;border-bottom:1px solid #2a3d30;padding-bottom:14px">
+    <div style="margin:0 0 16px;border-bottom:1px solid var(--line);padding-bottom:14px">
       <b style="color:#ece6d2">가입 신청 <span class="cnt-tag">${_jr.length}</span></b>
       <div class="hint" style="margin:2px 0 8px">연락 후 팀빌더에 등록하고 '처리'를 눌러요.</div>
       ${_jr.map(q => `<div class="dues-row"><span class="nm" style="min-width:0">${esc(q.name)} <span class="cnt-tag">${esc(q.gender||'?')}</span>${q.jersey!=null?` <span class="cnt-tag">희망 ${q.jersey}번</span>`:''}<span class="hint" style="display:block;margin:0">${esc(q.phone||'')}${q.note?` · ${esc(q.note)}`:''}</span></span><button class="btn ghost sm" onclick="joinReqDone(${q.id})">처리</button></div>`).join('')}
@@ -4652,7 +4652,7 @@ async function renderOps() {
       <button class="dues-badge toggle ${teamSplitOn?'paid':'unpaid'}" style="flex-shrink:0" onclick="opsToggleTeamSplit()">${teamSplitOn?'사용 중':'미사용'}</button>
     </div>
     <p class="hint" style="margin-top:4px;line-height:1.6">선수 명단·등번호·티어·<b style="color:#ece6d2">휴면</b>은 <b style="color:#ece6d2">팀빌더</b>에서 관리해요(더 자세함).<br>휴면 상태는 팀빌더 데이터를 사이트가 자동으로 읽어 반영합니다.</p>
-    <div style="margin-top:16px;border-top:1px solid #2a3d30;padding-top:14px">
+    <div style="margin-top:16px;border-top:1px solid var(--line);padding-top:14px">
       <b style="color:#ece6d2">PIN 관리 <span class="hint" style="font-weight: 600">(${pinDone}/${pinMembers.length} 설정)</span></b>
       <div class="hint" style="margin:2px 0 10px">초기화하면 그 멤버가 다음 로그인 때 새 PIN을 정해요.</div>
       ${pinRows}
@@ -4751,12 +4751,12 @@ async function renderOps() {
       <div class="hint" style="margin:2px 0 8px">2명 초과 지원 시 여기서 지명해요. 드래프트 캡틴으로 사용.</div>
       ${_capRows}
       ${(_ld.recs||[]).length ? `<div class="hint" style="margin:10px 0 0;line-height:1.8"><b style="color:var(--coffee-2)">회원 추천</b> — 지명은 아래 팀 배정의 별표로<br>${(()=>{const c={};(_ld.recs||[]).forEach(r=>{(c[r.to]=c[r.to]||[]).push(r.by);});const nm=id=>{const p=ROSTER.find(x=>x.id===Number(id));return p?esc(p.name):'#'+id;};return Object.entries(c).sort((a,b)=>b[1].length-a[1].length).map(([id,bys])=>`<b style="color:#ece6d2">${nm(id)} ${bys.length}</b> <span style="opacity:.8">(${bys.map(nm).join(', ')})</span>`).join('<br>');})()}</div>` : ''}
-      <div style="margin-top:16px;border-top:1px solid #2a3d30;padding-top:14px">
+      <div style="margin-top:16px;border-top:1px solid var(--line);padding-top:14px">
         <b style="color:#ece6d2;font-size:13px">팀 배정</b>
         <div class="hint" style="margin:2px 0 8px">버튼을 눌러 미정 → WHITE → BLACK 순환. 드래프트 결과를 여기에 입력하고, 중도 변동도 여기서 조정해요.</div>
         ${_teamRows}
       </div>
-      <div style="margin-top:16px;border-top:1px solid #2a3d30;padding-top:14px">
+      <div style="margin-top:16px;border-top:1px solid var(--line);padding-top:14px">
         <b style="color:#ece6d2;font-size:13px">매치 결과 (월 1매치)</b>
         <div class="hint" style="margin:2px 0 8px">경기 후 결과만 기록해요. 홈 배너에 표시됩니다.</div>
         <div style="display:flex;gap:6px;flex-wrap:wrap">${_mrBtn('WHITE','WHITE 승')}${_mrBtn('draw','무승부')}${_mrBtn('BLACK','BLACK 승')}${_mr?`<button class="btn ghost sm" style="color:var(--red)" onclick="opsLgResult('${_lgOpsM}',null)">지우기</button>`:''}</div>

@@ -2989,6 +2989,27 @@ async function opsPtSave(){
   toast('제휴 가게를 저장했어요');
   await rerender(renderOps);
 }
+// 혜택 문구 파서 — 한 줄에 품목 하나. "맥주 7500→6000" 처럼 화살표(→ ->)가 있으면 정가·할인가로 나눠 보여주고,
+// 없으면("음료 1,000원 할인") 문장 그대로. 가게마다 형식이 달라도 되게 느슨하게 둔다.
+function mcParseBenefit(txt){
+  return String(txt || '').split(/\r?\n/).map(l => l.trim()).filter(Boolean).map(l => {
+    const m = l.match(/^(.*?)\s*([\d,]+)\s*(?:→|->|=>)\s*([\d,]+)\s*원?\s*$/);
+    if (!m) return { text: l };
+    const won = v => Number(String(v).replace(/,/g,'')).toLocaleString('ko-KR');
+    return { name: m[1].trim(), before: won(m[2]), after: won(m[3]) };
+  });
+}
+function mcCafeRow(c, i){
+  const items = mcParseBenefit(c.benefit);
+  if (!items.length) return `<div class="mc-cafe">${esc(c.nm)}<span>${esc(c.area || '')}</span></div>`;
+  const body = items.map(it => it.text
+    ? `<div class="mc-bf"><span class="mc-bf-nm">${esc(it.text)}</span></div>`
+    : `<div class="mc-bf"><span class="mc-bf-nm">${esc(it.name)}</span><span class="mc-bf-pr"><s>${esc(it.before)}</s> <b>${esc(it.after)}원</b></span></div>`).join('');
+  return `<div class="mc-cafe has-bf" onclick="this.classList.toggle('open')">
+      <div class="mc-cafe-hd">${esc(c.nm)}<span>${esc(c.area || '')} <i class="mc-chev">›</i></span></div>
+      <div class="mc-bf-list">${body}</div>
+    </div>`;
+}
 function showMemberPass(){
   const me = getMe(); if (me == null) return;
   const p = PLAYERS.find(x => x.id === me); if (!p) return;
@@ -3027,7 +3048,7 @@ function showMemberPass(){
       </div>
       <div class="mc-cafes">
         <b>제휴 가게</b>
-        ${PARTNERS.map(c=>`<div class="mc-cafe">${esc(c.nm)}<span>${esc(c.benefit || c.area)}</span></div>`).join('')}
+        ${PARTNERS.map((c,i)=>mcCafeRow(c,i)).join('')}
       </div>
     </div>
   </div></div>`;
@@ -4668,7 +4689,7 @@ async function renderOps() {
           <div class="field" style="margin-bottom:8px"><label>가게 이름</label><input id="ptNm${i}" value="${esc(c.nm||'')}" maxlength="30" placeholder="예: 뱅가드 레코드바"></div>
           <div class="field" style="margin-bottom:8px"><label>지역</label><input id="ptAr${i}" value="${esc(c.area||'')}" maxlength="20" placeholder="예: 마포 공덕"></div>
         </div>
-        <div class="field" style="margin-bottom:8px"><label>혜택 <span style="color:var(--muted);font-weight:400">(선택)</span></label><input id="ptBf${i}" value="${esc(c.benefit||'')}" maxlength="40" placeholder="예: 음료 1,000원 할인"></div>
+        <div class="field" style="margin-bottom:8px"><label>혜택 <span style="color:var(--muted);font-weight:400">(선택 · 한 줄에 하나 · "품목 정가→할인가" 또는 문장)</span></label><textarea id="ptBf${i}" rows="3" maxlength="300" placeholder="맥주 7500→6000&#10;글라스와인 12000→10000&#10;또는: 음료 1,000원 할인">${esc(c.benefit||'')}</textarea></div>
         <button class="btn ghost sm" style="color:var(--red)" onclick="opsPtDel(${i})">이 가게 삭제</button>
       </div>`).join('') : `<div class="empty" style="padding:18px 0">등록된 제휴 가게가 없어요.</div>`}
     <div style="display:flex;gap:8px;margin-top:4px">

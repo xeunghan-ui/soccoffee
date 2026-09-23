@@ -985,4 +985,16 @@
   .mc-cafe { display:flex; align-items:baseline; gap:8px; font-size:13px; color:var(--coffee);
     padding:7px 0; border-bottom:1px solid var(--line); text-decoration:none; }
   .mc-cafe:last-child { border-bottom:none; }
-  .mc-cafe span { font-size:11px; color:var(--muted); margin-left:auto; white-space:nowrap; }
+  .mc-cafe > span, .mc-cafe-hd > span { font-size:11px; color:var(--muted); margin-left:auto; white-space:nowrap; }
+  /* 혜택 있는 가게: 줄을 누르면 아래로 펼쳐진다 */
+  .mc-cafe.has-bf { display:block; cursor:pointer; padding:0; }
+  .mc-cafe-hd { display:flex; align-items:baseline; gap:8px; padding:9px 0; }
+  .mc-chev { display:inline-block; font-style:normal; font-weight:800; margin-left:4px; transition:transform .18s; }
+  .mc-cafe.open .mc-chev { transform:rotate(90deg); }
+  .mc-bf-list { display:none; padding:0 0 10px 2px; }
+  .mc-cafe.open .mc-bf-list { display:block; }
+  .mc-bf { display:flex; align-items:baseline; justify-content:space-between; gap:10px; font-size:12.5px; padding:4px 0; }
+  .mc-bf-nm { color:var(--coffee); }
+  .mc-bf-pr { color:var(--muted); font-variant-numeric:tabular-nums; white-space:nowrap; }
+  .mc-bf-pr s { opacity:.7; }
+  .mc-bf-pr b { color:var(--green); font-weight:800; margin-left:2px; }

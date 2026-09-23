@@ -992,6 +992,8 @@
   .mc-chev { display:inline-block; font-style:normal; font-weight:800; margin-left:4px; transition:transform .18s; }
   .mc-cafe.open .mc-chev { transform:rotate(90deg); }
   .mc-bf-list { display:none; padding:0 0 10px 2px; }
+  .mc-addr { display:block; font-size:12px; color:var(--muted); text-decoration:none; padding:2px 0 6px; }
+  a.mc-addr { color:var(--accent); }
   .mc-cafe.open .mc-bf-list { display:block; }
   .mc-bf { display:flex; align-items:baseline; justify-content:space-between; gap:10px; font-size:12.5px; padding:4px 0; }
   .mc-bf-nm { color:var(--coffee); }

@@ -2959,7 +2959,7 @@ async function showMyBadges(){
 //    실제 목록은 club_settings.current.partners에 있고, 운영진 탭 '제휴'에서 편집한다.
 //    아래는 설정이 비었을 때만 쓰는 시드다 — 여기를 고쳐 배포하지 말고 운영진 화면에서 바꿀 것.
 const PARTNER_SEED = [
-  { nm:'뱅가드 레코드바', area:'마포 공덕', benefit:'' },
+  { nm:'뱅가드 레코드바', area:'마포 공덕', addr:'서울 마포구 만리재로 19 1층 3호', url:'https://naver.me/x2jDHprB', benefit:'' },
 ];
 let PARTNERS = PARTNER_SEED.slice();
 function mcClockStr(){
@@ -2973,9 +2973,10 @@ function ptReadInputs(){
   const base = _ptDraft || PARTNERS;
   const out = [];
   for (let i = 0; i < base.length; i++) {
-    const nm = document.getElementById('ptNm'+i), ar = document.getElementById('ptAr'+i), bf = document.getElementById('ptBf'+i);
+    const nm = document.getElementById('ptNm'+i), ar = document.getElementById('ptAr'+i), bf = document.getElementById('ptBf'+i),
+          ad = document.getElementById('ptAd'+i), ur = document.getElementById('ptUr'+i);
     if (!nm) { out.push(Object.assign({}, base[i])); continue; }   // 아직 안 그려졌으면 원본 유지
-    out.push({ nm:nm.value.trim(), area:(ar?ar.value:'').trim(), benefit:(bf?bf.value:'').trim() });
+    out.push({ nm:nm.value.trim(), area:(ar?ar.value:'').trim(), addr:(ad?ad.value:'').trim(), url:(ur?ur.value:'').trim(), benefit:(bf?bf.value:'').trim() });
   }
   return out;
 }
@@ -3001,8 +3002,12 @@ function mcParseBenefit(txt){
 }
 function mcCafeRow(c, i){
   const items = mcParseBenefit(c.benefit);
-  if (!items.length) return `<div class="mc-cafe">${esc(c.nm)}<span>${esc(c.area || '')}</span></div>`;
-  const body = items.map(it => it.text
+  const addrHtml = c.addr
+    ? (c.url ? `<a class="mc-addr" href="${esc(c.url)}" target="_blank" rel="noopener" onclick="event.stopPropagation()">${esc(c.addr)} ↗</a>`
+             : `<div class="mc-addr">${esc(c.addr)}</div>`)
+    : '';
+  if (!items.length && !addrHtml) return `<div class="mc-cafe">${esc(c.nm)}<span>${esc(c.area || '')}</span></div>`;
+  const body = addrHtml + items.map(it => it.text
     ? `<div class="mc-bf"><span class="mc-bf-nm">${esc(it.text)}</span></div>`
     : `<div class="mc-bf"><span class="mc-bf-nm">${esc(it.name)}</span><span class="mc-bf-pr"><s>${esc(it.before)}</s> <b>${esc(it.after)}원</b></span></div>`).join('');
   return `<div class="mc-cafe has-bf" onclick="this.classList.toggle('open')">
@@ -4689,6 +4694,8 @@ async function renderOps() {
           <div class="field" style="margin-bottom:8px"><label>가게 이름</label><input id="ptNm${i}" value="${esc(c.nm||'')}" maxlength="30" placeholder="예: 뱅가드 레코드바"></div>
           <div class="field" style="margin-bottom:8px"><label>지역</label><input id="ptAr${i}" value="${esc(c.area||'')}" maxlength="20" placeholder="예: 마포 공덕"></div>
         </div>
+        <div class="field" style="margin-bottom:8px"><label>주소 <span style="color:var(--muted);font-weight:400">(선택)</span></label><input id="ptAd${i}" value="${esc(c.addr||'')}" maxlength="60" placeholder="예: 서울 마포구 만리재로 19 1층 3호"></div>
+        <div class="field" style="margin-bottom:8px"><label>지도 링크 <span style="color:var(--muted);font-weight:400">(선택 · 네이버 단축 URL)</span></label><input id="ptUr${i}" value="${esc(c.url||'')}" maxlength="120" placeholder="https://naver.me/..."></div>
         <div class="field" style="margin-bottom:8px"><label>혜택 <span style="color:var(--muted);font-weight:400">(선택 · 한 줄에 하나 · "품목 정가→할인가" 또는 문장)</span></label><textarea id="ptBf${i}" rows="3" maxlength="300" placeholder="맥주 7500→6000&#10;글라스와인 12000→10000&#10;또는: 음료 1,000원 할인">${esc(c.benefit||'')}</textarea></div>
         <button class="btn ghost sm" style="color:var(--red)" onclick="opsPtDel(${i})">이 가게 삭제</button>
       </div>`).join('') : `<div class="empty" style="padding:18px 0">등록된 제휴 가게가 없어요.</div>`}

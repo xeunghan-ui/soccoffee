@@ -1032,6 +1032,43 @@ async function loadCapConfirm(m){
 }
 // 자리 확인 기록 — 본인 행만 upsert라 다른 멤버 신청과 충돌하지 않는다.
 // 같은 상태를 다시 눌러도 at(선착순 시각)은 DB 트리거가 유지한다. 시각은 서버 now() 기준(기기 시계 무관).
+// 총괄: 확정된 달의 활동/휴면을 직접 바꾼다 — 세 군데 동시 갱신(2026-09-27 총괄: "25일 지나니까 나도 수정이 불가하더라").
+//  ① current.capacity[m].result.active (정본)  ② cap_confirm 행  ③ 팀빌더 dormantMonths/activeMonths(다음 달 롤오버·기록용)
+async function capAdminSet(m, id, active){
+  if (!isAdmin()) return;
+  const p = PLAYERS.find(x => x.id === id); if (!p) return;
+  if (active) {   // 정원 초과는 막지 않고 경고만 — 총괄 판단(예: 한 명 빠지는 걸 알고 미리 넣는 경우)
+    const r = capResult(m); if (r) {
+      const g = capGender(p), n = PLAYERS.filter(x => r.active.includes(x.id) && capGender(x)===g).length;
+      if (n >= CAP_LIMIT[g] && !confirm(`${g}자 정원(${CAP_LIMIT[g]})이 이미 찼어요. 그래도 ${p.name}을(를) 활동으로 넣을까요?`)) return;
+    }
+  } else if (!confirm(`${p.name}을(를) ${parseInt(m.split('-')[1],10)}월 휴면으로 바꿀까요?`)) return;
+  // ① 확정 명단 — 저장 직전 재조회 후 그 달 result만 갱신
+  let cur = {};
+  try { if (USE_DB){ const {data:row}=await sb.from('club_settings').select('data').eq('id','current').maybeSingle(); cur=(row&&row.data)||{}; } else cur=await fetchSettings(); } catch(e){}
+  const cap = Object.assign({}, cur.capacity || {});
+  const md = Object.assign({}, cap[m] || {});
+  const res = Object.assign({}, md.result || { active: [] });
+  res.active = (res.active || []).filter(i => i !== id); if (active) res.active.push(id);
+  res.adjustedAt = new Date().toISOString(); res.adjustedBy = meName();
+  md.result = res; cap[m] = md; CAPACITY = cap;
+  if (!(await saveSettings({ capacity: cap }))) return;
+  // ② 자리 확인 기록
+  await capRecordConfirm(m, id, active ? 'active' : 'dormant');
+  // ③ 팀빌더 — 영구 휴면이던 사람을 활동으로 올리면 status 도 active 로(복귀)
+  try {
+    const tb = await fetchTeamBuilder();
+    const tp = tb && (tb.players||[]).find(x => x.id === id);
+    if (tp) {
+      let dm = (tp.dormantMonths||[]).filter(x => x !== m), am = (tp.activeMonths||[]).filter(x => x !== m);
+      if (active) { am.push(m); if ((tp.status||'active')==='dormant') tp.status = 'active'; } else dm.push(m);
+      tp.dormantMonths = dm; tp.activeMonths = am;
+      if (await saveTeamBuilder(tb)) { await mergeTbMembers(); await loadTbDormant(); }
+    }
+  } catch(e){}
+  toast(`${p.name} · ${parseInt(m.split('-')[1],10)}월 ${active?'활동':'휴면'}으로 바꿨어요`);
+  await rerender(renderOps);
+}
 async function capRecordConfirm(m, id, state){
   if (!capOn(m)) return true;
   if (USE_DB) {
@@ -4544,6 +4581,7 @@ async function renderOps() {
     { key:'push',    label:'푸시' },
     { key:'league',  label:'리그' },
     { key:'partner', label:'제휴' },
+    { key:'cap',     label:'정원' },
     { key:'roster',  label:'설정' },
   ];
   if (!OPS_TABS.some(t => t.key === opsTabSel)) opsTabSel = 'notice';
@@ -4705,6 +4743,37 @@ async function renderOps() {
     </div>
     <button class="btn ghost sm" style="margin-top:12px" onclick="showMemberPass()">회원증 미리보기</button>`;
 
+  // 정원 — 확정(26일 롤오버) 뒤에도 총괄이 명단을 직접 고친다.
+  // ⚠️ 확정 후엔 isDormantFor 가 result.active 만 보기 때문에 홈 토글·팀빌더 휴면은 그 달에 아무 효과가 없다.
+  //    그래서 여기서 바꾸면 result.active + cap_confirm + 팀빌더(dormantMonths/activeMonths) 세 군데를 한 번에 맞춘다(capAdminSet).
+  const _capM = statusMonth();
+  const _capR = capResult(_capM);
+  let secCap = '';
+  if (!capOn(_capM)) {
+    secCap = `<div class="empty" style="padding:18px 0">정원제 달이 아니에요.</div>`;
+  } else if (!_capR) {
+    secCap = `<p class="hint" style="margin:0 0 10px;line-height:1.6">${parseInt(_capM.split('-')[1],10)}월 명단은 아직 <b style="color:#ece6d2">확정 전</b>이에요(26일 0시 롤오버). 그 전엔 멤버가 홈에서 직접 고르고, 총괄은 팀빌더 휴면으로 조정해요.</p>`;
+  } else {
+    const _all = PLAYERS.filter(p => (p.status||'active')!=='former' && (p.status||'active')!=='friends').sort((a,b)=>a.name.localeCompare(b.name,'ko'));
+    const _in = new Set(_capR.active);
+    const _cnt = g => _all.filter(p => _in.has(p.id) && capGender(p)===g).length;
+    const _mN=_cnt('남'), _fN=_cnt('여');
+    const _over = g => (g==='남'?_mN:_fN) > CAP_LIMIT[g];
+    const row = p => { const on=_in.has(p.id); return `<div class="ops-row" style="padding:8px 0">
+        <div style="min-width:0;display:flex;align-items:center;gap:8px"><b style="color:${on?'#ece6d2':'var(--muted)'}">${esc(p.name)}</b><span class="hint" style="margin:0">${capGender(p)}</span></div>
+        <button class="dues-badge toggle ${on?'paid':'unpaid'}" style="flex-shrink:0" onclick="capAdminSet('${_capM}',${p.id},${on?'false':'true'})">${on?'활동':'휴면'}</button>
+      </div>`; };
+    secCap = `
+      <p class="hint" style="margin:0 0 6px;line-height:1.6">${parseInt(_capM.split('-')[1],10)}월 <b style="color:#ece6d2">확정 명단</b> · 활동 ${_in.size}명
+        <span style="color:${_over('남')?'var(--red)':'var(--muted)'}">남 ${_mN}/${CAP_LIMIT['남']}</span> ·
+        <span style="color:${_over('여')?'var(--red)':'var(--muted)'}">여 ${_fN}/${CAP_LIMIT['여']}</span>${_capR.finalized?' · 최종 확정됨':' · 잠정'}</p>
+      <p class="hint" style="margin:0 0 12px;line-height:1.6">버튼을 누르면 <b style="color:#ece6d2">즉시</b> 바뀌어요 — 확정 명단·자리 확인·팀빌더 휴면이 한 번에 맞춰져요. 회비 환불은 회비 탭에서 따로.</p>
+      <div style="margin-bottom:6px"><b style="font-size:12px;color:#ece6d2">활동 ${_in.size}</b></div>
+      ${_all.filter(p=>_in.has(p.id)).map(row).join('')}
+      <div style="margin:16px 0 6px"><b style="font-size:12px;color:#ece6d2">휴면 ${_all.length-_in.size}</b></div>
+      ${_all.filter(p=>!_in.has(p.id)).map(row).join('')}`;
+  }
+
   const secDues = `
     <button class="btn sm" onclick="switchTab('dues')">회비 현황판 열기</button>`;
 
@@ -4790,7 +4859,7 @@ async function renderOps() {
         <div style="display:flex;gap:6px;flex-wrap:wrap">${_mrBtn('WHITE','WHITE 승')}${_mrBtn('draw','무승부')}${_mrBtn('BLACK','BLACK 승')}${_mr?`<button class="btn ghost sm" style="color:var(--red)" onclick="opsLgResult('${_lgOpsM}',null)">지우기</button>`:''}</div>
       </div>`;
   }
-  const bodyMap = { notice:secNotice, session:secSession, roster:secRoster, dues:secDues, vote:secVote, push:secPush, league:secLeague, partner:secPartner };
+  const bodyMap = { notice:secNotice, session:secSession, roster:secRoster, dues:secDues, vote:secVote, push:secPush, league:secLeague, partner:secPartner, cap:secCap };
 
   el.innerHTML = `
     ${_todoHtml}

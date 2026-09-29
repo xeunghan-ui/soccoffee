@@ -3389,6 +3389,41 @@ function gateNameChanged(){
     ? '등록된 PIN을 입력하세요.'
     : '처음이에요 — 사용할 PIN 4자리를 정해 입력하면 등록돼요.';
 }
+// 신규 온보딩 → 팀빌더 명단 추가. 팀빌더가 새 멤버를 만들 때 쓰는 모양(이찬영 2026-09 등록분 기준)을 그대로 따른다.
+//  id 는 팀빌더와 같은 Date.now() 방식. joinDate 는 오늘. tier 3 기본. status active.
+async function onboardAdd(id){
+  if (!isAdmin()) return;
+  let q = null;
+  try { const { data } = await sb.from('member_onboard').select('*').eq('id', id).maybeSingle(); q = data; } catch(e){}
+  if (!q) { toast('신청을 찾을 수 없어요'); return; }
+  const tb = await fetchTeamBuilder();
+  if (!tb || !Array.isArray(tb.players)) { toast('팀빌더를 불러오지 못했어요'); return; }
+  if (tb.players.some(p => p.name === q.name && (p.status||'active') !== 'former')) { toast(`'${q.name}' 이름이 이미 명단에 있어요 — 팀빌더에서 확인해 주세요`); return; }
+  let jersey = q.jersey;
+  const taken = tb.players.some(p => (p.status||'active')!=='former' && p.jersey!=null && Number(p.jersey)===Number(jersey));
+  if (taken) {
+    const alt = prompt(`${jersey}번은 이미 쓰고 있어요. 다른 번호를 넣어주세요 (비우면 번호 없이 등록)`, '');
+    if (alt === null) return;
+    jersey = /^\d{1,3}$/.test(alt.trim()) ? Number(alt.trim()) : null;
+  }
+  const today = todayStr();
+  tb.players.push({ id: Date.now(), name: q.name, gender: q.gender || '남', tier: 3, status: 'active', joinDate: today,
+    jersey, engName: q.eng_name || '', dormantMonths: [], activeMonths: [],
+    attCount:0, attCountAll:0, attTotal:0, attTotalAll:0, attendance:0, attendanceAll:0, dormancyRate:0, dormancyRateYr:0, lmaCount:0, lmaRate:0, inBalance:true, inPoolForYear:true });
+  if (!(await saveTeamBuilder(tb))) { toast('팀빌더 저장 오류'); return; }
+  await mergeTbMembers(); await loadTbDormant();
+  // 포지션은 프로필(current.profiles)에 미리 넣어둔다 — 본인이 홈에서 바꿀 수 있음
+  if (q.position) { try { const st = await fetchSettings(); const prof = Object.assign({}, st.profiles || {}); const me = PLAYERS.find(p => p.name === q.name); if (me) { prof[me.id] = Object.assign({}, prof[me.id] || {}, { pos: q.position }); await saveSettings({ profiles: prof }); } } catch(e){} }
+  try { await sb.from('member_onboard').update({ status:'done' }).eq('id', id); } catch(e){}
+  toast(`${q.name} 명단에 추가했어요 — 이제 로그인할 수 있어요`);
+  await rerender(renderOps);
+}
+async function onboardDone(id){
+  if (!isAdmin()) return;
+  if (!confirm('명단에 추가하지 않고 목록에서만 내릴까요?')) return;
+  try { await sb.from('member_onboard').update({ status:'done' }).eq('id', id); } catch(e){ toast('처리 중 오류'); return; }
+  rerender(renderOps);
+}
 // 가입 신청 처리(운영진) — 연락·등록을 마친 신청을 목록에서 내린다
 async function joinReqDone(id){
   if (!isAdmin()) return;
@@ -4531,6 +4566,7 @@ async function opsTodoHtml(){
   const _pinMissing = PLAYERS.filter(p => p.status !== 'former' && !CLUB_PINS[p.id]).length;
   let _joinPend = 0;
   try { if (USE_DB) { const { data } = await sb.from('join_requests').select('id').eq('status','pending'); _joinPend = (data||[]).length; } } catch(e){}
+  try { if (USE_DB) { const { data } = await sb.from('member_onboard').select('id').eq('status','pending'); _joinPend += (data||[]).length; } } catch(e){}
   const _vPool = votingMembers(month);
   const _vDone = new Set(votesMvp.concat(votesGrowth, votesThanks).map(v=>v.voter_id));
   const _vMissing = _vPool.filter(m=>!_vDone.has(m.id));
@@ -4542,7 +4578,7 @@ async function opsTodoHtml(){
     { n:_duesRows.filter(r => r.paid && !isDuesConfirmed(_dm, r.member_id) && _dMemberIds.has(r.member_id)).length, label:parseInt(_dm.split('-')[1])+'월 입금확인 대기', go:"switchTab('dues')" },
     { n:isVotingOpen() ? _vMissing.length : 0,   label:'이달 투표 미참여', go:"opsSwitch('vote')" },   // 투표 창(25일~)이 열린 뒤에만 할 일
     { n:_guestPend,         label:'게스트 신청 대기', go:"switchTab('att')" },
-    { n:_joinPend,          label:'가입 신청 대기', go:"opsSwitch('roster')" },
+    { n:_joinPend,          label:'가입 신청·신규 등록 대기', go:"opsSwitch('roster')" },
     { n:_pinMissing,        label:'PIN 미설정(미로그인)', go:"opsSwitch('roster')" },
   ].filter(x => x.n > 0);
   const _todoHtml = `
@@ -4701,6 +4737,22 @@ async function renderOps() {
   const pinRows = pinMembers.map(p=>`<div class="dues-row"><span class="nm">${esc(p.name)}</span>${CLUB_PINS[p.id]
       ? `<span class="dues-badge paid">설정됨</span> <button class="btn ghost sm" onclick="resetPin(${p.id})">초기화</button>`
       : `<span class="dues-badge unpaid">미설정</span>`}</div>`).join('');
+  // 신규 멤버 온보딩(/welcome/) 제출 — '명단에 추가' 한 번으로 팀빌더 등록까지 (2026-09-29 총괄)
+  let _ob = [];
+  try { if (USE_DB) { const { data } = await sb.from('member_onboard').select('*').eq('status','pending').order('created_at'); _ob = data||[]; } } catch(e){}
+  const _usedJ = new Set(PLAYERS.filter(p => (p.status||'active')!=='former' && p.jersey!=null).map(p => Number(p.jersey)));
+  const _obHtml = _ob.length ? `
+    <div style="margin:0 0 16px;border-bottom:1px solid var(--line);padding-bottom:14px">
+      <b style="color:#ece6d2">신규 등록 대기 <span class="cnt-tag">${_ob.length}</span></b>
+      <div class="hint" style="margin:2px 0 8px">환영 페이지(/welcome/)로 들어온 정보예요. '명단에 추가'를 누르면 팀빌더에 바로 올라가고 로그인이 열려요.</div>
+      ${_ob.map(q => { const dup = q.jersey!=null && _usedJ.has(Number(q.jersey)); return `<div class="dues-row" style="align-items:flex-start">
+        <span class="nm" style="min-width:0;flex:1">${esc(q.name)} <span class="cnt-tag">${esc(q.gender||'?')}</span>${q.jersey!=null?` <span class="cnt-tag" style="${dup?'color:var(--red)':''}">${q.jersey}번${dup?' 중복':''}</span>`:''}
+          <span class="hint" style="display:block;margin:2px 0 0">${esc(q.eng_name||'')}${q.position?` · ${esc(q.position)}`:''} · <a href="tel:${esc(String(q.phone||'').replace(/[^0-9+]/g,''))}" style="color:var(--accent)">${esc(q.phone||'')}</a>${q.note?`<br>${esc(q.note)}`:''}</span></span>
+        <span style="display:flex;flex-direction:column;gap:6px;flex-shrink:0">
+          <button class="btn accent sm" onclick="onboardAdd(${q.id})">명단에 추가</button>
+          <button class="btn ghost sm" onclick="onboardDone(${q.id})">그냥 처리</button>
+        </span></div>`; }).join('')}
+    </div>` : '';
   let _jr = [];
   try { if (USE_DB) { const { data } = await sb.from('join_requests').select('*').eq('status','pending').order('created_at'); _jr = data||[]; } } catch(e){}
   const _jrHtml = _jr.length ? `
@@ -4710,6 +4762,7 @@ async function renderOps() {
       ${_jr.map(q => `<div class="dues-row"><span class="nm" style="min-width:0">${esc(q.name)} <span class="cnt-tag">${esc(q.gender||'?')}</span>${q.jersey!=null?` <span class="cnt-tag">희망 ${q.jersey}번</span>`:''}<span class="hint" style="display:block;margin:0">${esc(q.phone||'')}${q.note?` · ${esc(q.note)}`:''}</span></span><button class="btn ghost sm" onclick="joinReqDone(${q.id})">처리</button></div>`).join('')}
     </div>` : '';
   const secRoster = `
+    ${_obHtml}
     ${_jrHtml}
     <div class="ops-row" style="border:none;padding:0 0 12px">
       <div style="min-width:0"><b style="color:#ece6d2">이번 달 팀 구분 (WHITE/BLACK)</b><div class="hint" style="margin:0">끄면 홈·참석이 전체 명단으로 표시돼요</div></div>

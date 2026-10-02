@@ -4745,13 +4745,13 @@ async function renderOps() {
     <div style="margin:0 0 16px;border-bottom:1px solid var(--line);padding-bottom:14px">
       <b style="color:#ece6d2">신규 등록 대기 <span class="cnt-tag">${_ob.length}</span></b>
       <div class="hint" style="margin:2px 0 8px">환영 페이지(/welcome/)로 들어온 정보예요. '명단에 추가'를 누르면 팀빌더에 바로 올라가고 로그인이 열려요.</div>
-      ${_ob.map(q => { const dup = q.jersey!=null && _usedJ.has(Number(q.jersey)); return `<div class="dues-row" style="align-items:flex-start">
-        <span class="nm" style="min-width:0;flex:1">${esc(q.name)} <span class="cnt-tag">${esc(q.gender||'?')}</span>${q.jersey!=null?` <span class="cnt-tag" style="${dup?'color:var(--red)':''}">${q.jersey}번${dup?' 중복':''}</span>`:''}
-          <span class="hint" style="display:block;margin:2px 0 0">${esc(q.eng_name||'')}${q.position?` · ${esc(q.position)}`:''} · <a href="tel:${esc(String(q.phone||'').replace(/[^0-9+]/g,''))}" style="color:var(--accent)">${esc(q.phone||'')}</a>${q.note?`<br>${esc(q.note)}`:''}</span></span>
-        <span style="display:flex;flex-direction:column;gap:6px;flex-shrink:0">
-          <button class="btn accent sm" onclick="onboardAdd(${q.id})">명단에 추가</button>
-          <button class="btn ghost sm" onclick="onboardDone(${q.id})">그냥 처리</button>
-        </span></div>`; }).join('')}
+      ${_ob.map(q => { const dup = q.jersey!=null && _usedJ.has(Number(q.jersey)); return `<div style="padding:10px 0;border-bottom:1px solid var(--line)">
+        <div style="font-size:14px;font-weight:700;color:#ece6d2">${esc(q.name)} <span class="cnt-tag">${esc(q.gender||'?')}</span>${q.jersey!=null?` <span class="cnt-tag" style="${dup?'color:var(--red)':''}">${q.jersey}번${dup?' 중복':''}</span>`:''}</div>
+        <div class="hint" style="margin:3px 0 0;line-height:1.6">${esc(q.eng_name||'')}${q.position?` · ${esc(q.position)}`:''} · <a href="tel:${esc(String(q.phone||'').replace(/[^0-9+]/g,''))}" style="color:var(--accent)">${esc(q.phone||'')}</a>${q.note?`<br>${esc(q.note)}`:''}</div>
+        <div style="display:flex;gap:8px;margin-top:10px">
+          <button type="button" class="btn accent sm" style="flex:1" onclick="onboardAdd(${q.id})">명단에 추가</button>
+          <button type="button" class="btn ghost sm" style="flex:1" onclick="onboardDone(${q.id})">그냥 처리</button>
+        </div></div>`; }).join('')}
     </div>` : '';
   let _jr = [];
   try { if (USE_DB) { const { data } = await sb.from('join_requests').select('*').eq('status','pending').order('created_at'); _jr = data||[]; } } catch(e){}

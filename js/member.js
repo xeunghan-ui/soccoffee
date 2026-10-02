@@ -2845,7 +2845,7 @@ async function renderSquad() {
   const chip = p => {
     const rc = '';   // 역할 색 구분 제거
     const sk = hasProfile(p.id) ? ' has-skill' : '';
-    const wb = `${(w.mvp||[]).includes(p.id)?'<span class="win-badge mvp" style="flex-shrink:0">MVP</span>':''}${(w.growth||[]).includes(p.id)?'<span class="win-badge grow" style="flex-shrink:0">성장</span>':''}${(w.thanks||[]).includes(p.id)?'<span class="win-badge tx" style="flex-shrink:0">TX</span>':''}`;
+    const wb = `${isNewMember(p, month)?'<span class="win-badge new" style="flex-shrink:0">신규</span>':''}${(w.mvp||[]).includes(p.id)?'<span class="win-badge mvp" style="flex-shrink:0">MVP</span>':''}${(w.growth||[]).includes(p.id)?'<span class="win-badge grow" style="flex-shrink:0">성장</span>':''}${(w.thanks||[]).includes(p.id)?'<span class="win-badge tx" style="flex-shrink:0">TX</span>':''}`;
     // 수상 뱃지는 오른편에 '세로로 쌓아서' — 2열 그리드(폰에서 칩 폭 ~170px)에서 MVP+성장 두 개가 가로로 붙으면 이름이 '김…'으로 잘렸다(2026-10-02 총괄, 김균원)
     return `<button class="sq-chip${rc}${sk}" onclick="openMemberCard(${p.id})"><span class="sq-no">${p.jersey!=null?p.jersey:'–'}</span><span class="sq-nm">${esc(p.name)}</span>${wb?`<span class="sq-wb">${wb}</span>`:''}<span class="sq-dot" title="${hasProfile(p.id)?'프로필 있음':'프로필 없음'}"></span></button>`;
   };
@@ -3792,6 +3792,14 @@ function monthsBetween(aIso, bIso) {
   return Math.max(0, m);
 }
 // 가입일로부터 함께한 개월 수
+// 신규 회원 표시 — 가입한 달과 그 다음 달까지 '신규'(예: 9/28 가입 → 10월 말까지). 멤버 현황 칩 뱃지에 사용(2026-10-02 총괄)
+function isNewMember(p, monthStr){
+  const jd = p && p.joinDate; if (!jd || /^(former|friends)$/.test(p.status||'')) return false;
+  const [jy, jm] = jd.slice(0,7).split('-').map(Number);
+  const [y, m] = (monthStr || nowMonthStr()).split('-').map(Number);
+  const diff = (y - jy) * 12 + (m - jm);
+  return diff >= 0 && diff <= 1;
+}
 function monthsSince(iso) {
   if (!iso) return 0;
   const j = new Date(iso); if (isNaN(j)) return 0;

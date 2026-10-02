@@ -4578,8 +4578,8 @@ async function opsTodoHtml(){
     { n:_duesRows.filter(r => r.paid && !isDuesConfirmed(_dm, r.member_id) && _dMemberIds.has(r.member_id)).length, label:parseInt(_dm.split('-')[1])+'월 입금확인 대기', go:"switchTab('dues')" },
     { n:isVotingOpen() ? _vMissing.length : 0,   label:'이달 투표 미참여', go:"opsSwitch('vote')" },   // 투표 창(25일~)이 열린 뒤에만 할 일
     { n:_guestPend,         label:'게스트 신청 대기', go:"switchTab('att')" },
-    { n:_joinPend,          label:'가입 신청·신규 등록 대기', go:"opsSwitch('roster')" },
-    { n:_pinMissing,        label:'PIN 미설정(미로그인)', go:"opsSwitch('roster')" },
+    { n:_joinPend,          label:'가입 신청·신규 등록 대기', go:"opsSwitch('roster','opsJoinSec')" },
+    { n:_pinMissing,        label:'PIN 미설정(미로그인)', go:"opsSwitch('roster','opsPinSec')" },
   ].filter(x => x.n > 0);
   const _todoHtml = `
     <div class="card" style="padding:13px 16px;margin-bottom:12px">
@@ -4762,15 +4762,14 @@ async function renderOps() {
       ${_jr.map(q => `<div class="dues-row"><span class="nm" style="min-width:0">${esc(q.name)} <span class="cnt-tag">${esc(q.gender||'?')}</span>${q.jersey!=null?` <span class="cnt-tag">희망 ${q.jersey}번</span>`:''}<span class="hint" style="display:block;margin:0">${esc(q.phone||'')}${q.note?` · ${esc(q.note)}`:''}</span></span><button class="btn ghost sm" onclick="joinReqDone(${q.id})">처리</button></div>`).join('')}
     </div>` : '';
   const secRoster = `
-    ${_obHtml}
-    ${_jrHtml}
+    <div id="opsJoinSec" style="border-radius:12px">${_obHtml}${_jrHtml}${(!_obHtml && !_jrHtml) ? '' : ''}</div>
     <div class="ops-row" style="border:none;padding:0 0 12px">
       <div style="min-width:0"><b style="color:#ece6d2">이번 달 팀 구분 (WHITE/BLACK)</b><div class="hint" style="margin:0">끄면 홈·참석이 전체 명단으로 표시돼요</div></div>
       <button class="dues-badge toggle ${teamSplitOn?'paid':'unpaid'}" style="flex-shrink:0" onclick="opsToggleTeamSplit()">${teamSplitOn?'사용 중':'미사용'}</button>
     </div>
     <p class="hint" style="margin-top:4px;line-height:1.6">선수 명단·등번호·티어·<b style="color:#ece6d2">휴면</b>은 <b style="color:#ece6d2">팀빌더</b>에서 관리해요(더 자세함).<br>휴면 상태는 팀빌더 데이터를 사이트가 자동으로 읽어 반영합니다.</p>
     <div style="margin-top:16px;border-top:1px solid var(--line);padding-top:14px">
-      <b style="color:#ece6d2">PIN 관리 <span class="hint" style="font-weight: 600">(${pinDone}/${pinMembers.length} 설정)</span></b>
+      <b id="opsPinSec" style="color:#ece6d2">PIN 관리 <span class="hint" style="font-weight: 600">(${pinDone}/${pinMembers.length} 설정)</span></b>
       <div class="hint" style="margin:2px 0 10px">초기화하면 그 멤버가 다음 로그인 때 새 PIN을 정해요.</div>
       ${pinRows}
     </div>`;
@@ -4962,11 +4961,13 @@ let opsTabSel = 'notice';
 // 운영진 탭 안에서 서브탭 전환. 더보기(할 일)에서도 호출되는데, 거기선 운영진 패널이 숨겨져 있어
 // rerender 만 하면 화면상 아무 일도 안 일어난다(2026-10-02 총괄: "할 일에 가입 신청 대기 뜨는데 클릭이 안 됨").
 // → 운영진 탭이 열려 있지 않으면 탭 전환까지 한다.
-function opsSwitch(key){
+async function opsSwitch(key, anchor){
   opsTabSel = key;
   const opsEl = document.getElementById('tab-ops');
-  if (!opsEl || opsEl.classList.contains('hidden')) { switchTab('ops'); return; }
-  rerender(renderOps);
+  if (!opsEl || opsEl.classList.contains('hidden')) switchTab('ops');
+  else await rerender(renderOps);
+  // 할 일에서 왔으면 그 섹션까지 내려간다 — 서브탭이 이미 열려 있으면 화면이 안 바뀌어 '클릭이 안 된다'로 보였다(2026-10-02)
+  if (anchor) setTimeout(() => { const a = document.getElementById(anchor); if (a) { a.scrollIntoView({ behavior:'smooth', block:'start' }); a.style.transition='box-shadow .3s'; a.style.boxShadow='0 0 0 2px var(--accent)'; setTimeout(()=>{ a.style.boxShadow=''; }, 1600); } }, 350);
 }
 // 더보기에서 특정 운영진 기능으로 바로 진입
 function openOps(sub){ if(!isAdmin()) return; if(sub) opsTabSel = sub; switchTab('ops'); }

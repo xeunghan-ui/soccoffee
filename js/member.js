@@ -4959,7 +4959,15 @@ async function opsToggleTeamSplit() {
 
 /* ---------- 운영진 내부 서브탭 ---------- */
 let opsTabSel = 'notice';
-function opsSwitch(key){ opsTabSel = key; rerender(renderOps); }
+// 운영진 탭 안에서 서브탭 전환. 더보기(할 일)에서도 호출되는데, 거기선 운영진 패널이 숨겨져 있어
+// rerender 만 하면 화면상 아무 일도 안 일어난다(2026-10-02 총괄: "할 일에 가입 신청 대기 뜨는데 클릭이 안 됨").
+// → 운영진 탭이 열려 있지 않으면 탭 전환까지 한다.
+function opsSwitch(key){
+  opsTabSel = key;
+  const opsEl = document.getElementById('tab-ops');
+  if (!opsEl || opsEl.classList.contains('hidden')) { switchTab('ops'); return; }
+  rerender(renderOps);
+}
 // 더보기에서 특정 운영진 기능으로 바로 진입
 function openOps(sub){ if(!isAdmin()) return; if(sub) opsTabSel = sub; switchTab('ops'); }
 

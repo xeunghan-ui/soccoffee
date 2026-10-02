@@ -2846,7 +2846,8 @@ async function renderSquad() {
     const rc = '';   // 역할 색 구분 제거
     const sk = hasProfile(p.id) ? ' has-skill' : '';
     const wb = `${(w.mvp||[]).includes(p.id)?'<span class="win-badge mvp" style="flex-shrink:0">MVP</span>':''}${(w.growth||[]).includes(p.id)?'<span class="win-badge grow" style="flex-shrink:0">성장</span>':''}${(w.thanks||[]).includes(p.id)?'<span class="win-badge tx" style="flex-shrink:0">TX</span>':''}`;
-    return `<button class="sq-chip${rc}${sk}" onclick="openMemberCard(${p.id})"><span class="sq-no">${p.jersey!=null?p.jersey:'–'}</span><span class="sq-nm">${esc(p.name)}</span>${wb}<span class="sq-dot" title="${hasProfile(p.id)?'프로필 있음':'프로필 없음'}"></span></button>`;
+    // 수상 뱃지는 이름 '아래 줄'에 — 2열 그리드(폰에서 칩 폭 ~170px)에서 MVP+성장 두 개가 옆에 붙으면 이름이 '김…'으로 잘렸다(2026-10-02 총괄, 김균원)
+    return `<button class="sq-chip${rc}${sk}" onclick="openMemberCard(${p.id})"><span class="sq-no">${p.jersey!=null?p.jersey:'–'}</span><span class="sq-mid"><span class="sq-nm">${esc(p.name)}</span>${wb?`<span class="sq-wb">${wb}</span>`:''}</span><span class="sq-dot" title="${hasProfile(p.id)?'프로필 있음':'프로필 없음'}"></span></button>`;
   };
   const staff = players.filter(p => (MEMBER_ROLES[p.name]||{}).type==='admin').sort(sortJ);   // 운영진 = admin 역할만(김균원·조은애·김이연 제외)
   const gridOf = (arr, dim) => arr.length ? `<div class="sq-grid${dim?' dim':''}">${arr.map(chip).join('')}</div>` : '<div class="empty" style="font-size:13px;padding:20px 0;text-align:center">해당 인원이 없어요.</div>';

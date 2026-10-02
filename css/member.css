@@ -823,9 +823,8 @@
   .sq-chip.role-admin { border-color: var(--accent); background: rgba(221,214,182,.10); }
   .sq-chip.role-other { border-color: var(--win); background: rgba(90,146,119,.12); }
   .sq-no { font-family: var(--disp); font-size: 19px; color: var(--accent); min-width: 26px; text-align: center; flex-shrink: 0; }
-  .sq-mid { flex: 1; min-width: 0; display: flex; flex-direction: column; align-items: flex-start; gap: 3px; }
-  .sq-nm { font-size: 14px; font-weight: 600; color: var(--cream); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 100%; }
-  .sq-wb { display: flex; flex-wrap: wrap; gap: 4px; }
+  .sq-nm { font-size: 14px; font-weight: 600; color: var(--cream); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; flex: 1; min-width: 0; }
+  .sq-wb { display: flex; flex-direction: column; align-items: flex-end; gap: 2px; flex-shrink: 0; }   /* 수상 뱃지 오른편 세로 쌓기 */
   .sq-wb .win-badge { font-size: 9px; padding: 0 5px; line-height: 15px; }
   .sq-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; margin-left: 4px; border: 1.5px solid var(--muted); box-sizing: border-box; }
   .sq-chip.has-skill .sq-dot { background: var(--green); border-color: var(--green); }

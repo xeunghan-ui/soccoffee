@@ -2324,6 +2324,8 @@ async function renderMore() {
   } else {
     html += memberTabbed;
   }
+  // 버전 표시 + 새로고침 — "폰에서 안 된다"일 때 어느 버전을 돌리는지 바로 보고, 홈 화면 앱엔 새로고침 버튼이 없어서(2026-10-02)
+  html += `<div class="hint" style="text-align:center;margin:22px 0 4px;font-size:11px">앱 버전 ${esc(APP_VER || '-')} · <button type="button" onclick="forceReload()" style="background:none;border:none;padding:0;font:inherit;color:var(--accent);cursor:pointer;text-decoration:underline">최신 버전으로 새로고침</button></div>`;
   el.innerHTML = html;
 }
 
@@ -2999,7 +3001,7 @@ async function showMyBadges(){
 //    실제 목록은 club_settings.current.partners에 있고, 운영진 탭 '제휴'에서 편집한다.
 //    아래는 설정이 비었을 때만 쓰는 시드다 — 여기를 고쳐 배포하지 말고 운영진 화면에서 바꿀 것.
 const PARTNER_SEED = [
-  { nm:'뱅가드 레코드바', area:'마포 공덕', addr:'서울 마포구 만리재로 19 1층 3호', url:'https://naver.me/x2jDHprB', benefit:'' },
+  { nm:'뱅가드 레코드바', area:'마포 공덕', addr:'서울 마포구 만리재로 19 1층 3호', url:'https://naver.me/x2jDHprB', benefit:'맥주 7500→6000\n글라스와인 12000→10000' },
 ];
 let PARTNERS = PARTNER_SEED.slice();
 function mcClockStr(){
@@ -3050,7 +3052,8 @@ function mcCafeRow(c, i){
   const body = addrHtml + items.map(it => it.text
     ? `<div class="mc-bf"><span class="mc-bf-nm">${esc(it.text)}</span></div>`
     : `<div class="mc-bf"><span class="mc-bf-nm">${esc(it.name)}</span><span class="mc-bf-pr"><s>${esc(it.before)}</s> <b>${esc(it.after)}원</b></span></div>`).join('');
-  return `<div class="mc-cafe has-bf" onclick="this.classList.toggle('open')">
+  // 가게에서 보여주는 화면이라 혜택은 처음부터 펼쳐 둔다(탭하면 접힘). 2026-10-02 총괄: "할인 내용을 회원증에서 바로 확인"
+  return `<div class="mc-cafe has-bf open" onclick="this.classList.toggle('open')">
       <div class="mc-cafe-hd">${esc(c.nm)}<span>${esc(c.area || '')} <i class="mc-chev">›</i></span></div>
       <div class="mc-bf-list">${body}</div>
     </div>`;
@@ -5475,10 +5478,12 @@ async function checkAppUpdate(){
     if (!m || m[1] === APP_VER) return false;
     if (sessionStorage.getItem('app_reload_to') === m[1]) return false;   // 이미 시도했는데도 옛 파일이면 반복 안 함
     sessionStorage.setItem('app_reload_to', m[1]);
-    location.reload();
+    forceReload();
     return true;
   } catch(e){ return false; }
 }
+// 캐시를 비켜 가는 새로고침 — location.reload()는 HTTP 캐시(index.html, 10분)를 그대로 쓸 수 있어 ?r= 를 붙여 새로 받는다
+function forceReload(){ try { location.replace(location.pathname + '?r=' + Date.now() + (location.hash || '')); } catch(e){ location.reload(); } }
 (function(){
   let hiddenAt = 0;
   document.addEventListener('visibilitychange', async () => {

@@ -233,18 +233,21 @@ function switchTab(tab, mode) {
     const _y = _tabScroll[tab] || 0;
     try { window.scrollTo(0, _y); document.scrollingElement.scrollTop = _y; } catch(e){}
   }
-  if (tab === 'home') renderHome();
-  if (tab === 'att')  renderAtt();
-  if (tab === 'dues') renderDues();
-  if (tab === 'list') render();
-  if (tab === 'potm') renderPotm();
-  if (tab === 'rank') renderRank();
-  if (tab === 'ops')  renderOps();
-  if (tab === 'more') renderMore();
-  if (tab === 'mine') renderMine();
-  if (tab === 'faq')  renderFaq();
-  if (tab === 'squad') renderSquad();
-  if (tab === 'draft') draftRender();
+  // 렌더 프로미스를 돌려준다 — 탭 전환 뒤 '다 그려진 DOM'이 필요한 곳(opsSwitch 앵커 스크롤)이 기다릴 수 있게(2026-10-02)
+  let _rp = null;
+  if (tab === 'home') _rp = renderHome();
+  if (tab === 'att')  _rp = renderAtt();
+  if (tab === 'dues') _rp = renderDues();
+  if (tab === 'list') _rp = render();
+  if (tab === 'potm') _rp = renderPotm();
+  if (tab === 'rank') _rp = renderRank();
+  if (tab === 'ops')  _rp = renderOps();
+  if (tab === 'more') _rp = renderMore();
+  if (tab === 'mine') _rp = renderMine();
+  if (tab === 'faq')  _rp = renderFaq();
+  if (tab === 'squad') _rp = renderSquad();
+  if (tab === 'draft') _rp = draftRender();
+  return _rp;
 }
 
 // 카풀 등록 패널 펼치기/접기 (등록 탭을 카풀 탭으로 통합)
@@ -4964,10 +4967,13 @@ let opsTabSel = 'notice';
 async function opsSwitch(key, anchor){
   opsTabSel = key;
   const opsEl = document.getElementById('tab-ops');
-  if (!opsEl || opsEl.classList.contains('hidden')) switchTab('ops');
+  if (!opsEl || opsEl.classList.contains('hidden')) { try { await switchTab('ops'); } catch(e){} }
   else await rerender(renderOps);
   // 할 일에서 왔으면 그 섹션까지 내려간다 — 서브탭이 이미 열려 있으면 화면이 안 바뀌어 '클릭이 안 된다'로 보였다(2026-10-02)
-  if (anchor) setTimeout(() => { const a = document.getElementById(anchor); if (a) { a.scrollIntoView({ behavior:'smooth', block:'start' }); a.style.transition='box-shadow .3s'; a.style.boxShadow='0 0 0 2px var(--accent)'; setTimeout(()=>{ a.style.boxShadow=''; }, 1600); } }, 350);
+  // renderOps가 네트워크를 여러 번 타서 폰에선 1~3초 걸린다 → 고정 350ms 대기가 아니라 렌더가 끝난 뒤(위 await) 스크롤한다
+  if (anchor) requestAnimationFrame(() => { const a = document.getElementById(anchor); if (!a) return;
+    a.scrollIntoView({ behavior:'smooth', block:'start' });
+    a.style.transition='box-shadow .3s'; a.style.boxShadow='0 0 0 2px var(--accent)'; setTimeout(()=>{ a.style.boxShadow=''; }, 1600); });
 }
 // 더보기에서 특정 운영진 기능으로 바로 진입
 function openOps(sub){ if(!isAdmin()) return; if(sub) opsTabSel = sub; switchTab('ops'); }
@@ -5457,16 +5463,35 @@ async function refreshCurrent(){
   } finally { _refreshing = false; }
 }
 // ① 앱 복귀 시 자동 갱신 — 백그라운드에 30초 이상 있었을 때만(잠깐 전환에는 반응 안 함)
+// ③ 새 배포 자동 반영 — 홈 화면 앱(iOS 독립 실행)은 index.html을 며칠씩 붙들고 있어서 옛 member.js로 계속 돌았다.
+//    그래서 '고쳤는데 폰에선 그대로'가 반복됐다(2026-10-02, 할 일 클릭 건). 돌아올 때마다 index.html을 캐시 없이 받아
+//    script의 ?v=가 지금 돌고 있는 것과 다르면 새로고침한다. 같은 버전으로 두 번 reload 하지 않게 sessionStorage에 기록.
+const APP_VER = (() => { const sc = [...document.scripts].find(x => /member\.js\?v=/.test(x.src)); const m = sc && sc.src.match(/[?&]v=([^&]+)/); return m ? m[1] : ''; })();
+async function checkAppUpdate(){
+  if (!APP_VER) return false;
+  try {
+    const html = await fetch(location.pathname + '?u=' + Date.now(), { cache: 'no-store' }).then(r => r.ok ? r.text() : '');
+    const m = html.match(/member\.js\?v=([^"'&]+)/);
+    if (!m || m[1] === APP_VER) return false;
+    if (sessionStorage.getItem('app_reload_to') === m[1]) return false;   // 이미 시도했는데도 옛 파일이면 반복 안 함
+    sessionStorage.setItem('app_reload_to', m[1]);
+    location.reload();
+    return true;
+  } catch(e){ return false; }
+}
 (function(){
   let hiddenAt = 0;
-  document.addEventListener('visibilitychange', () => {
+  document.addEventListener('visibilitychange', async () => {
     if (document.hidden) { hiddenAt = Date.now(); return; }
     if (!hiddenAt || Date.now() - hiddenAt < 30000) return;
     hiddenAt = 0;
     if (modalOpen()) return;
     if (document.getElementById('gate') && !document.getElementById('gate').classList.contains('hidden')) return;
+    if (await checkAppUpdate()) return;   // 새 버전이면 새로고침으로 대체
     refreshCurrent();
   });
+  // 켜고 잠시 뒤 한 번 — 홈 화면 앱이 캐시된 index.html로 떴을 때
+  setTimeout(() => { if (!modalOpen()) checkAppUpdate(); }, 4000);
 })();
 // ② 당겨서 새로고침 — 스크롤 최상단에서 아래로 당길 때만. 일반 스크롤을 막지 않으려 preventDefault 안 씀
 (function(){

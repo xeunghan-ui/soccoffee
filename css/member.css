@@ -826,7 +826,7 @@
   .sq-no { font-family: var(--disp); font-size: 19px; color: var(--accent); min-width: 26px; text-align: center; flex-shrink: 0; }
   .sq-nm { font-size: 14px; font-weight: 600; color: var(--cream); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; flex: 1; min-width: 0; }
   .sq-wb { display: flex; flex-direction: column; align-items: flex-end; gap: 2px; flex-shrink: 0; }   /* 수상 뱃지 오른편 세로 쌓기 */
-  .sq-wb .win-badge { font-size: 9px; padding: 0 5px; line-height: 15px; }
+  .sq-wb .win-badge { font-size: 9px; padding: 0; line-height: 15px; width: 36px; text-align: center; box-sizing: border-box; }   /* MVP·성장·TX·신규 같은 크기 (2026-10-02 총괄) */
   .sq-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; margin-left: 4px; border: 1.5px solid var(--muted); box-sizing: border-box; }
   .sq-chip.has-skill .sq-dot { background: var(--green); border-color: var(--green); }
   /* 멤버 카드 모달 */

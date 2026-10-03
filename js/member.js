@@ -1046,6 +1046,13 @@ async function capAdminSet(m, id, active){
       if (n >= CAP_LIMIT[g] && !confirm(`${g}자 정원(${CAP_LIMIT[g]})이 이미 찼어요. 그래도 ${p.name}을(를) 활동으로 넣을까요?`)) return;
     }
   } else if (!confirm(`${p.name}을(를) ${parseInt(m.split('-')[1],10)}월 휴면으로 바꿀까요?`)) return;
+  if (!(await capApplyActive(m, id, active))) return;
+  toast(`${p.name} · ${parseInt(m.split('-')[1],10)}월 ${active?'활동':'휴면'}으로 바꿨어요`);
+  await rerender(renderOps);
+}
+// 확정 명단(result.active) + 자리 확인 기록 + 팀빌더 activeMonths/dormantMonths 를 한 번에 — 확인창 없음.
+// 정원 탭(capAdminSet)과 신규 등록(onboardAdd)이 같이 쓴다. 확정 뒤 들어온 신규가 '휴면'으로 보이던 문제(2026-10-03 김우정)
+async function capApplyActive(m, id, active){
   // ① 확정 명단 — 저장 직전 재조회 후 그 달 result만 갱신
   let cur = {};
   try { if (USE_DB){ const {data:row}=await sb.from('club_settings').select('data').eq('id','current').maybeSingle(); cur=(row&&row.data)||{}; } else cur=await fetchSettings(); } catch(e){}
@@ -1055,7 +1062,7 @@ async function capAdminSet(m, id, active){
   res.active = (res.active || []).filter(i => i !== id); if (active) res.active.push(id);
   res.adjustedAt = new Date().toISOString(); res.adjustedBy = meName();
   md.result = res; cap[m] = md; CAPACITY = cap;
-  if (!(await saveSettings({ capacity: cap }))) return;
+  if (!(await saveSettings({ capacity: cap }))) return false;
   // ② 자리 확인 기록
   await capRecordConfirm(m, id, active ? 'active' : 'dormant');
   // ③ 팀빌더 — 영구 휴면이던 사람을 활동으로 올리면 status 도 active 로(복귀)
@@ -1069,8 +1076,7 @@ async function capAdminSet(m, id, active){
       if (await saveTeamBuilder(tb)) { await mergeTbMembers(); await loadTbDormant(); }
     }
   } catch(e){}
-  toast(`${p.name} · ${parseInt(m.split('-')[1],10)}월 ${active?'활동':'휴면'}으로 바꿨어요`);
-  await rerender(renderOps);
+  return true;
 }
 async function capRecordConfirm(m, id, state){
   if (!capOn(m)) return true;
@@ -2844,8 +2850,9 @@ async function renderSquad() {
   const w = await getPrevWinners();
   const chip = p => {
     const rc = '';   // 역할 색 구분 제거
-    const sk = hasProfile(p.id) ? ' has-skill' : '';
-    const wb = `${isNewMember(p, month)?'<span class="win-badge new" style="flex-shrink:0">신규</span>':''}${(w.mvp||[]).includes(p.id)?'<span class="win-badge mvp" style="flex-shrink:0">MVP</span>':''}${(w.growth||[]).includes(p.id)?'<span class="win-badge grow" style="flex-shrink:0">성장</span>':''}${(w.thanks||[]).includes(p.id)?'<span class="win-badge tx" style="flex-shrink:0">TX</span>':''}`;
+    const sk = (hasProfile(p.id) ? ' has-skill' : '') + (isNewMember(p, month) ? ' is-new' : '');   // 신규는 칩 테두리만 다르게
+    // 수상은 글자 대신 작은 아이콘(왕관=MVP · 새싹=성장 · 하트=감사) — 칩이 좁아 글자 뱃지는 이름을 밀었다(2026-10-03 총괄)
+    const wb = `${(w.mvp||[]).includes(p.id)?SQ_ICON.mvp:''}${(w.growth||[]).includes(p.id)?SQ_ICON.grow:''}${(w.thanks||[]).includes(p.id)?SQ_ICON.tx:''}`;
     // 수상 뱃지는 오른편에 '세로로 쌓아서' — 2열 그리드(폰에서 칩 폭 ~170px)에서 MVP+성장 두 개가 가로로 붙으면 이름이 '김…'으로 잘렸다(2026-10-02 총괄, 김균원)
     return `<button class="sq-chip${rc}${sk}" onclick="openMemberCard(${p.id})"><span class="sq-no">${p.jersey!=null?p.jersey:'–'}</span><span class="sq-nm">${esc(p.name)}</span>${wb?`<span class="sq-wb">${wb}</span>`:''}<span class="sq-dot" title="${hasProfile(p.id)?'프로필 있음':'프로필 없음'}"></span></button>`;
   };
@@ -2889,6 +2896,7 @@ async function renderSquad() {
       <span style="width:8px;height:8px;border-radius:50%;background:var(--green);display:inline-block"></span>스킬 입력
       <span style="width:8px;height:8px;border-radius:50%;border:1.5px solid var(--muted);box-sizing:border-box;display:inline-block;margin-left:8px"></span>미입력
     </div>
+    <div class="sq-legend">${SQ_ICON.mvp}MVP ${SQ_ICON.grow}성장 ${SQ_ICON.tx}감사 <span class="sq-lg-new"></span>신규(3개월)</div>
     <div id="squadListBody">${_squadGroups[squadFilter]}</div>`;
 }
 
@@ -3241,6 +3249,8 @@ function renderMemberCard(){
   const s=mmState;
   const roleHtml = s.role ? `<span class="mm-role" style="font-size:10px;padding:2px 8px;margin-top:0;vertical-align:middle">${esc(s.role.role)}</span>` : '';
   const winHtml = (s.wins && s.wins.length) ? ' ' + s.wins.map(t=>`<span class="win-badge ${t==='MVP'?'mvp':t==='TX'?'tx':'grow'}">${t}</span>`).join(' ') : '';
+  const _mp = PLAYERS.find(x => x.id === s.id);
+  const newHtml = (_mp && isNewMember(_mp, nowMonthStr())) ? ' <span class="win-badge new">신규</span>' : '';
   let body;
   if(s.edit){
     const posChips = PROFILE_POS.map(p=>`<button class="pf-pick ${posLabel(s.pf.pos)===p?'on':''}" onclick="mmSetPos('${p}')">${p}</button>`).join('');
@@ -3259,7 +3269,7 @@ function renderMemberCard(){
     body += badgeRowHtml(s.stats && s.stats.badges);   // 뱃지 6종 — 획득은 컬러, 미획득은 회색 (매년 리셋)
     if(s.own) body += `<button class="btn ghost sm" onclick="mmEdit(true)" style="margin-top:10px;width:100%">프로필 편집</button>`;
   }
-  h.innerHTML = `<div class="mm-back" onclick="if(event.target===this)closeMemberCard()"><div class="mm-box"><div class="mm-head"><span class="mm-no">${s.jersey!=null?s.jersey:'–'}</span><div><div class="mm-name">${esc(s.name)}${winHtml}${!s.edit&&roleHtml?` ${roleHtml}`:''}</div>${!s.edit?profilePosHtml(s.pf):''}</div><button class="mm-x" onclick="closeMemberCard()">×</button></div>${body}</div></div>`;
+  h.innerHTML = `<div class="mm-back" onclick="if(event.target===this)closeMemberCard()"><div class="mm-box"><div class="mm-head"><span class="mm-no">${s.jersey!=null?s.jersey:'–'}</span><div><div class="mm-name">${esc(s.name)}${newHtml}${winHtml}${!s.edit&&roleHtml?` ${roleHtml}`:''}</div>${!s.edit?profilePosHtml(s.pf):''}</div><button class="mm-x" onclick="closeMemberCard()">×</button></div>${body}</div></div>`;
 }
 
 /* ============================================================
@@ -3419,6 +3429,12 @@ async function onboardAdd(id){
     attCount:0, attCountAll:0, attTotal:0, attTotalAll:0, attendance:0, attendanceAll:0, dormancyRate:0, dormancyRateYr:0, lmaCount:0, lmaRate:0, inBalance:true, inPoolForYear:true });
   if (!(await saveTeamBuilder(tb))) { toast('팀빌더 저장 오류'); return; }
   await mergeTbMembers(); await loadTbDormant();
+  // 정원제가 이미 확정된 달(26일 롤오버 뒤)에 들어온 신규는 result.active에 없어서 '휴면'으로 보인다
+  // → 이번 달·다음 달(statusMonth) 중 확정된 달에는 활동으로 바로 넣는다(2026-10-03 총괄, 김우정)
+  try {
+    const np = PLAYERS.find(p => p.name === q.name);
+    if (np) for (const m of [...new Set([nowMonthStr(), statusMonth()])]) { if (capOn(m) && capResult(m)) await capApplyActive(m, np.id, true); }
+  } catch(e){}
   // 포지션은 프로필(current.profiles)에 미리 넣어둔다 — 본인이 홈에서 바꿀 수 있음
   if (q.position) { try { const st = await fetchSettings(); const prof = Object.assign({}, st.profiles || {}); const me = PLAYERS.find(p => p.name === q.name); if (me) { prof[me.id] = Object.assign({}, prof[me.id] || {}, { pos: q.position }); await saveSettings({ profiles: prof }); } } catch(e){} }
   try { await sb.from('member_onboard').update({ status:'done' }).eq('id', id); } catch(e){}
@@ -3792,13 +3808,20 @@ function monthsBetween(aIso, bIso) {
   return Math.max(0, m);
 }
 // 가입일로부터 함께한 개월 수
-// 신규 회원 표시 — 가입한 달과 그 다음 달까지 '신규'(예: 9/28 가입 → 10월 말까지). 멤버 현황 칩 뱃지에 사용(2026-10-02 총괄)
+// 멤버 현황 칩 수상 아이콘 — 모두 원형 18px, 안쪽 그림은 currentColor(단순 도형: 왕관·새싹·하트)
+const SQ_ICON = {
+  mvp:  `<span class="sq-ic mvp" title="이달의 선수(MVP)"><svg viewBox="0 0 16 16" width="11" height="11" aria-hidden="true"><path d="M2 12h12v1.6H2zM2 10.5 1 4l3.6 2.6L8 2.2l3.4 4.4L15 4l-1 6.5z" fill="currentColor"/></svg></span>`,
+  grow: `<span class="sq-ic grow" title="성장상"><svg viewBox="0 0 16 16" width="11" height="11" aria-hidden="true"><path d="M8 14.5V8" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" fill="none"/><path d="M8 8.6C8 5.4 5.8 3.2 2.2 3.2c0 3.6 2.2 5.6 5.8 5.4zM8 8.6c0-3.2 2.2-5.4 5.8-5.4 0 3.6-2.2 5.6-5.8 5.4z" fill="currentColor"/></svg></span>`,
+  tx:   `<span class="sq-ic tx" title="감사한 분"><svg viewBox="0 0 16 16" width="11" height="11" aria-hidden="true"><path d="M8 14 2.6 8.7A3.3 3.3 0 0 1 7.3 4l.7.7.7-.7a3.3 3.3 0 0 1 4.7 4.7z" fill="currentColor"/></svg></span>`,
+};
+// 신규 회원 — 가입한 달부터 3개월(가입 달 + 2개월, 예: 10/3 가입 → 12월 말까지). 멤버 현황 칩은 테두리만 다르게,
+// 칩을 눌러 연 멤버 카드에 '신규' 뱃지(2026-10-03 총괄: 클릭 전엔 다르게, 클릭하면 신규 표시, 3개월 되면 사라짐)
 function isNewMember(p, monthStr){
   const jd = p && p.joinDate; if (!jd || /^(former|friends)$/.test(p.status||'')) return false;
   const [jy, jm] = jd.slice(0,7).split('-').map(Number);
   const [y, m] = (monthStr || nowMonthStr()).split('-').map(Number);
   const diff = (y - jy) * 12 + (m - jm);
-  return diff >= 0 && diff <= 1;
+  return diff >= 0 && diff <= 2;
 }
 function monthsSince(iso) {
   if (!iso) return 0;

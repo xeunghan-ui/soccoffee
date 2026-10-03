@@ -3166,39 +3166,39 @@ async function openMemberCard(id, startEdit){
   renderMemberCard();
 }
 function closeMemberCard(){ mmState=null; const h=document.getElementById('mmHost'); if(h) h.innerHTML=''; }
-// 모달(mmHost)이 열려 있으면 배경(body) 스크롤 잠금 — 모든 모달에 일괄 적용
-// iOS Safari는 body{overflow:hidden}만으론 배경 스크롤이 안 막혀 position:fixed 방식 사용.
+// 모달(mmHost)이 열려 있으면 배경 스크롤 잠금 — 모든 모달(.mm-back > .mm-box)에 일괄 적용
+// ⚠️ 갈아엎음(2026-10-03, 총괄 "하단 공백" 20번째 제보): 예전엔 body{position:fixed}로 잠갔는데, iOS는 문서가 줄어든 뒤에도
+//    보이는 뷰포트를 옛 스크롤 위치에 둔 채라 고정된 body가 그만큼 위로 밀려 화면 바닥에 '빈 띠'가 남았다(top:-y, top:0/bottom:0,
+//    .wrap margin 등 변형을 다 써봐도 같은 원인). → body를 건드리지 않는다. 문서는 그 자리 그대로 두고,
+//    iOS에선 모달 밖 touchmove를 preventDefault 로 막고(모달 박스 안은 박스가 스스로 스크롤, overscroll-behavior:contain 으로
+//    체인 차단), iOS 가 아닌 곳은 body{overflow:hidden} 으로 막는다. 레이아웃이 한 픽셀도 안 바뀌므로 띠가 생길 수 없다.
 (function(){
-  let lockY = 0;
+  let locked = false;
   function sync(){
     const h = document.getElementById('mmHost');
     const open = !!(h && h.innerHTML.trim());
-    const locked = document.body.style.position === 'fixed';
     if (open && !locked) {
-      // ⚠️ body를 top:-스크롤량 으로 밀면 body 박스가 뷰포트보다 위로 올라가 '아래쪽이 모자란' 박스가 된다.
-      //    iOS WebKit은 position:fixed + overflow:hidden 조상 안의 fixed 자식을 그 조상 박스에 가둬버려서,
-      //    오버레이(.mm-back)·하단 네비·배경(body::before)이 전부 화면 바닥에 못 닿고 스크롤량만큼 띠가 남았다
-      //    (회원증·뱃지 등 모달을 열 때마다 하단에 빈 줄. 2026-09-18 총괄 제보 — 영상으로 확인).
-      //    → body 박스를 top:0/bottom:0 으로 '정확히 뷰포트 크기'로 고정하고,
-      //      스크롤 위치는 안쪽 .wrap 을 음수 margin 으로 밀어서 재현한다(transform은 새 containing block을 만들어 금지).
-      lockY = window.scrollY || document.documentElement.scrollTop || 0;
-      document.body.style.position = 'fixed';
-      document.body.style.top = '0'; document.body.style.bottom = '0';
-      document.body.style.left = '0'; document.body.style.right = '0'; document.body.style.width = '100%';
-      document.body.style.overflow = 'hidden';
-      const _w = document.querySelector('.wrap');
-      if (_w) _w.style.marginTop = `-${lockY}px`;
-      document.body.classList.add('modal-lock');   // 하단 바가 sticky 기준을 잃고 밀리는 것 방지(CSS에서 fixed 전환)
+      locked = true;
+      document.documentElement.classList.add('modal-lock');
+      if (!IS_IOS) document.body.style.overflow = 'hidden';
     } else if (!open && locked) {
-      document.body.style.position = ''; document.body.style.top = ''; document.body.style.bottom = '';
-      document.body.style.left = ''; document.body.style.right = ''; document.body.style.width = '';
-      document.body.style.overflow = '';
-      const _w = document.querySelector('.wrap');
-      if (_w) _w.style.marginTop = '';
-      document.body.classList.remove('modal-lock');
-      window.scrollTo(0, lockY);
+      locked = false;
+      document.documentElement.classList.remove('modal-lock');
+      if (!IS_IOS) document.body.style.overflow = '';
     }
   }
+  // 모달 밖 터치 스크롤 차단. 박스 안에서도 박스가 스크롤할 게 없으면(내용이 짧으면) 막는다 — 배경으로 넘어가는 걸 방지
+  document.addEventListener('touchmove', e => {
+    if (!locked) return;
+    const box = e.target && e.target.closest ? e.target.closest('.mm-box') : null;
+    if (!box || box.scrollHeight <= box.clientHeight + 1) e.preventDefault();
+  }, { passive: false });
+  // 데스크톱 휠도 같은 규칙
+  document.addEventListener('wheel', e => {
+    if (!locked) return;
+    const box = e.target && e.target.closest ? e.target.closest('.mm-box') : null;
+    if (!box || box.scrollHeight <= box.clientHeight + 1) e.preventDefault();
+  }, { passive: false });
   function attach(){ let h=document.getElementById('mmHost'); if(!h){ h=document.createElement('div'); h.id='mmHost'; document.body.appendChild(h); } new MutationObserver(sync).observe(h,{childList:true}); sync(); }
   if(document.readyState==='loading') document.addEventListener('DOMContentLoaded',attach); else attach();
 })();

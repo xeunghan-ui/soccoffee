@@ -747,8 +747,6 @@
   .badge .b-prog { font-size: 9px; font-weight: 700; color: var(--muted); line-height: 1; }
   .badge .b-prog.on { color: var(--accent); }
   .bsvg { clip-path: circle(50% at 50% 50%); -webkit-clip-path: circle(50% at 50% 50%); }
-  /* 모달 열림(배경 스크롤 잠금) 중엔 하단 바를 뷰포트 하단에 고정 — body fixed 시 sticky가 밀리는 문제 방지 */
-  body.modal-lock .bottomnav { position: fixed; left: 0; right: 0; bottom: 0; margin: 0 auto; }
   .bn-badge { position: absolute; top: 2px; left: calc(50% + 5px); min-width: 16px; height: 16px; padding: 0 4px; border-radius: 8px; background: var(--alert); color: #fff; font-size: 10px; font-weight: 800; line-height: 16px; text-align: center; box-sizing: border-box; }
   /* 더보기 메뉴 */
   .more-grid { display: grid; gap: 10px; }
@@ -839,7 +837,7 @@
   .sq-chip.has-skill .sq-dot { background: var(--green); border-color: var(--green); }
   /* 멤버 카드 모달 */
   .mm-back { position: fixed; inset: 0; z-index: 400; background: rgba(0,0,0,.55); display: flex; align-items: center; justify-content: center; padding: 18px; }
-  .mm-box { background: var(--card); border: 1px solid var(--line); border-radius: 16px; width: 100%; max-width: 360px; max-height: 86vh; overflow-y: auto; padding: 16px; box-shadow: 0 12px 40px rgba(0,0,0,.5); }
+  .mm-box { background: var(--card); border: 1px solid var(--line); border-radius: 16px; width: 100%; max-width: 360px; max-height: 86vh; max-height: 86dvh; overflow-y: auto; overscroll-behavior: contain; -webkit-overflow-scrolling: touch; padding: 16px; box-shadow: 0 12px 40px rgba(0,0,0,.5); }
   .mm-head { display: flex; align-items: center; gap: 12px; margin-bottom: 4px; }
   .mm-no { font-family: var(--disp); font-size: 32px; color: var(--accent); line-height: 1; }
   .mm-name { font-size: 18px; font-weight: 800; color: var(--cream); }

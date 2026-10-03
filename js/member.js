@@ -2850,9 +2850,9 @@ async function renderSquad() {
   const w = await getPrevWinners();
   const chip = p => {
     const rc = '';   // 역할 색 구분 제거
-    const sk = (hasProfile(p.id) ? ' has-skill' : '') + (isNewMember(p, month) ? ' is-new' : '');   // 신규는 칩 테두리만 다르게
+    const sk = hasProfile(p.id) ? ' has-skill' : '';
     // 수상은 글자 대신 작은 아이콘(왕관=MVP · 새싹=성장 · 하트=감사) — 칩이 좁아 글자 뱃지는 이름을 밀었다(2026-10-03 총괄)
-    const wb = `${(w.mvp||[]).includes(p.id)?SQ_ICON.mvp:''}${(w.growth||[]).includes(p.id)?SQ_ICON.grow:''}${(w.thanks||[]).includes(p.id)?SQ_ICON.tx:''}`;
+    const wb = `${isNewMember(p, month)?SQ_ICON.new:''}${(w.mvp||[]).includes(p.id)?SQ_ICON.mvp:''}${(w.growth||[]).includes(p.id)?SQ_ICON.grow:''}${(w.thanks||[]).includes(p.id)?SQ_ICON.tx:''}`;
     // 수상 뱃지는 오른편에 '세로로 쌓아서' — 2열 그리드(폰에서 칩 폭 ~170px)에서 MVP+성장 두 개가 가로로 붙으면 이름이 '김…'으로 잘렸다(2026-10-02 총괄, 김균원)
     return `<button class="sq-chip${rc}${sk}" onclick="openMemberCard(${p.id})"><span class="sq-no">${p.jersey!=null?p.jersey:'–'}</span><span class="sq-nm">${esc(p.name)}</span>${wb?`<span class="sq-wb">${wb}</span>`:''}<span class="sq-dot" title="${hasProfile(p.id)?'프로필 있음':'프로필 없음'}"></span></button>`;
   };
@@ -2896,7 +2896,7 @@ async function renderSquad() {
       <span style="width:8px;height:8px;border-radius:50%;background:var(--green);display:inline-block"></span>스킬 입력
       <span style="width:8px;height:8px;border-radius:50%;border:1.5px solid var(--muted);box-sizing:border-box;display:inline-block;margin-left:8px"></span>미입력
     </div>
-    <div class="sq-legend">${SQ_ICON.mvp}MVP ${SQ_ICON.grow}성장 ${SQ_ICON.tx}감사 <span class="sq-lg-new"></span>신규(3개월)</div>
+    <div class="sq-legend">${SQ_ICON.mvp}MVP ${SQ_ICON.grow}성장 ${SQ_ICON.tx}감사 ${SQ_ICON.new}신규(3개월)</div>
     <div id="squadListBody">${_squadGroups[squadFilter]}</div>`;
 }
 
@@ -3812,10 +3812,11 @@ function monthsBetween(aIso, bIso) {
 const SQ_ICON = {
   mvp:  `<span class="sq-ic mvp" title="이달의 선수(MVP)"><svg viewBox="0 0 16 16" width="11" height="11" aria-hidden="true"><path d="M2 12h12v1.6H2zM2 10.5 1 4l3.6 2.6L8 2.2l3.4 4.4L15 4l-1 6.5z" fill="currentColor"/></svg></span>`,
   grow: `<span class="sq-ic grow" title="성장상"><svg viewBox="0 0 16 16" width="11" height="11" aria-hidden="true"><path d="M8 14.5V8" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" fill="none"/><path d="M8 8.6C8 5.4 5.8 3.2 2.2 3.2c0 3.6 2.2 5.6 5.8 5.4zM8 8.6c0-3.2 2.2-5.4 5.8-5.4 0 3.6-2.2 5.6-5.8 5.4z" fill="currentColor"/></svg></span>`,
+  new:  `<span class="sq-ic new" title="신규 회원(가입 3개월)">NEW</span>`,
   tx:   `<span class="sq-ic tx" title="감사한 분"><svg viewBox="0 0 16 16" width="11" height="11" aria-hidden="true"><path d="M8 14 2.6 8.7A3.3 3.3 0 0 1 7.3 4l.7.7.7-.7a3.3 3.3 0 0 1 4.7 4.7z" fill="currentColor"/></svg></span>`,
 };
-// 신규 회원 — 가입한 달부터 3개월(가입 달 + 2개월, 예: 10/3 가입 → 12월 말까지). 멤버 현황 칩은 테두리만 다르게,
-// 칩을 눌러 연 멤버 카드에 '신규' 뱃지(2026-10-03 총괄: 클릭 전엔 다르게, 클릭하면 신규 표시, 3개월 되면 사라짐)
+// 신규 회원 — 가입한 달부터 3개월(가입 달 + 2개월, 예: 10/3 가입 → 12월 말까지). 멤버 현황 칩엔 민트 'NEW',
+// 칩을 눌러 연 멤버 카드에 '신규' 뱃지(2026-10-03 총괄)
 function isNewMember(p, monthStr){
   const jd = p && p.joinDate; if (!jd || /^(former|friends)$/.test(p.status||'')) return false;
   const [jy, jm] = jd.slice(0,7).split('-').map(Number);

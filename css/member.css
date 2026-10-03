@@ -830,7 +830,8 @@
   .sq-ic.mvp  { background: #e0a530; color: #3a2600; }   /* 왕관 */
   .sq-ic.grow { background: var(--win); color: #fff; }    /* 위 화살표 = 성장 */
   .sq-ic.tx   { background: #6d5db0; color: #fff; }       /* 하트 */
-  .sq-ic.new  { background: var(--green); color: #0f2016; }   /* 새싹 = 신규(가입 3개월) (2026-10-03 총괄) */
+  .sq-ic.new  { background: none; color: var(--green); }   /* 새싹 = 신규(가입 3개월) — 원 없이 새싹만 (2026-10-03 총괄) */
+  .sq-ic.new svg { width: 15px; height: 15px; }
   .sq-legend { font-size: 11px; color: var(--muted); margin: -4px 2px 10px; display: flex; align-items: center; gap: 4px; flex-wrap: wrap; }
   .sq-legend .sq-ic { width: 14px; height: 14px; margin-left: 6px; } .sq-legend .sq-ic:first-child { margin-left: 0; } .sq-legend .sq-ic svg { width: 9px; height: 9px; }
 

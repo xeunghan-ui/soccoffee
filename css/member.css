@@ -828,13 +828,9 @@
   .sq-wb { display: flex; align-items: center; gap: 4px; flex-shrink: 0; }   /* 수상 아이콘 — 오른편 한 줄 */
   .sq-ic { width: 18px; height: 18px; border-radius: 50%; display: inline-flex; align-items: center; justify-content: center; flex-shrink: 0; }
   .sq-ic.mvp  { background: #e0a530; color: #3a2600; }   /* 왕관 */
-  .sq-ic.grow { background: var(--win); color: #fff; }    /* 새싹 */
+  .sq-ic.grow { background: var(--win); color: #fff; }    /* 위 화살표 = 성장 */
   .sq-ic.tx   { background: #6d5db0; color: #fff; }       /* 하트 */
-  /* 신규(가입 3개월) — 이름 위에 45° 기울어진 민트 'NEW' 스티커, 칩 윗선에 반쯤 걸침 (2026-10-03 총괄 확정) */
-  .sq-chip { position: relative; }
-  .sq-new { position: absolute; left: 44px; top: 3px; transform: rotate(-45deg); transform-origin: left bottom;
-    background: var(--green); color: #0f2016; font-size: 7px; font-weight: 800; letter-spacing: .04em; line-height: 10px; padding: 0 4px; border-radius: 5px; pointer-events: none; }
-  .sq-new.lg { position: static; transform: none; margin-left: 6px; }
+  .sq-ic.new  { background: var(--green); color: #0f2016; }   /* 새싹 = 신규(가입 3개월) (2026-10-03 총괄) */
   .sq-legend { font-size: 11px; color: var(--muted); margin: -4px 2px 10px; display: flex; align-items: center; gap: 4px; flex-wrap: wrap; }
   .sq-legend .sq-ic { width: 14px; height: 14px; margin-left: 6px; } .sq-legend .sq-ic:first-child { margin-left: 0; } .sq-legend .sq-ic svg { width: 9px; height: 9px; }
 

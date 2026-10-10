@@ -4746,7 +4746,7 @@ async function renderOps() {
             <div class="n-actions"><button class="btn accent sm" onclick="opsSaveSession('${s.id}')">저장</button><button class="btn ghost sm" onclick="opsCancelSessionEdit()">취소</button></div>
           </div>`;
         }
-        return `<div class="ops-row"><div style="min-width:0"><b>${fmtSessionDate(s.date,s.time,s.endTime,s.allDay,s.endDate)}</b>${s.label?` · ${esc(s.label)}`:''}<div class="hint" style="margin:0">${esc(s.place)} · 마감 ${deadlineLabel(sessionDeadline(s))}</div></div><span style="display:flex;gap:6px;flex-shrink:0"><button class="btn ghost sm" onclick="opsEditSession('${s.id}')">수정</button><button class="btn ghost sm" style="color:var(--red)" onclick="opsDelSession('${s.id}')">삭제</button></span></div>`;
+        return `<div class="ops-row"><div style="min-width:0"><b>${fmtSessionDate(s.date,s.time,s.endTime,s.allDay,s.endDate)}</b>${s.label?` · ${esc(s.label)}`:''}<div class="hint" style="margin:0">${esc(s.place)} · 마감 ${deadlineLabel(sessionDeadline(s))}</div></div><span style="display:flex;gap:6px;flex-shrink:0"><button class="btn ghost sm" onclick="opsSessResp('${s.id}')">응답</button><button class="btn ghost sm" onclick="opsEditSession('${s.id}')">수정</button><button class="btn ghost sm" style="color:var(--red)" onclick="opsDelSession('${s.id}')">삭제</button></span></div>`;
       };
   const secSession = `
     ${opsEditSessionId ? '' : (opsAddSessionOpen ? `
@@ -5010,6 +5010,27 @@ async function opsSwitch(key, anchor){
   if (anchor) requestAnimationFrame(() => { const a = document.getElementById(anchor); if (!a) return;
     a.scrollIntoView({ behavior:'smooth', block:'start' });
     a.style.transition='box-shadow .3s'; a.style.boxShadow='0 0 0 2px var(--accent)'; setTimeout(()=>{ a.style.boxShadow=''; }, 1600); });
+}
+// 운영진: 세션별 참석/미정/불참/미응답 명단 — 지난 세션 포함(2026-10-10 총괄). 일정 탭은 다가오는 세션만 보여서 여기서 본다.
+async function opsSessResp(sid){
+  if (!isAdmin()) return;
+  const s = (await getSessions()).find(x => String(x.id) === String(sid)); if (!s) return;
+  const rows = await fetchAttendance(s.id);
+  const nm = id => { const p = PLAYERS.find(x => x.id === id); return p ? p.name : '(알 수 없음)'; };
+  const sm = (s.date || '').slice(0,7); const [y, m] = sm.split('-').map(Number); const mEnd = new Date(y, m, 0);
+  const eligible = PLAYERS.filter(p => { const st = p.status || 'active'; if (st === 'former' || st === 'friends') return false;
+    if (!(p.joinDate && new Date(p.joinDate) <= mEnd)) return false; return s.allowDormant || !isDormantFor(p, sm); });
+  const by = st => rows.filter(r => r.status === st).map(r => nm(r.member_id)).sort((a,b) => a.localeCompare(b,'ko'));
+  const resp = new Set(rows.map(r => r.member_id));
+  const none = eligible.filter(p => !resp.has(p.id)).map(p => p.name).sort((a,b) => a.localeCompare(b,'ko'));
+  const grp = (t, arr, c) => `<div class="mm-sec" style="display:flex;justify-content:space-between"><span style="color:${c}">${t}</span><span style="color:var(--muted)">${arr.length}명</span></div>
+    <div style="font-size:13px;line-height:1.75;color:var(--cream)">${arr.length ? arr.map(esc).join(' · ') : '<span style="color:var(--muted)">없음</span>'}</div>`;
+  let h = document.getElementById('mmHost'); if (!h) { h = document.createElement('div'); h.id = 'mmHost'; document.body.appendChild(h); }
+  h.innerHTML = `<div class="mm-back" onclick="if(event.target===this)closeMemberCard()"><div class="mm-box">
+    <div class="mm-head"><div><div class="mm-name">${fmtSessionDate(s.date,s.time,s.endTime,s.allDay,s.endDate)}</div><div class="hint" style="margin:2px 0 0">${s.label?esc(s.label)+' · ':''}응답 명단${sessionEnded(s)?' · 지난 세션':''}</div></div><button class="mm-x" onclick="closeMemberCard()">×</button></div>
+    ${grp('참석', by('yes'), 'var(--green)')}${grp('미정', by('maybe'), 'var(--gold)')}${grp('불참', by('no'), '#e08a76')}${grp('미응답', none, 'var(--muted)')}
+    <div class="hint" style="margin:12px 0 0;line-height:1.6">'신청' 기준이에요. 실제 출석은 팀빌더 세션 기록이 기준입니다.${s.allowDormant?'':' 미응답은 그 달 활동 회원 중 응답하지 않은 사람.'}</div>
+  </div></div>`;
 }
 // 더보기에서 특정 운영진 기능으로 바로 진입
 function openOps(sub){ if(!isAdmin()) return; if(sub) opsTabSel = sub; switchTab('ops'); }

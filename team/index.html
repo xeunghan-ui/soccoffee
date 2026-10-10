@@ -1019,7 +1019,15 @@ async function confirmSiteImport(){
     if(!s || !s.date){ return; }
     if(existingDates.has(s.date)){ skipped++; return; }
     const attendees=[];
-    (yesBy[s.id]||[]).forEach(mid=>{ const nm=idName[mid]; const bid=nm?nameId[nm]:undefined; if(bid!=null) attendees.push(bid); else if(nm) unmatched.add(nm); });
+    // ⚠️ 앱의 member_id = 빌더 선수 id(앱이 빌더 명단을 병합해 쓰므로). id로 먼저 맞추고, 옛 사이트 명단(roster) 이름은 보조로만.
+    //    예전엔 roster 이름으로만 매칭해서, roster 스냅샷 이후 빌더에 추가된 신규(심지수·이찬영·신현오·유경무·김우정)가
+    //    '제외된 이름' 경고도 없이 조용히 빠졌다(2026-10-10 총괄 제보).
+    const bIds = new Set(players.map(p=>p.id));
+    (yesBy[s.id]||[]).forEach(mid=>{
+      if(bIds.has(mid)){ attendees.push(mid); return; }
+      const nm=idName[mid]; const bid=nm?nameId[nm]:undefined;
+      if(bid!=null) attendees.push(bid); else unmatched.add(nm || ('id '+mid));
+    });
     sessions.unshift({ id:Date.now()+Math.floor(Math.random()*100000), date:s.date, type:siteTypeOf(s), notes:(s.desc||''), guests:(guestExtra[s.id]||0), extraNames:[], attendees, lastMinuteAbsentIds:[] });
     existingDates.add(s.date); added++;
   });

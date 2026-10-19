@@ -3187,18 +3187,25 @@ function closeMemberCard(){ mmState=null; const h=document.getElementById('mmHos
       if (!IS_IOS) document.body.style.overflow = '';
     }
   }
-  // 모달 밖 터치 스크롤 차단. 박스 안에서도 박스가 스크롤할 게 없으면(내용이 짧으면) 막는다 — 배경으로 넘어가는 걸 방지
-  document.addEventListener('touchmove', e => {
-    if (!locked) return;
-    const box = e.target && e.target.closest ? e.target.closest('.mm-box') : null;
-    if (!box || box.scrollHeight <= box.clientHeight + 1) e.preventDefault();
-  }, { passive: false });
+  // 모달 밖 터치 스크롤 차단. 모달 안에서는 '손가락 닿은 곳 ~ .mm-box' 사이에 스크롤되는 영역이 하나라도 있으면 통과.
+  // ⚠️ 예전엔 .mm-box 자체만 봤다 → 감독 추천처럼 박스 안 목록(div overflow-y:auto)이 따로 스크롤되는 팝업은
+  //    박스가 '스크롤할 게 없다'로 판정돼 목록 스크롤까지 막혔다(2026-10-19 총괄 영상 제보).
+  function inScrollable(t){
+    const box = t && t.closest ? t.closest('.mm-box') : null;
+    if (!box) return false;
+    for (let el = t; el && el !== box.parentNode; el = el.parentNode) {
+      if (el.nodeType !== 1) continue;
+      if (el.scrollHeight > el.clientHeight + 1) {
+        const oy = getComputedStyle(el).overflowY;
+        if (oy === 'auto' || oy === 'scroll') return true;
+      }
+      if (el === box) break;
+    }
+    return false;
+  }
+  document.addEventListener('touchmove', e => { if (locked && !inScrollable(e.target)) e.preventDefault(); }, { passive: false });
   // 데스크톱 휠도 같은 규칙
-  document.addEventListener('wheel', e => {
-    if (!locked) return;
-    const box = e.target && e.target.closest ? e.target.closest('.mm-box') : null;
-    if (!box || box.scrollHeight <= box.clientHeight + 1) e.preventDefault();
-  }, { passive: false });
+  document.addEventListener('wheel', e => { if (locked && !inScrollable(e.target)) e.preventDefault(); }, { passive: false });
   function attach(){ let h=document.getElementById('mmHost'); if(!h){ h=document.createElement('div'); h.id='mmHost'; document.body.appendChild(h); } new MutationObserver(sync).observe(h,{childList:true}); sync(); }
   if(document.readyState==='loading') document.addEventListener('DOMContentLoaded',attach); else attach();
 })();

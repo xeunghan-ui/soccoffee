@@ -838,6 +838,7 @@
   /* 멤버 카드 모달 */
   .mm-back { position: fixed; inset: 0; z-index: 400; background: rgba(0,0,0,.55); display: flex; align-items: center; justify-content: center; padding: 18px; }
   .mm-box { background: var(--card); border: 1px solid var(--line); border-radius: 16px; width: 100%; max-width: 360px; max-height: 86vh; max-height: 86dvh; overflow-y: auto; overscroll-behavior: contain; -webkit-overflow-scrolling: touch; padding: 16px; box-shadow: 0 12px 40px rgba(0,0,0,.5); }
+  .mm-box * { overscroll-behavior: contain; }   /* 안쪽 목록이 끝까지 가도 배경으로 스크롤이 넘어가지 않게 */
   .mm-head { display: flex; align-items: center; gap: 12px; margin-bottom: 4px; }
   .mm-no { font-family: var(--disp); font-size: 32px; color: var(--accent); line-height: 1; }
   .mm-name { font-size: 18px; font-weight: 800; color: var(--cream); }

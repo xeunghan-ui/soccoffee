@@ -1047,11 +1047,17 @@ async function capAdminSet(m, id, active){
     }
   } else if (!confirm(`${p.name}을(를) ${parseInt(m.split('-')[1],10)}월 휴면으로 바꿀까요?`)) return;
   if (!(await capApplyActive(m, id, active))) return;
-  toast(`${p.name} · ${parseInt(m.split('-')[1],10)}월 ${active?'활동':'휴면'}으로 바꿨어요`);
+  // 회비 후속 조치를 같이 알려준다 — 활동인데 미납이면 받기, 휴면인데 납부했으면 환불
+  let _next = '';
+  try { const d = (await fetchDues(m)).find(r => r.member_id === id); const paid = !!(d && d.paid);
+    if (active && !paid) _next = ' · 회비 받아야 해요';
+    else if (!active && paid) _next = ' · 회비 환불 필요(회비 탭)'; } catch(e){}
+  toast(`${p.name} · ${parseInt(m.split('-')[1],10)}월 ${active?'활동':'휴면'}${_next}`);
   await rerender(renderOps);
 }
 // 확정 명단(result.active) + 자리 확인 기록 + 팀빌더 activeMonths/dormantMonths 를 한 번에 — 확인창 없음.
 // 정원 탭(capAdminSet)과 신규 등록(onboardAdd)이 같이 쓴다. 확정 뒤 들어온 신규가 '휴면'으로 보이던 문제(2026-10-03 김우정)
+function capFilter(q){ q = (q||'').trim(); document.querySelectorAll('.cap-row').forEach(r => { r.style.display = (!q || (r.dataset.nm||'').includes(q)) ? '' : 'none'; }); }
 async function capApplyActive(m, id, active){
   // ① 확정 명단 — 저장 직전 재조회 후 그 달 result만 갱신
   let cur = {};
@@ -2269,6 +2275,7 @@ async function renderMore() {
     ['dues',    '회비',   '납부 현황 · 정원 순번',  'dues'],
     ['vote',    '투표',   '투표 결과 · 투표자',   'ops'],
     ['league',  '리그',   '감독 지원·추천 · 팀 배정', 'ops'],
+    ['cap',     '정원',   '확정 후 활동·휴면 바꾸기', 'ops'],
     ['roster',  '설정',   'PIN 관리 · 팀 구분',   'ops'],
   ];
   const btn = ([t, name, desc]) =>
@@ -4846,6 +4853,7 @@ async function renderOps() {
   //    그래서 여기서 바꾸면 result.active + cap_confirm + 팀빌더(dormantMonths/activeMonths) 세 군데를 한 번에 맞춘다(capAdminSet).
   const _capM = statusMonth();
   const _capR = capResult(_capM);
+  const _capDues = (capOn(_capM) && _capR && opsTabSel === 'cap') ? await fetchDues(_capM) : [];
   let secCap = '';
   if (!capOn(_capM)) {
     secCap = `<div class="empty" style="padding:18px 0">정원제 달이 아니에요.</div>`;
@@ -4857,15 +4865,20 @@ async function renderOps() {
     const _cnt = g => _all.filter(p => _in.has(p.id) && capGender(p)===g).length;
     const _mN=_cnt('남'), _fN=_cnt('여');
     const _over = g => (g==='남'?_mN:_fN) > CAP_LIMIT[g];
-    const row = p => { const on=_in.has(p.id); return `<div class="ops-row" style="padding:8px 0">
-        <div style="min-width:0;display:flex;align-items:center;gap:8px"><b style="color:${on?'#ece6d2':'var(--muted)'}">${esc(p.name)}</b><span class="hint" style="margin:0">${capGender(p)}</span></div>
-        <button class="dues-badge toggle ${on?'paid':'unpaid'}" style="flex-shrink:0" onclick="capAdminSet('${_capM}',${p.id},${on?'false':'true'})">${on?'활동':'휴면'}</button>
+    // 회비 상태를 옆에 보여준다 — 바꾼 뒤 '받을 사람/돌려줄 사람'을 바로 알 수 있게 (2026-10-26 총괄: 편하게)
+    const _dRow = id => _capDues.find(r => r.member_id === id);
+    const _dTag = id => { const r = _dRow(id); if (!r || !r.paid) return `<span class="hint" style="margin:0;color:var(--muted)">미납</span>`;
+      return isDuesConfirmed(_capM, id) ? `<span class="hint" style="margin:0;color:var(--green)">입금확인</span>` : `<span class="hint" style="margin:0;color:var(--gold)">납부</span>`; };
+    const row = p => { const on=_in.has(p.id); return `<div class="ops-row cap-row" data-nm="${esc(p.name)}" style="padding:8px 0">
+        <div style="min-width:0;display:flex;align-items:center;gap:8px"><b style="color:${on?'#ece6d2':'var(--muted)'}">${esc(p.name)}</b><span class="hint" style="margin:0">${capGender(p)}</span>${_dTag(p.id)}</div>
+        <button class="dues-badge toggle ${on?'paid':'unpaid'}" style="flex-shrink:0;min-width:56px" onclick="capAdminSet('${_capM}',${p.id},${on?'false':'true'})">${on?'활동':'휴면'}</button>
       </div>`; };
     secCap = `
       <p class="hint" style="margin:0 0 6px;line-height:1.6">${parseInt(_capM.split('-')[1],10)}월 <b style="color:#ece6d2">확정 명단</b> · 활동 ${_in.size}명
         <span style="color:${_over('남')?'var(--red)':'var(--muted)'}">남 ${_mN}/${CAP_LIMIT['남']}</span> ·
         <span style="color:${_over('여')?'var(--red)':'var(--muted)'}">여 ${_fN}/${CAP_LIMIT['여']}</span>${_capR.finalized?' · 최종 확정됨':' · 잠정'}</p>
-      <p class="hint" style="margin:0 0 12px;line-height:1.6">버튼을 누르면 <b style="color:#ece6d2">즉시</b> 바뀌어요 — 확정 명단·자리 확인·팀빌더 휴면이 한 번에 맞춰져요. 회비 환불은 회비 탭에서 따로.</p>
+      <p class="hint" style="margin:0 0 10px;line-height:1.6">이름 옆 버튼을 누르면 바로 바뀌어요. 회비는 자동으로 안 바뀌니, 바꾼 뒤 안내를 확인해 주세요.</p>
+      <input type="search" placeholder="이름 검색" oninput="capFilter(this.value)" style="width:100%;margin:0 0 12px">
       <div style="margin-bottom:6px"><b style="font-size:12px;color:#ece6d2">활동 ${_in.size}</b></div>
       ${_all.filter(p=>_in.has(p.id)).map(row).join('')}
       <div style="margin:16px 0 6px"><b style="font-size:12px;color:#ece6d2">휴면 ${_all.length-_in.size}</b></div>

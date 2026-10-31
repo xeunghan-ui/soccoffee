@@ -1285,6 +1285,27 @@ function _lgRecPool(m){
     return !!(c && c.s === 'active') && !isDormantFor(p, nowMonthStr()) && isDuesConfirmed(m, p.id);
   });
 }
+// 감독 추천 집계 — 홈(총괄)·운영진 리그 탭·할 일이 같이 쓴다 (2026-10-31 총괄)
+//  · 추천 안 한 사람은 '본인에게 1표'로 친다 — 단 신규 회원(가입 3개월, isNewMember)은 제외
+//  · pool = 그 달 추천 자격자(_lgRecPool: 확정 명단 또는 자리확인+입금확인)
+function lgRecTally(m){
+  const d = leagueData(m), pool = _lgRecPool(m), poolIds = new Set(pool.map(p => p.id));
+  const recs = (d.recs || []).filter(r => poolIds.has(r.by));
+  const voted = new Set(recs.map(r => r.by));
+  const notVoted = pool.filter(p => !voted.has(p.id));
+  const t = {};   // id -> { rec, self, by:[] }
+  const add = id => (t[id] = t[id] || { rec:0, self:0, by:[] });
+  recs.forEach(r => { const x = add(r.to); x.rec++; x.by.push(r.by); });
+  notVoted.forEach(p => { if (!isNewMember(p, m)) add(p.id).self = 1; });
+  const ranked = Object.entries(t).map(([id, x]) => ({ id:Number(id), ...x, total:x.rec + x.self }))
+    .sort((a,b) => b.total - a.total || b.rec - a.rec);
+  return { pool, recs, voted, notVoted, ranked };
+}
+async function lgCopyNotVoted(m){
+  const T = lgRecTally(m);
+  const txt = `${parseInt(m.split('-')[1],10)}월 감독 추천 아직 안 한 분: ` + T.notVoted.map(p=>p.name).sort((a,b)=>a.localeCompare(b,'ko')).join(', ');
+  try { await navigator.clipboard.writeText(txt); toast('복사했어요 — 단톡에 붙여넣기'); } catch(e){ prompt('복사해서 쓰세요', txt); }
+}
 function lgRecClose(){ const h = document.getElementById('mmHost'); if (h) h.innerHTML = ''; }
 async function showLeagueRec(){
   const m = statusMonth(); if (!isLeague(m)) return;
@@ -2737,7 +2758,7 @@ async function renderHome() {
         const _nm = id => (ROSTER.find(x=>x.id===Number(id))||{}).name || '';
         // 추천 현황은 총괄에게만 (2026-08-16) — 일반 회원·관리자에겐 집계 미노출, 본인 추천만 표시
         const recAgg = isAdmin()
-          ? Object.entries(cnt).sort((a,b)=>b[1]-a[1]).map(([id,n])=>`${esc(_nm(id))} ${n}`).join(' · ')
+          ? (()=>{ const T = lgRecTally(_lgNext); return `참여 ${T.voted.size}/${T.pool.length} · ` + T.ranked.slice(0,3).map(x=>`${esc(_nm(x.id))} ${x.total}`).join(' · '); })()
           : '';
         const myRecH = recs.find(r => r.by === me);
         const _sub2 = [recAgg, myRecH ? `내 추천 ${esc(_nm(myRecH.to))}` : ''].filter(Boolean).join(' · ');
@@ -4632,6 +4653,9 @@ async function opsTodoHtml(){
     { n:isVotingOpen() ? _vMissing.length : 0,   label:'이달 투표 미참여', go:"opsSwitch('vote')" },   // 투표 창(25일~)이 열린 뒤에만 할 일
     { n:_guestPend,         label:'게스트 신청 대기', go:"switchTab('att')" },
     { n:_joinPend,          label:'가입 신청·신규 등록 대기', go:"opsSwitch('roster','opsJoinSec')" },
+    // 감독 추천 기간(리그 달 · 지원자 없음 · 감독 미확정) 미참여 인원
+    { n:(()=>{ try { const m=statusMonth(); const d=leagueData(m); if(!isLeague(m) || (d.applicants||[]).length || (d.captains||[]).length>=2) return 0; return lgRecTally(m).notVoted.length; } catch(e){ return 0; } })(),
+      label:'감독 추천 미참여', go:"opsSwitch('league','opsLgRecSec')" },
     { n:_pinMissing,        label:'PIN 미설정(미로그인)', go:"opsSwitch('roster','opsPinSec')" },
   ].filter(x => x.n > 0);
   const _todoHtml = `
@@ -4951,6 +4975,29 @@ async function renderOps() {
           <button class="btn ghost sm" title="감독 지명" onclick="opsLgToggleCaptain('${_lgOpsM}',${p.id})">${isCap?'★':'☆'}</button>
         </span></div>`;
     }).join('');
+    // 감독 추천 현황 — 참여 인원 · 순위(추천 + 본인 1표) · 미참여 명단 (2026-10-31 총괄)
+    const _T = lgRecTally(_lgOpsM);
+    const _lgRecHtml = (_lApps.length && !(_ld.recs||[]).length) ? '' : `
+      <div id="opsLgRecSec" style="margin-top:16px;border-top:1px solid var(--line);padding-top:14px;border-radius:12px">
+        <div style="display:flex;align-items:baseline;justify-content:space-between;gap:8px">
+          <b style="color:#ece6d2;font-size:13px">감독 추천 현황</b>
+          <span style="font-size:13px;font-weight:800;color:${_T.notVoted.length?'var(--gold)':'var(--green)'}">참여 ${_T.voted.size}/${_T.pool.length}명</span>
+        </div>
+        <div style="height:6px;border-radius:3px;background:var(--card-2);margin:8px 0 4px;overflow:hidden"><div style="height:100%;width:${_T.pool.length?Math.round(_T.voted.size/_T.pool.length*100):0}%;background:var(--green)"></div></div>
+        <div class="hint" style="margin:0 0 10px">추천 안 한 사람은 본인에게 1표로 쳐요(신규 회원 제외). 지명은 아래 팀 배정의 별표로.</div>
+        ${_T.ranked.length ? _T.ranked.map((x,k)=>`<details class="dues-row" style="display:block;padding:8px 0">
+          <summary style="list-style:none;cursor:pointer;display:flex;justify-content:space-between;align-items:center;gap:8px">
+            <span style="min-width:0"><b style="color:${k<2?'#ece6d2':'var(--cream)'}">${k+1}. ${esc(_nameOf(x.id))}</b></span>
+            <span style="flex-shrink:0;font-size:12px;color:var(--muted)">${x.rec?`추천 ${x.rec}`:''}${x.rec&&x.self?' + ':''}${x.self?'본인 1':''} <b style="color:#ece6d2;font-size:14px;margin-left:4px">${x.total}표</b></span>
+          </summary>
+          ${x.by.length?`<div class="hint" style="margin:6px 0 0">추천한 사람: ${x.by.map(id=>esc(_nameOf(id))).join(', ')}</div>`:''}
+        </details>`).join('') : `<p class="hint" style="margin:0">아직 집계할 표가 없어요.</p>`}
+        <div style="margin-top:12px;display:flex;align-items:center;justify-content:space-between;gap:8px">
+          <b style="color:#ece6d2;font-size:13px">미참여 ${_T.notVoted.length}명</b>
+          ${_T.notVoted.length?`<button class="btn ghost sm" onclick="lgCopyNotVoted('${_lgOpsM}')">이름 복사</button>`:''}
+        </div>
+        <div style="font-size:13px;line-height:1.75;color:var(--cream);margin-top:4px">${_T.notVoted.length ? _T.notVoted.slice().sort((a,b)=>a.name.localeCompare(b.name,'ko')).map(p=>esc(p.name)+(isNewMember(p,_lgOpsM)?' <span style="font-size:11px;color:var(--muted)">(신규)</span>':'')).join(' · ') : '<span style="color:var(--muted)">모두 참여했어요</span>'}</div>
+      </div>`;
     const _mr = (_ld.match && _ld.match.result) || null;
     const _mrBtn = (v,l)=>`<button class="btn ghost sm" style="${_mr===v?'border-color:var(--gold);color:var(--gold);font-weight:800':''}" onclick="opsLgResult('${_lgOpsM}','${v}')">${l}</button>`;
     secLeague = `
@@ -4958,7 +5005,7 @@ async function renderOps() {
       <b style="color:#ece6d2;font-size:13px">감독 지원 ${_lApps.length}명</b>
       <div class="hint" style="margin:2px 0 8px">2명 초과 지원 시 여기서 지명해요. 드래프트 캡틴으로 사용.</div>
       ${_capRows}
-      ${(_ld.recs||[]).length ? `<div class="hint" style="margin:10px 0 0;line-height:1.8"><b style="color:var(--coffee-2)">회원 추천</b> — 지명은 아래 팀 배정의 별표로<br>${(()=>{const c={};(_ld.recs||[]).forEach(r=>{(c[r.to]=c[r.to]||[]).push(r.by);});const nm=id=>{const p=ROSTER.find(x=>x.id===Number(id));return p?esc(p.name):'#'+id;};return Object.entries(c).sort((a,b)=>b[1].length-a[1].length).map(([id,bys])=>`<b style="color:#ece6d2">${nm(id)} ${bys.length}</b> <span style="opacity:.8">(${bys.map(nm).join(', ')})</span>`).join('<br>');})()}</div>` : ''}
+      ${_lgRecHtml}
       <div style="margin-top:16px;border-top:1px solid var(--line);padding-top:14px">
         <b style="color:#ece6d2;font-size:13px">팀 배정</b>
         <div class="hint" style="margin:2px 0 8px">버튼을 눌러 미정 → WHITE → BLACK 순환. 드래프트 결과를 여기에 입력하고, 중도 변동도 여기서 조정해요.</div>

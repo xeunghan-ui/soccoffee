@@ -98,7 +98,10 @@
   .squad{display:grid; grid-template-columns:repeat(auto-fill,minmax(150px,1fr)); gap:8px;}
   .pl{display:flex; align-items:center; gap:11px; background:var(--green-2); border:1px solid var(--line); border-radius:12px; padding:11px 14px;}
   .pl .no{font-family:var(--disp); font-size:23px; color:var(--gold-bright); min-width:34px; text-align:center; line-height:1;}
-  .pl .nm{font-size:14px; font-weight:600; color:var(--cream); white-space:nowrap; overflow:hidden; text-overflow:ellipsis;}
+  .pl .nm{font-size:14px; font-weight:600; color:var(--cream); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; flex:1; min-width:0;}
+  .pl-ics{display:flex; flex-direction:column; align-items:flex-end; gap:2px; margin:-6px 0; flex-shrink:0;}   /* 감독·수상 아이콘 — 이름 오른편에 세로로 쌓아 이름이 잘리지 않게(칩 높이는 그대로) */
+  .pl-ic{width:16px; height:16px; border-radius:50%; display:inline-flex; align-items:center; justify-content:center; flex-shrink:0;}
+  .pl-ic svg{width:10px; height:10px;}
   .pl.dorm{opacity:.42;}
 
   /* 로딩 스켈레톤 */

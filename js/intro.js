@@ -99,14 +99,21 @@
         mvpIds=topIds('mvp'); growthIds=topIds('growth'); thanksIds=topIds('thanks');
       }catch(e){}
       var BST='font-size:9px;font-weight:800;border-radius:5px;padding:1px 5px;margin-left:6px;vertical-align:middle;';
+      // 수상은 글자 대신 원형 아이콘(왕관=MVP · 위 화살표=성장 · 하트=감사) — 멤버앱 멤버 현황과 동일.
+      // 글자 뱃지가 이름 칸 안에 있어서 MVP+성장 두 개면 이름이 잘렸다(2026-10-31 총괄). 이름과 아이콘을 분리한다.
+      var IC={
+        mvp:'<span class="pl-ic" title="MVP" style="background:#e0a530;color:#3a2600"><svg viewBox="0 0 16 16" width="11" height="11"><path d="M2 12h12v1.6H2zM2 10.5 1 4l3.6 2.6L8 2.2l3.4 4.4L15 4l-1 6.5z" fill="currentColor"/></svg></span>',
+        grow:'<span class="pl-ic" title="성장" style="background:var(--win);color:#fff"><svg viewBox="0 0 16 16" width="11" height="11"><path d="M8 13.5V3.5M3.5 8 8 3.5 12.5 8" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" fill="none"/></svg></span>',
+        tx:'<span class="pl-ic" title="감사" style="background:#6d5db0;color:#fff"><svg viewBox="0 0 16 16" width="11" height="11"><path d="M8 14 2.6 8.7A3.3 3.3 0 0 1 7.3 4l.7.7.7-.7a3.3 3.3 0 0 1 4.7 4.7z" fill="currentColor"/></svg></span>'
+      };
       function chipOf(p, dorm){
         var no=(p.jersey!=null)?p.jersey:'-';
-        var badge='';
-        if(lgC.indexOf(p.id)>=0) badge+=' <span style="'+BST+'background:var(--gold-bright,#ece6d2);color:#23180a">감독</span>';
-        if(mvpIds.indexOf(p.id)>=0) badge+=' <span style="'+BST+'background:#e0a530;color:#3a2600">MVP</span>';
-        if(growthIds.indexOf(p.id)>=0) badge+=' <span style="'+BST+'background:var(--win);color:#fff">성장</span>';
-        if(thanksIds.indexOf(p.id)>=0) badge+=' <span style="'+BST+'background:#6d5db0;color:#fff">TX</span>';
-        return '<div class="pl'+(dorm?' dorm':'')+'"><span class="no">'+no+'</span><span class="nm">'+esc(p.name)+badge+'</span></div>';
+        var ic='';
+        if(lgC.indexOf(p.id)>=0) ic+='<span style="'+BST+'margin-left:0;background:var(--gold-bright,#ece6d2);color:#23180a">감독</span>';
+        if(mvpIds.indexOf(p.id)>=0) ic+=IC.mvp;
+        if(growthIds.indexOf(p.id)>=0) ic+=IC.grow;
+        if(thanksIds.indexOf(p.id)>=0) ic+=IC.tx;
+        return '<div class="pl'+(dorm?' dorm':'')+'"><span class="no">'+no+'</span><span class="nm">'+esc(p.name)+'</span>'+(ic?'<span class="pl-ics">'+ic+'</span>':'')+'</div>';
       }
       var isDormOf=function(p){ return capRes ? capRes.indexOf(p.id)<0 : _isDormant(p,sqm); };
       if(lgB.length+lgW.length>0){

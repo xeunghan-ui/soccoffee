@@ -1296,10 +1296,12 @@ function lgRecTally(m){
   const t = {};   // id -> { rec, self, by:[] }
   const add = id => (t[id] = t[id] || { rec:0, self:0, by:[] });
   recs.forEach(r => { const x = add(r.to); x.rec++; x.by.push(r.by); });
-  notVoted.forEach(p => { if (!isNewMember(p, m)) add(p.id).self = 1; });
+  // 본인 1표는 추천 마감 뒤에만 — 리그 달 1일 낮 12시부터 반영(그 전엔 아직 추천할 수 있으니 집계에 안 넣는다. 2026-10-31 총괄)
+  const selfOn = new Date() >= new Date(m + '-01T12:00:00');
+  if (selfOn) notVoted.forEach(p => { if (!isNewMember(p, m)) add(p.id).self = 1; });
   const ranked = Object.entries(t).map(([id, x]) => ({ id:Number(id), ...x, total:x.rec + x.self }))
     .sort((a,b) => b.total - a.total || b.rec - a.rec);
-  return { pool, recs, voted, notVoted, ranked };
+  return { pool, recs, voted, notVoted, ranked, selfOn, selfAt: `${parseInt(m.split('-')[1],10)}/1 12:00` };
 }
 async function lgCopyNotVoted(m){
   const T = lgRecTally(m);
@@ -4984,7 +4986,7 @@ async function renderOps() {
           <span style="font-size:13px;font-weight:800;color:${_T.notVoted.length?'var(--gold)':'var(--green)'}">참여 ${_T.voted.size}/${_T.pool.length}명</span>
         </div>
         <div style="height:6px;border-radius:3px;background:var(--card-2);margin:8px 0 4px;overflow:hidden"><div style="height:100%;width:${_T.pool.length?Math.round(_T.voted.size/_T.pool.length*100):0}%;background:var(--green)"></div></div>
-        <div class="hint" style="margin:0 0 10px">추천 안 한 사람은 본인에게 1표로 쳐요(신규 회원 제외). 지명은 아래 팀 배정의 별표로.</div>
+        <div class="hint" style="margin:0 0 10px">${_T.selfOn ? '추천 안 한 사람은 본인에게 1표로 쳤어요(신규 회원 제외).' : `추천 안 한 사람의 본인 1표는 <b style="color:#ece6d2">${_T.selfAt}</b>부터 반영돼요(신규 회원 제외).`} 지명은 아래 팀 배정의 별표로.</div>
         ${_T.ranked.length ? _T.ranked.map((x,k)=>`<details class="dues-row" style="display:block;padding:8px 0">
           <summary style="list-style:none;cursor:pointer;display:flex;justify-content:space-between;align-items:center;gap:8px">
             <span style="min-width:0"><b style="color:${k<2?'#ece6d2':'var(--cream)'}">${k+1}. ${esc(_nameOf(x.id))}</b></span>

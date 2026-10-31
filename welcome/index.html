@@ -21,6 +21,8 @@
   h2{font-size:13px;font-weight:800;letter-spacing:.08em;color:var(--gold);margin:34px 0 10px}
   .card{background:var(--card);border-radius:16px;padding:18px 20px;font-size:14px;color:var(--sub)}
   .card b{color:var(--heading)}
+  .pair{display:grid;grid-template-columns:1fr 2fr;gap:8px}
+  .pair input{min-width:0}
   .row{display:flex;gap:12px;padding:7px 0;border-bottom:1px solid var(--line)}
   .row:last-child{border-bottom:none}
   .k{flex-shrink:0;width:64px;font-weight:800;color:var(--gold);font-size:13px;padding-top:1px}
@@ -107,9 +109,15 @@
     <h2>명단 등록 정보</h2>
     <form onsubmit="return submitForm(event)">
       <label>이름 <em>*</em></label>
-      <input type="text" id="fName" maxlength="20" placeholder="실명" required autocomplete="name">
+      <div class="pair">
+        <input type="text" id="fLast" maxlength="5" placeholder="성 (예: 박)" required autocomplete="family-name">
+        <input type="text" id="fFirst" maxlength="15" placeholder="이름 (예: 승한)" required autocomplete="given-name">
+      </div>
       <label>로마자 이름 <em>*</em> <span class="opt">— 회원증·유니폼에 쓰여요</span></label>
-      <input type="text" id="fEng" maxlength="40" placeholder="예: PARK SEUNGHAN" autocomplete="off" style="text-transform:uppercase">
+      <div class="pair">
+        <input type="text" id="fEngLast" maxlength="15" placeholder="성 (예: PARK)" autocomplete="off" style="text-transform:uppercase">
+        <input type="text" id="fEngFirst" maxlength="30" placeholder="이름 (예: SEUNGHAN)" autocomplete="off" style="text-transform:uppercase">
+      </div>
       <label>성별 <em>*</em></label>
       <div class="gsel"><button type="button" id="gM" onclick="setG('남')">남</button><button type="button" id="gF" onclick="setG('여')">여</button></div>
       <label>전화번호 <em>*</em></label>
@@ -192,9 +200,13 @@ function setP(p, btn){ pos = (pos === p) ? '' : p; document.querySelectorAll('#p
 async function submitForm(e){
   e.preventDefault();
   const v = id => document.getElementById(id).value.trim();
-  const name = v('fName'), eng = v('fEng').toUpperCase(), phone = v('fPhone'), jersey = v('fJersey'), note = v('fNote');
-  if (!name || !phone) return false;
-  if (!eng) { alert('로마자 이름을 입력해 주세요. (회원증·유니폼에 쓰여요)'); return false; }
+  // 성·이름을 따로 받아서 합친다 — '예석'처럼 성이 빠진 채 등록되던 문제 방지 (2026-10-31 총괄)
+  const kL = v('fLast').replace(/\s+/g,''), kF = v('fFirst').replace(/\s+/g,'');
+  const eL = v('fEngLast').toUpperCase().replace(/\s+/g,' '), eF = v('fEngFirst').toUpperCase().replace(/\s+/g,' ');
+  const name = kL + kF, eng = (eL + ' ' + eF).trim(), phone = v('fPhone'), jersey = v('fJersey'), note = v('fNote');
+  if (!kL || !kF) { alert('성과 이름을 모두 입력해 주세요.'); return false; }
+  if (!phone) return false;
+  if (!eL || !eF) { alert('로마자 성과 이름을 모두 입력해 주세요. (회원증·유니폼에 쓰여요)'); return false; }
   if (!gender) { alert('성별을 선택해 주세요.'); return false; }
   if (!/^\d{1,3}$/.test(jersey)) { alert('희망 등번호를 숫자로 입력해 주세요.'); return false; }
   if (usedNums && usedNums.has(Number(jersey)) && !confirm(jersey + '번은 이미 사용 중이에요. 이대로 보내면 운영진과 조정하게 돼요. 보낼까요?')) return false;

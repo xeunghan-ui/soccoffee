@@ -3693,7 +3693,28 @@ function draftRender(){
       <button class="btn ghost sm" style="flex:1" onclick="draftUndo()" ${s.picks.length?'':'disabled'}>되돌리기</button>
       ${done?`<button class="btn accent sm" style="flex:1" onclick="draftCopy()">결과 복사</button>`:''}
       <button class="btn ghost sm" style="flex:1" onclick="draftBack()">처음부터</button>
-    </div>`);
+    </div>
+    ${(done && isAdmin() && isLeague(s.month)) ? `
+    <div style="margin-top:14px;padding:12px;border:1px solid var(--line);border-radius:12px">
+      <b style="font-size:13px;color:#ece6d2">${parseInt(s.month.split('-')[1],10)}월 리그 팀으로 저장</b>
+      <div class="hint" style="margin:2px 0 10px">저장하면 홈·참석 명단·소개 페이지가 화이트/블랙으로 나뉘어요. 관전자는 저장하지 않아요.</div>
+      <div style="display:flex;gap:8px">
+        <button class="btn accent sm" style="flex:1" onclick="draftSaveLeague(0)">A팀 화이트 · B팀 블랙</button>
+        <button class="btn accent sm" style="flex:1" onclick="draftSaveLeague(1)">A팀 블랙 · B팀 화이트</button>
+      </div>
+    </div>` : ''}`);
+}
+// 팀 뽑기 결과 → 리그 팀 배정(white/black) 저장. 감독도 함께 지명 (2026-11-01 총괄: 결과를 따로 보내지 않아도 되게)
+async function draftSaveLeague(aIsBlack){
+  const s = draftState; if (!s || !isAdmin() || !isLeague(s.month)) return;
+  const A = [s.capA, ...s.picks.filter(p => p.cap === 0).map(p => p.id)];
+  const B = [s.capB, ...s.picks.filter(p => p.cap === 1).map(p => p.id)];
+  const white = aIsBlack ? B : A, black = aIsBlack ? A : B;
+  const nm = id => (s.all.find(x => x.id === id) || {}).name || '';
+  const cur = leagueData(s.month);
+  if (((cur.white||[]).length + (cur.black||[]).length) && !confirm('이미 저장된 팀 배정이 있어요. 이 결과로 바꿀까요?')) return;
+  if (!(await saveLeaguePatch(s.month, { white, black, captains: [s.capA, s.capB], teamsAt: Date.now() }))) { toast('저장 중 오류가 났어요'); return; }
+  toast(`저장했어요 — 화이트 ${white.length}명(감독 ${nm(white[0])}) · 블랙 ${black.length}명(감독 ${nm(black[0])})`);
 }
 async function showUniform(){
   try{ if(USE_DB){ const {data:row}=await sb.from('club_settings').select('data').eq('id','current').maybeSingle(); if(row&&row.data){ _settingsCache=row.data; UNIFORM=row.data.uniform||UNIFORM; } } }catch(e){}

@@ -3658,10 +3658,16 @@ function draftRender(){
     const nPresent = s.all.filter(m=>m.id!==s.capA&&m.id!==s.capB&&!s.absent.has(m.id)).length;
     const nObs = s.all.filter(m=>m.id!==s.capA&&m.id!==s.capB&&s.absent.has(m.id)).length;
     _draftPage('팀 뽑기 · 준비', `
-      <p class="sub" style="margin:0 0 8px">${potmMonthLabel(s.month)} ${capOn(s.month)?'확정(입금확인 완료) 회원':'활동 회원'} 기준. 감독 2명을 고르고, 경기 안 하고 <b>구경할 사람은 눌러서 관전자</b>로 빼세요. (감독이 1·2·2·…·2·1 순으로 번갈아 뽑아요)</p>
+      <p class="sub" style="margin:0 0 8px">${potmMonthLabel(s.month)} ${capOn(s.month)?'확정(입금확인 완료) 회원':'활동 회원'} 기준. ${(s.capFrom && s.capA && s.capB && !s.editCaps) ? '' : '감독 2명을 고르고, '}경기 안 하고 <b>구경할 사람은 눌러서 관전자</b>로 빼세요. (감독이 1·2·2·…·2·1 순으로 번갈아 뽑아요)</p>
       ${(capOn(s.month) && !s.all.length) ? '<p class="hint" style="margin:0 0 8px">아직 확정 회원이 없어요 — 회비판에서 입금확인이 진행되면 명단이 채워져요.</p>' : ''}
-      <div style="font-size:12px;font-weight:800;color:var(--coffee);margin:12px 0 4px">감독 2명 <span style="color:var(--muted);font-weight:600">${(s.capA?1:0)+(s.capB?1:0)}/2${s.capFrom && s.capA && s.capB ? ` · ${s.capFrom} 자동 선택 (눌러서 변경)` : ''}</span></div>
-      <div>${capChips}</div>
+      ${(s.capFrom && s.capA && s.capB && !s.editCaps)
+        // 감독이 정해져 있으면 고르는 단계를 건너뛴다 — 확인만 하고 필요할 때만 '변경' (2026-11-01 총괄: 왜 눌러야 하지?)
+        ? `<div style="display:flex;align-items:center;justify-content:space-between;gap:10px;margin:12px 0 4px;padding:10px 12px;border:1px solid var(--line);border-radius:10px">
+             <span style="min-width:0;font-size:14px"><b style="color:var(--win)">${esc((s.all.find(m=>m.id===s.capA)||{}).name||'')}</b> <span style="color:var(--muted)">vs</span> <b style="color:#9a8ad6">${esc((s.all.find(m=>m.id===s.capB)||{}).name||'')}</b><span style="display:block;font-size:11px;color:var(--muted);margin-top:2px">${s.capFrom}</span></span>
+             <button class="btn ghost sm" style="flex-shrink:0" onclick="draftState.editCaps=true;draftRender()">변경</button>
+           </div>`
+        : `<div style="font-size:12px;font-weight:800;color:var(--coffee);margin:12px 0 4px">감독 2명 <span style="color:var(--muted);font-weight:600">${(s.capA?1:0)+(s.capB?1:0)}/2</span></div>
+      <div>${capChips}</div>`}
       <div style="font-size:12px;font-weight:800;color:var(--coffee);margin:14px 0 4px">참여 인원 <span style="color:var(--muted);font-weight:600">${nPresent}명 · 관전 ${nObs}명 (탭하면 관전자)</span></div>
       <div>${presentList||'<span class="hint">위에서 감독을 먼저 골라주세요</span>'}</div>
       <button class="btn accent" style="width:100%;margin-top:14px" onclick="draftStart()">뽑기 시작 (${nPresent}명)</button>`);

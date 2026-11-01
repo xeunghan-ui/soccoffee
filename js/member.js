@@ -228,6 +228,8 @@ function switchTab(tab, mode) {
   // 하단 왼편 뒤로가기 버튼 — 홈에서만 숨김 (홈 화면 앱엔 브라우저 뒤로가기가 없어서. 2026-08-25 총괄)
   const _bb = document.getElementById('bnavBack');
   if (_bb) _bb.classList.toggle('hidden', tab === 'home');
+  // 뒤로가기 버튼이 떠 있는 화면은 맨 아래에 그만큼 여백 — 마지막 버튼(뽑기 시작·저장 등)이 그 밑에 깔리던 문제(2026-11-01 총괄)
+  document.body.classList.toggle('has-backfab', tab !== 'home');
   // 스크롤: 같은 탭 재클릭이면 그대로 두고, 다른 탭이면 그 탭에서 마지막 보던 위치 복원(첫 방문은 맨 위)
   if (mode !== 'none' && prevTab !== tab) {
     const _y = _tabScroll[tab] || 0;

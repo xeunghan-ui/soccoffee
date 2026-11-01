@@ -2363,7 +2363,7 @@ async function renderMore() {
     html += memberTabbed;
   }
   // 버전 표시 + 새로고침 — "폰에서 안 된다"일 때 어느 버전을 돌리는지 바로 보고, 홈 화면 앱엔 새로고침 버튼이 없어서(2026-10-02)
-  html += `<div class="hint" style="text-align:center;margin:22px 0 4px;font-size:11px">앱 버전 ${esc(APP_VER || '-')} · <button type="button" onclick="forceReload()" style="background:none;border:none;padding:0;font:inherit;color:var(--accent);cursor:pointer;text-decoration:underline">최신 버전으로 새로고침</button></div>`;
+  html += `<div class="hint" style="text-align:center;margin:22px 0 4px;font-size:11px">앱 버전 ${esc(APP_VER || '-')} · <button type="button" onclick="forceReload()" style="background:none;border:none;padding:0;font:inherit;color:var(--accent);cursor:pointer;text-decoration:underline">최신 버전으로 새로고침</button> · <button type="button" onclick="showScreenDiag()" style="background:none;border:none;padding:0;font:inherit;color:var(--muted);cursor:pointer;text-decoration:underline">화면 진단</button></div>`;
   el.innerHTML = html;
 }
 
@@ -5627,6 +5627,27 @@ async function checkAppUpdate(){
   } catch(e){ return false; }
 }
 // 캐시를 비켜 가는 새로고침 — location.reload()는 HTTP 캐시(index.html, 10분)를 그대로 쓸 수 있어 ?r= 를 붙여 새로 받는다
+// 화면 진단 — 하단 바가 바닥에서 떠 보이는 문제(아이폰 홈 화면 앱)를 추측 대신 실측으로 잡기 위한 값 모음 (2026-11-01)
+function showScreenDiag(){
+  const px = css => { const d = document.createElement('div'); d.style.cssText = 'position:fixed;top:0;left:-9999px;width:1px;height:' + css; document.body.appendChild(d); const h = d.getBoundingClientRect().height; d.remove(); return Math.round(h); };
+  const env = k => { const d = document.createElement('div'); d.style.cssText = 'position:fixed;left:-9999px;top:0;height:env(' + k + ')'; document.body.appendChild(d); const h = d.getBoundingClientRect().height; d.remove(); return Math.round(h); };
+  const nav = document.getElementById('bottomNav'); const nb = nav ? nav.getBoundingClientRect() : null;
+  const rows = [
+    ['앱 버전', APP_VER || '-'], ['홈 화면 앱', String(IS_STANDALONE)], ['기기', (navigator.userAgent.match(/\(([^)]+)\)/)||[])[1] || ''],
+    ['screen.height', screen.height], ['innerHeight', innerHeight], ['visualViewport', window.visualViewport ? Math.round(visualViewport.height) : '-'],
+    ['clientHeight', document.documentElement.clientHeight],
+    ['100vh', px('100vh')], ['100dvh', px('100dvh')], ['100svh', px('100svh')], ['100lvh', px('100lvh')],
+    ['safe top', env('safe-area-inset-top')], ['safe bottom', env('safe-area-inset-bottom')],
+    ['body 높이', Math.round(document.body.getBoundingClientRect().height)], ['문서 높이', document.documentElement.scrollHeight], ['scrollY', Math.round(scrollY)],
+    ['하단바 top/bottom', nb ? Math.round(nb.top) + ' / ' + Math.round(nb.bottom) : '-'],
+  ];
+  let h = document.getElementById('mmHost'); if (!h) { h = document.createElement('div'); h.id = 'mmHost'; document.body.appendChild(h); }
+  h.innerHTML = `<div class="mm-back" onclick="if(event.target===this)closeMemberCard()"><div class="mm-box">
+    <div class="mm-head"><div class="mm-name">화면 진단</div><button class="mm-x" onclick="closeMemberCard()">×</button></div>
+    <div class="hint" style="margin:4px 0 10px">이 화면을 캡처해서 보내주세요.</div>
+    ${rows.map(([k,v]) => `<div style="display:flex;justify-content:space-between;gap:10px;font-size:13px;padding:4px 0;border-bottom:1px solid var(--line)"><span style="color:var(--muted)">${k}</span><b style="color:var(--cream);text-align:right;word-break:break-all">${esc(String(v))}</b></div>`).join('')}
+  </div></div>`;
+}
 function forceReload(){ try { location.replace(location.pathname + '?r=' + Date.now() + (location.hash || '')); } catch(e){ location.reload(); } }
 (function(){
   let hiddenAt = 0;

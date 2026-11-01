@@ -856,7 +856,7 @@
      - 입력 16px: iOS 포커스 시 자동 화면확대 방지
      - 터치 타깃 확대 + 탭 하이라이트 제거 + 누름(:active) 피드백
      ===================================================================== */
-  html { background: var(--bg); -webkit-text-size-adjust: 100%; }
+  html { background: var(--deep); -webkit-text-size-adjust: 100%; }   /* 본문이 화면보다 짧게 잡히는 기기(아이폰 홈 화면 앱)에서 하단 바 아래 빈 띠가 하단 바와 같은 색으로 보이게 */
   body { background: none; }
   body::before {
     content: ""; position: fixed; inset: 0; z-index: -1; pointer-events: none;

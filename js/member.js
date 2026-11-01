@@ -3616,6 +3616,8 @@ function _draftInit(){
     all = res ? all.filter(m => res.active.includes(m.id))
               : all.filter(m => { const c = capConfirmOf(mo, m.id); return !!(c && c.s === 'active') && isDuesConfirmed(mo, m.id); });
   }
+  // 이름순(가나다) — 예전엔 옛 팀시트(WHITE/BLACK/기타) 순이라 신규 회원이 맨 끝에 묻혀 '없다'로 보였다(2026-11-01 총괄)
+  all = all.slice().sort((a, b) => a.name.localeCompare(b.name, 'ko'));
   return { step:'setup', month:mo, all, capA:null, capB:null, absent:new Set(), poolAll:[], turns:[], picks:[] };
 }
 // 팀 뽑기 전체 화면 렌더 (상단 제목 + 닫기)

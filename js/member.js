@@ -3618,7 +3618,18 @@ function _draftInit(){
   }
   // 이름순(가나다) — 예전엔 옛 팀시트(WHITE/BLACK/기타) 순이라 신규 회원이 맨 끝에 묻혀 '없다'로 보였다(2026-11-01 총괄)
   all = all.slice().sort((a, b) => a.name.localeCompare(b.name, 'ko'));
-  return { step:'setup', month:mo, all, capA:null, capB:null, absent:new Set(), poolAll:[], turns:[], picks:[] };
+  // 감독 자동 선택 — 리그 탭에서 지명된 감독(captains) 우선, 없으면 감독 추천 집계 상위 2명 (2026-11-01 총괄). 화면에서 바꿀 수 있음.
+  let capA = null, capB = null, capFrom = '';
+  try {
+    if (isLeague(mo)) {
+      const ids = new Set(all.map(m => m.id));
+      let c = (leagueData(mo).captains || []).filter(id => ids.has(id));
+      if (c.length >= 2) capFrom = '리그 지명 감독';
+      else { c = lgRecTally(mo).ranked.map(x => x.id).filter(id => ids.has(id)).slice(0, 2); if (c.length >= 2) capFrom = '감독 추천 상위 2명'; }
+      if (c.length >= 2) { capA = c[0]; capB = c[1]; }
+    }
+  } catch(e){}
+  return { step:'setup', month:mo, all, capA, capB, capFrom, absent:new Set(), poolAll:[], turns:[], picks:[] };
 }
 // 팀 뽑기 전체 화면 렌더 (상단 제목 + 닫기)
 function _draftPage(title, body){
@@ -3649,7 +3660,7 @@ function draftRender(){
     _draftPage('팀 뽑기 · 준비', `
       <p class="sub" style="margin:0 0 8px">${potmMonthLabel(s.month)} ${capOn(s.month)?'확정(입금확인 완료) 회원':'활동 회원'} 기준. 감독 2명을 고르고, 경기 안 하고 <b>구경할 사람은 눌러서 관전자</b>로 빼세요. (감독이 1·2·2·…·2·1 순으로 번갈아 뽑아요)</p>
       ${(capOn(s.month) && !s.all.length) ? '<p class="hint" style="margin:0 0 8px">아직 확정 회원이 없어요 — 회비판에서 입금확인이 진행되면 명단이 채워져요.</p>' : ''}
-      <div style="font-size:12px;font-weight:800;color:var(--coffee);margin:12px 0 4px">감독 2명 <span style="color:var(--muted);font-weight:600">${(s.capA?1:0)+(s.capB?1:0)}/2</span></div>
+      <div style="font-size:12px;font-weight:800;color:var(--coffee);margin:12px 0 4px">감독 2명 <span style="color:var(--muted);font-weight:600">${(s.capA?1:0)+(s.capB?1:0)}/2${s.capFrom && s.capA && s.capB ? ` · ${s.capFrom} 자동 선택 (눌러서 변경)` : ''}</span></div>
       <div>${capChips}</div>
       <div style="font-size:12px;font-weight:800;color:var(--coffee);margin:14px 0 4px">참여 인원 <span style="color:var(--muted);font-weight:600">${nPresent}명 · 관전 ${nObs}명 (탭하면 관전자)</span></div>
       <div>${presentList||'<span class="hint">위에서 감독을 먼저 골라주세요</span>'}</div>
